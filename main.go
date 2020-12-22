@@ -4,6 +4,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
+	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 
@@ -17,6 +18,7 @@ func init() {
 }
 
 func main() {
+	logrus.SetLevel(logrus.DebugLevel)
 
 	// 快速初始化
 	bot.Init()
