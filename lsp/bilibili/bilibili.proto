@@ -1,0 +1,65 @@
+syntax = "proto3";
+package bilibili;
+
+option go_package = "bilibili";
+
+enum LiveStatus {
+    NoLiving = 0;
+    Living = 1;
+}
+
+enum RoundStatus {
+    Off = 0;
+    On = 1;
+}
+
+enum RoomStatus {
+    NonExist = 0;
+    Exist = 1;
+}
+
+enum SpecialType {
+    Normal = 0;
+    Pay = 1;
+    YearFestival = 2;
+}
+
+message RoomInitResponse {
+    int32 code = 1;
+    string message = 2;
+    message Data {
+        int64 room_id = 1;
+        int64 short_id = 2;
+        int64 uid = 3;
+        bool is_hidden = 5;
+        bool is_locked = 6;
+
+        int32 live_status = 8;
+
+        int32 is_sp = 15;
+        int32 special_type = 16;
+    }
+    Data data = 3;
+}
+
+message XSpaceAccInfoResponse {
+    int32 code = 1;
+    string message = 2;
+
+    message Data {
+        int64 mid = 1;
+        string name = 2;
+        int32 level = 7;
+        message LiveRoom {
+            int32 roomStatus = 1;
+            int32 liveStatus = 2;
+            string url = 3;
+            string title = 4;
+            string cover = 5;
+            int64 roomid = 6;
+            int32 roundStatus = 7;
+        }
+        LiveRoom live_room = 17;
+    }
+    Data data = 3;
+}
