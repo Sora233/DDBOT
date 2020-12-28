@@ -13,6 +13,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type LspGroupCommand struct {
@@ -43,6 +44,8 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.WatchCommand(true)
 		case "/list":
 			lgc.ListLivingCommand()
+		case "/签到":
+			lgc.CheckinCommand()
 		case "/roll":
 			lgc.RollCommand()
 		default:
@@ -292,8 +295,42 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		logger.Errorf("get db failed %v", err)
 		return
 	}
-	db.Update(func(tx *buntdb.Tx) error {
+	date := time.Now().Format("20060102")
 
+	db.Update(func(tx *buntdb.Tx) error {
+		var score int64
+		key := localdb.Key("Score", groupCode, msg.Sender.Uin)
+		dateMarker := localdb.Key("ScoreDate", groupCode, msg.Sender.Uin, date, nil)
+
+		_, err := tx.Get(dateMarker)
+		if err != buntdb.ErrNotFound {
+			lgc.textReply("明天再来吧")
+			return nil
+		}
+
+		val, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			score = 0
+		} else {
+			score, err = strconv.ParseInt(val, 10, 64)
+			if err != nil {
+				log.WithField("value", val).Errorf("parse score failed %v", err)
+				return err
+			}
+		}
+		score += 1
+		_, _, err = tx.Set(key, strconv.FormatInt(score, 10), nil)
+		if err != nil {
+			log.WithField("sender", msg.Sender.Uin).Errorf("update score failed %v", err)
+			return err
+		}
+
+		_, _, err = tx.Set(dateMarker, "1", nil)
+		if err != nil {
+			log.WithField("sender", msg.Sender.Uin).Errorf("update score marker failed %v", err)
+			return err
+		}
+		lgc.textReply(fmt.Sprintf("签到成功！获得1积分，当前积分为%v", score))
 		return nil
 	})
 }
