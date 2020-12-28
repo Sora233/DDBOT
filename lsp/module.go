@@ -10,8 +10,10 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/aliyun"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
+	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
 	"github.com/asmcos/requests"
+	"github.com/tidwall/buntdb"
 	"io/ioutil"
 	"math/rand"
 	"strings"
@@ -67,6 +69,15 @@ func (l *Lsp) Init() {
 }
 
 func (l *Lsp) PostInit() {
+	if err := localdb.InitBuntDB(); err != nil {
+		panic(err)
+	}
+	db, err := localdb.GetClient()
+	if err != nil {
+		panic(err)
+	}
+	db.CreateIndex("ConcernState", "ConcernState:*", buntdb.IndexString)
+	db.CreateIndex("CurrentLive", "CurrentLive:*", buntdb.IndexString)
 }
 
 func (l *Lsp) Serve(bot *bot.Bot) {
@@ -99,6 +110,9 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 		close(l.stop)
 	}
 	l.BilibiliConcern.Stop()
+	if err := localdb.Close(); err != nil {
+		logger.Errorf("close db err %v", err)
+	}
 }
 
 func (l *Lsp) RefreshImage(path string) error {

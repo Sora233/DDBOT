@@ -6,8 +6,10 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/aliyun"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
+	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
 	"github.com/forestgiant/sliceutil"
+	"github.com/tidwall/buntdb"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -40,7 +42,7 @@ func (lgc *LspGroupCommand) Execute() {
 		case "/unwatch":
 			lgc.WatchCommand(true)
 		case "/list":
-			lgc.ListLiving()
+			lgc.ListLivingCommand()
 		case "/roll":
 			lgc.RollCommand()
 		default:
@@ -184,7 +186,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	}
 }
 
-func (lgc *LspGroupCommand) ListLiving() {
+func (lgc *LspGroupCommand) ListLivingCommand() {
 	msg := lgc.msg
 	groupCode := msg.GroupCode
 
@@ -276,6 +278,24 @@ func (lgc *LspGroupCommand) RollCommand() {
 	}
 	result := rand.Int63n(max-min+1) + min
 	lgc.textReply(strconv.FormatInt(result, 10))
+}
+
+func (lgc *LspGroupCommand) CheckinCommand() {
+	msg := lgc.msg
+	groupCode := msg.GroupCode
+
+	log := logger.WithField("GroupCode", groupCode)
+	log.Infof("run checkin command")
+
+	db, err := localdb.GetClient()
+	if err != nil {
+		logger.Errorf("get db failed %v", err)
+		return
+	}
+	db.Update(func(tx *buntdb.Tx) error {
+
+		return nil
+	})
 }
 
 func (lgc *LspGroupCommand) ImageContent() {

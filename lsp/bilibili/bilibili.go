@@ -8,11 +8,12 @@ import (
 	"strings"
 )
 
+const DBKey = "bilibili"
 const BaseHost = "https://api.bilibili.com"
 const BaseLiveHost = "https://api.live.bilibili.com"
 
 var BasePath = map[string]string{
-	PathRoomInit: BaseLiveHost,
+	PathRoomInit:     BaseLiveHost,
 	PathSpaceAccInfo: BaseHost,
 }
 
