@@ -8,6 +8,7 @@ require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.790
 	github.com/asmcos/requests v0.0.0-20200816142649-95abc76c8cac
 	github.com/davecgh/go-spew v1.1.1
+	github.com/forestgiant/sliceutil v0.0.0-20160425183142-94783f95db6c
 	github.com/golang/protobuf v1.4.3
 	github.com/imroc/req v0.3.0
 	github.com/jmespath/go-jmespath v0.4.0 // indirect

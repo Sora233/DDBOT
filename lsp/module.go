@@ -10,6 +10,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/aliyun"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
 	"github.com/asmcos/requests"
 	"io/ioutil"
 	"math/rand"
@@ -26,9 +27,9 @@ type Lsp struct {
 	HImageList      []string
 	BilibiliConcern *bilibili.Concern
 
-	freshMutex                *sync.RWMutex
-	bilibiliConcernLiveNotify chan *bilibili.ConcernLiveNotify
-	stop                      chan interface{}
+	freshMutex    *sync.RWMutex
+	concernNotify chan concern.Notify
+	stop          chan interface{}
 }
 
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
@@ -39,22 +40,30 @@ func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
 }
 
 func (l *Lsp) Init() {
-	l.BilibiliConcern.Start()
 	aliyun.InitAliyun()
 	HimageDir := config.GlobalConfig.GetString("HimageDir")
-	l.RefreshImage(HimageDir)
-	go func() {
-		mt := time.NewTicker(time.Minute)
-		defer mt.Stop()
-		for {
-			select {
-			case <-mt.C:
-				go l.RefreshImage(HimageDir)
-			case <-l.stop:
-				return
+	err := l.RefreshImage(HimageDir)
+	if err != nil {
+		logger.Errorf("refresh image error %v", err)
+	} else {
+		go func() {
+			mt := time.NewTicker(time.Minute)
+			defer mt.Stop()
+			for {
+				select {
+				case <-mt.C:
+					go func() {
+						err := l.RefreshImage(HimageDir)
+						if err != nil {
+							logger.Errorf("refresh image error %v", err)
+						}
+					}()
+				case <-l.stop:
+					return
+				}
 			}
-		}
-	}()
+		}()
+	}
 }
 
 func (l *Lsp) PostInit() {
@@ -80,6 +89,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 }
 
 func (l *Lsp) Start(bot *bot.Bot) {
+	l.BilibiliConcern.Start()
 	go l.ConcernNotify(bot.QQClient)
 }
 
@@ -91,16 +101,16 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 	l.BilibiliConcern.Stop()
 }
 
-func (l *Lsp) RefreshImage(path string) {
+func (l *Lsp) RefreshImage(path string) error {
 	l.freshMutex.Lock()
 	defer l.freshMutex.Unlock()
 	files, err := filePathWalkDir(path)
 	if err != nil {
-		logger.Errorf("refresh image failed %v", err)
+		return err
 	} else {
 		l.HImageList = files
-
 	}
+	return nil
 }
 
 func (l *Lsp) checkImage(img *message.ImageElement) string {
@@ -135,36 +145,61 @@ func (l *Lsp) getHImage() ([]byte, error) {
 func (l *Lsp) ConcernNotify(qqClient *client.QQClient) {
 	for {
 		select {
-		case notify := <-l.bilibiliConcernLiveNotify:
-			logger.WithField("GroupCode", notify.GroupCode).
-				WithField("Username", notify.Username).
-				WithField("Title", notify.LiveTitle).
-				WithField("Status", notify.Status.String()).
-				Debugf("notify")
-			if notify.Status == bilibili.LiveStatus_Living {
-				sendingMsg := message.NewSendingMessage()
-				sendingMsg.Append(message.NewText(fmt.Sprintf("%s正在直播【%s】", notify.Username, notify.LiveTitle)))
-				coverResp, err := requests.Get(notify.Cover)
-				if err == nil {
-					if cover, err := qqClient.UploadGroupImage(notify.GroupCode, coverResp.Content()); err == nil {
-						sendingMsg.Append(cover)
+		case inotify := <-l.concernNotify:
+			switch inotify.Type() {
+			case concern.Live:
+				notify := (inotify).(*bilibili.ConcernLiveNotify)
+				logger.WithField("GroupCode", notify.GroupCode).
+					WithField("Name", notify.Name).
+					WithField("Title", notify.LiveTitle).
+					WithField("Status", notify.Status.String()).
+					Debugf("notify")
+				if notify.Status == bilibili.LiveStatus_Living {
+					sendingMsg := message.NewSendingMessage()
+					notifyMsg := l.NotifyMessage(qqClient, notify)
+					for _, msg := range notifyMsg {
+						sendingMsg.Append(msg)
 					}
+					qqClient.SendGroupMessage(notify.GroupCode, sendingMsg)
 				}
-				qqClient.SendGroupMessage(notify.GroupCode, sendingMsg)
 			}
 		}
 	}
 }
 
+func (l *Lsp) NotifyMessage(qqClient *client.QQClient, inotify concern.Notify) []message.IMessageElement {
+	var result []message.IMessageElement
+	switch inotify.Type() {
+	case concern.Live:
+		notify := (inotify).(*bilibili.ConcernLiveNotify)
+		switch notify.Status {
+		case bilibili.LiveStatus_Living:
+			result = append(result, message.NewText(fmt.Sprintf("%s正在直播【%s】", notify.Name, notify.LiveTitle)))
+			result = append(result, message.NewText(notify.RoomUrl))
+			coverResp, err := requests.Get(notify.Cover)
+			if err == nil {
+				if cover, err := qqClient.UploadGroupImage(notify.GroupCode, coverResp.Content()); err == nil {
+					result = append(result, cover)
+				}
+			}
+		case bilibili.LiveStatus_NoLiving:
+			result = append(result, message.NewText(fmt.Sprintf("%s暂未直播", notify.Name)))
+			result = append(result, message.NewText(notify.RoomUrl))
+		}
+	}
+
+	return result
+}
+
 var instance *Lsp
 
 func init() {
-	bilibiliNotify := make(chan *bilibili.ConcernLiveNotify, 500)
+	notify := make(chan concern.Notify, 500)
 	instance = &Lsp{
-		freshMutex:                new(sync.RWMutex),
-		bilibiliConcernLiveNotify: bilibiliNotify,
-		stop:                      make(chan interface{}),
-		BilibiliConcern:           bilibili.NewConcern(bilibiliNotify),
+		freshMutex:      new(sync.RWMutex),
+		concernNotify:   notify,
+		stop:            make(chan interface{}),
+		BilibiliConcern: bilibili.NewConcern(notify),
 	}
 	bot.RegisterModule(instance)
 }
