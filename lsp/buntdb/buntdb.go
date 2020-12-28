@@ -42,7 +42,11 @@ func Key(keys ...interface{}) string {
 		switch key.(type) {
 		case string:
 			_keys = append(_keys, key.(string))
-		case int, int64, int32:
+		case int:
+			_keys = append(_keys, strconv.FormatInt(int64(key.(int)), 10))
+		case int32:
+			_keys = append(_keys, strconv.FormatInt(int64(key.(int32)), 10))
+		case int64:
 			_keys = append(_keys, strconv.FormatInt(key.(int64), 10))
 		}
 	}
