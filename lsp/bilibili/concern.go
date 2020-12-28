@@ -151,10 +151,10 @@ func (c *Concern) AddLiveRoom(groupCode int64, mid int64, roomId int64) error {
 		stateKey := c.ConcernStateKey(groupCode, mid)
 		val, err := tx.Get(stateKey)
 		if err == buntdb.ErrNotFound {
-			tx.Set(stateKey, concern.BibiliLive.ToString(), nil)
+			tx.Set(stateKey, concern.BibiliLive.String(), nil)
 		} else if err == nil {
 			newVal := concern.FromString(val) | concern.BibiliLive
-			tx.Set(stateKey, newVal.ToString(), nil)
+			tx.Set(stateKey, newVal.String(), nil)
 		} else {
 			return err
 		}
@@ -166,6 +166,9 @@ func (c *Concern) AddLiveRoom(groupCode int64, mid int64, roomId int64) error {
 
 	return nil
 }
+func (c *Concern) AddNews(groupCode int64, mid int64) error {
+	panic("not impl")
+}
 
 func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) error {
 	db, err := localdb.GetClient()
@@ -174,9 +177,22 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) error {
 	}
 	err = db.Update(func(tx *buntdb.Tx) error {
 		stateKey := c.ConcernStateKey(groupCode, mid)
-		_, err := tx.Delete(stateKey)
+
+		val, err := tx.Get(stateKey)
 		if err != nil {
 			return err
+		}
+		oldState := concern.FromString(val)
+		newState := oldState.Remove(ctype)
+		_, _, err = tx.Set(stateKey, newState.String(), nil)
+		if err != nil {
+			return err
+		}
+		if !newState.Contain(concern.BibiliLive) {
+			_, err = tx.Delete(c.CurrentLiveKey(mid))
+			if err != nil {
+				return err
+			}
 		}
 		return nil
 	})

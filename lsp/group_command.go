@@ -111,77 +111,77 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 
 	if len(args) == 0 {
 		log.WithField("content", text).Errorf("watch need args")
-		lgc.textReply("参数错误 - Usage: /watch [channel name] id [id...]")
+		lgc.textReply("参数错误 - Usage: /watch [bilibili] [news/live] id")
 		return
 	}
 	site := "bilibili"
-	var ids []int64
+	watchType := concern.BibiliLive
 
-	id, err := strconv.ParseInt(args[0], 10, 64)
+	id, err := strconv.ParseInt(args[len(args)-1], 10, 64)
 	if err != nil {
-		switch args[0] {
+		log.WithField("content", text).Errorf("watch args error")
+		lgc.textReply("参数错误 - 未知的id：" + args[len(args)-1])
+		return
+	}
+
+	args = args[:len(args)-1]
+	for _, arg := range args {
+		switch arg {
 		case "bilibili":
 			site = "bilibili"
+		case "news":
+			watchType = concern.BilibiliNews
+		case "live":
+			watchType = concern.BibiliLive
 		default:
-			log.WithField("content", text).Errorf("watch args error")
-			lgc.textReply("参数错误 - 支持的channel name：['bilibili']")
-			return
+			log.WithField("content", text).Errorf("watch need args")
+			lgc.textReply("参数错误 - Usage: /watch [bilibili] [news/live] id")
 		}
-	} else {
-		ids = append(ids, id)
-	}
-	for _, sid := range args[1:] {
-		id, err := strconv.ParseInt(sid, 10, 64)
-		if err != nil {
-			log.WithField("content", text).Errorf("watch args error")
-			lgc.textReply("参数错误 - 未知的id：" + sid)
-			return
-		}
-		ids = append(ids, id)
 	}
 
 	switch site {
 	case "bilibili":
-		for _, id := range ids {
-			if !remove {
-				// watch
-				infoResp, err := bilibili.XSpaceAccInfo(id)
-				if err != nil {
-					log.WithField("mid", id).Error(err)
-					lgc.textReply(fmt.Sprintf("查询用户信息失败 %v - %v", id, err))
-					continue
-				}
-
-				name := infoResp.GetData().GetName()
-
-				if sliceutil.Contains([]int64{491474049}, id) {
-					lgc.textReply(fmt.Sprintf("watch失败 - 用户 %v 禁止watch", name))
-					continue
-				}
-				if bilibili.RoomStatus(infoResp.GetData().GetLiveRoom().GetRoomStatus()) == bilibili.RoomStatus_NonExist {
-					lgc.textReply(fmt.Sprintf("watch失败 - 用户 %v 暂未开通直播间", name))
-					continue
-				}
-				if err := lgc.l.BilibiliConcern.AddLiveRoom(groupCode, id,
-					infoResp.GetData().GetLiveRoom().GetRoomid(),
-				); err != nil {
-
-					log.WithField("mid", id).Errorf("watch error %v", err)
-					lgc.textReply(fmt.Sprintf("watch失败 - %v", err))
-					continue
-				}
-				log.WithField("mid", id).Debugf("watch success")
-				lgc.textReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", name))
-			} else {
+		if watchType == concern.BibiliLive {
+			if remove {
 				// unwatch
 				if err := lgc.l.BilibiliConcern.Remove(groupCode, id, concern.BibiliLive); err != nil {
 					lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
-					continue
+					break
 				} else {
 					log.WithField("mid", id).Debugf("unwatch success")
 					lgc.textReply("unwatch成功")
 				}
+				return
 			}
+
+			// watch
+			infoResp, err := bilibili.XSpaceAccInfo(id)
+			if err != nil {
+				log.WithField("mid", id).Error(err)
+				lgc.textReply(fmt.Sprintf("查询用户信息失败 %v - %v", id, err))
+				break
+			}
+
+			name := infoResp.GetData().GetName()
+
+			if sliceutil.Contains([]int64{491474049}, id) {
+				lgc.textReply(fmt.Sprintf("watch失败 - 用户 %v 禁止watch", name))
+				break
+			}
+			if bilibili.RoomStatus(infoResp.GetData().GetLiveRoom().GetRoomStatus()) == bilibili.RoomStatus_NonExist {
+				lgc.textReply(fmt.Sprintf("watch失败 - 用户 %v 暂未开通直播间", name))
+				break
+			}
+			if err := lgc.l.BilibiliConcern.AddLiveRoom(groupCode, id,
+				infoResp.GetData().GetLiveRoom().GetRoomid(),
+			); err != nil {
+
+				log.WithField("mid", id).Errorf("watch error %v", err)
+				lgc.textReply(fmt.Sprintf("watch失败 - %v", err))
+				break
+			}
+			log.WithField("mid", id).Debugf("watch success")
+			lgc.textReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", name))
 		}
 	default:
 		log.WithField("site", site).Error("unsupported")
