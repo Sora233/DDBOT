@@ -28,21 +28,24 @@ func NewLspGroupCommand(qqClient *client.QQClient, msg *message.GroupMessage, l 
 }
 
 func (lgc *LspGroupCommand) Execute() {
-	args := strings.Split(lgc.msg.Elements[0].(*message.TextElement).Content, " ")
-	switch args[0] {
-	case "/Lsp":
-		lgc.LspCommand()
-	case "/色图":
-		lgc.SetuCommand()
-	case "/watch":
-		lgc.WatchCommand(false)
-	case "/unwatch":
-		lgc.WatchCommand(true)
-	case "/list":
-		lgc.ListLiving()
-	case "/roll":
-		lgc.RollCommand()
-	default:
+	if text, ok := lgc.msg.Elements[0].(*message.TextElement); ok {
+		args := strings.Split(text.Content, " ")
+		switch args[0] {
+		case "/Lsp":
+			lgc.LspCommand()
+		case "/色图":
+			lgc.SetuCommand()
+		case "/watch":
+			lgc.WatchCommand(false)
+		case "/unwatch":
+			lgc.WatchCommand(true)
+		case "/list":
+			lgc.ListLiving()
+		case "/roll":
+			lgc.RollCommand()
+		default:
+		}
+	} else {
 		if lgc.msg.Sender.Uin != lgc.qqClient.Uin {
 			lgc.ImageContent()
 		}
@@ -166,7 +169,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 				lgc.textReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", name))
 			} else {
 				// unwatch
-				if err := lgc.l.BilibiliConcern.Remove(groupCode, id, concern.Live); err != nil {
+				if err := lgc.l.BilibiliConcern.Remove(groupCode, id, concern.BibiliLive); err != nil {
 					lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
 					continue
 				} else {

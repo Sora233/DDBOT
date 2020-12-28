@@ -29,7 +29,7 @@ type ConcernLiveNotify struct {
 }
 
 func (cln *ConcernLiveNotify) Type() concern.Type {
-	return concern.Live
+	return concern.BibiliLive
 }
 
 func NewConcernLiveNotify(groupCode, mid, roomId int64, url, liveTitle, username, cover string, status LiveStatus) *ConcernLiveNotify {
@@ -44,7 +44,7 @@ type ConcernNewsNotify struct {
 }
 
 func (cnn *ConcernNewsNotify) Type() concern.Type {
-	return concern.News
+	return concern.BilibiliNews
 }
 
 func NewConcernNewsNotify() {
@@ -145,6 +145,8 @@ func (c *Concern) Start() {
 func (c *Concern) Stop() {
 	if err := c.Save(); err != nil {
 		logger.Errorf("save concern failed")
+	} else {
+		logger.Debugf("save concern done")
 	}
 }
 
@@ -154,9 +156,9 @@ func (c *Concern) AddLiveRoom(groupCode int64, mid int64, roomId int64) error {
 		c.ConcernState[groupCode] = make(map[int64]concern.Type)
 	}
 	if _, ok := c.ConcernState[groupCode][mid]; !ok {
-		c.ConcernState[groupCode][mid] = concern.Live
+		c.ConcernState[groupCode][mid] = concern.BibiliLive
 	} else {
-		c.ConcernState[groupCode][mid] |= concern.Live
+		c.ConcernState[groupCode][mid] |= concern.BibiliLive
 	}
 	c.concernMutex.Unlock()
 	return nil
@@ -180,9 +182,7 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) error {
 	if c.ConcernState[groupCode][mid] == 0 {
 		delete(c.ConcernState[groupCode], mid)
 	}
-	if _, ok := c.CurrentLive[mid]; ok {
-		delete(c.CurrentLive, mid)
-	}
+	delete(c.CurrentLive, mid)
 	return nil
 }
 
@@ -200,7 +200,7 @@ func (c *Concern) ListLiving(groupCode int64) ([]*ConcernLiveNotify, error) {
 	var concernMidSet = make(map[int64]bool)
 
 	for mid, concernState := range c.ConcernState[groupCode] {
-		if concernState&concern.Live != 0 {
+		if concernState&concern.BibiliLive != 0 {
 			concernMidSet[mid] = true
 		}
 	}
@@ -283,7 +283,7 @@ func (c *Concern) notifyLoop() {
 			switch event.Status {
 			case LiveStatus_Living:
 				for groupCode, groupConcern := range c.ConcernState {
-					if _concern, ok := groupConcern[mid]; ok && _concern&concern.Live != 0 {
+					if _concern, ok := groupConcern[mid]; ok && _concern&concern.BibiliLive != 0 {
 						logger.WithField("mid", mid).
 							WithField("name", event.Name).
 							Debugf("living notify")
@@ -299,7 +299,7 @@ func (c *Concern) notifyLoop() {
 				}
 			case LiveStatus_NoLiving:
 				for groupCode, groupConcern := range c.ConcernState {
-					if _concern, ok := groupConcern[mid]; ok && _concern&concern.Live != 0 {
+					if _concern, ok := groupConcern[mid]; ok && _concern&concern.BibiliLive != 0 {
 						logger.WithField("mid", mid).
 							Debugf("noliving notify")
 						c.notify <- NewConcernLiveNotify(groupCode,
@@ -324,7 +324,9 @@ func (c *Concern) notifyLoop() {
 
 func (c *Concern) Fresh() {
 	c.currentMutex.Lock()
+	c.concernMutex.RLock()
 	defer c.currentMutex.Unlock()
+	defer c.concernMutex.RUnlock()
 	logger.Debugf("start fresh")
 
 	var (

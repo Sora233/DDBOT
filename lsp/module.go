@@ -71,7 +71,7 @@ func (l *Lsp) PostInit() {
 
 func (l *Lsp) Serve(bot *bot.Bot) {
 	bot.OnGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {
-		if len(msg.Elements) <= 0 || msg.Elements[0].Type() != message.Text {
+		if len(msg.Elements) <= 0 {
 			return
 		}
 		cmd := NewLspGroupCommand(qqClient, msg, l)
@@ -147,7 +147,7 @@ func (l *Lsp) ConcernNotify(qqClient *client.QQClient) {
 		select {
 		case inotify := <-l.concernNotify:
 			switch inotify.Type() {
-			case concern.Live:
+			case concern.BibiliLive:
 				notify := (inotify).(*bilibili.ConcernLiveNotify)
 				logger.WithField("GroupCode", notify.GroupCode).
 					WithField("Name", notify.Name).
@@ -162,6 +162,8 @@ func (l *Lsp) ConcernNotify(qqClient *client.QQClient) {
 					}
 					qqClient.SendGroupMessage(notify.GroupCode, sendingMsg)
 				}
+			case concern.BilibiliNews:
+				// TODO
 			}
 		}
 	}
@@ -170,7 +172,7 @@ func (l *Lsp) ConcernNotify(qqClient *client.QQClient) {
 func (l *Lsp) NotifyMessage(qqClient *client.QQClient, inotify concern.Notify) []message.IMessageElement {
 	var result []message.IMessageElement
 	switch inotify.Type() {
-	case concern.Live:
+	case concern.BibiliLive:
 		notify := (inotify).(*bilibili.ConcernLiveNotify)
 		switch notify.Status {
 		case bilibili.LiveStatus_Living:
@@ -186,6 +188,8 @@ func (l *Lsp) NotifyMessage(qqClient *client.QQClient, inotify concern.Notify) [
 			result = append(result, message.NewText(fmt.Sprintf("%s暂未直播", notify.Name)))
 			result = append(result, message.NewText(notify.RoomUrl))
 		}
+	case concern.BilibiliNews:
+
 	}
 
 	return result
