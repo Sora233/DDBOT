@@ -191,14 +191,29 @@ func (lgc *LspGroupCommand) ListLiving() {
 	log := logger.WithField("GroupCode", groupCode)
 	log.Infof("run lisg living command")
 
-	living, err := lgc.l.BilibiliConcern.ListLiving(groupCode)
+	text := msg.Elements[0].(*message.TextElement).Content
+
+	args := strings.Split(text, " ")[1:]
+
+	all := false
+
+	if len(args) >= 1 {
+		if args[0] == "all" {
+			all = true
+		}
+	}
+
+	living, err := lgc.l.BilibiliConcern.ListLiving(groupCode, all)
 	if err != nil {
 		log.Debugf("list living failed %v", err)
 		lgc.textReply(fmt.Sprintf("list living 失败 - %v", err))
 		return
 	}
 	listMsg := message.NewSendingMessage()
-	for _, liveInfo := range living {
+	for idx, liveInfo := range living {
+		if idx != 0 {
+			listMsg.Append(message.NewText("\n"))
+		}
 		notifyMsg := lgc.l.NotifyMessage(lgc.qqClient, liveInfo)
 		for _, msg := range notifyMsg {
 			listMsg.Append(msg)

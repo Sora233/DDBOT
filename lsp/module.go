@@ -176,7 +176,7 @@ func (l *Lsp) NotifyMessage(qqClient *client.QQClient, inotify concern.Notify) [
 		notify := (inotify).(*bilibili.ConcernLiveNotify)
 		switch notify.Status {
 		case bilibili.LiveStatus_Living:
-			result = append(result, message.NewText(fmt.Sprintf("%s正在直播【%s】", notify.Name, notify.LiveTitle)))
+			result = append(result, message.NewText(fmt.Sprintf("%s正在直播【%s】\n", notify.Name, notify.LiveTitle)))
 			result = append(result, message.NewText(notify.RoomUrl))
 			coverResp, err := requests.Get(notify.Cover)
 			if err == nil {
@@ -185,7 +185,7 @@ func (l *Lsp) NotifyMessage(qqClient *client.QQClient, inotify concern.Notify) [
 				}
 			}
 		case bilibili.LiveStatus_NoLiving:
-			result = append(result, message.NewText(fmt.Sprintf("%s暂未直播", notify.Name)))
+			result = append(result, message.NewText(fmt.Sprintf("%s暂未直播\n", notify.Name)))
 			result = append(result, message.NewText(notify.RoomUrl))
 		}
 	case concern.BilibiliNews:

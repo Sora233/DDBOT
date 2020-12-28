@@ -186,7 +186,7 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) error {
 	return nil
 }
 
-func (c *Concern) ListLiving(groupCode int64) ([]*ConcernLiveNotify, error) {
+func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, error) {
 
 	result := make([]*ConcernLiveNotify, 0)
 
@@ -215,7 +215,7 @@ func (c *Concern) ListLiving(groupCode int64) ([]*ConcernLiveNotify, error) {
 			c.currentMutex.RUnlock()
 			return nil, err
 		}
-		if liveInfo.Status == LiveStatus_NoLiving {
+		if !all && liveInfo.Status == LiveStatus_NoLiving {
 			continue
 		}
 		cln := &ConcernLiveNotify{
