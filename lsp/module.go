@@ -79,12 +79,18 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	bot.OnGroupInvited(func(qqClient *client.QQClient, request *client.GroupInvitedRequest) {
 		request.Accept()
 	})
+
 	bot.OnNewFriendRequest(func(qqClient *client.QQClient, request *client.NewFriendRequest) {
 		request.Accept()
 	})
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
-		l.bilibiliConcern.OnJoinGroup(qqClient, info)
+		logger.WithField("group_code", info.Code).Debugf("join group")
+		l.bilibiliConcern.FreshIndex()
+	})
+	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
+		logger.WithField("group_code", event.Group.Code).Debugf("leave group")
+		l.bilibiliConcern.FreshIndex()
 	})
 
 	bot.OnGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {

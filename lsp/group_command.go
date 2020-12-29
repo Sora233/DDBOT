@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"bytes"
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
@@ -10,9 +11,13 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/image_pool"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/image_pool/lolicon_pool"
-	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/forestgiant/sliceutil"
+	"github.com/nfnt/resize"
 	"github.com/tidwall/buntdb"
+	"image"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -41,6 +46,8 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.LspCommand()
 		case "/色图":
 			lgc.SetuCommand(false)
+		case "/黄图":
+			lgc.SetuCommand(true)
 		case "/watch":
 			lgc.WatchCommand(false)
 		case "/unwatch":
@@ -106,29 +113,31 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		lgc.textReply("获取失败")
 		return
 	}
-	//dImage, format, err := image.Decode(bytes.NewReader(imgBytes))
-	//if err != nil {
-	//	log.Errorf("image decode failed %v", err)
-	//	lgc.textReply("获取失败")
-	//	return
-	//}
-	format, err := utils.GuessImageFormat(imgBytes)
+	dImage, format, err := image.Decode(bytes.NewReader(imgBytes))
 	if err != nil {
-		log.Errorf("get image format failed %v", err)
+		log.Errorf("image decode failed %v", err)
+		lgc.textReply("获取失败")
 		return
 	}
 	log = log.WithField("format", format)
-	//log.Debug("debug")
-	//
-	//pngBytes := make([]byte, 0)
-	//pngBuffer := bytes.NewBuffer(pngBytes)
-	//err = png.Encode(pngBuffer, dImage)
-	//if err != nil {
-	//	log.Errorf("image encode failed %v", err)
-	//	lgc.textReply("获取失败")
-	//	return
-	//}
-	groupImage, err := bot.UploadGroupImage(groupCode, imgBytes)
+	resizedImage := resize.Thumbnail(800, 600, dImage, resize.Lanczos3)
+	resizedImageBuffer := bytes.NewBuffer(make([]byte, 0))
+
+	switch format {
+	case "jpeg":
+		err = jpeg.Encode(resizedImageBuffer, resizedImage, nil)
+	case "gif":
+		err = gif.Encode(resizedImageBuffer, resizedImage, nil)
+	case "png":
+		err = png.Encode(resizedImageBuffer, resizedImage)
+	}
+
+	if err != nil {
+		log.Errorf("resized image encode failed %v", err)
+		lgc.textReply("获取失败")
+		return
+	}
+	groupImage, err := bot.UploadGroupImage(groupCode, resizedImageBuffer.Bytes())
 	if err != nil {
 		log.Errorf("upload group image failed %v", err)
 		lgc.textReply("上传失败")
@@ -141,12 +150,14 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 			WithField("pid", loliconImage.Pid).
 			WithField("tags", loliconImage.Tags).
 			WithField("title", loliconImage.Title).
+			WithField("upload_url", groupImage.Url).
 			Debug("debug image")
 		sendingMsg.Append(message.NewText(fmt.Sprintf("标题：%v\n", loliconImage.Title)))
 		sendingMsg.Append(message.NewText(fmt.Sprintf("作者：%v\n", loliconImage.Author)))
 		sendingMsg.Append(message.NewText(fmt.Sprintf("PID：%v\n", loliconImage.Pid)))
 		sendingMsg.Append(message.NewText(fmt.Sprintf("R18：%v", loliconImage.R18)))
 	}
+	lgc.reply(sendingMsg)
 	return
 
 }
