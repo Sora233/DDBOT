@@ -1,7 +1,6 @@
 package lsp
 
 import (
-	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
@@ -12,13 +11,12 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/image_pool"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/image_pool/local_pool"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/image_pool/lolicon_pool"
 	"github.com/asmcos/requests"
-	"github.com/tidwall/buntdb"
-	"io/ioutil"
-	"math/rand"
 	"strings"
 	"sync"
-	"time"
 )
 
 const ModuleName = "me.sora233.Lsp"
@@ -26,10 +24,9 @@ const ModuleName = "me.sora233.Lsp"
 var logger = utils.GetModuleLogger(ModuleName)
 
 type Lsp struct {
-	HImageList      []string
-	BilibiliConcern *bilibili.Concern
+	pool            image_pool.Pool
+	bilibiliConcern *bilibili.Concern
 
-	freshMutex    *sync.RWMutex
 	concernNotify chan concern.Notify
 	stop          chan interface{}
 }
@@ -37,56 +34,71 @@ type Lsp struct {
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
 	return bot.ModuleInfo{
 		ID:       ModuleName,
-		Instance: instance,
+		Instance: Instance,
 	}
 }
 
 func (l *Lsp) Init() {
 	aliyun.InitAliyun()
-	HimageDir := config.GlobalConfig.GetString("HimageDir")
-	err := l.RefreshImage(HimageDir)
-	if err != nil {
-		logger.Errorf("refresh image error %v", err)
-	} else {
-		go func() {
-			mt := time.NewTicker(time.Minute)
-			defer mt.Stop()
-			for {
-				select {
-				case <-mt.C:
-					go func() {
-						err := l.RefreshImage(HimageDir)
-						if err != nil {
-							logger.Errorf("refresh image error %v", err)
-						}
-					}()
-				case <-l.stop:
-					return
-				}
-			}
-		}()
+	l.bilibiliConcern = bilibili.NewConcern(l.concernNotify)
+
+	poolType := config.GlobalConfig.GetString("imagePool.type")
+	log := logger.WithField("pool_type", poolType)
+
+	switch poolType {
+	case "loliconPool":
+		apikey := config.GlobalConfig.GetString("loliconPool.apikey")
+		pool, err := lolicon_pool.NewLoliconPool(apikey)
+		if err != nil {
+			log.Errorf("can not init pool %v", err)
+		} else {
+			l.pool = pool
+			log.Debugf("init pool")
+		}
+	case "localPool":
+		pool, err := local_pool.NewLocalPool(config.GlobalConfig.GetString("localPool.imageDir"))
+		if err != nil {
+			log.Errorf("can not init pool %v", err)
+		} else {
+			l.pool = pool
+			log.Debugf("init pool")
+		}
+	default:
+		log.Errorf("unknown pool")
 	}
+
 }
 
 func (l *Lsp) PostInit() {
 	if err := localdb.InitBuntDB(); err != nil {
 		panic(err)
 	}
-	db, err := localdb.GetClient()
-	if err != nil {
-		panic(err)
-	}
-	db.CreateIndex("ConcernState", "ConcernState:*", buntdb.IndexString)
-	db.CreateIndex("CurrentLive", "CurrentLive:*", buntdb.IndexString)
 }
 
 func (l *Lsp) Serve(bot *bot.Bot) {
+	bot.OnGroupInvited(func(qqClient *client.QQClient, request *client.GroupInvitedRequest) {
+		request.Accept()
+	})
+
+	bot.OnNewFriendRequest(func(qqClient *client.QQClient, request *client.NewFriendRequest) {
+		request.Accept()
+	})
+
+	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
+		logger.WithField("group_code", info.Code).Debugf("join group")
+		l.bilibiliConcern.FreshIndex()
+	})
+	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
+		logger.WithField("group_code", event.Group.Code).Debugf("leave group")
+		l.bilibiliConcern.FreshIndex()
+	})
+
 	bot.OnGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {
 		if len(msg.Elements) <= 0 {
 			return
 		}
-		cmd := NewLspGroupCommand(qqClient, msg, l)
-		cmd.Execute()
+		cmd := NewLspGroupCommand(bot, msg, l)
+		go cmd.Execute()
 	})
 
 	bot.OnPrivateMessage(func(qqClient *client.QQClient, msg *message.PrivateMessage) {
@@ -100,8 +112,8 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 }
 
 func (l *Lsp) Start(bot *bot.Bot) {
-	l.BilibiliConcern.Start()
-	go l.ConcernNotify(bot.QQClient)
+	l.bilibiliConcern.Start()
+	go l.ConcernNotify(bot)
 }
 
 func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
@@ -109,22 +121,10 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 	if l.stop != nil {
 		close(l.stop)
 	}
-	l.BilibiliConcern.Stop()
+	l.bilibiliConcern.Stop()
 	if err := localdb.Close(); err != nil {
 		logger.Errorf("close db err %v", err)
 	}
-}
-
-func (l *Lsp) RefreshImage(path string) error {
-	l.freshMutex.Lock()
-	defer l.freshMutex.Unlock()
-	files, err := filePathWalkDir(path)
-	if err != nil {
-		return err
-	} else {
-		l.HImageList = files
-	}
-	return nil
 }
 
 func (l *Lsp) checkImage(img *message.ImageElement) string {
@@ -144,19 +144,7 @@ func (l *Lsp) checkImage(img *message.ImageElement) string {
 	return resp.Data.Results[0].SubResults[0].Label
 }
 
-func (l *Lsp) getHImage() ([]byte, error) {
-	l.freshMutex.RLock()
-	defer l.freshMutex.RUnlock()
-	size := len(l.HImageList)
-	if size == 0 {
-		return nil, errors.New("empty image list")
-	}
-	img := l.HImageList[rand.Intn(size)]
-	logger.Debugf("choose image %v", img)
-	return ioutil.ReadFile(img)
-}
-
-func (l *Lsp) ConcernNotify(qqClient *client.QQClient) {
+func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 	for {
 		select {
 		case inotify := <-l.concernNotify:
@@ -167,14 +155,14 @@ func (l *Lsp) ConcernNotify(qqClient *client.QQClient) {
 					WithField("Name", notify.Name).
 					WithField("Title", notify.LiveTitle).
 					WithField("Status", notify.Status.String()).
-					Debugf("notify")
+					Info("notify")
 				if notify.Status == bilibili.LiveStatus_Living {
 					sendingMsg := message.NewSendingMessage()
-					notifyMsg := l.NotifyMessage(qqClient, notify)
+					notifyMsg := l.NotifyMessage(bot, notify)
 					for _, msg := range notifyMsg {
 						sendingMsg.Append(msg)
 					}
-					qqClient.SendGroupMessage(notify.GroupCode, sendingMsg)
+					bot.SendGroupMessage(notify.GroupCode, sendingMsg)
 				}
 			case concern.BilibiliNews:
 				// TODO
@@ -183,7 +171,7 @@ func (l *Lsp) ConcernNotify(qqClient *client.QQClient) {
 	}
 }
 
-func (l *Lsp) NotifyMessage(qqClient *client.QQClient, inotify concern.Notify) []message.IMessageElement {
+func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMessageElement {
 	var result []message.IMessageElement
 	switch inotify.Type() {
 	case concern.BibiliLive:
@@ -194,7 +182,7 @@ func (l *Lsp) NotifyMessage(qqClient *client.QQClient, inotify concern.Notify) [
 			result = append(result, message.NewText(notify.RoomUrl))
 			coverResp, err := requests.Get(notify.Cover)
 			if err == nil {
-				if cover, err := qqClient.UploadGroupImage(notify.GroupCode, coverResp.Content()); err == nil {
+				if cover, err := bot.UploadGroupImage(notify.GroupCode, coverResp.Content()); err == nil {
 					result = append(result, cover)
 				}
 			}
@@ -209,15 +197,20 @@ func (l *Lsp) NotifyMessage(qqClient *client.QQClient, inotify concern.Notify) [
 	return result
 }
 
-var instance *Lsp
+func (l *Lsp) FreshIndex() {
+	l.bilibiliConcern.FreshIndex()
+}
+
+func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) (image_pool.Image, error) {
+	return l.pool.Get(options...)
+}
+
+var Instance *Lsp
 
 func init() {
-	notify := make(chan concern.Notify, 500)
-	instance = &Lsp{
-		freshMutex:      new(sync.RWMutex),
-		concernNotify:   notify,
-		stop:            make(chan interface{}),
-		BilibiliConcern: bilibili.NewConcern(notify),
+	Instance = &Lsp{
+		concernNotify: make(chan concern.Notify, 500),
+		stop:          make(chan interface{}),
 	}
-	bot.RegisterModule(instance)
+	bot.RegisterModule(Instance)
 }

@@ -2,6 +2,7 @@ package bilibili
 
 import (
 	"errors"
+	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/asmcos/requests"
 )
 
@@ -15,7 +16,7 @@ type SpaceAccInfoRequest struct {
 
 func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	url := BPath(PathSpaceAccInfo)
-	params, err := BGetRequestToParams(&SpaceAccInfoRequest{
+	params, err := utils.ToParams(&SpaceAccInfoRequest{
 		Mid: mid,
 	})
 	if err != nil {

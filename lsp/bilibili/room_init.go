@@ -2,6 +2,7 @@ package bilibili
 
 import (
 	"errors"
+	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/asmcos/requests"
 )
 
@@ -15,7 +16,7 @@ type RoomInitRequest struct {
 
 func RoomInit(roomId int64) (*RoomInitResponse, error) {
 	url := BPath(PathRoomInit)
-	params, err := BGetRequestToParams(&RoomInitRequest{
+	params, err := utils.ToParams(&RoomInitRequest{
 		Id: roomId,
 	})
 	if err != nil {

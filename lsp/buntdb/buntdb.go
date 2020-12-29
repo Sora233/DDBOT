@@ -15,7 +15,6 @@ func InitBuntDB() error {
 		return err
 	}
 	db = buntDB
-	db.CreateIndex("group_code", "*")
 	return nil
 }
 
