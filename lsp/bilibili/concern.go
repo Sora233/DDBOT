@@ -9,6 +9,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/client"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
+	"github.com/forestgiant/sliceutil"
 	"github.com/tidwall/buntdb"
 	"math/rand"
 	"strconv"
@@ -206,6 +207,33 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) error {
 				return err
 			}
 		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Concern) RemoveAll(groupCode int64) error {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
+	}
+	err = db.Update(func(tx *buntdb.Tx) error {
+		var removeKey []string
+		var iterErr error
+		iterErr = tx.Ascend(c.ConcernStateKey(groupCode), func(key, value string) bool {
+			removeKey = append(removeKey, key)
+			return true
+		})
+		if iterErr != nil {
+			return iterErr
+		}
+		for _, key := range removeKey {
+			tx.Delete(key)
+		}
+		tx.DropIndex(c.ConcernStateKey(groupCode))
 		return nil
 	})
 	if err != nil {
@@ -443,8 +471,52 @@ func (c *Concern) FreshIndex() {
 		index := c.ConcernStateKey(groupInfo.Code)
 		db.CreateIndex(index, fmt.Sprintf("%v:*", index), buntdb.IndexString)
 	}
-
 }
+
+func (c *Concern) FreshAll() {
+	miraiBot.Instance.ReloadFriendList()
+	miraiBot.Instance.ReloadGroupList()
+	db, err := localdb.GetClient()
+	if err != nil {
+		return
+	}
+	allIndex, err := db.Indexes()
+	if err != nil {
+		return
+	}
+	for _, index := range allIndex {
+		if strings.HasPrefix(index, c.ConcernStateKey()+":") {
+			db.DropIndex(index)
+		}
+	}
+
+	c.FreshIndex()
+
+	var groupCodes []int64
+	for _, groupInfo := range miraiBot.Instance.GroupList {
+		groupCodes = append(groupCodes, groupInfo.Code)
+	}
+	var removeKey []string
+	db.View(func(tx *buntdb.Tx) error {
+		tx.Ascend(c.ConcernStateKey(), func(key, value string) bool {
+			groupCode, _, err := c.ParseConcernStateKey(key)
+			if err != nil {
+				removeKey = append(removeKey, key)
+			} else if !sliceutil.Contains(groupCodes, groupCode) {
+				removeKey = append(removeKey, key)
+			}
+			return true
+		})
+		return nil
+	})
+	db.Update(func(tx *buntdb.Tx) error {
+		for _, key := range removeKey {
+			tx.Delete(key)
+		}
+		return nil
+	})
+}
+
 func (c *Concern) OnJoinGroup(qqClient *client.QQClient, groupInfo *client.GroupInfo) {
 	qqClient.ReloadGroupList()
 	c.FreshIndex()

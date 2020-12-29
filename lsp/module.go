@@ -24,11 +24,10 @@ const ModuleName = "me.sora233.Lsp"
 var logger = utils.GetModuleLogger(ModuleName)
 
 type Lsp struct {
-	pool            image_pool.Pool
 	bilibiliConcern *bilibili.Concern
-
-	concernNotify chan concern.Notify
-	stop          chan interface{}
+	pool            image_pool.Pool
+	concernNotify   chan concern.Notify
+	stop            chan interface{}
 }
 
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
@@ -89,8 +88,12 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		l.bilibiliConcern.FreshIndex()
 	})
 	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
-		logger.WithField("group_code", event.Group.Code).Debugf("leave group")
-		l.bilibiliConcern.FreshIndex()
+		err := l.bilibiliConcern.RemoveAll(event.Group.Code)
+		if err == nil {
+			logger.WithField("group_code", event.Group.Code).Debugf("leave group")
+		} else {
+			logger.WithField("group_code", event.Group.Code).Debugf("leave group err %v", err)
+		}
 	})
 
 	bot.OnGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {

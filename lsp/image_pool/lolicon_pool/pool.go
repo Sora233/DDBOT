@@ -71,7 +71,10 @@ func (pool *LoliconPool) Get(options ...image_pool.OptionFunc) (image_pool.Image
 	if err != nil {
 		return nil, err
 	}
-	logger.WithField("image num", len(resp.Data)).Debugf("request done")
+	logger.WithField("image num", len(resp.Data)).
+		WithField("quota", resp.Quota).
+		WithField("quota_min_ttl", resp.QuotaMinTTL).
+		Debugf("request done")
 	if len(resp.Data) >= 1 {
 		return resp.Data[0], nil
 	} else {
