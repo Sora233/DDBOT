@@ -2,6 +2,7 @@ package bilibili
 
 import (
 	"errors"
+	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/asmcos/requests"
 )
 
@@ -17,7 +18,7 @@ type DynamicSrvSpaceHistoryRequest struct {
 
 func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, error) {
 	url := BPath(PathDynamicSrvSpaceHistory)
-	params, err := BGetRequestToParams(&DynamicSrvSpaceHistoryRequest{
+	params, err := utils.ToParams(&DynamicSrvSpaceHistoryRequest{
 		HostUid:         hostUid,
 		OffsetDynamicId: 0,
 		NeedTop:         0,

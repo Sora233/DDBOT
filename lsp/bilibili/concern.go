@@ -244,6 +244,10 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 			return iterErr
 		}
 
+		if len(concernMid) != 0 {
+			result = make([]*ConcernLiveNotify, 0)
+		}
+
 		for _, mid = range concernMid {
 			key := c.CurrentLiveKey(mid)
 			value, err := tx.Get(key)
@@ -442,12 +446,8 @@ func (c *Concern) FreshIndex() {
 
 }
 func (c *Concern) OnJoinGroup(qqClient *client.QQClient, groupInfo *client.GroupInfo) {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return
-	}
-	index := c.ConcernStateKey(groupInfo.Code)
-	db.CreateIndex(index, fmt.Sprintf("%v:*", index), buntdb.IndexString)
+	qqClient.ReloadGroupList()
+	c.FreshIndex()
 }
 
 func (c *Concern) NamedKey(name string, keys []interface{}) string {

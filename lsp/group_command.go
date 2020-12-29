@@ -8,6 +8,9 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/image_pool"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/image_pool/lolicon_pool"
+	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/forestgiant/sliceutil"
 	"github.com/tidwall/buntdb"
 	"math/rand"
@@ -34,10 +37,10 @@ func (lgc *LspGroupCommand) Execute() {
 	if text, ok := lgc.msg.Elements[0].(*message.TextElement); ok {
 		args := strings.Split(text.Content, " ")
 		switch args[0] {
-		case "/Lsp":
+		case "/lsp":
 			lgc.LspCommand()
 		case "/色图":
-			lgc.SetuCommand()
+			lgc.SetuCommand(false)
 		case "/watch":
 			lgc.WatchCommand(false)
 		case "/unwatch":
@@ -64,6 +67,7 @@ func (lgc *LspGroupCommand) LspCommand() {
 
 	log := logger.WithField("GroupCode", groupCode)
 	log.Infof("run lsp command")
+	defer log.Info("lsp command end")
 
 	sendingMsg := message.NewSendingMessage()
 	sendingMsg.Append(message.NewReply(msg))
@@ -72,28 +76,77 @@ func (lgc *LspGroupCommand) LspCommand() {
 	return
 }
 
-func (lgc *LspGroupCommand) SetuCommand() {
+func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	msg := lgc.msg
 	bot := lgc.bot
 	groupCode := msg.GroupCode
 
 	log := logger.WithField("GroupCode", groupCode)
-	log.Infof("run setu command")
+	log.Info("run setu command")
+	defer log.Info("setu command end")
 
 	sendingMsg := message.NewSendingMessage()
 	sendingMsg.Append(message.NewReply(msg))
-	img, err := lgc.l.getHImage()
+
+	var options []image_pool.OptionFunc
+	if r18 {
+		options = append(options, lolicon_pool.R18Option(lolicon_pool.R18_ON))
+	} else {
+		options = append(options, lolicon_pool.R18Option(lolicon_pool.R18_OFF))
+	}
+	img, err := lgc.l.GetImageFromPool(options...)
 	if err != nil {
-		log.Errorf("can not get HImage")
+		log.Errorf("get from pool failed %v", err)
+		lgc.textReply("获取失败")
 		return
 	}
-	groupImage, err := bot.UploadGroupImage(groupCode, img)
+	imgBytes, err := img.Content()
+	if err != nil {
+		log.Errorf("get image bytes failed %v", err)
+		lgc.textReply("获取失败")
+		return
+	}
+	//dImage, format, err := image.Decode(bytes.NewReader(imgBytes))
+	//if err != nil {
+	//	log.Errorf("image decode failed %v", err)
+	//	lgc.textReply("获取失败")
+	//	return
+	//}
+	format, err := utils.GuessImageFormat(imgBytes)
+	if err != nil {
+		log.Errorf("get image format failed %v", err)
+		return
+	}
+	log = log.WithField("format", format)
+	//log.Debug("debug")
+	//
+	//pngBytes := make([]byte, 0)
+	//pngBuffer := bytes.NewBuffer(pngBytes)
+	//err = png.Encode(pngBuffer, dImage)
+	//if err != nil {
+	//	log.Errorf("image encode failed %v", err)
+	//	lgc.textReply("获取失败")
+	//	return
+	//}
+	groupImage, err := bot.UploadGroupImage(groupCode, imgBytes)
 	if err != nil {
 		log.Errorf("upload group image failed %v", err)
+		lgc.textReply("上传失败")
 		return
 	}
 	sendingMsg.Append(groupImage)
-	bot.SendGroupMessage(groupCode, sendingMsg)
+	if loliconImage, ok := img.(*lolicon_pool.Setu); ok {
+		log.WithField("author", loliconImage.Author).
+			WithField("r18", loliconImage.R18).
+			WithField("pid", loliconImage.Pid).
+			WithField("tags", loliconImage.Tags).
+			WithField("title", loliconImage.Title).
+			Debug("debug image")
+		sendingMsg.Append(message.NewText(fmt.Sprintf("标题：%v\n", loliconImage.Title)))
+		sendingMsg.Append(message.NewText(fmt.Sprintf("作者：%v\n", loliconImage.Author)))
+		sendingMsg.Append(message.NewText(fmt.Sprintf("PID：%v\n", loliconImage.Pid)))
+		sendingMsg.Append(message.NewText(fmt.Sprintf("R18：%v", loliconImage.R18)))
+	}
 	return
 
 }
@@ -103,7 +156,8 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	groupCode := msg.GroupCode
 
 	log := logger.WithField("GroupCode", groupCode)
-	log.Infof("run watch command")
+	log.Info("run watch command")
+	defer log.Info("watch command end")
 
 	text := msg.Elements[0].(*message.TextElement).Content
 
@@ -125,6 +179,12 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	}
 
 	args = args[:len(args)-1]
+	if len(args) > 2 {
+		log.WithField("content", text).Errorf("watch args error")
+		lgc.textReply("参数错误 - Usage: /watch [bilibili] [news/live] id")
+		return
+	}
+
 	for _, arg := range args {
 		switch arg {
 		case "bilibili":
@@ -134,8 +194,9 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		case "live":
 			watchType = concern.BibiliLive
 		default:
-			log.WithField("content", text).Errorf("watch need args")
+			log.WithField("content", text).Errorf("watch args error")
 			lgc.textReply("参数错误 - Usage: /watch [bilibili] [news/live] id")
+			return
 		}
 	}
 
@@ -144,7 +205,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		if watchType == concern.BibiliLive {
 			if remove {
 				// unwatch
-				if err := lgc.l.BilibiliConcern.Remove(groupCode, id, concern.BibiliLive); err != nil {
+				if err := lgc.l.bilibiliConcern.Remove(groupCode, id, concern.BibiliLive); err != nil {
 					lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
 					break
 				} else {
@@ -172,7 +233,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 				lgc.textReply(fmt.Sprintf("watch失败 - 用户 %v 暂未开通直播间", name))
 				break
 			}
-			if err := lgc.l.BilibiliConcern.AddLiveRoom(groupCode, id,
+			if err := lgc.l.bilibiliConcern.AddLiveRoom(groupCode, id,
 				infoResp.GetData().GetLiveRoom().GetRoomid(),
 			); err != nil {
 
@@ -194,7 +255,8 @@ func (lgc *LspGroupCommand) ListLivingCommand() {
 	groupCode := msg.GroupCode
 
 	log := logger.WithField("GroupCode", groupCode)
-	log.Infof("run list living command")
+	log.Info("run list living command")
+	defer log.Info("list living command end")
 
 	text := msg.Elements[0].(*message.TextElement).Content
 
@@ -208,7 +270,7 @@ func (lgc *LspGroupCommand) ListLivingCommand() {
 		}
 	}
 
-	living, err := lgc.l.BilibiliConcern.ListLiving(groupCode, all)
+	living, err := lgc.l.bilibiliConcern.ListLiving(groupCode, all)
 	if err != nil {
 		log.Debugf("list living failed %v", err)
 		lgc.textReply(fmt.Sprintf("list living 失败 - %v", err))
@@ -240,7 +302,8 @@ func (lgc *LspGroupCommand) RollCommand() {
 	groupCode := msg.GroupCode
 
 	log := logger.WithField("GroupCode", groupCode)
-	log.Infof("run roll command")
+	log.Info("run roll command")
+	defer log.Info("roll command end")
 
 	text := msg.Elements[0].(*message.TextElement).Content
 
@@ -296,6 +359,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 
 	log := logger.WithField("GroupCode", groupCode)
 	log.Infof("run checkin command")
+	defer log.Info("checkin command end")
 
 	db, err := localdb.GetClient()
 	if err != nil {
@@ -304,7 +368,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 	}
 	date := time.Now().Format("20060102")
 
-	db.Update(func(tx *buntdb.Tx) error {
+	err = db.Update(func(tx *buntdb.Tx) error {
 		var score int64
 		key := localdb.Key("Score", groupCode, msg.Sender.Uin)
 		dateMarker := localdb.Key("ScoreDate", groupCode, msg.Sender.Uin, date, nil)
@@ -340,6 +404,9 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		lgc.textReply(fmt.Sprintf("签到成功！获得1积分，当前积分为%v", score))
 		return nil
 	})
+	if err != nil {
+		log.Errorf("签到失败")
+	}
 }
 
 func (lgc *LspGroupCommand) ImageContent() {

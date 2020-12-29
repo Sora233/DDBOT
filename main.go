@@ -38,7 +38,9 @@ func main() {
 	// 刷新好友列表，群列表
 	bot.RefreshList()
 
-	lsp.Instance.FreshIndex()
+	if lsp.Instance != nil {
+		lsp.Instance.FreshIndex()
+	}
 
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt, os.Kill)
