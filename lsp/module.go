@@ -85,7 +85,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if len(msg.Elements) <= 0 {
 			return
 		}
-		cmd := NewLspGroupCommand(qqClient, msg, l)
+		cmd := NewLspGroupCommand(bot, msg, l)
 		cmd.Execute()
 	})
 
@@ -101,7 +101,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 
 func (l *Lsp) Start(bot *bot.Bot) {
 	l.BilibiliConcern.Start()
-	go l.ConcernNotify(bot.QQClient)
+	go l.ConcernNotify(bot)
 }
 
 func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
@@ -156,7 +156,7 @@ func (l *Lsp) getHImage() ([]byte, error) {
 	return ioutil.ReadFile(img)
 }
 
-func (l *Lsp) ConcernNotify(qqClient *client.QQClient) {
+func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 	for {
 		select {
 		case inotify := <-l.concernNotify:
@@ -170,11 +170,11 @@ func (l *Lsp) ConcernNotify(qqClient *client.QQClient) {
 					Debugf("notify")
 				if notify.Status == bilibili.LiveStatus_Living {
 					sendingMsg := message.NewSendingMessage()
-					notifyMsg := l.NotifyMessage(qqClient, notify)
+					notifyMsg := l.NotifyMessage(bot, notify)
 					for _, msg := range notifyMsg {
 						sendingMsg.Append(msg)
 					}
-					qqClient.SendGroupMessage(notify.GroupCode, sendingMsg)
+					bot.SendGroupMessage(notify.GroupCode, sendingMsg)
 				}
 			case concern.BilibiliNews:
 				// TODO
@@ -183,7 +183,7 @@ func (l *Lsp) ConcernNotify(qqClient *client.QQClient) {
 	}
 }
 
-func (l *Lsp) NotifyMessage(qqClient *client.QQClient, inotify concern.Notify) []message.IMessageElement {
+func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMessageElement {
 	var result []message.IMessageElement
 	switch inotify.Type() {
 	case concern.BibiliLive:
@@ -194,7 +194,7 @@ func (l *Lsp) NotifyMessage(qqClient *client.QQClient, inotify concern.Notify) [
 			result = append(result, message.NewText(notify.RoomUrl))
 			coverResp, err := requests.Get(notify.Cover)
 			if err == nil {
-				if cover, err := qqClient.UploadGroupImage(notify.GroupCode, coverResp.Content()); err == nil {
+				if cover, err := bot.UploadGroupImage(notify.GroupCode, coverResp.Content()); err == nil {
 					result = append(result, cover)
 				}
 			}

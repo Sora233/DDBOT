@@ -7,6 +7,7 @@ import (
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
 	"github.com/tidwall/buntdb"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -128,12 +129,12 @@ func (c *Concern) Start() {
 	go c.notifyLoop()
 	c.Fresh()
 	go func() {
-		timer := time.NewTimer(time.Minute)
+		timer := time.NewTimer(time.Second * 15)
 		for {
 			select {
 			case <-timer.C:
 				c.Fresh()
-				timer.Reset(time.Minute)
+				timer.Reset(time.Second * 15)
 			}
 		}
 	}()
@@ -313,9 +314,6 @@ func (c *Concern) notifyLoop() {
 }
 
 func (c *Concern) Fresh() {
-	logger.Debugf("fresh start")
-	defer logger.Debugf("fresh end")
-
 	db, err := localdb.GetClient()
 	if err != nil {
 		logger.Errorf("get db failed %v", err)
@@ -323,7 +321,7 @@ func (c *Concern) Fresh() {
 	}
 
 	var (
-		concernMidSet = make(map[int64]bool)
+		concernMidSet = make(map[int64]concern.Type)
 	)
 
 	err = db.View(func(tx *buntdb.Tx) error {
@@ -337,21 +335,54 @@ func (c *Concern) Fresh() {
 					Debugf("ParseConcernStateKey err %v", err)
 				return false
 			}
-			concernMidSet[mid] = true
+			concernMidSet[mid] = concern.FromString(value)
 			return true
 		})
 		return iterErr
 	})
 
-	for mid := range concernMidSet {
-		oldInfo, _ := c.findUserLiving(mid, false)
-		liveInfo, err := c.findUserLiving(mid, true)
+	var freshConcern []struct {
+		Mid         int64
+		ConcernType concern.Type
+	}
+
+	for mid, concernType := range concernMidSet {
+		err = db.Update(func(tx *buntdb.Tx) error {
+			var err error
+			freshKey := localdb.Key("fresh", mid)
+			_, err = tx.Get(freshKey)
+			if err == buntdb.ErrNotFound {
+				ttl := time.Minute + time.Duration(rand.Intn(60))*time.Second
+				_, _, err = tx.Set(freshKey, "", &buntdb.SetOptions{Expires: true, TTL: ttl})
+				if err != nil {
+					return err
+				}
+				freshConcern = append(freshConcern, struct {
+					Mid         int64
+					ConcernType concern.Type
+				}{Mid: mid, ConcernType: concernType})
+			}
+			return nil
+		})
 		if err != nil {
-			logger.WithField("mid", mid).Debugf("bilibili concern fresh failed %v", err)
-			continue
+			logger.WithField("mid", mid).Errorf("scan concernMidSet failed %v", err)
 		}
-		if oldInfo == nil || oldInfo.Status != liveInfo.Status && liveInfo.Status == LiveStatus_Living {
-			c.eventChan <- liveInfo
+	}
+
+	for _, item := range freshConcern {
+		if item.ConcernType.Contain(concern.BibiliLive) {
+			oldInfo, _ := c.findUserLiving(item.Mid, false)
+			liveInfo, err := c.findUserLiving(item.Mid, true)
+			if err != nil {
+				logger.WithField("mid", item.Mid).Debugf("bilibililive concern fresh failed %v", err)
+				continue
+			}
+			if oldInfo == nil || oldInfo.Status != liveInfo.Status && liveInfo.Status == LiveStatus_Living {
+				c.eventChan <- liveInfo
+			}
+		}
+		if item.ConcernType.Contain(concern.BilibiliNews) {
+			// TODO
 		}
 	}
 }
@@ -362,6 +393,14 @@ func (c *Concern) NamedKey(name string, keys []interface{}) string {
 		newkey = append(newkey, key)
 	}
 	return localdb.Key(newkey...)
+}
+
+func (c *Concern) ConcernKey(keys ...interface{}) string {
+	return c.NamedKey("Concern", keys)
+}
+
+func (c *Concern) FreshKey(keys ...interface{}) string {
+	return c.NamedKey("fresh", keys)
 }
 
 func (c *Concern) ConcernStateKey(keys ...interface{}) string {

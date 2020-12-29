@@ -2,7 +2,7 @@ package lsp
 
 import (
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/client"
+	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/aliyun"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
@@ -17,16 +17,16 @@ import (
 )
 
 type LspGroupCommand struct {
-	qqClient *client.QQClient
-	msg      *message.GroupMessage
-	l        *Lsp
+	bot *miraiBot.Bot
+	msg *message.GroupMessage
+	l   *Lsp
 }
 
-func NewLspGroupCommand(qqClient *client.QQClient, msg *message.GroupMessage, l *Lsp) *LspGroupCommand {
+func NewLspGroupCommand(bot *miraiBot.Bot, msg *message.GroupMessage, l *Lsp) *LspGroupCommand {
 	return &LspGroupCommand{
-		qqClient: qqClient,
-		msg:      msg,
-		l:        l,
+		bot: bot,
+		msg: msg,
+		l:   l,
 	}
 }
 
@@ -51,7 +51,7 @@ func (lgc *LspGroupCommand) Execute() {
 		default:
 		}
 	} else {
-		if lgc.msg.Sender.Uin != lgc.qqClient.Uin {
+		if lgc.msg.Sender.Uin != lgc.bot.Uin {
 			lgc.ImageContent()
 		}
 	}
@@ -59,7 +59,7 @@ func (lgc *LspGroupCommand) Execute() {
 
 func (lgc *LspGroupCommand) LspCommand() {
 	msg := lgc.msg
-	qqClient := lgc.qqClient
+	bot := lgc.bot
 	groupCode := msg.GroupCode
 
 	log := logger.WithField("GroupCode", groupCode)
@@ -68,13 +68,13 @@ func (lgc *LspGroupCommand) LspCommand() {
 	sendingMsg := message.NewSendingMessage()
 	sendingMsg.Append(message.NewReply(msg))
 	sendingMsg.Append(message.NewText("LSP竟然是你"))
-	qqClient.SendGroupMessage(groupCode, sendingMsg)
+	bot.SendGroupMessage(groupCode, sendingMsg)
 	return
 }
 
 func (lgc *LspGroupCommand) SetuCommand() {
 	msg := lgc.msg
-	qqClient := lgc.qqClient
+	bot := lgc.bot
 	groupCode := msg.GroupCode
 
 	log := logger.WithField("GroupCode", groupCode)
@@ -87,13 +87,13 @@ func (lgc *LspGroupCommand) SetuCommand() {
 		log.Errorf("can not get HImage")
 		return
 	}
-	groupImage, err := qqClient.UploadGroupImage(groupCode, img)
+	groupImage, err := bot.UploadGroupImage(groupCode, img)
 	if err != nil {
 		log.Errorf("upload group image failed %v", err)
 		return
 	}
 	sendingMsg.Append(groupImage)
-	qqClient.SendGroupMessage(groupCode, sendingMsg)
+	bot.SendGroupMessage(groupCode, sendingMsg)
 	return
 
 }
@@ -194,7 +194,7 @@ func (lgc *LspGroupCommand) ListLivingCommand() {
 	groupCode := msg.GroupCode
 
 	log := logger.WithField("GroupCode", groupCode)
-	log.Infof("run lisg living command")
+	log.Infof("run list living command")
 
 	text := msg.Elements[0].(*message.TextElement).Content
 
@@ -219,10 +219,13 @@ func (lgc *LspGroupCommand) ListLivingCommand() {
 		if idx != 0 {
 			listMsg.Append(message.NewText("\n"))
 		}
-		notifyMsg := lgc.l.NotifyMessage(lgc.qqClient, liveInfo)
+		notifyMsg := lgc.l.NotifyMessage(lgc.bot, liveInfo)
 		for _, msg := range notifyMsg {
 			listMsg.Append(msg)
 		}
+	}
+	if len(listMsg.Elements) == 0 {
+		listMsg.Append(message.NewText("无人直播"))
 	}
 	lgc.reply(listMsg)
 
@@ -337,7 +340,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 
 func (lgc *LspGroupCommand) ImageContent() {
 	msg := lgc.msg
-	qqClient := lgc.qqClient
+	bot := lgc.bot
 
 	groupCode := msg.GroupCode
 
@@ -351,13 +354,13 @@ func (lgc *LspGroupCommand) ImageContent() {
 					sendingMsg := message.NewSendingMessage()
 					sendingMsg.Append(message.NewReply(msg))
 					sendingMsg.Append(message.NewText("就这"))
-					qqClient.SendGroupMessage(groupCode, sendingMsg)
+					bot.SendGroupMessage(groupCode, sendingMsg)
 					return
 				} else if rating == aliyun.ScenePorn {
 					sendingMsg := message.NewSendingMessage()
 					sendingMsg.Append(message.NewReply(msg))
 					sendingMsg.Append(message.NewText("多发点"))
-					qqClient.SendGroupMessage(groupCode, sendingMsg)
+					bot.SendGroupMessage(groupCode, sendingMsg)
 					return
 				}
 			} else {
@@ -369,14 +372,14 @@ func (lgc *LspGroupCommand) ImageContent() {
 
 func (lgc *LspGroupCommand) textReply(text string) {
 	msg := lgc.msg
-	qqClient := lgc.qqClient
+	bot := lgc.bot
 
 	sendingMsg := message.NewSendingMessage()
 	sendingMsg.Append(message.NewReply(msg))
 	sendingMsg.Append(message.NewText(text))
-	qqClient.SendGroupMessage(msg.GroupCode, sendingMsg)
+	bot.SendGroupMessage(msg.GroupCode, sendingMsg)
 }
 
 func (lgc *LspGroupCommand) reply(msg *message.SendingMessage) {
-	lgc.qqClient.SendGroupMessage(lgc.msg.GroupCode, msg)
+	lgc.bot.SendGroupMessage(lgc.msg.GroupCode, msg)
 }
