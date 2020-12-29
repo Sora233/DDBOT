@@ -3,7 +3,7 @@ package local_pool
 import (
 	"errors"
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/Sora233-MiraiGo/lsp/image_pool"
+	"github.com/Sora233/Sora233-MiraiGo/image_pool"
 	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
 	"io/ioutil"
 	"math/rand"
