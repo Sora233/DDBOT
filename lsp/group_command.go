@@ -214,6 +214,10 @@ func (lgc *LspGroupCommand) ListLivingCommand() {
 		lgc.textReply(fmt.Sprintf("list living 失败 - %v", err))
 		return
 	}
+	if living == nil {
+		lgc.textReply("关注列表为空，可以使用/watch命令关注")
+		return
+	}
 	listMsg := message.NewSendingMessage()
 	for idx, liveInfo := range living {
 		if idx != 0 {

@@ -3,7 +3,10 @@ package bilibili
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/utils"
+	"github.com/Mrs4s/MiraiGo/client"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
 	"github.com/tidwall/buntdb"
@@ -122,19 +125,27 @@ func NewConcern(notify chan<- concern.Notify) *Concern {
 }
 
 func (c *Concern) Start() {
-	err := c.Load()
+	db, err := localdb.GetClient()
+	if err == nil {
+		db.CreateIndex("ConcernState", "ConcernState:*", buntdb.IndexString)
+		db.CreateIndex("CurrentLive", "CurrentLive:*", buntdb.IndexString)
+		db.CreateIndex("fresh", "fresh:*", buntdb.IndexString)
+		db.CreateIndex("Concern", "Concern:*", buntdb.IndexString)
+	}
+
+	err = c.Load()
 	if err != nil {
 		logger.Errorf("bilibili concern load failed %v", err)
 	}
 	go c.notifyLoop()
 	c.Fresh()
 	go func() {
-		timer := time.NewTimer(time.Second * 15)
+		timer := time.NewTimer(time.Second * 5)
 		for {
 			select {
 			case <-timer.C:
 				c.Fresh()
-				timer.Reset(time.Second * 15)
+				timer.Reset(time.Second * 5)
 			}
 		}
 	}()
@@ -204,21 +215,51 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) error {
 }
 
 func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, error) {
-	result := make([]*ConcernLiveNotify, 0)
-
+	//result := make([]*ConcernLiveNotify, 0)
+	var result []*ConcernLiveNotify
 	db, err := localdb.GetClient()
 	if err != nil {
 		return result, err
 	}
 	err = db.View(func(tx *buntdb.Tx) error {
 		var iterErr error
-		tx.Ascend(c.CurrentLiveKey(), func(key, value string) bool {
+		var mid int64
+
+		var concernMid []int64
+
+		iterErr = tx.Ascend(c.ConcernStateKey(groupCode), func(concernStateKey, state string) bool {
+			_, mid, iterErr = c.ParseConcernStateKey(concernStateKey)
+			if iterErr != nil {
+				logger.WithField("key", concernStateKey).
+					Errorf("ParseConcernStateKey failed %v", iterErr)
+				return false
+			}
+			if concern.FromString(state).Contain(concern.BibiliLive) {
+				concernMid = append(concernMid, mid)
+			}
+			return true
+		})
+
+		if iterErr != nil {
+			return iterErr
+		}
+
+		for _, mid = range concernMid {
+			key := c.CurrentLiveKey(mid)
+			value, err := tx.Get(key)
+			if err != nil {
+				if err != buntdb.ErrNotFound {
+					logger.WithField("key", key).
+						Errorf("get currentLive err %v", err)
+				}
+				continue
+			}
 			liveInfo := &LiveInfo{}
-			if iterErr = json.Unmarshal([]byte(value), liveInfo); err != nil {
+			if iterErr = json.Unmarshal([]byte(value), liveInfo); iterErr != nil {
 				logger.WithField("key", key).
 					WithField("value", value).
 					Errorf("json unmarshal liveLnfo failed %v", iterErr)
-				return false
+				continue
 			}
 			if all || liveInfo.Status == LiveStatus_Living {
 				cln := &ConcernLiveNotify{
@@ -227,9 +268,8 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 				}
 				result = append(result, cln)
 			}
-			return true
-		})
-		return iterErr
+		}
+		return nil
 	})
 
 	if err != nil {
@@ -264,7 +304,7 @@ func (c *Concern) notifyLoop() {
 			}
 			err = db.View(func(tx *buntdb.Tx) error {
 				var iterErr error
-				tx.Ascend(c.ConcernStateKey(), func(key, value string) bool {
+				iterErr = tx.Ascend(c.ConcernStateKey(), func(key, value string) bool {
 					var (
 						groupCode, mid int64
 						notify         *ConcernLiveNotify
@@ -326,7 +366,7 @@ func (c *Concern) Fresh() {
 
 	err = db.View(func(tx *buntdb.Tx) error {
 		var iterErr error
-		tx.Ascend(c.ConcernStateKey(), func(key, value string) bool {
+		iterErr = tx.Ascend(c.ConcernStateKey(), func(key, value string) bool {
 			var mid int64
 			_, mid, iterErr = c.ParseConcernStateKey(key)
 			if iterErr != nil {
@@ -340,6 +380,9 @@ func (c *Concern) Fresh() {
 		})
 		return iterErr
 	})
+	if err != nil {
+		logger.Errorf("fresh list key failed %v", err)
+	}
 
 	var freshConcern []struct {
 		Mid         int64
@@ -352,7 +395,7 @@ func (c *Concern) Fresh() {
 			freshKey := localdb.Key("fresh", mid)
 			_, err = tx.Get(freshKey)
 			if err == buntdb.ErrNotFound {
-				ttl := time.Minute + time.Duration(rand.Intn(60))*time.Second
+				ttl := time.Minute + time.Duration(rand.Intn(100))*time.Second
 				_, _, err = tx.Set(freshKey, "", &buntdb.SetOptions{Expires: true, TTL: ttl})
 				if err != nil {
 					return err
@@ -374,10 +417,10 @@ func (c *Concern) Fresh() {
 			oldInfo, _ := c.findUserLiving(item.Mid, false)
 			liveInfo, err := c.findUserLiving(item.Mid, true)
 			if err != nil {
-				logger.WithField("mid", item.Mid).Debugf("bilibililive concern fresh failed %v", err)
+				logger.WithField("mid", item.Mid).Debugf("fresh failed %v", err)
 				continue
 			}
-			if oldInfo == nil || oldInfo.Status != liveInfo.Status && liveInfo.Status == LiveStatus_Living {
+			if oldInfo == nil || oldInfo.Status != liveInfo.Status {
 				c.eventChan <- liveInfo
 			}
 		}
@@ -385,6 +428,26 @@ func (c *Concern) Fresh() {
 			// TODO
 		}
 	}
+}
+
+func (c *Concern) FreshIndex() {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return
+	}
+	for _, groupInfo := range miraiBot.Instance.GroupList {
+		index := c.ConcernStateKey(groupInfo.Code)
+		db.CreateIndex(index, fmt.Sprintf("%v:*", index), buntdb.IndexString)
+	}
+
+}
+func (c *Concern) OnJoinGroup(qqClient *client.QQClient, groupInfo *client.GroupInfo) {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return
+	}
+	index := c.ConcernStateKey(groupInfo.Code)
+	db.CreateIndex(index, fmt.Sprintf("%v:*", index), buntdb.IndexString)
 }
 
 func (c *Concern) NamedKey(name string, keys []interface{}) string {

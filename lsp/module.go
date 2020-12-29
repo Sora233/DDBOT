@@ -13,7 +13,6 @@ import (
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
 	"github.com/asmcos/requests"
-	"github.com/tidwall/buntdb"
 	"io/ioutil"
 	"math/rand"
 	"strings"
@@ -37,7 +36,7 @@ type Lsp struct {
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
 	return bot.ModuleInfo{
 		ID:       ModuleName,
-		Instance: instance,
+		Instance: Instance,
 	}
 }
 
@@ -72,15 +71,20 @@ func (l *Lsp) PostInit() {
 	if err := localdb.InitBuntDB(); err != nil {
 		panic(err)
 	}
-	db, err := localdb.GetClient()
-	if err != nil {
-		panic(err)
-	}
-	db.CreateIndex("ConcernState", "ConcernState:*", buntdb.IndexString)
-	db.CreateIndex("CurrentLive", "CurrentLive:*", buntdb.IndexString)
 }
 
 func (l *Lsp) Serve(bot *bot.Bot) {
+	bot.OnGroupInvited(func(qqClient *client.QQClient, request *client.GroupInvitedRequest) {
+		request.Accept()
+	})
+	bot.OnNewFriendRequest(func(qqClient *client.QQClient, request *client.NewFriendRequest) {
+		request.Accept()
+	})
+
+	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
+		l.BilibiliConcern.OnJoinGroup(qqClient, info)
+	})
+
 	bot.OnGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {
 		if len(msg.Elements) <= 0 {
 			return
@@ -167,7 +171,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					WithField("Name", notify.Name).
 					WithField("Title", notify.LiveTitle).
 					WithField("Status", notify.Status.String()).
-					Debugf("notify")
+					Info("notify")
 				if notify.Status == bilibili.LiveStatus_Living {
 					sendingMsg := message.NewSendingMessage()
 					notifyMsg := l.NotifyMessage(bot, notify)
@@ -209,15 +213,19 @@ func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMes
 	return result
 }
 
-var instance *Lsp
+func (l *Lsp) FreshIndex() {
+	l.BilibiliConcern.FreshIndex()
+}
+
+var Instance *Lsp
 
 func init() {
 	notify := make(chan concern.Notify, 500)
-	instance = &Lsp{
+	Instance = &Lsp{
 		freshMutex:      new(sync.RWMutex),
 		concernNotify:   notify,
 		stop:            make(chan interface{}),
 		BilibiliConcern: bilibili.NewConcern(notify),
 	}
-	bot.RegisterModule(instance)
+	bot.RegisterModule(Instance)
 }
