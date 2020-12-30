@@ -1,6 +1,8 @@
 package bilibili
 
 import (
+	"github.com/asmcos/requests"
+	"math/rand"
 	"strings"
 )
 
@@ -13,7 +15,10 @@ var BasePath = map[string]string{
 	PathRoomInit:               BaseLiveHost,
 	PathSpaceAccInfo:           BaseHost,
 	PathDynamicSrvSpaceHistory: BaseDynamicHost,
+	PathGetRoomInfoOld:         BaseLiveHost,
 }
+
+var proxy []string
 
 func BPath(path string) string {
 	if strings.HasPrefix(path, "/") {
@@ -21,4 +26,21 @@ func BPath(path string) string {
 	} else {
 		return BasePath[path] + "/" + path
 	}
+}
+
+func SetProxy(p []string) {
+	if p != nil && len(p) != 0 {
+		proxy = p
+	}
+}
+
+func GetBilibiliRequest() (*requests.Request, error) {
+	req := requests.Requests()
+	if len(proxy) > 0 {
+		index := rand.Intn(len(proxy) + 1)
+		if index != len(proxy) {
+			req.Proxy(proxy[index])
+		}
+	}
+	return req, nil
 }

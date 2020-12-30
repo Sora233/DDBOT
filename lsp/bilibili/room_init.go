@@ -2,7 +2,6 @@ package bilibili
 
 import (
 	"github.com/Sora233/Sora233-MiraiGo/utils"
-	"github.com/asmcos/requests"
 )
 
 const (
@@ -21,7 +20,11 @@ func RoomInit(roomId int64) (*RoomInitResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(url, params)
+	req, err := GetBilibiliRequest()
+	if err != nil {
+		return nil, err
+	}
+	resp, err := req.Get(url, params)
 	if err != nil {
 		return nil, err
 	}

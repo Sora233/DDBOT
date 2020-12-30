@@ -58,6 +58,30 @@ func NewConcernNewsNotify() {
 	panic("not impl")
 }
 
+type UserInfo struct {
+	Mid     int64  `json:"mid"`
+	Name    string `json:"name"`
+	RoomId  int64  `json:"room_id"`
+	RoomUrl string `json:"room_url"`
+}
+
+func (ui *UserInfo) ToString() string {
+	if ui == nil {
+		return ""
+	}
+	content, _ := json.Marshal(ui)
+	return string(content)
+}
+
+func NewUserInfo(mid, roomId int64, name, url string) *UserInfo {
+	return &UserInfo{
+		Mid:     mid,
+		RoomId:  roomId,
+		Name:    name,
+		RoomUrl: url,
+	}
+}
+
 type LiveInfo struct {
 	UserInfo
 	Status    LiveStatus `json:"status"`
@@ -89,22 +113,6 @@ func (l *LiveInfo) ToString() string {
 	}
 	content, _ := json.Marshal(l)
 	return string(content)
-}
-
-type UserInfo struct {
-	Mid     int64  `json:"mid"`
-	Name    string `json:"name"`
-	RoomId  int64  `json:"room_id"`
-	RoomUrl string `json:"room_url"`
-}
-
-func NewUserInfo(mid, roomId int64, name, url string) *UserInfo {
-	return &UserInfo{
-		Mid:     mid,
-		RoomId:  roomId,
-		Name:    name,
-		RoomUrl: url,
-	}
 }
 
 type Concern struct {
@@ -139,13 +147,13 @@ func (c *Concern) Start() {
 		logger.Errorf("bilibili concern load failed %v", err)
 	}
 	go c.notifyLoop()
-	c.Fresh()
+	c.FreshConcern()
 	go func() {
 		timer := time.NewTimer(time.Second * 5)
 		for {
 			select {
 			case <-timer.C:
-				c.Fresh()
+				c.FreshConcern()
 				timer.Reset(time.Second * 5)
 			}
 		}
@@ -155,18 +163,40 @@ func (c *Concern) Start() {
 func (c *Concern) Stop() {
 }
 
-func (c *Concern) AddLiveRoom(groupCode int64, mid int64, roomId int64) error {
+func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo, error) {
 	db, err := localdb.GetClient()
 	if err != nil {
-		return err
+		return nil, err
 	}
+	log := logger.WithField("GroupCode", groupCode)
+	infoResp, err := XSpaceAccInfo(mid)
+	if err != nil {
+		log.WithField("mid", mid).Error(err)
+		return nil, fmt.Errorf("查询用户信息失败 %v - %v", mid, err)
+	}
+	if infoResp.Code != 0 {
+		log.WithField("mid", mid).WithField("code", infoResp.Code).Errorf(infoResp.Message)
+		return nil, fmt.Errorf("查询用户信息失败 %v - %v %v", mid, infoResp.Code, infoResp.Message)
+	}
+
+	name := infoResp.GetData().GetName()
+
+	if sliceutil.Contains([]int64{491474049}, mid) {
+		return nil, fmt.Errorf("watch失败 - 用户 %v 禁止watch", name)
+	}
+	if ctype.Contain(concern.BibiliLive) {
+		if RoomStatus(infoResp.GetData().GetLiveRoom().GetRoomStatus()) == RoomStatus_NonExist {
+			return nil, fmt.Errorf("watch失败 - 用户 %v 暂未开通直播间", name)
+		}
+	}
+
 	err = db.Update(func(tx *buntdb.Tx) error {
 		stateKey := c.ConcernStateKey(groupCode, mid)
 		val, err := tx.Get(stateKey)
 		if err == buntdb.ErrNotFound {
-			tx.Set(stateKey, concern.BibiliLive.String(), nil)
+			tx.Set(stateKey, ctype.String(), nil)
 		} else if err == nil {
-			newVal := concern.FromString(val).Add(concern.BibiliLive)
+			newVal := concern.FromString(val).Add(ctype)
 			tx.Set(stateKey, newVal.String(), nil)
 		} else {
 			return err
@@ -174,13 +204,18 @@ func (c *Concern) AddLiveRoom(groupCode int64, mid int64, roomId int64) error {
 		return nil
 	})
 	if err != nil {
-		return err
+		return nil, err
+	} else {
+		userInfo := NewUserInfo(mid, infoResp.GetData().GetLiveRoom().GetRoomid(),
+			infoResp.GetData().GetName(),
+			infoResp.GetData().GetLiveRoom().GetUrl())
+		db.Update(func(tx *buntdb.Tx) error {
+			key := c.UserInfoKey(mid)
+			tx.Set(key, userInfo.ToString(), nil)
+			return nil
+		})
+		return userInfo, nil
 	}
-
-	return nil
-}
-func (c *Concern) AddNews(groupCode int64, mid int64) error {
-	panic("not impl")
 }
 
 func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) error {
@@ -385,7 +420,7 @@ func (c *Concern) notifyLoop() {
 	}
 }
 
-func (c *Concern) Fresh() {
+func (c *Concern) FreshConcern() {
 	db, err := localdb.GetClient()
 	if err != nil {
 		logger.Errorf("get db failed %v", err)
@@ -424,10 +459,10 @@ func (c *Concern) Fresh() {
 	for mid, concernType := range concernMidSet {
 		err = db.Update(func(tx *buntdb.Tx) error {
 			var err error
-			freshKey := localdb.Key("fresh", mid)
+			freshKey := c.FreshKey(mid)
 			_, err = tx.Get(freshKey)
 			if err == buntdb.ErrNotFound {
-				ttl := time.Minute + time.Duration(rand.Intn(100))*time.Second
+				ttl := time.Minute + time.Duration(rand.Intn(120))*time.Second
 				_, _, err = tx.Set(freshKey, "", &buntdb.SetOptions{Expires: true, TTL: ttl})
 				if err != nil {
 					return err
@@ -544,6 +579,9 @@ func (c *Concern) ConcernStateKey(keys ...interface{}) string {
 func (c *Concern) CurrentLiveKey(keys ...interface{}) string {
 	return c.NamedKey("CurrentLive", keys)
 }
+func (c *Concern) UserInfoKey(keys ...interface{}) string {
+	return c.NamedKey("UserInfo", keys)
+}
 func (c *Concern) ParseConcernStateKey(key string) (groupCode int64, mid int64, err error) {
 	keys := strings.Split(key, ":")
 	if len(keys) != 3 || keys[0] != "ConcernState" {
@@ -571,7 +609,7 @@ func (c *Concern) ParseCurrentLiveKey(key string) (mid int64, err error) {
 	return mid, nil
 }
 
-func (c *Concern) findUserLiving(mid int64, load bool) (*LiveInfo, error) {
+func (c *Concern) findUser(mid int64, load bool) (*UserInfo, error) {
 	db, err := localdb.GetClient()
 	if err != nil {
 		return nil, err
@@ -584,23 +622,73 @@ func (c *Concern) findUserLiving(mid int64, load bool) (*LiveInfo, error) {
 		if resp.Code != 0 {
 			return nil, fmt.Errorf("code:%v %v", resp.Code, resp.Message)
 		}
-		newInfo := NewLiveInfo(mid,
+		newUserInfo := NewUserInfo(mid,
 			resp.GetData().GetLiveRoom().GetRoomid(),
-			resp.GetData().GetLiveRoom().GetUrl(),
-			resp.GetData().GetLiveRoom().GetTitle(),
 			resp.GetData().GetName(),
-			resp.GetData().GetLiveRoom().GetCover(),
-			LiveStatus(resp.GetData().GetLiveRoom().GetLiveStatus()),
+			resp.GetData().GetLiveRoom().GetUrl(),
 		)
 		err = db.Update(func(tx *buntdb.Tx) error {
-			tx.Set(c.CurrentLiveKey(mid), newInfo.ToString(), nil)
+			tx.Set(c.UserInfoKey(mid), newUserInfo.ToString(), nil)
 			return nil
 		})
 		if err != nil {
 			return nil, err
 		}
 	}
-	var liveInfo = &LiveInfo{}
+	var userInfo = &UserInfo{}
+	err = db.View(func(tx *buntdb.Tx) error {
+		val, err := tx.Get(c.UserInfoKey(mid))
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal([]byte(val), userInfo)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return userInfo, nil
+}
+
+func (c *Concern) findUserLiving(mid int64, load bool) (*LiveInfo, error) {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return nil, err
+	}
+	userInfo, err := c.findUser(mid, load)
+	if err != nil {
+		return nil, err
+	}
+
+	var liveInfo *LiveInfo
+
+	if load {
+		roomInfo, err := GetRoomInfoOld(userInfo.Mid)
+		if err != nil {
+			return nil, err
+		}
+		if roomInfo.Code != 0 {
+			return nil, fmt.Errorf("code:%v %v", roomInfo.Code, roomInfo.Message)
+		}
+		liveInfo = NewLiveInfo(mid, roomInfo.GetData().Roomid,
+			userInfo.RoomUrl,
+			roomInfo.GetData().GetTitle(),
+			userInfo.Name,
+			roomInfo.GetData().GetCover(),
+			LiveStatus(roomInfo.GetData().GetLiveStatus()))
+		db.Update(func(tx *buntdb.Tx) error {
+			tx.Set(c.CurrentLiveKey(mid), liveInfo.ToString(), nil)
+			return nil
+		})
+	}
+
+	if liveInfo != nil {
+		return liveInfo, nil
+	}
+	liveInfo = &LiveInfo{}
 	err = db.View(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.CurrentLiveKey(mid))
 		if err != nil {

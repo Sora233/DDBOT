@@ -93,3 +93,21 @@ message DynamicSvrSpaceHistoryResponse {
     }
     Data data = 3;
 }
+
+message GetRoomInfoOldResponse {
+    int32 code = 1;
+    string message = 2;
+    message Data {
+        int32 roomStatus = 1;
+        int32 roundStatus = 2;
+        int32 liveStatus = 3;
+        string url = 4;
+        string title = 5;
+        string cover = 6;
+        int64 online = 7;
+        int64 roomid = 8;
+        int32 broadcast_type = 9;
+        int32 online_hidden = 10;
+    }
+    Data data = 3;
+}

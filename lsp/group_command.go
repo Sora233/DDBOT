@@ -8,10 +8,8 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/image_pool"
 	"github.com/Sora233/Sora233-MiraiGo/image_pool/lolicon_pool"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/aliyun"
-	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
-	"github.com/forestgiant/sliceutil"
 	"github.com/nfnt/resize"
 	"github.com/tidwall/buntdb"
 	"image"
@@ -213,53 +211,26 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 
 	switch site {
 	case "bilibili":
-		if watchType == concern.BibiliLive {
-			if remove {
-				// unwatch
-				if err := lgc.l.bilibiliConcern.Remove(groupCode, id, concern.BibiliLive); err != nil {
-					lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
-					break
-				} else {
-					log.WithField("mid", id).Debugf("unwatch success")
-					lgc.textReply("unwatch成功")
-				}
-				return
-			}
-
-			// watch
-			infoResp, err := bilibili.XSpaceAccInfo(id)
-			if err != nil {
-				log.WithField("mid", id).Error(err)
-				lgc.textReply(fmt.Sprintf("查询用户信息失败 %v - %v", id, err))
+		if remove {
+			// unwatch
+			if err := lgc.l.bilibiliConcern.Remove(groupCode, id, watchType); err != nil {
+				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
 				break
+			} else {
+				log.WithField("mid", id).Debugf("unwatch success")
+				lgc.textReply("unwatch成功")
 			}
-			if infoResp.Code != 0 {
-				log.WithField("mid", id).WithField("code", infoResp.Code).Errorf(infoResp.Message)
-				lgc.textReply(fmt.Sprintf("查询用户信息失败 %v - %v %v", id, infoResp.Code, infoResp.Message))
-				break
-			}
-
-			name := infoResp.GetData().GetName()
-
-			if sliceutil.Contains([]int64{491474049}, id) {
-				lgc.textReply(fmt.Sprintf("watch失败 - 用户 %v 禁止watch", name))
-				break
-			}
-			if bilibili.RoomStatus(infoResp.GetData().GetLiveRoom().GetRoomStatus()) == bilibili.RoomStatus_NonExist {
-				lgc.textReply(fmt.Sprintf("watch失败 - 用户 %v 暂未开通直播间", name))
-				break
-			}
-			if err := lgc.l.bilibiliConcern.AddLiveRoom(groupCode, id,
-				infoResp.GetData().GetLiveRoom().GetRoomid(),
-			); err != nil {
-
-				log.WithField("mid", id).Errorf("watch error %v", err)
-				lgc.textReply(fmt.Sprintf("watch失败 - %v", err))
-				break
-			}
-			log.WithField("mid", id).Debugf("watch success")
-			lgc.textReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", name))
+			return
 		}
+		// watch
+		userInfo, err := lgc.l.bilibiliConcern.Add(groupCode, id, watchType)
+		if err != nil {
+			log.WithField("mid", id).Errorf("watch error %v", err)
+			lgc.textReply(fmt.Sprintf("watch失败 - %v", err))
+			break
+		}
+		log.WithField("mid", id).Debugf("watch success")
+		lgc.textReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", userInfo.Name))
 	default:
 		log.WithField("site", site).Error("unsupported")
 		lgc.textReply("未支持的网站")

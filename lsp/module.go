@@ -41,6 +41,8 @@ func (l *Lsp) Init() {
 	aliyun.InitAliyun()
 	l.bilibiliConcern = bilibili.NewConcern(l.concernNotify)
 
+	bilibili.SetProxy(config.GlobalConfig.GetStringSlice("proxy"))
+
 	poolType := config.GlobalConfig.GetString("imagePool.type")
 	log := logger.WithField("pool_type", poolType)
 
@@ -76,10 +78,19 @@ func (l *Lsp) PostInit() {
 
 func (l *Lsp) Serve(bot *bot.Bot) {
 	bot.OnGroupInvited(func(qqClient *client.QQClient, request *client.GroupInvitedRequest) {
+		logger.WithField("group_code", request.GroupCode).
+			WithField("group_name", request.GroupName).
+			WithField("invitor_uin", request.InvitorUin).
+			WithField("invitor_nick", request.InvitorNick).
+			Debug("new group invited")
 		request.Accept()
 	})
 
 	bot.OnNewFriendRequest(func(qqClient *client.QQClient, request *client.NewFriendRequest) {
+		logger.WithField("uin", request.RequesterUin).
+			WithField("nickname", request.RequesterNick).
+			WithField("message", request.Message).
+			Debug("new friend")
 		request.Accept()
 	})
 

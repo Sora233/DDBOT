@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 	requests "github.com/asmcos/requests"
+	"time"
 )
 
 const Host = "https://api.lolicon.app/setu"
@@ -69,6 +70,7 @@ func LoliconAppSetu(apikey string, R18 R18Type, keyword string, num int) (*Respo
 		return nil, err
 	}
 	req := requests.Requests()
+	req.SetTimeout(5 * time.Second)
 	resp, err := req.Get(Host, params)
 	if err != nil {
 		return nil, err
