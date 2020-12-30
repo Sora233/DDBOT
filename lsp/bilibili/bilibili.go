@@ -6,10 +6,12 @@ import (
 	"strings"
 )
 
-const DBKey = "bilibili"
-const BaseHost = "https://api.bilibili.com"
-const BaseLiveHost = "https://api.live.bilibili.com"
-const BaseDynamicHost = "https://api.vc.bilibili.com"
+const (
+	Site            = "bilibili"
+	BaseHost        = "https://api.bilibili.com"
+	BaseLiveHost    = "https://api.live.bilibili.com"
+	BaseDynamicHost = "https://api.vc.bilibili.com"
+)
 
 var BasePath = map[string]string{
 	PathRoomInit:               BaseLiveHost,

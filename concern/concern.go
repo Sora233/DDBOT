@@ -7,6 +7,7 @@ type Type int64
 const (
 	BibiliLive Type = 1 << iota
 	BilibiliNews
+	DouyuLive
 )
 
 type Notify interface {
@@ -17,13 +18,23 @@ func (t Type) String() string {
 	return strconv.FormatInt(int64(t), 10)
 }
 
-func (t Type) Contain(o Type) bool {
+func (t Type) ContainAll(o Type) bool {
 	return t&o == o
 }
+
+func (t Type) ContainAny(o Type) bool {
+	for _, c := range []Type{BibiliLive, BilibiliNews, DouyuLive} {
+		if t.ContainAll(c) && o.ContainAll(c) {
+			return true
+		}
+	}
+	return false
+}
+
 func (t Type) Remove(o Type) Type {
 	newT := t
-	for _, c := range []Type{BibiliLive, BilibiliNews} {
-		if t.Contain(c) && o.Contain(c) {
+	for _, c := range []Type{BibiliLive, BilibiliNews, DouyuLive} {
+		if t.ContainAll(c) && o.ContainAll(c) {
 			newT ^= c
 		}
 	}
@@ -32,12 +43,16 @@ func (t Type) Remove(o Type) Type {
 
 func (t Type) Add(o Type) Type {
 	newT := t
-	for _, c := range []Type{BibiliLive, BilibiliNews} {
-		if !t.Contain(c) && o.Contain(c) {
+	for _, c := range []Type{BibiliLive, BilibiliNews, DouyuLive} {
+		if !t.ContainAll(c) && o.ContainAll(c) {
 			newT ^= c
 		}
 	}
 	return newT
+}
+
+func (t Type) Empty() bool {
+	return t == 0
 }
 
 func FromString(s string) Type {

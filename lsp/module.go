@@ -7,13 +7,14 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/Sora233-MiraiGo/concern"
 	"github.com/Sora233/Sora233-MiraiGo/image_pool"
 	"github.com/Sora233/Sora233-MiraiGo/image_pool/local_pool"
 	"github.com/Sora233/Sora233-MiraiGo/image_pool/lolicon_pool"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/aliyun"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
-	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
 	"github.com/asmcos/requests"
 	"strings"
 	"sync"
@@ -25,6 +26,7 @@ var logger = utils.GetModuleLogger(ModuleName)
 
 type Lsp struct {
 	bilibiliConcern *bilibili.Concern
+	douyuConcern    *douyu.Concern
 	pool            image_pool.Pool
 	concernNotify   chan concern.Notify
 	stop            chan interface{}
@@ -40,8 +42,9 @@ func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
 func (l *Lsp) Init() {
 	aliyun.InitAliyun()
 	l.bilibiliConcern = bilibili.NewConcern(l.concernNotify)
-
 	bilibili.SetProxy(config.GlobalConfig.GetStringSlice("proxy"))
+
+	l.douyuConcern = douyu.NewConcern(l.concernNotify)
 
 	poolType := config.GlobalConfig.GetString("imagePool.type")
 	log := logger.WithField("pool_type", poolType)
@@ -96,15 +99,11 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
 		logger.WithField("group_code", info.Code).Debugf("join group")
-		l.bilibiliConcern.FreshIndex()
+		l.FreshIndex()
 	})
 	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
-		err := l.bilibiliConcern.RemoveAll(event.Group.Code)
-		if err == nil {
-			logger.WithField("group_code", event.Group.Code).Debugf("leave group")
-		} else {
-			logger.WithField("group_code", event.Group.Code).Debugf("leave group err %v", err)
-		}
+		logger.WithField("group_code", event.Group.Code).Debugf("leave group")
+		l.RemoveAll(event.Group.Code)
 	})
 
 	bot.OnGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {
@@ -127,6 +126,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 
 func (l *Lsp) Start(bot *bot.Bot) {
 	l.bilibiliConcern.Start()
+	l.douyuConcern.Start()
 	go l.ConcernNotify(bot)
 }
 
@@ -151,7 +151,10 @@ func (l *Lsp) checkImage(img *message.ImageElement) string {
 		logger.Errorf("aliyun response code %v, msg %v", resp.Data.Results[0].Code, resp.Data.Results[0].Message)
 		return ""
 	}
-
+	if len(resp.Data.Results[0].SubResults) == 0 {
+		logger.Errorf("aliyun response empty subResults")
+		return ""
+	}
 	logger.WithField("label", resp.Data.Results[0].SubResults[0].Label).
 		WithField("rate", resp.Data.Results[0].SubResults[0].Rate).
 		Debug("detect done")
@@ -165,7 +168,8 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 			switch inotify.Type() {
 			case concern.BibiliLive:
 				notify := (inotify).(*bilibili.ConcernLiveNotify)
-				logger.WithField("GroupCode", notify.GroupCode).
+				logger.WithField("site", bilibili.Site).
+					WithField("GroupCode", notify.GroupCode).
 					WithField("Name", notify.Name).
 					WithField("Title", notify.LiveTitle).
 					WithField("Status", notify.Status.String()).
@@ -179,7 +183,23 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					bot.SendGroupMessage(notify.GroupCode, sendingMsg)
 				}
 			case concern.BilibiliNews:
-				// TODO
+			// TODO
+			case concern.DouyuLive:
+				notify := (inotify).(*douyu.ConcernLiveNotify)
+				logger.WithField("site", douyu.Site).
+					WithField("GroupCode", notify.GroupCode).
+					WithField("Name", notify.Nickname).
+					WithField("Title", notify.RoomName).
+					WithField("Status", notify.ShowStatus.String()).
+					Info("notify")
+				if notify.ShowStatus == douyu.ShowStatus_Living {
+					sendingMsg := message.NewSendingMessage()
+					notifyMsg := l.NotifyMessage(bot, notify)
+					for _, msg := range notifyMsg {
+						sendingMsg.Append(msg)
+					}
+					bot.SendGroupMessage(notify.GroupCode, sendingMsg)
+				}
 			}
 		}
 	}
@@ -205,7 +225,23 @@ func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMes
 			result = append(result, message.NewText(notify.RoomUrl))
 		}
 	case concern.BilibiliNews:
-
+		// TODO
+	case concern.DouyuLive:
+		notify := (inotify).(*douyu.ConcernLiveNotify)
+		switch notify.ShowStatus {
+		case douyu.ShowStatus_Living:
+			result = append(result, message.NewText(fmt.Sprintf("斗鱼-%s正在直播【%s】\n", notify.Nickname, notify.RoomName)))
+			result = append(result, message.NewText(notify.RoomUrl))
+			coverResp, err := requests.Get(notify.GetAvatar().GetBig())
+			if err == nil {
+				if cover, err := bot.UploadGroupImage(notify.GroupCode, coverResp.Content()); err == nil {
+					result = append(result, cover)
+				}
+			}
+		case douyu.ShowStatus_NoLiving:
+			result = append(result, message.NewText(fmt.Sprintf("斗鱼-%s暂未直播\n", notify.Nickname)))
+			result = append(result, message.NewText(notify.RoomUrl))
+		}
 	}
 
 	return result
@@ -213,10 +249,20 @@ func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMes
 
 func (l *Lsp) FreshIndex() {
 	l.bilibiliConcern.FreshIndex()
+	l.douyuConcern.FreshIndex()
+}
+
+func (l *Lsp) RemoveAll(groupCode int64) {
+	l.bilibiliConcern.RemoveAll(groupCode)
+	//l.douyuConcern.RemoveAll(groupCode)
 }
 
 func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) (image_pool.Image, error) {
 	return l.pool.Get(options...)
+}
+
+func (l *Lsp) Douyu() *douyu.Concern {
+	return l.douyuConcern
 }
 
 var Instance *Lsp

@@ -5,11 +5,13 @@ import (
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/Sora233-MiraiGo/concern"
 	"github.com/Sora233/Sora233-MiraiGo/image_pool"
 	"github.com/Sora233/Sora233-MiraiGo/image_pool/lolicon_pool"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/aliyun"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
-	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
 	"github.com/nfnt/resize"
 	"github.com/tidwall/buntdb"
 	"image"
@@ -17,6 +19,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"math/rand"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +40,12 @@ func NewLspGroupCommand(bot *miraiBot.Bot, msg *message.GroupMessage, l *Lsp) *L
 }
 
 func (lgc *LspGroupCommand) Execute() {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.WithField("stack", string(debug.Stack())).
+				Errorf("panic recovered")
+		}
+	}()
 	if text, ok := lgc.msg.Elements[0].(*message.TextElement); ok {
 		args := strings.Split(text.Content, " ")
 		switch args[0] {
@@ -174,10 +183,10 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 
 	if len(args) == 0 {
 		log.WithField("content", text).Errorf("watch need args")
-		lgc.textReply("参数错误 - Usage: /watch [bilibili] [news/live] id")
+		lgc.textReply("参数错误 - Usage: /watch [bilibili/douyu] [news/live] id")
 		return
 	}
-	site := "bilibili"
+	site := bilibili.Site
 	watchType := concern.BibiliLive
 
 	id, err := strconv.ParseInt(args[len(args)-1], 10, 64)
@@ -190,27 +199,28 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	args = args[:len(args)-1]
 	if len(args) > 2 {
 		log.WithField("content", text).Errorf("watch args error")
-		lgc.textReply("参数错误 - Usage: /watch [bilibili] [news/live] id")
+		lgc.textReply("参数错误")
 		return
 	}
 
-	for _, arg := range args {
-		switch arg {
-		case "bilibili":
-			site = "bilibili"
-		case "news":
-			watchType = concern.BilibiliNews
-		case "live":
-			watchType = concern.BibiliLive
-		default:
-			log.WithField("content", text).Errorf("watch args error")
-			lgc.textReply("参数错误 - Usage: /watch [bilibili] [news/live] id")
-			return
-		}
+	switch strings.Join(args, ":") {
+	case bilibili.Site, bilibili.Site + ":live":
+		site = "bilibili"
+		watchType = concern.BibiliLive
+	case douyu.Site, douyu.Site + ":live":
+		site = "douyu"
+		watchType = concern.DouyuLive
+	case bilibili.Site + ":news":
+		site = "bilibili"
+		watchType = concern.BilibiliNews
+	default:
+		log.WithField("content", text).Errorf("watch args error")
+		lgc.textReply("参数错误")
+		return
 	}
 
 	switch site {
-	case "bilibili":
+	case bilibili.Site:
 		if remove {
 			// unwatch
 			if err := lgc.l.bilibiliConcern.Remove(groupCode, id, watchType); err != nil {
@@ -231,6 +241,27 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		}
 		log.WithField("mid", id).Debugf("watch success")
 		lgc.textReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", userInfo.Name))
+	case douyu.Site:
+		if remove {
+			// unwatch
+			if err := lgc.l.douyuConcern.Remove(groupCode, id, watchType); err != nil {
+				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
+				break
+			} else {
+				log.WithField("mid", id).Debugf("unwatch success")
+				lgc.textReply("unwatch成功")
+			}
+			return
+		}
+		// watch
+		userInfo, err := lgc.l.douyuConcern.Add(groupCode, id, watchType)
+		if err != nil {
+			log.WithField("mid", id).Errorf("watch error %v", err)
+			lgc.textReply(fmt.Sprintf("watch失败 - %v", err))
+			break
+		}
+		log.WithField("mid", id).Debugf("watch success")
+		lgc.textReply(fmt.Sprintf("watch成功 - 斗鱼用户 %v", userInfo.Nickname))
 	default:
 		log.WithField("site", site).Error("unsupported")
 		lgc.textReply("未支持的网站")
@@ -249,34 +280,72 @@ func (lgc *LspGroupCommand) ListLivingCommand() {
 
 	args := strings.Split(text, " ")[1:]
 
+	if len(args) == 0 || len(args) > 2 {
+		lgc.textReply("参数错误")
+		return
+	}
+
+	listMsg := message.NewSendingMessage()
+
+	site := ""
 	all := false
 
-	if len(args) >= 1 {
-		if args[0] == "all" {
+	for _, arg := range args {
+		switch arg {
+		case bilibili.Site:
+			site = bilibili.Site
+		case douyu.Site:
+			site = douyu.Site
+		case "all":
 			all = true
+		default:
+			lgc.textReply("参数错误")
+			return
+		}
+	}
+	switch site {
+	case bilibili.Site:
+		living, err := lgc.l.bilibiliConcern.ListLiving(groupCode, all)
+		if err != nil {
+			log.Debugf("list living failed %v", err)
+			lgc.textReply(fmt.Sprintf("list living 失败 - %v", err))
+			return
+		}
+		if living == nil {
+			lgc.textReply("关注列表为空，可以使用/watch命令关注")
+			return
+		}
+		for idx, liveInfo := range living {
+			if idx != 0 {
+				listMsg.Append(message.NewText("\n"))
+			}
+			notifyMsg := lgc.l.NotifyMessage(lgc.bot, liveInfo)
+			for _, msg := range notifyMsg {
+				listMsg.Append(msg)
+			}
+		}
+	case douyu.Site:
+		living, err := lgc.l.douyuConcern.ListLiving(groupCode, all)
+		if err != nil {
+			log.Debugf("list living failed %v", err)
+			lgc.textReply(fmt.Sprintf("list living 失败 - %v", err))
+			return
+		}
+		if living == nil {
+			lgc.textReply("关注列表为空，可以使用/watch命令关注")
+			return
+		}
+		for idx, liveInfo := range living {
+			if idx != 0 {
+				listMsg.Append(message.NewText("\n"))
+			}
+			notifyMsg := lgc.l.NotifyMessage(lgc.bot, liveInfo)
+			for _, msg := range notifyMsg {
+				listMsg.Append(msg)
+			}
 		}
 	}
 
-	living, err := lgc.l.bilibiliConcern.ListLiving(groupCode, all)
-	if err != nil {
-		log.Debugf("list living failed %v", err)
-		lgc.textReply(fmt.Sprintf("list living 失败 - %v", err))
-		return
-	}
-	if living == nil {
-		lgc.textReply("关注列表为空，可以使用/watch命令关注")
-		return
-	}
-	listMsg := message.NewSendingMessage()
-	for idx, liveInfo := range living {
-		if idx != 0 {
-			listMsg.Append(message.NewText("\n"))
-		}
-		notifyMsg := lgc.l.NotifyMessage(lgc.bot, liveInfo)
-		for _, msg := range notifyMsg {
-			listMsg.Append(msg)
-		}
-	}
 	if len(listMsg.Elements) == 0 {
 		listMsg.Append(message.NewText("无人直播"))
 	}

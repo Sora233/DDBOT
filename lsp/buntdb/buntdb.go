@@ -3,8 +3,6 @@ package buntdb
 import (
 	"errors"
 	"github.com/tidwall/buntdb"
-	"strconv"
-	"strings"
 )
 
 var db *buntdb.DB
@@ -33,21 +31,4 @@ func Close() error {
 		db = nil
 	}
 	return nil
-}
-
-func Key(keys ...interface{}) string {
-	var _keys []string
-	for _, key := range keys {
-		switch key.(type) {
-		case string:
-			_keys = append(_keys, key.(string))
-		case int:
-			_keys = append(_keys, strconv.FormatInt(int64(key.(int)), 10))
-		case int32:
-			_keys = append(_keys, strconv.FormatInt(int64(key.(int32)), 10))
-		case int64:
-			_keys = append(_keys, strconv.FormatInt(key.(int64), 10))
-		}
-	}
-	return strings.Join(_keys, ":")
 }

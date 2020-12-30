@@ -7,12 +7,11 @@ import (
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Mrs4s/MiraiGo/client"
+	"github.com/Sora233/Sora233-MiraiGo/concern"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
-	"github.com/Sora233/Sora233-MiraiGo/lsp/concern"
 	"github.com/forestgiant/sliceutil"
 	"github.com/tidwall/buntdb"
 	"math/rand"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -39,10 +38,13 @@ func (cln *ConcernLiveNotify) Type() concern.Type {
 	return concern.BibiliLive
 }
 
-func NewConcernLiveNotify(groupCode, mid, roomId int64, url, liveTitle, username, cover string, status LiveStatus) *ConcernLiveNotify {
+func NewConcernLiveNotify(groupCode int64, liveInfo *LiveInfo) *ConcernLiveNotify {
+	if liveInfo == nil {
+		return nil
+	}
 	return &ConcernLiveNotify{
 		GroupCode: groupCode,
-		LiveInfo:  *NewLiveInfo(mid, roomId, url, liveTitle, username, cover, status),
+		LiveInfo:  *liveInfo,
 	}
 }
 
@@ -136,18 +138,13 @@ func NewConcern(notify chan<- concern.Notify) *Concern {
 func (c *Concern) Start() {
 	db, err := localdb.GetClient()
 	if err == nil {
-		db.CreateIndex("ConcernState", "ConcernState:*", buntdb.IndexString)
-		db.CreateIndex("CurrentLive", "CurrentLive:*", buntdb.IndexString)
-		db.CreateIndex("fresh", "fresh:*", buntdb.IndexString)
-		db.CreateIndex("Concern", "Concern:*", buntdb.IndexString)
+		db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexString)
+		db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
+		db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
+		db.CreateIndex(c.UserInfoKey(), c.UserInfoKey("*", buntdb.IndexString))
 	}
 
-	err = c.Load()
-	if err != nil {
-		logger.Errorf("bilibili concern load failed %v", err)
-	}
 	go c.notifyLoop()
-	c.FreshConcern()
 	go func() {
 		timer := time.NewTimer(time.Second * 5)
 		for {
@@ -169,6 +166,20 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 		return nil, err
 	}
 	log := logger.WithField("GroupCode", groupCode)
+
+	err = db.View(func(tx *buntdb.Tx) error {
+		val, err := tx.Get(c.ConcernStateKey(groupCode, mid))
+		if err == nil {
+			if concern.FromString(val).ContainAll(ctype) {
+				return errors.New("已经watch过了")
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	infoResp, err := XSpaceAccInfo(mid)
 	if err != nil {
 		log.WithField("mid", mid).Error(err)
@@ -184,7 +195,7 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 	if sliceutil.Contains([]int64{491474049}, mid) {
 		return nil, fmt.Errorf("watch失败 - 用户 %v 禁止watch", name)
 	}
-	if ctype.Contain(concern.BibiliLive) {
+	if ctype.ContainAll(concern.BibiliLive) {
 		if RoomStatus(infoResp.GetData().GetLiveRoom().GetRoomStatus()) == RoomStatus_NonExist {
 			return nil, fmt.Errorf("watch失败 - 用户 %v 暂未开通直播间", name)
 		}
@@ -205,17 +216,17 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 	})
 	if err != nil {
 		return nil, err
-	} else {
-		userInfo := NewUserInfo(mid, infoResp.GetData().GetLiveRoom().GetRoomid(),
-			infoResp.GetData().GetName(),
-			infoResp.GetData().GetLiveRoom().GetUrl())
-		db.Update(func(tx *buntdb.Tx) error {
-			key := c.UserInfoKey(mid)
-			tx.Set(key, userInfo.ToString(), nil)
-			return nil
-		})
-		return userInfo, nil
 	}
+
+	userInfo := NewUserInfo(mid, infoResp.GetData().GetLiveRoom().GetRoomid(),
+		infoResp.GetData().GetName(),
+		infoResp.GetData().GetLiveRoom().GetUrl())
+	db.Update(func(tx *buntdb.Tx) error {
+		key := c.UserInfoKey(mid)
+		tx.Set(key, userInfo.ToString(), nil)
+		return nil
+	})
+	return userInfo, nil
 }
 
 func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) error {
@@ -235,12 +246,6 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) error {
 		_, _, err = tx.Set(stateKey, newState.String(), nil)
 		if err != nil {
 			return err
-		}
-		if !newState.Contain(concern.BibiliLive) {
-			_, err = tx.Delete(c.CurrentLiveKey(mid))
-			if err != nil {
-				return err
-			}
 		}
 		return nil
 	})
@@ -297,7 +302,7 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 					Errorf("ParseConcernStateKey failed %v", iterErr)
 				return false
 			}
-			if concern.FromString(state).Contain(concern.BibiliLive) {
+			if concern.FromString(state).ContainAll(concern.BibiliLive) {
 				concernMid = append(concernMid, mid)
 			}
 			return true
@@ -346,10 +351,6 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 	return result, nil
 }
 
-func (c *Concern) Load() error {
-	return nil
-}
-
 func (c *Concern) notifyLoop() {
 	for ievent := range c.eventChan {
 		if c.stopped {
@@ -380,23 +381,19 @@ func (c *Concern) notifyLoop() {
 					if iterErr != nil {
 						return false
 					}
-					if mid != event.Mid || !concern.FromString(value).Contain(concern.BibiliLive) {
+					if mid != event.Mid || !concern.FromString(value).ContainAll(concern.BibiliLive) {
 						return true
 					}
 					if event.Status == LiveStatus_Living {
 						logger.WithField("mid", event.Mid).
 							WithField("name", event.Name).
 							Debugf("living notify")
-						notify = NewConcernLiveNotify(groupCode, event.Mid, event.RoomId, event.RoomUrl,
-							event.LiveTitle, event.Name, event.Cover, event.Status,
-						)
+						notify = NewConcernLiveNotify(groupCode, event)
 					} else if event.Status == LiveStatus_NoLiving {
 						logger.WithField("mid", event.Mid).
 							WithField("name", event.Name).
 							Debugf("noliving notify")
-						notify = NewConcernLiveNotify(groupCode, event.Mid, event.RoomId, "",
-							"", "", "", event.Status,
-						)
+						notify = NewConcernLiveNotify(groupCode, event)
 					} else {
 						logger.Errorf("unknown live status %v", event.Status.String())
 					}
@@ -480,7 +477,7 @@ func (c *Concern) FreshConcern() {
 	}
 
 	for _, item := range freshConcern {
-		if item.ConcernType.Contain(concern.BibiliLive) {
+		if item.ConcernType.ContainAll(concern.BibiliLive) {
 			oldInfo, _ := c.findUserLiving(item.Mid, false)
 			liveInfo, err := c.findUserLiving(item.Mid, true)
 			if err != nil {
@@ -491,7 +488,7 @@ func (c *Concern) FreshConcern() {
 				c.eventChan <- liveInfo
 			}
 		}
-		if item.ConcernType.Contain(concern.BilibiliNews) {
+		if item.ConcernType.ContainAll(concern.BilibiliNews) {
 			// TODO
 		}
 	}
@@ -503,8 +500,7 @@ func (c *Concern) FreshIndex() {
 		return
 	}
 	for _, groupInfo := range miraiBot.Instance.GroupList {
-		index := c.ConcernStateKey(groupInfo.Code)
-		db.CreateIndex(index, fmt.Sprintf("%v:*", index), buntdb.IndexString)
+		db.CreateIndex(c.ConcernStateKey(groupInfo.Code), c.ConcernStateKey(groupInfo.Code, "*"), buntdb.IndexString)
 	}
 }
 
@@ -557,56 +553,25 @@ func (c *Concern) OnJoinGroup(qqClient *client.QQClient, groupInfo *client.Group
 	c.FreshIndex()
 }
 
-func (c *Concern) NamedKey(name string, keys []interface{}) string {
-	newkey := []interface{}{name}
-	for _, key := range keys {
-		newkey = append(newkey, key)
-	}
-	return localdb.Key(newkey...)
-}
-
-func (c *Concern) ConcernKey(keys ...interface{}) string {
-	return c.NamedKey("Concern", keys)
-}
-
 func (c *Concern) FreshKey(keys ...interface{}) string {
-	return c.NamedKey("fresh", keys)
+	return localdb.BilibliFreshKey(keys...)
 }
 
 func (c *Concern) ConcernStateKey(keys ...interface{}) string {
-	return c.NamedKey("ConcernState", keys)
+	return localdb.BilibiliConcernStateKey(keys...)
 }
 func (c *Concern) CurrentLiveKey(keys ...interface{}) string {
-	return c.NamedKey("CurrentLive", keys)
+	return localdb.BilibiliCurrentLiveKey(keys...)
 }
 func (c *Concern) UserInfoKey(keys ...interface{}) string {
-	return c.NamedKey("UserInfo", keys)
+	return localdb.BilibiliUserInfoKey(keys...)
 }
+
 func (c *Concern) ParseConcernStateKey(key string) (groupCode int64, mid int64, err error) {
-	keys := strings.Split(key, ":")
-	if len(keys) != 3 || keys[0] != "ConcernState" {
-		return 0, 0, errors.New("invalid concern state key")
-	}
-	groupCode, err = strconv.ParseInt(keys[1], 10, 64)
-	if err != nil {
-		return 0, 0, err
-	}
-	mid, err = strconv.ParseInt(keys[2], 10, 64)
-	if err != nil {
-		return 0, 0, err
-	}
-	return groupCode, mid, nil
+	return localdb.ParseConcernStateKey(key)
 }
 func (c *Concern) ParseCurrentLiveKey(key string) (mid int64, err error) {
-	keys := strings.Split(key, ":")
-	if len(keys) != 2 || keys[0] != "CurrentLive" {
-		return 0, errors.New("invalid current live key")
-	}
-	mid, err = strconv.ParseInt(keys[1], 10, 64)
-	if err != nil {
-		return 0, err
-	}
-	return mid, nil
+	return localdb.ParseCurrentLiveKey(key)
 }
 
 func (c *Concern) findUser(mid int64, load bool) (*UserInfo, error) {
