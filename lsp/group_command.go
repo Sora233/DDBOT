@@ -48,7 +48,7 @@ func (lgc *LspGroupCommand) Execute() {
 	}()
 	if text, ok := lgc.msg.Elements[0].(*message.TextElement); ok {
 		args := strings.Split(text.Content, " ")
-		switch args[0] {
+		switch strings.TrimSpace(args[0]) {
 		case "/lsp":
 			lgc.LspCommand()
 		case "/色图":
