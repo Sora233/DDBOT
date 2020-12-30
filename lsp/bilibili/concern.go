@@ -166,7 +166,7 @@ func (c *Concern) AddLiveRoom(groupCode int64, mid int64, roomId int64) error {
 		if err == buntdb.ErrNotFound {
 			tx.Set(stateKey, concern.BibiliLive.String(), nil)
 		} else if err == nil {
-			newVal := concern.FromString(val) | concern.BibiliLive
+			newVal := concern.FromString(val).Add(concern.BibiliLive)
 			tx.Set(stateKey, newVal.String(), nil)
 		} else {
 			return err
@@ -345,7 +345,7 @@ func (c *Concern) notifyLoop() {
 					if iterErr != nil {
 						return false
 					}
-					if mid != event.Mid || concern.FromString(value)&concern.BibiliLive == 0 {
+					if mid != event.Mid || !concern.FromString(value).Contain(concern.BibiliLive) {
 						return true
 					}
 					if event.Status == LiveStatus_Living {

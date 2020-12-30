@@ -30,6 +30,16 @@ func (t Type) Remove(o Type) Type {
 	return newT
 }
 
+func (t Type) Add(o Type) Type {
+	newT := t
+	for _, c := range []Type{BibiliLive, BilibiliNews} {
+		if !t.Contain(c) && o.Contain(c) {
+			newT ^= c
+		}
+	}
+	return newT
+}
+
 func FromString(s string) Type {
 	t, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
