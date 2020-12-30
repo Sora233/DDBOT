@@ -120,7 +120,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		return
 	}
 	log = log.WithField("format", format)
-	resizedImage := resize.Thumbnail(800, 600, dImage, resize.Lanczos3)
+	resizedImage := resize.Thumbnail(1280, 860, dImage, resize.Lanczos3)
 	resizedImageBuffer := bytes.NewBuffer(make([]byte, 0))
 
 	switch format {
