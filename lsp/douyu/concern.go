@@ -133,6 +133,9 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 	if err != nil {
 		return nil, err
 	}
+	if len(mids) != 0 {
+		result = make([]*ConcernLiveNotify, 0)
+	}
 	for _, mid := range mids {
 		liveInfo, err := c.StateManager.GetLiveInfo(mid)
 		if err != nil {
