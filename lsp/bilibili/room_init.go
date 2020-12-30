@@ -1,7 +1,6 @@
 package bilibili
 
 import (
-	"errors"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/asmcos/requests"
 )
@@ -30,9 +29,6 @@ func RoomInit(roomId int64) (*RoomInitResponse, error) {
 	err = resp.Json(rir)
 	if err != nil {
 		return nil, err
-	}
-	if rir.GetCode() != 0 {
-		return nil, errors.New(rir.Message)
 	}
 	return rir, nil
 }

@@ -233,6 +233,11 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 				lgc.textReply(fmt.Sprintf("查询用户信息失败 %v - %v", id, err))
 				break
 			}
+			if infoResp.Code != 0 {
+				log.WithField("mid", id).WithField("code", infoResp.Code).Errorf(infoResp.Message)
+				lgc.textReply(fmt.Sprintf("查询用户信息失败 %v - %v %v", id, infoResp.Code, infoResp.Message))
+				break
+			}
 
 			name := infoResp.GetData().GetName()
 

@@ -452,7 +452,7 @@ func (c *Concern) Fresh() {
 				logger.WithField("mid", item.Mid).Debugf("fresh failed %v", err)
 				continue
 			}
-			if oldInfo == nil || oldInfo.Status != liveInfo.Status {
+			if oldInfo == nil || oldInfo.Status != liveInfo.Status || oldInfo.LiveTitle != liveInfo.LiveTitle {
 				c.eventChan <- liveInfo
 			}
 		}
@@ -580,6 +580,9 @@ func (c *Concern) findUserLiving(mid int64, load bool) (*LiveInfo, error) {
 		resp, err := XSpaceAccInfo(mid)
 		if err != nil {
 			return nil, err
+		}
+		if resp.Code != 0 {
+			return nil, fmt.Errorf("code:%v %v", resp.Code, resp.Message)
 		}
 		newInfo := NewLiveInfo(mid,
 			resp.GetData().GetLiveRoom().GetRoomid(),

@@ -1,7 +1,6 @@
 package bilibili
 
 import (
-	"errors"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/asmcos/requests"
 )
@@ -30,9 +29,6 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	err = resp.Json(xsai)
 	if err != nil {
 		return nil, err
-	}
-	if xsai.GetCode() != 0 {
-		return nil, errors.New(xsai.Message)
 	}
 	return xsai, nil
 }

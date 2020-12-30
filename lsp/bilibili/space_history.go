@@ -1,7 +1,6 @@
 package bilibili
 
 import (
-	"errors"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/asmcos/requests"
 )
@@ -34,9 +33,6 @@ func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, err
 	err = resp.Json(spaceHistoryResp)
 	if err != nil {
 		return nil, err
-	}
-	if spaceHistoryResp.GetCode() != 0 {
-		return nil, errors.New(spaceHistoryResp.Message)
 	}
 	return spaceHistoryResp, nil
 }
