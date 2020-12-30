@@ -34,7 +34,7 @@ message RoomInitResponse {
         bool is_hidden = 5;
         bool is_locked = 6;
 
-        int32 live_status = 8;
+        LiveStatus live_status = 8;
 
         int32 is_sp = 15;
         int32 special_type = 16;
@@ -98,9 +98,9 @@ message GetRoomInfoOldResponse {
     int32 code = 1;
     string message = 2;
     message Data {
-        int32 roomStatus = 1;
-        int32 roundStatus = 2;
-        int32 liveStatus = 3;
+        RoomStatus roomStatus = 1;
+        RoundStatus roundStatus = 2;
+        LiveStatus liveStatus = 3;
         string url = 4;
         string title = 5;
         string cover = 6;

@@ -254,7 +254,7 @@ func (l *Lsp) FreshIndex() {
 
 func (l *Lsp) RemoveAll(groupCode int64) {
 	l.bilibiliConcern.RemoveAll(groupCode)
-	//l.douyuConcern.RemoveAll(groupCode)
+	l.douyuConcern.RemoveAll(groupCode)
 }
 
 func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) (image_pool.Image, error) {

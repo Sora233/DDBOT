@@ -4,15 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
 	"github.com/forestgiant/sliceutil"
 	"github.com/tidwall/buntdb"
-	"math/rand"
-	"strings"
 	"time"
 )
 
@@ -91,14 +88,9 @@ type LiveInfo struct {
 	Cover     string     `json:"cover"`
 }
 
-func NewLiveInfo(mid, roomId int64, url, liveTitle, username, cover string, status LiveStatus) *LiveInfo {
+func NewLiveInfo(userInfo *UserInfo, liveTitle string, cover string, status LiveStatus) *LiveInfo {
 	return &LiveInfo{
-		UserInfo: UserInfo{
-			Mid:     mid,
-			RoomId:  roomId,
-			RoomUrl: url,
-			Name:    username,
-		},
+		UserInfo:  *userInfo,
 		Status:    status,
 		LiveTitle: liveTitle,
 		Cover:     cover,
@@ -118,19 +110,20 @@ func (l *LiveInfo) ToString() string {
 }
 
 type Concern struct {
+	*StateManager
+
 	eventChan chan ConcernEvent
-
-	notify chan<- concern.Notify
-
-	stopped bool
-	stop    chan interface{}
+	notify    chan<- concern.Notify
+	stopped   bool
+	stop      chan interface{}
 }
 
 func NewConcern(notify chan<- concern.Notify) *Concern {
 	c := &Concern{
-		eventChan: make(chan ConcernEvent, 500),
-		notify:    notify,
-		stop:      make(chan interface{}),
+		StateManager: NewStateManager(),
+		eventChan:    make(chan ConcernEvent, 500),
+		notify:       notify,
+		stop:         make(chan interface{}),
 	}
 	return c
 }
@@ -158,25 +151,21 @@ func (c *Concern) Start() {
 }
 
 func (c *Concern) Stop() {
+	c.stopped = true
+	if c.stop != nil {
+		close(c.stop)
+	}
 }
 
 func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo, error) {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return nil, err
-	}
+	var err error
 	log := logger.WithField("GroupCode", groupCode)
 
-	err = db.View(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.ConcernStateKey(groupCode, mid))
-		if err == nil {
-			if concern.FromString(val).ContainAll(ctype) {
-				return errors.New("已经watch过了")
-			}
-		}
-		return nil
-	})
+	err = c.StateManager.Check(groupCode, mid, ctype)
 	if err != nil {
+		if err == concern_manager.ErrAlreadyExists {
+			return nil, errors.New("已经watch过了")
+		}
 		return nil, err
 	}
 
@@ -193,161 +182,50 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 	name := infoResp.GetData().GetName()
 
 	if sliceutil.Contains([]int64{491474049}, mid) {
-		return nil, fmt.Errorf("watch失败 - 用户 %v 禁止watch", name)
+		return nil, fmt.Errorf("用户 %v 禁止watch", name)
 	}
 	if ctype.ContainAll(concern.BibiliLive) {
 		if RoomStatus(infoResp.GetData().GetLiveRoom().GetRoomStatus()) == RoomStatus_NonExist {
-			return nil, fmt.Errorf("watch失败 - 用户 %v 暂未开通直播间", name)
+			return nil, fmt.Errorf("用户 %v 暂未开通直播间", name)
 		}
 	}
 
-	err = db.Update(func(tx *buntdb.Tx) error {
-		stateKey := c.ConcernStateKey(groupCode, mid)
-		val, err := tx.Get(stateKey)
-		if err == buntdb.ErrNotFound {
-			tx.Set(stateKey, ctype.String(), nil)
-		} else if err == nil {
-			newVal := concern.FromString(val).Add(ctype)
-			tx.Set(stateKey, newVal.String(), nil)
-		} else {
-			return err
-		}
-		return nil
-	})
+	err = c.StateManager.Add(groupCode, mid, ctype)
 	if err != nil {
 		return nil, err
 	}
 
-	userInfo := NewUserInfo(mid, infoResp.GetData().GetLiveRoom().GetRoomid(),
+	userInfo := NewUserInfo(
+		mid,
+		infoResp.GetData().GetLiveRoom().GetRoomid(),
 		infoResp.GetData().GetName(),
-		infoResp.GetData().GetLiveRoom().GetUrl())
-	db.Update(func(tx *buntdb.Tx) error {
-		key := c.UserInfoKey(mid)
-		tx.Set(key, userInfo.ToString(), nil)
-		return nil
-	})
+		infoResp.GetData().GetLiveRoom().GetUrl(),
+	)
+
+	_ = c.StateManager.AddUserInfo(userInfo)
 	return userInfo, nil
 }
 
-func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	err = db.Update(func(tx *buntdb.Tx) error {
-		stateKey := c.ConcernStateKey(groupCode, mid)
-
-		val, err := tx.Get(stateKey)
-		if err != nil {
-			return err
-		}
-		oldState := concern.FromString(val)
-		newState := oldState.Remove(ctype)
-		_, _, err = tx.Set(stateKey, newState.String(), nil)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *Concern) RemoveAll(groupCode int64) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	err = db.Update(func(tx *buntdb.Tx) error {
-		var removeKey []string
-		var iterErr error
-		iterErr = tx.Ascend(c.ConcernStateKey(groupCode), func(key, value string) bool {
-			removeKey = append(removeKey, key)
-			return true
-		})
-		if iterErr != nil {
-			return iterErr
-		}
-		for _, key := range removeKey {
-			tx.Delete(key)
-		}
-		tx.DropIndex(c.ConcernStateKey(groupCode))
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, error) {
-	//result := make([]*ConcernLiveNotify, 0)
+	log := logger.WithField("group_code", groupCode).WithField("all", all)
 	var result []*ConcernLiveNotify
-	db, err := localdb.GetClient()
-	if err != nil {
-		return result, err
-	}
-	err = db.View(func(tx *buntdb.Tx) error {
-		var iterErr error
-		var mid int64
 
-		var concernMid []int64
-
-		iterErr = tx.Ascend(c.ConcernStateKey(groupCode), func(concernStateKey, state string) bool {
-			_, mid, iterErr = c.ParseConcernStateKey(concernStateKey)
-			if iterErr != nil {
-				logger.WithField("key", concernStateKey).
-					Errorf("ParseConcernStateKey failed %v", iterErr)
-				return false
-			}
-			if concern.FromString(state).ContainAll(concern.BibiliLive) {
-				concernMid = append(concernMid, mid)
-			}
-			return true
-		})
-
-		if iterErr != nil {
-			return iterErr
-		}
-
-		if len(concernMid) != 0 {
-			result = make([]*ConcernLiveNotify, 0)
-		}
-
-		for _, mid = range concernMid {
-			key := c.CurrentLiveKey(mid)
-			value, err := tx.Get(key)
-			if err != nil {
-				if err != buntdb.ErrNotFound {
-					logger.WithField("key", key).
-						Errorf("get currentLive err %v", err)
-				}
-				continue
-			}
-			liveInfo := &LiveInfo{}
-			if iterErr = json.Unmarshal([]byte(value), liveInfo); iterErr != nil {
-				logger.WithField("key", key).
-					WithField("value", value).
-					Errorf("json unmarshal liveLnfo failed %v", iterErr)
-				continue
-			}
-			if all || liveInfo.Status == LiveStatus_Living {
-				cln := &ConcernLiveNotify{
-					GroupCode: groupCode,
-					LiveInfo:  *liveInfo,
-				}
-				result = append(result, cln)
-			}
-		}
-		return nil
+	mids, _, err := c.StateManager.ListIdByGroup(groupCode, func(id int64, p concern.Type) bool {
+		return p.ContainAny(concern.BibiliLive)
 	})
-
 	if err != nil {
 		return nil, err
 	}
-
+	for _, mid := range mids {
+		liveInfo, err := c.StateManager.GetLiveInfo(mid)
+		if err != nil {
+			log.WithField("mid", mid).Errorf("get LiveInfo err %v", err)
+			continue
+		}
+		if all || liveInfo.Status == LiveStatus_Living {
+			result = append(result, NewConcernLiveNotify(groupCode, liveInfo))
+		}
+	}
 	return result, nil
 }
 
@@ -360,54 +238,31 @@ func (c *Concern) notifyLoop() {
 		switch ievent.Type() {
 		case Live:
 			event := (ievent).(*LiveInfo)
-			logger.WithField("mid", event.Mid).
+			log := logger.WithField("mid", event).
+				WithField("name", event.Name).
 				WithField("roomid", event.RoomId).
 				WithField("title", event.LiveTitle).
-				WithField("status", event.Status.String()).
-				Debugf("event debug")
-			db, err := localdb.GetClient()
-			if err != nil {
-				logger.Errorf("get db failed %v", err)
-				continue
-			}
-			err = db.View(func(tx *buntdb.Tx) error {
-				var iterErr error
-				iterErr = tx.Ascend(c.ConcernStateKey(), func(key, value string) bool {
-					var (
-						groupCode, mid int64
-						notify         *ConcernLiveNotify
-					)
-					groupCode, mid, iterErr = c.ParseConcernStateKey(key)
-					if iterErr != nil {
-						return false
-					}
-					if mid != event.Mid || !concern.FromString(value).ContainAll(concern.BibiliLive) {
-						return true
-					}
-					if event.Status == LiveStatus_Living {
-						logger.WithField("mid", event.Mid).
-							WithField("name", event.Name).
-							Debugf("living notify")
-						notify = NewConcernLiveNotify(groupCode, event)
-					} else if event.Status == LiveStatus_NoLiving {
-						logger.WithField("mid", event.Mid).
-							WithField("name", event.Name).
-							Debugf("noliving notify")
-						notify = NewConcernLiveNotify(groupCode, event)
-					} else {
-						logger.Errorf("unknown live status %v", event.Status.String())
-					}
-					if notify != nil {
-						c.notify <- notify
-					}
-					return true
-				})
-				return iterErr
+				WithField("status", event.Status.String())
+			log.Debugf("debug event")
+
+			groups, _, _, err := c.StateManager.ListId(func(groupCode int64, id int64, p concern.Type) bool {
+				return id == event.Mid && p.ContainAny(concern.BibiliLive)
 			})
 			if err != nil {
-				logger.WithField("mid", event.Mid).
-					WithField("name", event.Name).
-					Errorf("notify failed err %v", err)
+				log.Errorf("list id failed %v", err)
+				continue
+			}
+
+			for _, groupCode := range groups {
+				notify := NewConcernLiveNotify(groupCode, event)
+				c.notify <- notify
+				if event.Status == LiveStatus_Living {
+					log.Debug("living notify")
+				} else if event.Status == LiveStatus_NoLiving {
+					log.Debug("noliving notify")
+				} else {
+					log.Error("unknown live status")
+				}
 			}
 		case News:
 			// TODO
@@ -418,34 +273,17 @@ func (c *Concern) notifyLoop() {
 }
 
 func (c *Concern) FreshConcern() {
-	db, err := localdb.GetClient()
+	_, mids, ctypes, err := c.StateManager.ListId(func(groupCode int64, id int64, p concern.Type) bool {
+		return p.ContainAll(concern.BibiliLive | concern.BilibiliNews)
+	})
 	if err != nil {
-		logger.Errorf("get db failed %v", err)
+		logger.Errorf("list id failed %v", err)
 		return
 	}
 
-	var (
-		concernMidSet = make(map[int64]concern.Type)
-	)
-
-	err = db.View(func(tx *buntdb.Tx) error {
-		var iterErr error
-		iterErr = tx.Ascend(c.ConcernStateKey(), func(key, value string) bool {
-			var mid int64
-			_, mid, iterErr = c.ParseConcernStateKey(key)
-			if iterErr != nil {
-				logger.WithField("key", key).
-					WithField("value", value).
-					Debugf("ParseConcernStateKey err %v", err)
-				return false
-			}
-			concernMidSet[mid] = concern.FromString(value)
-			return true
-		})
-		return iterErr
-	})
+	mids, ctypes, err = c.StateManager.GroupTypeById(mids, ctypes)
 	if err != nil {
-		logger.Errorf("fresh list key failed %v", err)
+		logger.Errorf("GroupTypeById failed %v", err)
 	}
 
 	var freshConcern []struct {
@@ -453,26 +291,19 @@ func (c *Concern) FreshConcern() {
 		ConcernType concern.Type
 	}
 
-	for mid, concernType := range concernMidSet {
-		err = db.Update(func(tx *buntdb.Tx) error {
-			var err error
-			freshKey := c.FreshKey(mid)
-			_, err = tx.Get(freshKey)
-			if err == buntdb.ErrNotFound {
-				ttl := time.Minute + time.Duration(rand.Intn(120))*time.Second
-				_, _, err = tx.Set(freshKey, "", &buntdb.SetOptions{Expires: true, TTL: ttl})
-				if err != nil {
-					return err
-				}
-				freshConcern = append(freshConcern, struct {
-					Mid         int64
-					ConcernType concern.Type
-				}{Mid: mid, ConcernType: concernType})
-			}
-			return nil
-		})
+	for index := range mids {
+		mid := mids[index]
+		ctype := ctypes[index]
+		ok, err := c.StateManager.FreshCheck(mid, true)
 		if err != nil {
-			logger.WithField("mid", mid).Errorf("scan concernMidSet failed %v", err)
+			logger.WithField("mid", mid).Errorf("FreshCheck failed %v", err)
+			continue
+		}
+		if ok {
+			freshConcern = append(freshConcern, struct {
+				Mid         int64
+				ConcernType concern.Type
+			}{Mid: mid, ConcernType: ctype})
 		}
 	}
 
@@ -481,7 +312,7 @@ func (c *Concern) FreshConcern() {
 			oldInfo, _ := c.findUserLiving(item.Mid, false)
 			liveInfo, err := c.findUserLiving(item.Mid, true)
 			if err != nil {
-				logger.WithField("mid", item.Mid).Debugf("fresh failed %v", err)
+				logger.WithField("mid", item.Mid).Errorf("load liveinfo failed %v", err)
 				continue
 			}
 			if oldInfo == nil || oldInfo.Status != liveInfo.Status || oldInfo.LiveTitle != liveInfo.LiveTitle {
@@ -494,91 +325,7 @@ func (c *Concern) FreshConcern() {
 	}
 }
 
-func (c *Concern) FreshIndex() {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return
-	}
-	for _, groupInfo := range miraiBot.Instance.GroupList {
-		db.CreateIndex(c.ConcernStateKey(groupInfo.Code), c.ConcernStateKey(groupInfo.Code, "*"), buntdb.IndexString)
-	}
-}
-
-func (c *Concern) FreshAll() {
-	miraiBot.Instance.ReloadFriendList()
-	miraiBot.Instance.ReloadGroupList()
-	db, err := localdb.GetClient()
-	if err != nil {
-		return
-	}
-	allIndex, err := db.Indexes()
-	if err != nil {
-		return
-	}
-	for _, index := range allIndex {
-		if strings.HasPrefix(index, c.ConcernStateKey()+":") {
-			db.DropIndex(index)
-		}
-	}
-
-	c.FreshIndex()
-
-	var groupCodes []int64
-	for _, groupInfo := range miraiBot.Instance.GroupList {
-		groupCodes = append(groupCodes, groupInfo.Code)
-	}
-	var removeKey []string
-	db.View(func(tx *buntdb.Tx) error {
-		tx.Ascend(c.ConcernStateKey(), func(key, value string) bool {
-			groupCode, _, err := c.ParseConcernStateKey(key)
-			if err != nil {
-				removeKey = append(removeKey, key)
-			} else if !sliceutil.Contains(groupCodes, groupCode) {
-				removeKey = append(removeKey, key)
-			}
-			return true
-		})
-		return nil
-	})
-	db.Update(func(tx *buntdb.Tx) error {
-		for _, key := range removeKey {
-			tx.Delete(key)
-		}
-		return nil
-	})
-}
-
-func (c *Concern) OnJoinGroup(qqClient *client.QQClient, groupInfo *client.GroupInfo) {
-	qqClient.ReloadGroupList()
-	c.FreshIndex()
-}
-
-func (c *Concern) FreshKey(keys ...interface{}) string {
-	return localdb.BilibliFreshKey(keys...)
-}
-
-func (c *Concern) ConcernStateKey(keys ...interface{}) string {
-	return localdb.BilibiliConcernStateKey(keys...)
-}
-func (c *Concern) CurrentLiveKey(keys ...interface{}) string {
-	return localdb.BilibiliCurrentLiveKey(keys...)
-}
-func (c *Concern) UserInfoKey(keys ...interface{}) string {
-	return localdb.BilibiliUserInfoKey(keys...)
-}
-
-func (c *Concern) ParseConcernStateKey(key string) (groupCode int64, mid int64, err error) {
-	return localdb.ParseConcernStateKey(key)
-}
-func (c *Concern) ParseCurrentLiveKey(key string) (mid int64, err error) {
-	return localdb.ParseCurrentLiveKey(key)
-}
-
 func (c *Concern) findUser(mid int64, load bool) (*UserInfo, error) {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return nil, err
-	}
 	if load {
 		resp, err := XSpaceAccInfo(mid)
 		if err != nil {
@@ -592,37 +339,15 @@ func (c *Concern) findUser(mid int64, load bool) (*UserInfo, error) {
 			resp.GetData().GetName(),
 			resp.GetData().GetLiveRoom().GetUrl(),
 		)
-		err = db.Update(func(tx *buntdb.Tx) error {
-			tx.Set(c.UserInfoKey(mid), newUserInfo.ToString(), nil)
-			return nil
-		})
+		err = c.StateManager.AddUserInfo(newUserInfo)
 		if err != nil {
 			return nil, err
 		}
 	}
-	var userInfo = &UserInfo{}
-	err = db.View(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.UserInfoKey(mid))
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal([]byte(val), userInfo)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return userInfo, nil
+	return c.StateManager.GetUserInfo(mid)
 }
 
 func (c *Concern) findUserLiving(mid int64, load bool) (*LiveInfo, error) {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return nil, err
-	}
 	userInfo, err := c.findUser(mid, load)
 	if err != nil {
 		return nil, err
@@ -638,35 +363,16 @@ func (c *Concern) findUserLiving(mid int64, load bool) (*LiveInfo, error) {
 		if roomInfo.Code != 0 {
 			return nil, fmt.Errorf("code:%v %v", roomInfo.Code, roomInfo.Message)
 		}
-		liveInfo = NewLiveInfo(mid, roomInfo.GetData().Roomid,
-			userInfo.RoomUrl,
+		liveInfo = NewLiveInfo(userInfo,
 			roomInfo.GetData().GetTitle(),
-			userInfo.Name,
 			roomInfo.GetData().GetCover(),
-			LiveStatus(roomInfo.GetData().GetLiveStatus()))
-		db.Update(func(tx *buntdb.Tx) error {
-			tx.Set(c.CurrentLiveKey(mid), liveInfo.ToString(), nil)
-			return nil
-		})
+			roomInfo.GetData().GetLiveStatus(),
+		)
+		_ = c.StateManager.AddLiveInfo(liveInfo)
 	}
 
 	if liveInfo != nil {
 		return liveInfo, nil
 	}
-	liveInfo = &LiveInfo{}
-	err = db.View(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.CurrentLiveKey(mid))
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal([]byte(val), liveInfo)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return liveInfo, nil
+	return c.StateManager.GetLiveInfo(mid)
 }
