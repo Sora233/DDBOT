@@ -141,12 +141,12 @@ func (pool *zhimaPool) Get() (proxy_pool.IProxy, error) {
 func (pool *zhimaPool) Delete(iProxy proxy_pool.IProxy) bool {
 	pool.L.Lock()
 	defer pool.L.Unlock()
+	for !pool.checkBackup() {
+		pool.Signal()
+		pool.Wait()
+	}
 	for index, curProxy := range pool.activeProxy {
 		if curProxy.ProxyString() == iProxy.ProxyString() {
-			for !pool.checkBackup() {
-				pool.Signal()
-				pool.Wait()
-			}
 			backup := pool.backupProxy.Front()
 			pool.activeProxy[index] = backup.Value.(*proxy)
 			//logger.WithField("addr", iProxy).
