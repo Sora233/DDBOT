@@ -277,7 +277,7 @@ func (c *Concern) notifyLoop() {
 
 func (c *Concern) FreshConcern() {
 	_, mids, ctypes, err := c.StateManager.ListId(func(groupCode int64, id int64, p concern.Type) bool {
-		return p.ContainAll(concern.BibiliLive | concern.BilibiliNews)
+		return p.ContainAny(concern.BibiliLive | concern.BilibiliNews)
 	})
 	if err != nil {
 		logger.Errorf("list id failed %v", err)

@@ -153,7 +153,7 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 func (c *Concern) FreshConcern() {
 
 	_, ids, ctypes, err := c.StateManager.ListId(func(groupCode int64, id int64, p concern.Type) bool {
-		return p.ContainAll(concern.DouyuLive)
+		return p.ContainAny(concern.DouyuLive)
 	})
 
 	if err != nil {
