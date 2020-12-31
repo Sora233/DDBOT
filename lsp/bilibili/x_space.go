@@ -1,6 +1,8 @@
 package bilibili
 
 import (
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 )
 
@@ -20,11 +22,7 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	req, err := GetBilibiliRequest()
-	if err != nil {
-		return nil, err
-	}
-	resp, err := req.Get(url, params)
+	resp, err := requests.Get(url, params)
 	if err != nil {
 		return nil, err
 	}
@@ -32,6 +30,9 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	err = resp.Json(xsai)
 	if err != nil {
 		return nil, err
+	}
+	if xsai.Code != 0 {
+		proxy_pool.Delete(resp.Proxy)
 	}
 	return xsai, nil
 }

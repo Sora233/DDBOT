@@ -1,8 +1,9 @@
 package bilibili
 
 import (
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
-	"github.com/asmcos/requests"
 )
 
 const (
@@ -33,6 +34,9 @@ func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, err
 	err = resp.Json(spaceHistoryResp)
 	if err != nil {
 		return nil, err
+	}
+	if spaceHistoryResp.Code != 0 {
+		proxy_pool.Delete(resp.Proxy)
 	}
 	return spaceHistoryResp, nil
 }

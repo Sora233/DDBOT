@@ -1,6 +1,8 @@
 package bilibili
 
 import (
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"net/http"
 )
@@ -21,15 +23,7 @@ func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	req, err := GetBilibiliRequest()
-	if err != nil {
-		return nil, err
-	}
-	req.SetCookie(&http.Cookie{
-		Name:  "DedeUserID",
-		Value: "2",
-	})
-	resp, err := req.Get(url, params)
+	resp, err := requests.Get(url, params, requests.CookieOption(&http.Cookie{Name: "DedeUserID", Value: "2"}))
 	if err != nil {
 		return nil, err
 	}
@@ -37,6 +31,9 @@ func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
 	err = resp.Json(grioResp)
 	if err != nil {
 		return nil, err
+	}
+	if grioResp.Code != 0 {
+		proxy_pool.Delete(resp.Proxy)
 	}
 	return grioResp, nil
 }

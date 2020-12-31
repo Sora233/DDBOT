@@ -15,6 +15,9 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/py"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/zhima"
 	"github.com/asmcos/requests"
 	"strings"
 	"sync"
@@ -42,14 +45,12 @@ func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
 func (l *Lsp) Init() {
 	aliyun.InitAliyun()
 	l.bilibiliConcern = bilibili.NewConcern(l.concernNotify)
-	bilibili.SetProxy(config.GlobalConfig.GetStringSlice("proxy"))
-
 	l.douyuConcern = douyu.NewConcern(l.concernNotify)
 
-	poolType := config.GlobalConfig.GetString("imagePool.type")
-	log := logger.WithField("pool_type", poolType)
+	imagePoolType := config.GlobalConfig.GetString("imagePool.type")
+	log := logger.WithField("image_pool_type", imagePoolType)
 
-	switch poolType {
+	switch imagePoolType {
 	case "loliconPool":
 		apikey := config.GlobalConfig.GetString("loliconPool.apikey")
 		pool, err := lolicon_pool.NewLoliconPool(apikey)
@@ -57,7 +58,7 @@ func (l *Lsp) Init() {
 			log.Errorf("can not init pool %v", err)
 		} else {
 			l.pool = pool
-			log.Debugf("init pool")
+			log.Debugf("init image pool")
 		}
 	case "localPool":
 		pool, err := local_pool.NewLocalPool(config.GlobalConfig.GetString("localPool.imageDir"))
@@ -65,12 +66,32 @@ func (l *Lsp) Init() {
 			log.Errorf("can not init pool %v", err)
 		} else {
 			l.pool = pool
-			log.Debugf("init pool")
+			log.Debugf("init image pool")
 		}
 	default:
 		log.Errorf("unknown pool")
 	}
 
+	proxyType := config.GlobalConfig.GetString("proxy.type")
+	log = logger.WithField("proxy_type", proxyType)
+	switch proxyType {
+	case "pyProxyPool":
+		host := config.GlobalConfig.GetString("pyProxyPool.host")
+		log := log.WithField("host", host)
+		pyPool, err := py.NewPYProxyPool(host)
+		if err != nil {
+			log.Errorf("init py pool err %v", err)
+		} else {
+			proxy_pool.Init(pyPool)
+		}
+	case "zhimaProxyPool":
+		api := config.GlobalConfig.GetString("zhimaProxyPool.api")
+		log.WithField("api", api).Debug("debug")
+		zhimaPool := zhima.NewZhimaPool(api)
+		proxy_pool.Init(zhimaPool)
+	default:
+		log.Errorf("unknown proxy type")
+	}
 }
 
 func (l *Lsp) PostInit() {

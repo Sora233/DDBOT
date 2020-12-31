@@ -310,21 +310,31 @@ func (c *Concern) FreshConcern() {
 		}
 	}
 
+	limits := make(chan bool, 4)
+
 	for _, item := range freshConcern {
-		if item.ConcernType.ContainAll(concern.BibiliLive) {
-			oldInfo, _ := c.findUserLiving(item.Mid, false)
-			liveInfo, err := c.findUserLiving(item.Mid, true)
-			if err != nil {
-				logger.WithField("mid", item.Mid).Errorf("load liveinfo failed %v", err)
-				continue
+		item := item
+		go func() {
+			limits <- true
+			defer func() {
+				<-limits
+			}()
+			if item.ConcernType.ContainAll(concern.BibiliLive) {
+				oldInfo, _ := c.findUserLiving(item.Mid, false)
+				liveInfo, err := c.findUserLiving(item.Mid, true)
+				if err != nil {
+					logger.WithField("mid", item.Mid).Errorf("load liveinfo failed %v", err)
+					return
+				}
+				if oldInfo == nil || oldInfo.Status != liveInfo.Status || oldInfo.LiveTitle != liveInfo.LiveTitle {
+					c.eventChan <- liveInfo
+				}
 			}
-			if oldInfo == nil || oldInfo.Status != liveInfo.Status || oldInfo.LiveTitle != liveInfo.LiveTitle {
-				c.eventChan <- liveInfo
+			if item.ConcernType.ContainAll(concern.BilibiliNews) {
+				// TODO
 			}
-		}
-		if item.ConcernType.ContainAll(concern.BilibiliNews) {
-			// TODO
-		}
+		}()
+
 	}
 }
 
