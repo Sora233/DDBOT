@@ -7,6 +7,7 @@ var ErrNil = errors.New("<nil>")
 type IProxyPool interface {
 	Get() (IProxy, error)
 	Delete(IProxy) bool
+	Stop() error
 }
 
 type IProxy interface {
@@ -26,5 +27,14 @@ func Get() (IProxy, error) {
 	return proxyPool.Get()
 }
 func Delete(proxy IProxy) bool {
+	if proxyPool == nil {
+		return false
+	}
 	return proxyPool.Delete(proxy)
+}
+func Stop() error {
+	if proxyPool == nil {
+		return ErrNil
+	}
+	return proxyPool.Stop()
 }

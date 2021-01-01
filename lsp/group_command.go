@@ -110,7 +110,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	}
 	img, err := lgc.l.GetImageFromPool(options...)
 	if err != nil {
-		log.Errorf("get from pool failed %v", err)
+		log.Errorf("get from image pool failed %v", err)
 		lgc.textReply("获取失败")
 		return
 	}

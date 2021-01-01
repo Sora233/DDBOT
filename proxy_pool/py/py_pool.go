@@ -72,6 +72,10 @@ func (pool *ProxyPool) Delete(proxy proxy_pool.IProxy) bool {
 	return deleteResp.Src == 1
 }
 
+func (pool *ProxyPool) Stop() error {
+	return nil
+}
+
 func NewPYProxyPool(host string) (*ProxyPool, error) {
 	pool := &ProxyPool{Host: host}
 	resp, err := requests.Get(pool.Host)

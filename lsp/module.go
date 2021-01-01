@@ -43,6 +43,9 @@ func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
 }
 
 func (l *Lsp) Init() {
+	if err := localdb.InitBuntDB(); err != nil {
+		panic(err)
+	}
 	aliyun.InitAliyun()
 	l.bilibiliConcern = bilibili.NewConcern(l.concernNotify)
 	l.douyuConcern = douyu.NewConcern(l.concernNotify)
@@ -95,9 +98,6 @@ func (l *Lsp) Init() {
 }
 
 func (l *Lsp) PostInit() {
-	if err := localdb.InitBuntDB(); err != nil {
-		panic(err)
-	}
 }
 
 func (l *Lsp) Serve(bot *bot.Bot) {
@@ -156,6 +156,7 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 	if l.stop != nil {
 		close(l.stop)
 	}
+	proxy_pool.Stop()
 	l.bilibiliConcern.Stop()
 	if err := localdb.Close(); err != nil {
 		logger.Errorf("close db err %v", err)
@@ -280,10 +281,6 @@ func (l *Lsp) RemoveAll(groupCode int64) {
 
 func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) (image_pool.Image, error) {
 	return l.pool.Get(options...)
-}
-
-func (l *Lsp) Douyu() *douyu.Concern {
-	return l.douyuConcern
 }
 
 var Instance *Lsp
