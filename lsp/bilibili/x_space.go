@@ -22,7 +22,7 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(url, params)
+	resp, err := requests.Get(url, params, 3)
 	if err != nil {
 		return nil, err
 	}

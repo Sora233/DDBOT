@@ -155,8 +155,7 @@ func (pool *zhimaPool) Get() (proxy_pool.IProxy, error) {
 	pos := rand.Intn(len(pool.activeProxy))
 	result = pool.activeProxy[pos]
 	if result.Expired() {
-		var err error
-		pool.activeProxy[pos], err = pool.popBackup()
+		err := pool.replaceActive(pos)
 		if err != nil {
 			return nil, err
 		}
@@ -176,18 +175,10 @@ func (pool *zhimaPool) Delete(iProxy proxy_pool.IProxy) bool {
 
 	for index, curProxy := range pool.activeProxy {
 		if curProxy.ProxyString() == iProxy.ProxyString() {
-			var err error
-			pool.activeProxy[index], err = pool.popBackup()
-			if err != nil {
-				return false
+			err := pool.replaceActive(index)
+			if err == nil {
+				result = true
 			}
-			//logger.WithField("addr", iProxy).
-			//	WithField("proxy", iProxy.ProxyString()).
-			//	WithField("new_proxy", pool.activeProxy[index].ProxyString()).
-			//	WithField("result", result).
-			//	Debug("delete")
-			result = true
-			logger.WithField("deleted proxy", iProxy.ProxyString()).WithField("new proxy", pool.activeProxy[index].ProxyString()).Debug("deleted")
 		}
 	}
 	return result
@@ -213,7 +204,17 @@ func (pool *zhimaPool) Stop() error {
 	return err
 }
 
-func (pool *zhimaPool) load() error {
+func (pool *zhimaPool) replaceActive(index int) (err error) {
+	log := logger.WithField("deleted_proxy", pool.activeProxy[index].ProxyString()).WithField("old_expire", pool.activeProxy[index].ExpireTime)
+	pool.activeProxy[index], err = pool.popBackup()
+	if err != nil {
+		return err
+	}
+	log.WithField("new_proxy", pool.activeProxy[index].ProxyString()).WithField("new_expire", pool.activeProxy[index].ExpireTime).Debug("deleted")
+	return nil
+}
+
+func (pool *zhimaPool) loadActive() error {
 	pool.L.Lock()
 	defer pool.L.Unlock()
 
@@ -266,7 +267,7 @@ func NewZhimaPool(api string) *zhimaPool {
 		Cond:        sync.NewCond(activeMutex),
 		activeMutex: activeMutex,
 	}
-	if err := pool.load(); err != nil {
+	if err := pool.loadActive(); err != nil {
 		logger.WithField("active size", len(pool.activeProxy)).Debug("load err %v", err)
 	} else {
 		logger.WithField("active size", len(pool.activeProxy)).Debug("load ok")

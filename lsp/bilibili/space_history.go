@@ -26,7 +26,7 @@ func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, err
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(url, params)
+	resp, err := requests.Get(url, params, 3)
 	if err != nil {
 		return nil, err
 	}

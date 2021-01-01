@@ -30,7 +30,7 @@ type ResponseWithProxy struct {
 	Proxy proxy_pool.IProxy
 }
 
-func Get(url string, params requests.Params, options ...GetOption) (*ResponseWithProxy, error) {
+func Get(url string, params requests.Params, maxRetry int, options ...GetOption) (*ResponseWithProxy, error) {
 	req := requests.Requests()
 	DefaultTimeoutOption(req)
 	for _, opt := range options {
@@ -44,7 +44,23 @@ func Get(url string, params requests.Params, options ...GetOption) (*ResponseWit
 	} else {
 		req.Proxy("http://" + proxy.ProxyString())
 	}
-	resp, err := req.Get(url, params)
+
+	var (
+		resp  *requests.Response
+		retry = 0
+	)
+	for {
+		resp, err = req.Get(url, params)
+		if err != nil {
+			retry += 1
+		} else {
+			break
+		}
+		logger.WithField("retry", retry).WithField("maxRetry", maxRetry).Debugf("request failed %v, retry", err)
+		if retry == maxRetry {
+			break
+		}
+	}
 	if err != nil {
 		proxy_pool.Delete(proxy)
 	}

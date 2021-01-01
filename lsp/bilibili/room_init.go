@@ -22,7 +22,7 @@ func RoomInit(roomId int64) (*RoomInitResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(url, params)
+	resp, err := requests.Get(url, params, 3)
 	if err != nil {
 		return nil, err
 	}

@@ -23,7 +23,7 @@ func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(url, params, requests.CookieOption(&http.Cookie{Name: "DedeUserID", Value: "2"}))
+	resp, err := requests.Get(url, params, 3, requests.CookieOption(&http.Cookie{Name: "DedeUserID", Value: "2"}))
 	if err != nil {
 		return nil, err
 	}

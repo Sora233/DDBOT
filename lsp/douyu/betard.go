@@ -15,7 +15,7 @@ const (
 
 func Betard(id int64) (*BetardResponse, error) {
 	url := DouyuPath(PathBetard) + fmt.Sprintf("/%v", id)
-	resp, err := requests.Get(url, nil)
+	resp, err := requests.Get(url, nil, 3)
 	if err != nil {
 		return nil, err
 	}
