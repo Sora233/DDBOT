@@ -184,26 +184,18 @@ func (c *Concern) FreshConcern() {
 		}
 	}
 
-	limits := make(chan bool, 4)
 	for _, item := range freshConcern {
-		item := item
-		go func() {
-			limits <- true
-			defer func() {
-				<-limits
-			}()
-			if item.ConcernType.ContainAll(concern.DouyuLive) {
-				oldInfo, _ := c.findRoom(item.Id, false)
-				liveInfo, err := c.findRoom(item.Id, true)
-				if err != nil {
-					logger.WithField("mid", item.Id).Errorf("load liveinfo failed %v", err)
-					return
-				}
-				if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {
-					c.eventChan <- liveInfo
-				}
+		if item.ConcernType.ContainAll(concern.DouyuLive) {
+			oldInfo, _ := c.findRoom(item.Id, false)
+			liveInfo, err := c.findRoom(item.Id, true)
+			if err != nil {
+				logger.WithField("mid", item.Id).Errorf("load liveinfo failed %v", err)
+				continue
 			}
-		}()
+			if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {
+				c.eventChan <- liveInfo
+			}
+		}
 	}
 }
 
