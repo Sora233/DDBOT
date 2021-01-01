@@ -18,8 +18,6 @@ var BasePath = map[string]string{
 	PathGetRoomInfoOld:         BaseLiveHost,
 }
 
-var proxy []string
-
 func BPath(path string) string {
 	if strings.HasPrefix(path, "/") {
 		return BasePath[path] + path

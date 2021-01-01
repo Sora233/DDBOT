@@ -35,7 +35,7 @@ func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, err
 	if err != nil {
 		return nil, err
 	}
-	if spaceHistoryResp.Code != 0 {
+	if spaceHistoryResp.Code == -412 {
 		proxy_pool.Delete(resp.Proxy)
 	}
 	return spaceHistoryResp, nil

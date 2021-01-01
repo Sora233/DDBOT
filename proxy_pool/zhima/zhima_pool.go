@@ -9,7 +9,6 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/asmcos/requests"
 	"github.com/tidwall/buntdb"
-	"math/rand"
 	"sync"
 	"time"
 )
@@ -21,21 +20,26 @@ var (
 const (
 	BackUpCap = 30
 	ActiveCap = 6
-	TimeLimit = time.Minute * 22
+	TimeLimit = time.Minute * 170
 )
 
 type proxy struct {
-	Ip         string `json:"ip"`
-	Port       int    `json:"port"`
-	ExpireTime string `json:"expire_time"`
+	Ip               string `json:"ip"`
+	Port             int    `json:"port"`
+	ExpireTimeString string `json:"expire_time"`
 }
 
 func (p *proxy) ProxyString() string {
 	return fmt.Sprintf("%v:%v", p.Ip, p.Port)
 }
 
+// ExpireTime return a time.Time parsed from ExpireTimeString
+func (p *proxy) ExpireTime() (time.Time, error) {
+	return time.ParseInLocation("2006-01-02 15:04:05", p.ExpireTimeString, time.Local)
+}
+
 func (p *proxy) Expired() bool {
-	t, err := time.ParseInLocation("2006-01-02 15:04:05", p.ExpireTime, time.Local)
+	t, err := p.ExpireTime()
 	if err != nil {
 		return true
 	}
@@ -56,6 +60,8 @@ type zhimaPool struct {
 	activeProxy []*proxy
 	*sync.Cond
 	activeMutex *sync.RWMutex
+
+	index int
 }
 
 func (pool *zhimaPool) Start() {
@@ -69,12 +75,23 @@ func (pool *zhimaPool) Start() {
 			}
 		}
 	}()
+	pool.activeMutex.Lock()
+	defer pool.activeMutex.Unlock()
+	for len(pool.activeProxy) < ActiveCap {
+		backup, err := pool.popBackup()
+		if err != nil {
+			logger.Errorf("fill active proxy failed %v", err)
+		} else {
+			pool.activeProxy = append(pool.activeProxy, backup)
+		}
+	}
 }
 
 func (pool *zhimaPool) Clear() {
 	// zhima proxy timeout
 	pool.L.Lock()
 	defer pool.L.Unlock()
+	logger.Debug("backup cleared")
 	pool.backupProxy = list.New()
 }
 
@@ -122,7 +139,7 @@ func (pool *zhimaPool) FillBackup() {
 			} else {
 				now := time.Now()
 				for _, proxy := range zhimaResp.Data {
-					t, err := time.ParseInLocation("2006-01-02 15:04:05", proxy.ExpireTime, time.Local)
+					t, err := proxy.ExpireTime()
 					if err != nil {
 						continue
 					}
@@ -142,28 +159,29 @@ func (pool *zhimaPool) FillBackup() {
 
 func (pool *zhimaPool) Get() (proxy_pool.IProxy, error) {
 	var result *proxy
-	pool.L.Lock()
+	pool.activeMutex.RLock()
 
-	for len(pool.activeProxy) < ActiveCap {
-		backup, err := pool.popBackup()
-		if err != nil {
-			return nil, err
-		}
-		pool.activeProxy = append(pool.activeProxy, backup)
-	}
+	pos := pool.index
+	pool.index = (pool.index + 1) % ActiveCap
 
-	pos := rand.Intn(len(pool.activeProxy))
 	result = pool.activeProxy[pos]
 	if result.Expired() {
-		err := pool.replaceActive(pos)
-		if err != nil {
-			return nil, err
+		pool.activeMutex.RUnlock()
+		pool.activeMutex.Lock()
+		if result.ProxyString() == pool.activeProxy[pos].ProxyString() {
+			err := pool.replaceActive(pos)
+			if err != nil {
+				pool.activeMutex.Unlock()
+				return nil, err
+			}
 		}
+		pool.activeMutex.Unlock()
+		pool.activeMutex.RLock()
 	}
 	result = pool.activeProxy[pos]
+	pool.activeMutex.RUnlock()
 
 	//logger.WithField("return proxy", result).WithField("all", pool.activeProxy).Debug("proxy")
-	pool.L.Unlock()
 	return result, nil
 }
 
@@ -179,6 +197,7 @@ func (pool *zhimaPool) Delete(iProxy proxy_pool.IProxy) bool {
 			if err == nil {
 				result = true
 			}
+			break
 		}
 	}
 	return result
@@ -205,12 +224,18 @@ func (pool *zhimaPool) Stop() error {
 }
 
 func (pool *zhimaPool) replaceActive(index int) (err error) {
-	log := logger.WithField("deleted_proxy", pool.activeProxy[index].ProxyString()).WithField("old_expire", pool.activeProxy[index].ExpireTime)
-	pool.activeProxy[index], err = pool.popBackup()
+	log := logger.WithField("deleted_proxy", pool.activeProxy[index].ProxyString()).WithField("old_expire", pool.activeProxy[index].ExpireTimeString)
+	oldProxy := pool.activeProxy[index]
+	newProxy, err := pool.popBackup()
 	if err != nil {
 		return err
 	}
-	log.WithField("new_proxy", pool.activeProxy[index].ProxyString()).WithField("new_expire", pool.activeProxy[index].ExpireTime).Debug("deleted")
+	if oldProxy.ProxyString() == pool.activeProxy[index].ProxyString() {
+		pool.activeProxy[index] = newProxy
+		log.WithField("new_proxy", pool.activeProxy[index].ProxyString()).WithField("new_expire", pool.activeProxy[index].ExpireTimeString).Debug("deleted")
+	} else {
+		log.Errorf("delete proxy changed")
+	}
 	return nil
 }
 

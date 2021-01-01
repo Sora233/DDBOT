@@ -57,6 +57,7 @@ func Get(url string, params requests.Params, maxRetry int, options ...GetOption)
 			break
 		}
 		logger.WithField("retry", retry).WithField("maxRetry", maxRetry).Debugf("request failed %v, retry", err)
+		time.Sleep(time.Second)
 		if retry == maxRetry {
 			break
 		}
