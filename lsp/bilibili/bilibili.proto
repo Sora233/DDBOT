@@ -24,6 +24,14 @@ enum SpecialType {
     YearFestival = 2;
 }
 
+enum DynamicDescType {
+    Unknown = 0;
+    WithOrigin = 1;
+    WithImage = 2;
+    TextOnly = 4;
+    WithVideo = 8;
+}
+
 message RoomInitResponse {
     int32 code = 1;
     string message = 2;
@@ -64,36 +72,6 @@ message XSpaceAccInfoResponse {
     Data data = 3;
 }
 
-message DynamicSvrSpaceHistoryResponse {
-    int32 code = 1;
-    string message = 2;
-    message Data {
-        message Card {
-            string card = 1;
-            message Desc {
-                int64 dynamic_id = 1;
-                int64 orig_dy_id = 2;
-                int32 orig_type = 3;
-                int32 pre_dy_id = 4;
-                int32 comment = 5;
-                int32 like = 6;
-                int32 view = 7;
-                int32 repost = 8;
-                int32 timestamp = 9;
-            }
-            Desc desc = 2;
-            message Extra {
-                int32 is_space_top = 1;
-            }
-            Extra extra = 5;
-        }
-        repeated Card cards = 1;
-        int32 has_more = 2;
-        int64 next_offset = 3;
-    }
-    Data data = 3;
-}
-
 message GetRoomInfoOldResponse {
     int32 code = 1;
     string message = 2;
@@ -110,4 +88,98 @@ message GetRoomInfoOldResponse {
         int32 online_hidden = 10;
     }
     Data data = 3;
+}
+
+message DynamicSvrSpaceHistoryResponse {
+    int32 code = 1;
+    string message = 2;
+    message Data {
+        message Card {
+            string card = 1;
+            message Desc {
+                int64 dynamic_id = 1;
+                int64 orig_dy_id = 2;
+                DynamicDescType orig_type = 3;
+                int32 pre_dy_id = 4;
+                int32 comment = 5;
+                int32 like = 6;
+                int32 view = 7;
+                int32 repost = 8;
+                int32 timestamp = 9;
+                DynamicDescType type = 10;
+            }
+            Desc desc = 2;
+            message Extra {
+                int32 is_space_top = 1;
+            }
+            Extra extra = 5;
+            message Display {
+                message EmojiInfo {
+                    message EmojiDetail {
+                        string emoji_name = 1;
+                        int32 id = 2;
+                        int32 package_id = 3;
+                        int32 state = 4;
+                        int32 type = 5;
+                        string text = 6;
+                        string url = 7;
+                    }
+                    repeated EmojiDetail emoji_details = 1;
+                }
+                EmojiInfo emoji_info = 1;
+            }
+            Display display = 6;
+        }
+        repeated Card cards = 1;
+        int32 has_more = 2;
+        int64 next_offset = 3;
+    }
+    Data data = 3;
+}
+
+message CardWithImage {
+    message Item {
+        int32 id = 1;
+        string title = 2;
+        string description = 3;
+        string category = 4;
+        message Picture {
+            string img_src = 1;
+            int32 img_width = 2;
+            int32 img_height = 3;
+            float img_size = 4;
+        }
+        repeated Picture pictures = 5;
+        int32 pictures_count = 6;
+        int32 upload_time = 7;
+    }
+    Item item = 1;
+}
+
+message CardWithOrig {
+    message Item {
+
+    }
+    Item item = 1;
+}
+
+message CardWithVideo {
+    message Item {
+
+    }
+    Item item = 1;
+}
+
+message CardTextOnly {
+    message Item {
+        int32 rp_id = 1;
+        int32 uid = 2;
+        string content = 3;
+        string ctrl = 4;
+        int32 orig_by_id = 5;
+        int32 pre_by_id = 6;
+        int32 timestamp = 7;
+        int32 reply = 8;
+    }
+    Item item = 1;
 }
