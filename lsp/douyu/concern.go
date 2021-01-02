@@ -234,7 +234,7 @@ func (c *Concern) findRoom(id int64, load bool) (*LiveInfo, error) {
 }
 
 func NewConcern(notify chan<- concern.Notify) *Concern {
-	emitChan := make(chan interface{}, 500)
+	emitChan := make(chan interface{})
 	c := &Concern{
 		emitChan:     emitChan,
 		StateManager: NewStateManager(emitChan),

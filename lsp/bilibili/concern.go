@@ -35,7 +35,7 @@ type Concern struct {
 }
 
 func NewConcern(notify chan<- concern.Notify) *Concern {
-	emitChan := make(chan interface{}, 500)
+	emitChan := make(chan interface{})
 	c := &Concern{
 		emitChan:     emitChan,
 		StateManager: NewStateManager(emitChan),

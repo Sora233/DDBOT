@@ -10,13 +10,12 @@ import (
 var logger = utils.GetModuleLogger("emit_queue")
 
 type EmitQueue struct {
-	TimeInterval time.Duration
-
 	*sync.Cond
-	pq         pq.PriorityQueue
-	emitChan   chan<- interface{}
-	waitNotify <-chan time.Time
-	lastEmit   time.Time
+
+	TimeInterval time.Duration
+	pq           pq.PriorityQueue
+	emitChan     chan<- interface{}
+	waitTimer    *time.Timer
 }
 
 func (q *EmitQueue) Add(e interface{}, t time.Time) {
@@ -34,21 +33,28 @@ func (q *EmitQueue) core() {
 		for q.pq.Len() == 0 {
 			q.Wait()
 		}
+		q.L.Unlock()
 
-		<-q.waitNotify
+		<-q.waitTimer.C
 
+		q.L.Lock()
 		e, err := q.pq.Pop()
 		if err != nil {
 			logger.Errorf("pop from pq failed %v", err)
+			q.L.Unlock()
 		} else {
 			select {
 			case q.emitChan <- e:
 			default:
-				logger.Errorf("emit chan full")
+				q.L.Unlock()
+				q.emitChan <- e
+				q.L.Lock()
 			}
+
 			q.pq.Insert(e, float64(time.Now().Unix()))
+			q.L.Unlock()
 		}
-		q.L.Unlock()
+		q.waitTimer.Reset(q.TimeInterval)
 	}
 }
 
@@ -61,7 +67,7 @@ func NewEmitQueue(c chan<- interface{}, interval time.Duration) *EmitQueue {
 		pq:           pq.New(),
 		Cond:         sync.NewCond(new(sync.Mutex)),
 		emitChan:     c,
-		waitNotify:   time.Tick(interval),
+		waitTimer:    time.NewTimer(interval),
 		TimeInterval: interval,
 	}
 	go q.core()
