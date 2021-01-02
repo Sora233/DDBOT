@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -102,4 +103,12 @@ func GuessImageFormat(img []byte) (format string, err error) {
 	r := bytes.NewReader(img)
 	_, format, err = image.DecodeConfig(r)
 	return format, err
+}
+
+func FuncName() string {
+	pc := make([]uintptr, 15)
+	n := runtime.Callers(2, pc)
+	frames := runtime.CallersFrames(pc[:n])
+	frame, _ := frames.Next()
+	return frame.Function
 }

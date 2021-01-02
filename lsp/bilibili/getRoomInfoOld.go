@@ -5,6 +5,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"net/http"
+	"time"
 )
 
 const (
@@ -16,6 +17,11 @@ type GetRoomInfoOldRequest struct {
 }
 
 func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
+	st := time.Now()
+	defer func() {
+		ed := time.Now()
+		logger.WithField("FuncName", utils.FuncName()).Debugf("cost %v", ed.Sub(st))
+	}()
 	url := BPath(PathGetRoomInfoOld)
 	params, err := utils.ToParams(&GetRoomInfoOldRequest{
 		Mid: mid,

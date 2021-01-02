@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
+	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"strings"
+	"time"
 )
 
 const (
@@ -14,6 +16,11 @@ const (
 )
 
 func Betard(id int64) (*BetardResponse, error) {
+	st := time.Now()
+	defer func() {
+		ed := time.Now()
+		logger.WithField("FuncName", utils.FuncName()).Debugf("cost %v", ed.Sub(st))
+	}()
 	url := DouyuPath(PathBetard) + fmt.Sprintf("/%v", id)
 	resp, err := requests.Get(url, nil, 3)
 	if err != nil {

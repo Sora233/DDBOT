@@ -4,6 +4,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
+	"time"
 )
 
 const (
@@ -15,6 +16,11 @@ type RoomInitRequest struct {
 }
 
 func RoomInit(roomId int64) (*RoomInitResponse, error) {
+	st := time.Now()
+	defer func() {
+		ed := time.Now()
+		logger.WithField("FuncName", utils.FuncName()).Debugf("cost %v", ed.Sub(st))
+	}()
 	url := BPath(PathRoomInit)
 	params, err := utils.ToParams(&RoomInitRequest{
 		Id: roomId,

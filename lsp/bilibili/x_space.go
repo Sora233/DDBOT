@@ -4,6 +4,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
+	"time"
 )
 
 const (
@@ -15,6 +16,11 @@ type SpaceAccInfoRequest struct {
 }
 
 func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
+	st := time.Now()
+	defer func() {
+		ed := time.Now()
+		logger.WithField("FuncName", utils.FuncName()).Debugf("cost %v", ed.Sub(st))
+	}()
 	url := BPath(PathSpaceAccInfo)
 	params, err := utils.ToParams(&SpaceAccInfoRequest{
 		Mid: mid,
