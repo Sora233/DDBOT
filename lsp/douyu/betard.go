@@ -19,7 +19,7 @@ func Betard(id int64) (*BetardResponse, error) {
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
-		logger.WithField("FuncName", utils.FuncName()).Debugf("cost %v", ed.Sub(st))
+		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
 	url := DouyuPath(PathBetard) + fmt.Sprintf("/%v", id)
 	resp, err := requests.Get(url, nil, 3)

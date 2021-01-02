@@ -19,7 +19,7 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
-		logger.WithField("FuncName", utils.FuncName()).Debugf("cost %v", ed.Sub(st))
+		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
 	url := BPath(PathSpaceAccInfo)
 	params, err := utils.ToParams(&SpaceAccInfoRequest{

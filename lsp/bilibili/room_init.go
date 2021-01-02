@@ -19,7 +19,7 @@ func RoomInit(roomId int64) (*RoomInitResponse, error) {
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
-		logger.WithField("FuncName", utils.FuncName()).Debugf("cost %v", ed.Sub(st))
+		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
 	url := BPath(PathRoomInit)
 	params, err := utils.ToParams(&RoomInitRequest{

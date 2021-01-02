@@ -20,7 +20,7 @@ func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
-		logger.WithField("FuncName", utils.FuncName()).Debugf("cost %v", ed.Sub(st))
+		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
 	url := BPath(PathGetRoomInfoOld)
 	params, err := utils.ToParams(&GetRoomInfoOldRequest{
