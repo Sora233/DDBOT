@@ -4,6 +4,7 @@ import (
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
+	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/forestgiant/sliceutil"
 	"github.com/tidwall/buntdb"
 	"strings"
@@ -12,15 +13,16 @@ import (
 
 type StateManager struct {
 	KeySet
+	emitQueue *utils.EmitQueue
 }
 
-func (c *StateManager) Check(groupCode int64, id int64, ctype concern.Type) error {
+func (c *StateManager) CheckGroupConcern(groupCode int64, id int64, ctype concern.Type) error {
 	db, err := localdb.GetClient()
 	if err != nil {
 		return err
 	}
 	err = db.View(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.ConcernStateKey(groupCode, id))
+		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
 		if err == nil {
 			if concern.FromString(val).ContainAll(ctype) {
 				return ErrAlreadyExists
@@ -31,24 +33,35 @@ func (c *StateManager) Check(groupCode int64, id int64, ctype concern.Type) erro
 	return err
 }
 
-func (c *StateManager) Add(groupCode int64, id int64, ctype concern.Type) error {
+func (c *StateManager) CheckConcern(id int64, ctype concern.Type) error {
 	db, err := localdb.GetClient()
 	if err != nil {
 		return err
 	}
-	err = db.Update(func(tx *buntdb.Tx) error {
-		stateKey := c.ConcernStateKey(groupCode, id)
-		val, err := tx.Get(stateKey)
-		if err == buntdb.ErrNotFound {
-			tx.Set(stateKey, ctype.String(), nil)
-		} else if err == nil {
-			newVal := concern.FromString(val).Add(ctype)
-			tx.Set(stateKey, newVal.String(), nil)
-		} else {
-			return err
+	err = db.View(func(tx *buntdb.Tx) error {
+		val, err := tx.Get(c.ConcernStateKey(id))
+		if err == nil {
+			if concern.FromString(val).ContainAny(ctype) {
+				return ErrAlreadyExists
+			}
 		}
 		return nil
 	})
+	return err
+}
+
+func (c *StateManager) AddGroupConcern(groupCode int64, id int64, ctype concern.Type) error {
+	var err error
+	groupStateKey := c.GroupConcernStateKey(groupCode, id)
+	stateKey := c.ConcernStateKey(id)
+	err = c.upsertConcernType(groupStateKey, ctype)
+	if err != nil {
+		return err
+	}
+	if c.CheckConcern(id, concern.Empty) == nil {
+		c.emitQueue.Add(id, time.Time{})
+	}
+	err = c.upsertConcernType(stateKey, ctype)
 	return err
 }
 
@@ -58,23 +71,20 @@ func (c *StateManager) Remove(groupCode int64, id int64, ctype concern.Type) err
 		return err
 	}
 	err = db.Update(func(tx *buntdb.Tx) error {
-		stateKey := c.ConcernStateKey(groupCode, id)
-		val, err := tx.Get(stateKey)
+		groupStateKey := c.GroupConcernStateKey(groupCode, id)
+		val, err := tx.Get(groupStateKey)
 		if err != nil {
 			return err
 		}
 		oldState := concern.FromString(val)
 		newState := oldState.Remove(ctype)
-		_, _, err = tx.Set(stateKey, newState.String(), nil)
+		_, _, err = tx.Set(groupStateKey, newState.String(), nil)
 		if err != nil {
 			return err
 		}
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (c *StateManager) RemoveAll(groupCode int64) error {
@@ -85,7 +95,7 @@ func (c *StateManager) RemoveAll(groupCode int64) error {
 	err = db.Update(func(tx *buntdb.Tx) error {
 		var removeKey []string
 		var iterErr error
-		iterErr = tx.Ascend(c.ConcernStateKey(groupCode), func(key, value string) bool {
+		iterErr = tx.Ascend(c.GroupConcernStateKey(groupCode), func(key, value string) bool {
 			removeKey = append(removeKey, key)
 			return true
 		})
@@ -95,7 +105,7 @@ func (c *StateManager) RemoveAll(groupCode int64) error {
 		for _, key := range removeKey {
 			tx.Delete(key)
 		}
-		tx.DropIndex(c.ConcernStateKey(groupCode))
+		tx.DropIndex(c.GroupConcernStateKey(groupCode))
 		return nil
 	})
 	if err != nil {
@@ -104,14 +114,15 @@ func (c *StateManager) RemoveAll(groupCode int64) error {
 	return nil
 }
 
-func (c *StateManager) Get(groupCode int64, id int64) (concern.Type, error) {
+// GetGroupConcern return the concern.Type in specific group for a id
+func (c *StateManager) GetGroupConcern(groupCode int64, id int64) (concern.Type, error) {
 	var result concern.Type
 	db, err := localdb.GetClient()
 	if err != nil {
 		return result, err
 	}
 	err = db.View(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.ConcernStateKey(groupCode, id))
+		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
 		if err != nil {
 			return err
 		}
@@ -121,7 +132,25 @@ func (c *StateManager) Get(groupCode int64, id int64) (concern.Type, error) {
 	return result, err
 }
 
-func (c *StateManager) ListId(filter func(groupCode int64, id int64, p concern.Type) bool) (idGroups []int64, ids []int64, idTypes []concern.Type, err error) {
+// GetConcern return the concern.Type combined from all group for a id
+func (c *StateManager) GetConcern(id int64) (concern.Type, error) {
+	var result concern.Type
+	db, err := localdb.GetClient()
+	if err != nil {
+		return result, err
+	}
+	err = db.View(func(tx *buntdb.Tx) error {
+		val, err := tx.Get(c.ConcernStateKey(id))
+		if err != nil {
+			return err
+		}
+		result = concern.FromString(val)
+		return nil
+	})
+	return result, err
+}
+
+func (c *StateManager) List(filter func(groupCode int64, id int64, p concern.Type) bool) (idGroups []int64, ids []int64, idTypes []concern.Type, err error) {
 	var db *buntdb.DB
 	db, err = localdb.GetClient()
 	if err != nil {
@@ -129,9 +158,9 @@ func (c *StateManager) ListId(filter func(groupCode int64, id int64, p concern.T
 	}
 	err = db.View(func(tx *buntdb.Tx) error {
 		var iterErr error
-		err := tx.Ascend(c.ConcernStateKey(), func(key, value string) bool {
+		err := tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
 			var groupCode, id int64
-			groupCode, id, iterErr = c.ParseConcernStateKey(key)
+			groupCode, id, iterErr = c.ParseGroupConcernStateKey(key)
 			if iterErr != nil {
 				return false
 			}
@@ -157,7 +186,7 @@ func (c *StateManager) ListId(filter func(groupCode int64, id int64, p concern.T
 	return
 }
 
-func (c *StateManager) ListIdByGroup(groupCode int64, filter func(id int64, p concern.Type) bool) (ids []int64, idTypes []concern.Type, err error) {
+func (c *StateManager) ListByGroup(groupCode int64, filter func(id int64, p concern.Type) bool) (ids []int64, idTypes []concern.Type, err error) {
 	var db *buntdb.DB
 	db, err = localdb.GetClient()
 	if err != nil {
@@ -165,9 +194,9 @@ func (c *StateManager) ListIdByGroup(groupCode int64, filter func(id int64, p co
 	}
 	err = db.View(func(tx *buntdb.Tx) error {
 		var iterErr error
-		err := tx.Ascend(c.ConcernStateKey(groupCode), func(key, value string) bool {
+		err := tx.Ascend(c.GroupConcernStateKey(groupCode), func(key, value string) bool {
 			var id int64
-			_, id, iterErr = c.ParseConcernStateKey(key)
+			_, id, iterErr = c.ParseGroupConcernStateKey(key)
 			if iterErr != nil {
 				return false
 			}
@@ -250,7 +279,7 @@ func (c *StateManager) FreshIndex() {
 		return
 	}
 	for _, groupInfo := range miraiBot.Instance.GroupList {
-		db.CreateIndex(c.ConcernStateKey(groupInfo.Code), c.ConcernStateKey(groupInfo.Code, "*"), buntdb.IndexString)
+		db.CreateIndex(c.GroupConcernStateKey(groupInfo.Code), c.GroupConcernStateKey(groupInfo.Code, "*"), buntdb.IndexString)
 	}
 }
 
@@ -266,7 +295,7 @@ func (c *StateManager) FreshAll() {
 		return
 	}
 	for _, index := range allIndex {
-		if strings.HasPrefix(index, c.ConcernStateKey()+":") {
+		if strings.HasPrefix(index, c.GroupConcernStateKey()+":") {
 			db.DropIndex(index)
 		}
 	}
@@ -279,8 +308,8 @@ func (c *StateManager) FreshAll() {
 	}
 	var removeKey []string
 	db.View(func(tx *buntdb.Tx) error {
-		tx.Ascend(c.ConcernStateKey(), func(key, value string) bool {
-			groupCode, _, err := c.ParseConcernStateKey(key)
+		tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
+			groupCode, _, err := c.ParseGroupConcernStateKey(key)
 			if err != nil {
 				removeKey = append(removeKey, key)
 			} else if !sliceutil.Contains(groupCodes, groupCode) {
@@ -298,8 +327,80 @@ func (c *StateManager) FreshAll() {
 	})
 }
 
-func NewStateManager(keySet KeySet) *StateManager {
-	return &StateManager{
-		keySet,
+func (c *StateManager) upsertConcernType(key string, ctype concern.Type) error {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
 	}
+
+	err = db.Update(func(tx *buntdb.Tx) error {
+		val, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			tx.Set(key, ctype.String(), nil)
+		} else if err == nil {
+			newVal := concern.FromString(val).Add(ctype)
+			tx.Set(key, newVal.String(), nil)
+		} else {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
+func (c *StateManager) Start() error {
+	err := c.freshConcern()
+	if err != nil {
+		return err
+	}
+	_, ids, _, err := c.List(func(groupCode int64, id int64, p concern.Type) bool {
+		return true
+	})
+	if err != nil {
+		return err
+	}
+	idSet := make(map[int64]bool)
+	for _, id := range ids {
+		idSet[id] = true
+	}
+	for id := range idSet {
+		c.emitQueue.Add(id, time.Now())
+	}
+	return nil
+}
+
+func (c *StateManager) freshConcern() error {
+	_, ids, types, err := c.List(func(groupCode int64, id int64, p concern.Type) bool {
+		return true
+	})
+	if err != nil {
+		return err
+	}
+	ids, types, err = c.GroupTypeById(ids, types)
+	if err != nil {
+		return err
+	}
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
+	}
+	err = db.Update(func(tx *buntdb.Tx) error {
+		for index := range ids {
+			id := ids[index]
+			ctype := types[index]
+			key := c.ConcernStateKey(id)
+			tx.Set(key, ctype.String(), nil)
+
+		}
+		return nil
+	})
+	return err
+}
+
+func NewStateManager(keySet KeySet, emitChan chan interface{}) *StateManager {
+	sm := &StateManager{
+		KeySet: keySet,
+	}
+	sm.emitQueue = utils.NewEmitQueue(emitChan, time.Second*5)
+	return sm
 }

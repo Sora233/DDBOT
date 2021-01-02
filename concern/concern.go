@@ -5,6 +5,8 @@ import "strconv"
 type Type int64
 
 const (
+	Empty Type = 0
+
 	BibiliLive Type = 1 << iota
 	BilibiliNews
 	DouyuLive
@@ -19,10 +21,16 @@ func (t Type) String() string {
 }
 
 func (t Type) ContainAll(o Type) bool {
+	if t.Empty() && o.Empty() {
+		return false
+	}
 	return t&o == o
 }
 
 func (t Type) ContainAny(o Type) bool {
+	if t.Empty() && o.Empty() {
+		return false
+	}
 	for _, c := range []Type{BibiliLive, BilibiliNews, DouyuLive} {
 		if t.ContainAll(c) && o.ContainAll(c) {
 			return true

@@ -1,7 +1,6 @@
 package bilibili
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
@@ -10,7 +9,6 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
 	"github.com/forestgiant/sliceutil"
 	"github.com/tidwall/buntdb"
-	"time"
 )
 
 var logger = utils.GetModuleLogger("bilibili-concern")
@@ -26,101 +24,21 @@ type ConcernEvent interface {
 	Type() EventType
 }
 
-type ConcernLiveNotify struct {
-	GroupCode int64 `json:"group_code"`
-	LiveInfo
-}
-
-func (cln *ConcernLiveNotify) Type() concern.Type {
-	return concern.BibiliLive
-}
-
-func NewConcernLiveNotify(groupCode int64, liveInfo *LiveInfo) *ConcernLiveNotify {
-	if liveInfo == nil {
-		return nil
-	}
-	return &ConcernLiveNotify{
-		GroupCode: groupCode,
-		LiveInfo:  *liveInfo,
-	}
-}
-
-// TODO
-type ConcernNewsNotify struct {
-}
-
-func (cnn *ConcernNewsNotify) Type() concern.Type {
-	return concern.BilibiliNews
-}
-
-func NewConcernNewsNotify() {
-	panic("not impl")
-}
-
-type UserInfo struct {
-	Mid     int64  `json:"mid"`
-	Name    string `json:"name"`
-	RoomId  int64  `json:"room_id"`
-	RoomUrl string `json:"room_url"`
-}
-
-func (ui *UserInfo) ToString() string {
-	if ui == nil {
-		return ""
-	}
-	content, _ := json.Marshal(ui)
-	return string(content)
-}
-
-func NewUserInfo(mid, roomId int64, name, url string) *UserInfo {
-	return &UserInfo{
-		Mid:     mid,
-		RoomId:  roomId,
-		Name:    name,
-		RoomUrl: url,
-	}
-}
-
-type LiveInfo struct {
-	UserInfo
-	Status    LiveStatus `json:"status"`
-	LiveTitle string     `json:"live_title"`
-	Cover     string     `json:"cover"`
-}
-
-func NewLiveInfo(userInfo *UserInfo, liveTitle string, cover string, status LiveStatus) *LiveInfo {
-	return &LiveInfo{
-		UserInfo:  *userInfo,
-		Status:    status,
-		LiveTitle: liveTitle,
-		Cover:     cover,
-	}
-}
-
-func (l *LiveInfo) Type() EventType {
-	return Live
-}
-
-func (l *LiveInfo) ToString() string {
-	if l == nil {
-		return ""
-	}
-	content, _ := json.Marshal(l)
-	return string(content)
-}
-
 type Concern struct {
 	*StateManager
 
 	eventChan chan ConcernEvent
+	emitChan  chan interface{}
 	notify    chan<- concern.Notify
 	stopped   bool
 	stop      chan interface{}
 }
 
 func NewConcern(notify chan<- concern.Notify) *Concern {
+	emitChan := make(chan interface{}, 500)
 	c := &Concern{
-		StateManager: NewStateManager(),
+		emitChan:     emitChan,
+		StateManager: NewStateManager(emitChan),
 		eventChan:    make(chan ConcernEvent, 500),
 		notify:       notify,
 		stop:         make(chan interface{}),
@@ -131,23 +49,20 @@ func NewConcern(notify chan<- concern.Notify) *Concern {
 func (c *Concern) Start() {
 	db, err := localdb.GetClient()
 	if err == nil {
-		db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexString)
+		db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
 		db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
 		db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
 		db.CreateIndex(c.UserInfoKey(), c.UserInfoKey("*", buntdb.IndexString))
+		db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexBinary)
+	}
+
+	err = c.StateManager.Start()
+	if err != nil {
+		logger.Errorf("state manager start err %v", err)
 	}
 
 	go c.notifyLoop()
-	go func() {
-		timer := time.NewTimer(time.Second * 10)
-		for {
-			select {
-			case <-timer.C:
-				c.FreshConcern()
-				timer.Reset(time.Second * 10)
-			}
-		}
-	}()
+	go c.emitFreshCore()
 }
 
 func (c *Concern) Stop() {
@@ -161,7 +76,7 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 	var err error
 	log := logger.WithField("GroupCode", groupCode)
 
-	err = c.StateManager.Check(groupCode, mid, ctype)
+	err = c.StateManager.CheckGroupConcern(groupCode, mid, ctype)
 	if err != nil {
 		if err == concern_manager.ErrAlreadyExists {
 			return nil, errors.New("已经watch过了")
@@ -190,7 +105,7 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 		}
 	}
 
-	err = c.StateManager.Add(groupCode, mid, ctype)
+	err = c.StateManager.AddGroupConcern(groupCode, mid, ctype)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +125,7 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 	log := logger.WithField("group_code", groupCode).WithField("all", all)
 	var result []*ConcernLiveNotify
 
-	mids, _, err := c.StateManager.ListIdByGroup(groupCode, func(id int64, p concern.Type) bool {
+	mids, _, err := c.StateManager.ListByGroup(groupCode, func(id int64, p concern.Type) bool {
 		return p.ContainAny(concern.BibiliLive)
 	})
 	if err != nil {
@@ -248,7 +163,7 @@ func (c *Concern) notifyLoop() {
 				WithField("status", event.Status.String())
 			log.Debugf("debug event")
 
-			groups, _, _, err := c.StateManager.ListId(func(groupCode int64, id int64, p concern.Type) bool {
+			groups, _, _, err := c.StateManager.List(func(groupCode int64, id int64, p concern.Type) bool {
 				return id == event.Mid && p.ContainAny(concern.BibiliLive)
 			})
 			if err != nil {
@@ -275,58 +190,32 @@ func (c *Concern) notifyLoop() {
 	}
 }
 
-func (c *Concern) FreshConcern() {
-	_, mids, ctypes, err := c.StateManager.ListId(func(groupCode int64, id int64, p concern.Type) bool {
-		return p.ContainAny(concern.BibiliLive | concern.BilibiliNews)
-	})
-	if err != nil {
-		logger.Errorf("list id failed %v", err)
-		return
-	}
-
-	mids, ctypes, err = c.StateManager.GroupTypeById(mids, ctypes)
-	if err != nil {
-		logger.Errorf("GroupTypeById failed %v", err)
-	}
-
-	var freshConcern []struct {
-		Mid         int64
-		ConcernType concern.Type
-	}
-
-	for index := range mids {
-		mid := mids[index]
-		ctype := ctypes[index]
-		ok, err := c.StateManager.FreshCheck(mid, true)
-		if err != nil {
-			logger.WithField("mid", mid).Errorf("FreshCheck failed %v", err)
+func (c *Concern) emitFreshCore() {
+	for e := range c.emitChan {
+		mid, ok := e.(int64)
+		if !ok {
+			logger.WithField("emit", e).Errorf("emit element is not int64 mid")
 			continue
 		}
-		if ok {
-			freshConcern = append(freshConcern, struct {
-				Mid         int64
-				ConcernType concern.Type
-			}{Mid: mid, ConcernType: ctype})
+		ctype, err := c.StateManager.GetConcern(mid)
+		if err != nil {
+			logger.WithField("mid", mid).Errorf("get concern failed %v", err)
+			continue
 		}
-	}
-
-	for _, item := range freshConcern {
-		time.Sleep(time.Second * 1)
-		if item.ConcernType.ContainAll(concern.BibiliLive) {
-			oldInfo, _ := c.findUserLiving(item.Mid, false)
-			liveInfo, err := c.findUserLiving(item.Mid, true)
+		if ctype.ContainAll(concern.BibiliLive) {
+			oldInfo, _ := c.findUserLiving(mid, false)
+			liveInfo, err := c.findUserLiving(mid, true)
 			if err != nil {
-				logger.WithField("mid", item.Mid).Errorf("load liveinfo failed %v", err)
+				logger.WithField("mid", mid).Errorf("load liveinfo failed %v", err)
 				continue
 			}
 			if oldInfo == nil || oldInfo.Status != liveInfo.Status || oldInfo.LiveTitle != liveInfo.LiveTitle {
 				c.eventChan <- liveInfo
 			}
 		}
-		if item.ConcernType.ContainAll(concern.BilibiliNews) {
+		if ctype.ContainAny(concern.BilibiliNews) {
 			// TODO
 		}
-
 	}
 }
 

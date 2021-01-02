@@ -9,7 +9,6 @@ import (
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
 	"github.com/tidwall/buntdb"
-	"time"
 )
 
 var logger = utils.GetModuleLogger("douyu-concern")
@@ -65,6 +64,7 @@ func NewConcernLiveNotify(groupCode int64, l *LiveInfo) *ConcernLiveNotify {
 type Concern struct {
 	*StateManager
 
+	emitChan  chan interface{}
 	eventChan chan ConcernEvent
 	notify    chan<- concern.Notify
 	stop      chan interface{}
@@ -74,28 +74,26 @@ type Concern struct {
 func (c *Concern) Start() {
 	db, err := localdb.GetClient()
 	if err == nil {
-		db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexString)
+		db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
 		db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
 		db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
+		db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexBinary)
 	}
+
+	err = c.StateManager.Start()
+	if err != nil {
+		logger.Errorf("state manager start err %v", err)
+	}
+
 	go c.notifyLoop()
-	go func() {
-		timer := time.NewTimer(time.Second * 10)
-		for {
-			select {
-			case <-timer.C:
-				c.FreshConcern()
-				timer.Reset(time.Second * 10)
-			}
-		}
-	}()
+	go c.emitFreshCore()
 }
 
 func (c *Concern) Add(groupCode int64, id int64, ctype concern.Type) (*LiveInfo, error) {
 	var err error
 	log := logger.WithField("GroupCode", groupCode)
 
-	err = c.StateManager.Check(groupCode, id, ctype)
+	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
 	if err != nil {
 		if err == concern_manager.ErrAlreadyExists {
 			return nil, errors.New("已经watch过了")
@@ -108,7 +106,7 @@ func (c *Concern) Add(groupCode int64, id int64, ctype concern.Type) (*LiveInfo,
 		log.WithField("id", id).Error(err)
 		return nil, fmt.Errorf("查询房间信息失败 %v - %v", id, err)
 	}
-	err = c.StateManager.Add(groupCode, id, ctype)
+	err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +125,7 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 	log := logger.WithField("group_code", groupCode).WithField("all", all)
 	var result []*ConcernLiveNotify
 
-	mids, _, err := c.StateManager.ListIdByGroup(groupCode, func(id int64, p concern.Type) bool {
+	mids, _, err := c.StateManager.ListByGroup(groupCode, func(id int64, p concern.Type) bool {
 		return p.ContainAny(concern.DouyuLive)
 	})
 	if err != nil {
@@ -150,47 +148,23 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 	return result, nil
 }
 
-func (c *Concern) FreshConcern() {
-
-	_, ids, ctypes, err := c.StateManager.ListId(func(groupCode int64, id int64, p concern.Type) bool {
-		return p.ContainAny(concern.DouyuLive)
-	})
-
-	if err != nil {
-		logger.Errorf("list id failed %v", err)
-		return
-	}
-
-	ids, ctypes, err = c.StateManager.GroupTypeById(ids, ctypes)
-
-	var freshConcern []struct {
-		Id          int64
-		ConcernType concern.Type
-	}
-
-	for index := range ids {
-		id := ids[index]
-		ctype := ctypes[index]
-		ok, err := c.StateManager.FreshCheck(id, true)
-		if err != nil {
-			logger.WithField("id", id).Errorf("FreshCheck failed %v", err)
+func (c *Concern) emitFreshCore() {
+	for e := range c.emitChan {
+		id, ok := e.(int64)
+		if !ok {
+			logger.WithField("emit", e).Errorf("emit element is not int64 id")
 			continue
 		}
-		if ok {
-			freshConcern = append(freshConcern, struct {
-				Id          int64
-				ConcernType concern.Type
-			}{Id: id, ConcernType: ctype})
+		ctype, err := c.StateManager.GetConcern(id)
+		if err != nil {
+			logger.WithField("id", id).Errorf("get concern failed %v", err)
+			continue
 		}
-	}
-
-	for _, item := range freshConcern {
-		time.Sleep(time.Second * 1)
-		if item.ConcernType.ContainAll(concern.DouyuLive) {
-			oldInfo, _ := c.findRoom(item.Id, false)
-			liveInfo, err := c.findRoom(item.Id, true)
+		if ctype.ContainAll(concern.DouyuLive) {
+			oldInfo, _ := c.findRoom(id, false)
+			liveInfo, err := c.findRoom(id, true)
 			if err != nil {
-				logger.WithField("mid", item.Id).Errorf("load liveinfo failed %v", err)
+				logger.WithField("mid", id).Errorf("load liveinfo failed %v", err)
 				continue
 			}
 			if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {
@@ -215,7 +189,7 @@ func (c *Concern) notifyLoop() {
 				WithField("videoLoop", event.GetVideoLoop().String())
 			log.Debugf("debug event")
 
-			groups, _, _, err := c.StateManager.ListId(func(groupCode int64, id int64, p concern.Type) bool {
+			groups, _, _, err := c.StateManager.List(func(groupCode int64, id int64, p concern.Type) bool {
 				return id == event.RoomId && p.ContainAny(concern.DouyuLive)
 			})
 			if err != nil {
@@ -260,8 +234,10 @@ func (c *Concern) findRoom(id int64, load bool) (*LiveInfo, error) {
 }
 
 func NewConcern(notify chan<- concern.Notify) *Concern {
+	emitChan := make(chan interface{}, 500)
 	c := &Concern{
-		StateManager: NewStateManager(),
+		emitChan:     emitChan,
+		StateManager: NewStateManager(emitChan),
 		eventChan:    make(chan ConcernEvent, 500),
 		notify:       notify,
 		stop:         make(chan interface{}),

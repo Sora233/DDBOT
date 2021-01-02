@@ -31,8 +31,11 @@ func NamedKey(name string, keys []interface{}) string {
 	return Key(newkey...)
 }
 
-func BilibiliConcernStateKey(keys ...interface{}) string {
+func BilibiliGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("ConcernState", keys)
+}
+func BilibiliAllConcernStateKey(keys ...interface{}) string {
+	return NamedKey("BilibiliAllConcernState", keys)
 }
 func BilibliFreshKey(keys ...interface{}) string {
 	return NamedKey("fresh", keys)
@@ -43,8 +46,11 @@ func BilibiliCurrentLiveKey(keys ...interface{}) string {
 func BilibiliUserInfoKey(keys ...interface{}) string {
 	return NamedKey("UserInfo", keys)
 }
-func DouyuConcernStateKey(keys ...interface{}) string {
+func DouyuGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("DouyuConcernState", keys)
+}
+func DouyuAllConcernStateKey(keys ...interface{}) string {
+	return NamedKey("DouyuAllConcernStateKey", keys)
 }
 func DouyuFreshKey(keys ...interface{}) string {
 	return NamedKey("douyuFresh", keys)

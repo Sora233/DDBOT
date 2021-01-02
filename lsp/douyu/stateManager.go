@@ -51,8 +51,12 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	return err
 }
 
-func NewStateManager() *StateManager {
+func (c *StateManager) Start() error {
+	return c.StateManager.Start()
+}
+
+func NewStateManager(emitChan chan interface{}) *StateManager {
 	sm := &StateManager{}
-	sm.StateManager = concern_manager.NewStateManager(NewKeySet())
+	sm.StateManager = concern_manager.NewStateManager(NewKeySet(), emitChan)
 	return sm
 }

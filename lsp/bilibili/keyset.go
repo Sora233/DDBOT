@@ -5,8 +5,12 @@ import "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 type keySet struct {
 }
 
+func (k *keySet) GroupConcernStateKey(keys ...interface{}) string {
+	return buntdb.BilibiliGroupConcernStateKey(keys...)
+}
+
 func (k *keySet) ConcernStateKey(keys ...interface{}) string {
-	return buntdb.BilibiliConcernStateKey(keys...)
+	return buntdb.BilibiliAllConcernStateKey(keys...)
 }
 
 func (k *keySet) FreshKey(keys ...interface{}) string {
@@ -17,7 +21,7 @@ func (k *keySet) CurrentLiveKey(keys ...interface{}) string {
 	return buntdb.BilibiliCurrentLiveKey(keys...)
 }
 
-func (k *keySet) ParseConcernStateKey(key string) (int64, int64, error) {
+func (k *keySet) ParseGroupConcernStateKey(key string) (int64, int64, error) {
 	return buntdb.ParseConcernStateKey(key)
 }
 func (k *keySet) ParseCurrentLiveKey(key string) (int64, error) {
