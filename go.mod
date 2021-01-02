@@ -5,6 +5,7 @@ go 1.15
 require (
 	github.com/Logiase/MiraiGo-Template v0.0.0-20201012145238-b21d29851007
 	github.com/Mrs4s/MiraiGo v0.0.0-20201220054233-37f37c3eb564
+	github.com/Sora233/zhima-proxy-pool v0.0.0-20210102052502-04d9c57192e1
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.790
 	github.com/asmcos/requests v0.0.0-20200816142649-95abc76c8cac
 	github.com/forestgiant/sliceutil v0.0.0-20160425183142-94783f95db6c
@@ -20,7 +21,6 @@ require (
 	github.com/tidwall/buntdb v1.1.5
 	github.com/tidwall/gjson v1.6.7 // indirect
 	github.com/tidwall/rtree v0.0.0-20201103190202-0d877048965d // indirect
-	golang.org/x/sys v0.0.0-20201221093633-bc327ba9c2f0 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )

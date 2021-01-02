@@ -18,9 +18,11 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/py"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/zhima"
+	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	"github.com/asmcos/requests"
 	"strings"
 	"sync"
+	"time"
 )
 
 const ModuleName = "me.sora233.Lsp"
@@ -90,8 +92,15 @@ func (l *Lsp) Init() {
 	case "zhimaProxyPool":
 		api := config.GlobalConfig.GetString("zhimaProxyPool.api")
 		log.WithField("api", api).Debug("debug")
-		zhimaPool := zhima.NewZhimaPool(api)
-		proxy_pool.Init(zhimaPool)
+		cfg := &zhimaproxypool.Config{
+			ApiAddr:   api,
+			BackUpCap: 50,
+			ActiveCap: 3,
+			ClearTime: time.Second * 90,
+			TimeLimit: time.Minute * 175,
+		}
+		zhimaPool := zhimaproxypool.NewZhimaProxyPool(cfg, zhima.NewBuntdbPersister())
+		proxy_pool.Init(zhima.NewZhimaWrapper(zhimaPool))
 	default:
 		log.Errorf("unknown proxy type")
 	}

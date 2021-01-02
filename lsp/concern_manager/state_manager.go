@@ -6,7 +6,6 @@ import (
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/forestgiant/sliceutil"
 	"github.com/tidwall/buntdb"
-	"math/rand"
 	"strings"
 	"time"
 )
@@ -231,7 +230,7 @@ func (c *StateManager) FreshCheck(id int64, setTTL bool) (result bool, err error
 		if err == buntdb.ErrNotFound {
 			result = true
 			if setTTL {
-				ttl := time.Second*30 + time.Duration(rand.Intn(30))*time.Second
+				ttl := time.Minute
 				_, _, err = tx.Set(freshKey, "", &buntdb.SetOptions{Expires: true, TTL: ttl})
 				if err != nil {
 					return err

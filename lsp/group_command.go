@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
@@ -137,6 +138,8 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		err = gif.Encode(resizedImageBuffer, resizedImage, nil)
 	case "png":
 		err = png.Encode(resizedImageBuffer, resizedImage)
+	default:
+		err = errors.New("unknown format")
 	}
 
 	if err != nil {
@@ -162,9 +165,14 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		sendingMsg.Append(message.NewText(fmt.Sprintf("标题：%v\n", loliconImage.Title)))
 		sendingMsg.Append(message.NewText(fmt.Sprintf("作者：%v\n", loliconImage.Author)))
 		sendingMsg.Append(message.NewText(fmt.Sprintf("PID：%v\n", loliconImage.Pid)))
+		tagCount := len(loliconImage.Tags)
+		if tagCount >= 2 {
+			tagCount = 2
+		}
+		sendingMsg.Append(message.NewText(fmt.Sprintf("TAG：%v\n", strings.Join(loliconImage.Tags[:tagCount], " "))))
 		sendingMsg.Append(message.NewText(fmt.Sprintf("R18：%v", loliconImage.R18)))
 	}
-	lgc.reply(sendingMsg)
+	lgc.answer(sendingMsg)
 	return
 
 }
@@ -349,7 +357,7 @@ func (lgc *LspGroupCommand) ListLivingCommand() {
 	if len(listMsg.Elements) == 0 {
 		listMsg.Append(message.NewText("无人直播"))
 	}
-	lgc.reply(listMsg)
+	lgc.answer(listMsg)
 
 }
 
@@ -508,5 +516,10 @@ func (lgc *LspGroupCommand) textReply(text string) {
 }
 
 func (lgc *LspGroupCommand) reply(msg *message.SendingMessage) {
+	msg.Append(message.NewReply(lgc.msg))
+	lgc.answer(msg)
+}
+
+func (lgc *LspGroupCommand) answer(msg *message.SendingMessage) {
 	lgc.bot.SendGroupMessage(lgc.msg.GroupCode, msg)
 }

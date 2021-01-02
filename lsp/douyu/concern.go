@@ -80,12 +80,12 @@ func (c *Concern) Start() {
 	}
 	go c.notifyLoop()
 	go func() {
-		timer := time.NewTimer(time.Second * 5)
+		timer := time.NewTimer(time.Second * 10)
 		for {
 			select {
 			case <-timer.C:
 				c.FreshConcern()
-				timer.Reset(time.Second * 5)
+				timer.Reset(time.Second * 10)
 			}
 		}
 	}()
@@ -185,6 +185,7 @@ func (c *Concern) FreshConcern() {
 	}
 
 	for _, item := range freshConcern {
+		time.Sleep(time.Second * 1)
 		if item.ConcernType.ContainAll(concern.DouyuLive) {
 			oldInfo, _ := c.findRoom(item.Id, false)
 			liveInfo, err := c.findRoom(item.Id, true)
