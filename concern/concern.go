@@ -4,9 +4,9 @@ import "strconv"
 
 type Type int64
 
-const (
-	Empty Type = 0
+const Empty Type = 0
 
+const (
 	BibiliLive Type = 1 << iota
 	BilibiliNews
 	DouyuLive
