@@ -8,42 +8,68 @@ import (
 
 type NewsInfo struct {
 	UserInfo
-	NewsType   DynamicDescType
-	OriginType DynamicDescType
-	Card       interface{} // should be in CardWithImage / CardWithOrig / CardWithVideo / CardTextOnly
-	Display    *DynamicSvrSpaceHistoryResponse_Data_Card_Display
+	LastDynamicId int64                                       `json:"last_dynamic_id"`
+	Cards         []*DynamicSvrSpaceHistoryResponse_Data_Card `json:"-"`
 }
 
 func (n *NewsInfo) Type() EventType {
 	return News
 }
 
-func (n *NewsInfo) GetCardWithImage() (*CardWithImage, error) {
-	if n.NewsType == DynamicDescType_WithImage {
-		return n.Card.(*CardWithImage), nil
+func (n *NewsInfo) GetCardWithImage(index int) (*CardWithImage, error) {
+	if len(n.Cards) <= index || n.Cards[index].GetCard() == "" {
+		return nil, errors.New("card not found or empty")
+	}
+	if n.Cards[index].GetDesc().GetType() == DynamicDescType_WithImage {
+		var card = new(CardWithImage)
+		err := json.Unmarshal([]byte(n.Cards[index].GetCard()), card)
+		return card, err
 	}
 	return nil, errors.New("type mismatch")
 }
 
-func (n *NewsInfo) GetCardWithOrig() (*CardWithOrig, error) {
-	if n.NewsType == DynamicDescType_WithOrigin {
-		return n.Card.(*CardWithOrig), nil
+func (n *NewsInfo) GetCardWithOrig(index int) (*CardWithOrig, error) {
+	if len(n.Cards) <= index || n.Cards[index].GetCard() == "" {
+		return nil, errors.New("card not found or empty")
+	}
+	if n.Cards[index].GetDesc().GetType() == DynamicDescType_WithImage {
+		var card = new(CardWithOrig)
+		err := json.Unmarshal([]byte(n.Cards[index].GetCard()), card)
+		return card, err
 	}
 	return nil, errors.New("type mismatch")
 }
 
-func (n *NewsInfo) GetCardWithVideo() (*CardWithVideo, error) {
-	if n.NewsType == DynamicDescType_WithVideo {
-		return n.Card.(*CardWithVideo), nil
+func (n *NewsInfo) GetCardWithVideo(index int) (*CardWithVideo, error) {
+	if len(n.Cards) <= index || n.Cards[index].GetCard() == "" {
+		return nil, errors.New("card not found or empty")
+	}
+	if n.Cards[index].GetDesc().GetType() == DynamicDescType_WithImage {
+		var card = new(CardWithVideo)
+		err := json.Unmarshal([]byte(n.Cards[index].GetCard()), card)
+		return card, err
 	}
 	return nil, errors.New("type mismatch")
 }
 
-func (n *NewsInfo) GetCardTextOnly() (*CardTextOnly, error) {
-	if n.NewsType == DynamicDescType_TextOnly {
-		return n.Card.(*CardTextOnly), nil
+func (n *NewsInfo) GetCardTextOnly(index int) (*CardTextOnly, error) {
+	if len(n.Cards) <= index || n.Cards[index].GetCard() == "" {
+		return nil, errors.New("card not found or empty")
+	}
+	if n.Cards[index].GetDesc().GetType() == DynamicDescType_WithImage {
+		var card = new(CardTextOnly)
+		err := json.Unmarshal([]byte(n.Cards[index].GetCard()), card)
+		return card, err
 	}
 	return nil, errors.New("type mismatch")
+}
+
+func (n *NewsInfo) ToString() string {
+	if n == nil {
+		return ""
+	}
+	content, _ := json.Marshal(n)
+	return string(content)
 }
 
 type ConcernNewsNotify struct {
@@ -108,6 +134,9 @@ func NewUserInfo(mid, roomId int64, name, url string) *UserInfo {
 }
 
 func NewLiveInfo(userInfo *UserInfo, liveTitle string, cover string, status LiveStatus) *LiveInfo {
+	if userInfo == nil {
+		return nil
+	}
 	return &LiveInfo{
 		UserInfo:  *userInfo,
 		Status:    status,
@@ -116,8 +145,36 @@ func NewLiveInfo(userInfo *UserInfo, liveTitle string, cover string, status Live
 	}
 }
 
-func NewConcernNewsNotify() {
-	panic("not impl")
+func NewNewsInfo(userInfo *UserInfo, dynamicId int64) *NewsInfo {
+	if userInfo == nil {
+		return nil
+	}
+	return &NewsInfo{
+		UserInfo:      *userInfo,
+		LastDynamicId: dynamicId,
+	}
+}
+
+func NewNewsInfoWithDetail(userInfo *UserInfo, cards []*DynamicSvrSpaceHistoryResponse_Data_Card) *NewsInfo {
+	var dynamicId int64
+	if len(cards) > 0 {
+		dynamicId = cards[0].GetDesc().GetDynamicId()
+	}
+	return &NewsInfo{
+		UserInfo:      *userInfo,
+		LastDynamicId: dynamicId,
+		Cards:         cards,
+	}
+}
+
+func NewConcernNewsNotify(groupCode int64, newsInfo *NewsInfo) *ConcernNewsNotify {
+	if newsInfo == nil {
+		return nil
+	}
+	return &ConcernNewsNotify{
+		GroupCode: groupCode,
+		NewsInfo:  *newsInfo,
+	}
 }
 
 func NewConcernLiveNotify(groupCode int64, liveInfo *LiveInfo) *ConcernLiveNotify {

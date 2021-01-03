@@ -12,6 +12,8 @@ const (
 	DouyuLive
 )
 
+var all = [...]Type{BibiliLive, BilibiliNews, DouyuLive}
+
 type Notify interface {
 	Type() Type
 }
@@ -31,7 +33,7 @@ func (t Type) ContainAny(o Type) bool {
 	if t.Empty() && o.Empty() {
 		return false
 	}
-	for _, c := range []Type{BibiliLive, BilibiliNews, DouyuLive} {
+	for _, c := range all {
 		if t.ContainAll(c) && o.ContainAll(c) {
 			return true
 		}
@@ -41,7 +43,7 @@ func (t Type) ContainAny(o Type) bool {
 
 func (t Type) Remove(o Type) Type {
 	newT := t
-	for _, c := range []Type{BibiliLive, BilibiliNews, DouyuLive} {
+	for _, c := range all {
 		if t.ContainAll(c) && o.ContainAll(c) {
 			newT ^= c
 		}
@@ -51,7 +53,7 @@ func (t Type) Remove(o Type) Type {
 
 func (t Type) Add(o Type) Type {
 	newT := t
-	for _, c := range []Type{BibiliLive, BilibiliNews, DouyuLive} {
+	for _, c := range all {
 		if !t.ContainAll(c) && o.ContainAll(c) {
 			newT ^= c
 		}

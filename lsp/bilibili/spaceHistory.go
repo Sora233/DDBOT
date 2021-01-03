@@ -25,9 +25,7 @@ func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, err
 	}()
 	url := BPath(PathDynamicSrvSpaceHistory)
 	params, err := utils.ToParams(&DynamicSrvSpaceHistoryRequest{
-		HostUid:         hostUid,
-		OffsetDynamicId: 0,
-		NeedTop:         0,
+		HostUid: hostUid,
 	})
 	if err != nil {
 		return nil, err

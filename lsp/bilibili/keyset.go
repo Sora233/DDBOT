@@ -34,6 +34,9 @@ type extraKey struct {
 func (k *extraKey) UserInfoKey(keys ...interface{}) string {
 	return buntdb.BilibiliUserInfoKey(keys...)
 }
+func (k *extraKey) CurrentNewsKey(keys ...interface{}) string {
+	return buntdb.BilibiliCurrentNewsKey(keys...)
+}
 
 func NewKeySet() *keySet {
 	return &keySet{}

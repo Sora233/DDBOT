@@ -43,6 +43,9 @@ func BilibliFreshKey(keys ...interface{}) string {
 func BilibiliCurrentLiveKey(keys ...interface{}) string {
 	return NamedKey("CurrentLive", keys)
 }
+func BilibiliCurrentNewsKey(keys ...interface{}) string {
+	return NamedKey("CurrentNews", keys)
+}
 func BilibiliUserInfoKey(keys ...interface{}) string {
 	return NamedKey("UserInfo", keys)
 }

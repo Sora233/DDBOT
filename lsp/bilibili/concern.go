@@ -156,11 +156,12 @@ func (c *Concern) notifyLoop() {
 		switch ievent.Type() {
 		case Live:
 			event := (ievent).(*LiveInfo)
-			log := logger.WithField("mid", event).
+			log := logger.WithField("mid", event.Mid).
 				WithField("name", event.Name).
 				WithField("roomid", event.RoomId).
 				WithField("title", event.LiveTitle).
-				WithField("status", event.Status.String())
+				WithField("status", event.Status.String()).
+				WithField("type", event.Type())
 			log.Debugf("debug event")
 
 			groups, _, _, err := c.StateManager.List(func(groupCode int64, id int64, p concern.Type) bool {
@@ -175,16 +176,32 @@ func (c *Concern) notifyLoop() {
 				notify := NewConcernLiveNotify(groupCode, event)
 				c.notify <- notify
 				if event.Status == LiveStatus_Living {
-					log.Debug("living notify")
+					log.WithField("group_code", groupCode).Debug("living notify")
 				} else if event.Status == LiveStatus_NoLiving {
-					log.Debug("noliving notify")
+					log.WithField("group_code", groupCode).Debug("noliving notify")
 				} else {
-					log.Error("unknown live status")
+					log.WithField("group_code", groupCode).Error("unknown live status")
 				}
 			}
 		case News:
-			// TODO
-			logger.Errorf("concern event news not supported")
+			event := (ievent).(*NewsInfo)
+			log := logger.WithField("mid", event.Mid).
+				WithField("name", event.Name).
+				WithField("news_number", len(event.Cards)).
+				WithField("type", event.Type())
+			log.Debugf("debug event")
+
+			groups, _, _, err := c.StateManager.List(func(groupCode int64, id int64, p concern.Type) bool {
+				return id == event.Mid && p.ContainAny(concern.BilibiliNews)
+			})
+			if err != nil {
+				log.Errorf("list id failed %v", err)
+				continue
+			}
+			for _, groupCode := range groups {
+				notify := NewConcernNewsNotify(groupCode, event)
+				c.notify <- notify
+			}
 		}
 
 	}
@@ -198,7 +215,7 @@ func (c *Concern) emitFreshCore() {
 			continue
 		}
 		if ok, _ := c.StateManager.FreshCheck(mid, true); !ok {
-			logger.WithField("mid", mid).WithField("result", ok).Debug("fresh check failed")
+			logger.WithField("mid", mid).WithField("result", ok).Trace("fresh check failed")
 			continue
 		}
 		ctype, err := c.StateManager.GetConcern(mid)
@@ -207,18 +224,51 @@ func (c *Concern) emitFreshCore() {
 			continue
 		}
 		if ctype.ContainAll(concern.BibiliLive) {
-			oldInfo, _ := c.findUserLiving(mid, false)
-			liveInfo, err := c.findUserLiving(mid, true)
-			if err != nil {
-				logger.WithField("mid", mid).Errorf("load liveinfo failed %v", err)
-				continue
-			}
-			if oldInfo == nil || oldInfo.Status != liveInfo.Status || oldInfo.LiveTitle != liveInfo.LiveTitle {
-				c.eventChan <- liveInfo
-			}
+			c.freshLive(mid)
 		}
 		if ctype.ContainAny(concern.BilibiliNews) {
-			// TODO
+			c.freshNews(mid)
+		}
+	}
+}
+
+func (c *Concern) freshLive(mid int64) {
+	oldLiveInfo, _ := c.findUserLiving(mid, false)
+	newLiveInfo, err := c.findUserLiving(mid, true)
+	if err != nil {
+		logger.WithField("mid", mid).Errorf("load liveinfo failed %v", err)
+		return
+	}
+	if oldLiveInfo == nil || oldLiveInfo.Status != newLiveInfo.Status || oldLiveInfo.LiveTitle != newLiveInfo.LiveTitle {
+		c.eventChan <- newLiveInfo
+	}
+}
+
+func (c *Concern) freshNews(mid int64) {
+	oldNewsInfo, _ := c.findUserNews(mid, false)
+	newNewsInfo, err := c.findUserNews(mid, true)
+	if err != nil {
+		logger.WithField("mid", mid).Errorf("load newsinfo failed %v", err)
+		return
+	}
+	if oldNewsInfo == nil {
+		logger.WithField("mid", mid).Debugf("oldNewsInfo nil, skip notify")
+		return
+	}
+	if newNewsInfo.LastDynamicId == 0 || len(newNewsInfo.Cards) == 0 {
+		logger.WithField("mid", mid).Debugf("newNewsInfo is empty")
+		return
+	}
+	if oldNewsInfo.LastDynamicId != newNewsInfo.LastDynamicId {
+		var newIndex = 1 // if too many news, just notify latest one
+		for index := range newNewsInfo.Cards {
+			if oldNewsInfo.LastDynamicId == newNewsInfo.Cards[index].GetDesc().GetDynamicId() {
+				newIndex = index
+			}
+		}
+		newNewsInfo.Cards = newNewsInfo.Cards[:newIndex]
+		if len(newNewsInfo.Cards) > 0 {
+			c.eventChan <- newNewsInfo
 		}
 	}
 }
@@ -273,4 +323,29 @@ func (c *Concern) findUserLiving(mid int64, load bool) (*LiveInfo, error) {
 		return liveInfo, nil
 	}
 	return c.StateManager.GetLiveInfo(mid)
+}
+
+func (c *Concern) findUserNews(mid int64, load bool) (*NewsInfo, error) {
+	userInfo, err := c.findUser(mid, load)
+	if err != nil {
+		return nil, err
+	}
+
+	var newsInfo *NewsInfo
+
+	if load {
+		history, err := DynamicSrvSpaceHistory(mid)
+		if err != nil {
+			return nil, err
+		}
+		if history.Code != 0 {
+			return nil, fmt.Errorf("code:%v %v", history.Code, history.Message)
+		}
+		newsInfo = NewNewsInfoWithDetail(userInfo, history.GetData().GetCards())
+		_ = c.StateManager.AddNewsInfo(newsInfo)
+	}
+	if newsInfo != nil {
+		return newsInfo, nil
+	}
+	return c.StateManager.GetNewsInfo(mid)
 }

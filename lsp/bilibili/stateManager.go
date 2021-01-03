@@ -92,6 +92,44 @@ func (c *StateManager) GetLiveInfo(mid int64) (*LiveInfo, error) {
 	return liveInfo, nil
 }
 
+func (c *StateManager) AddNewsInfo(newsInfo *NewsInfo) error {
+	if newsInfo == nil {
+		return errors.New("nil NewsInfo")
+	}
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
+	}
+	err = db.Update(func(tx *buntdb.Tx) error {
+		_, _, err := tx.Set(c.CurrentNewsKey(newsInfo.Mid), newsInfo.ToString(), nil)
+		return err
+	})
+	return err
+}
+
+func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
+	var newsInfo = &NewsInfo{}
+	db, err := localdb.GetClient()
+	if err != nil {
+		return nil, err
+	}
+	err = db.View(func(tx *buntdb.Tx) error {
+		val, err := tx.Get(c.CurrentNewsKey(mid))
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal([]byte(val), newsInfo)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return newsInfo, nil
+}
+
 func (c *StateManager) Start() error {
 	return c.StateManager.Start()
 }

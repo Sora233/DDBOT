@@ -214,7 +214,18 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					bot.SendGroupMessage(notify.GroupCode, sendingMsg)
 				}
 			case concern.BilibiliNews:
-			// TODO
+				notify := (inotify).(*bilibili.ConcernNewsNotify)
+				logger.WithField("site", bilibili.Site).
+					WithField("GroupCode", notify.GroupCode).
+					WithField("Name", notify.Name).
+					WithField("NewsCount", len(notify.Cards)).
+					Info("notify")
+				sendingMsg := message.NewSendingMessage()
+				notifyMsg := l.NotifyMessage(bot, notify)
+				for _, msg := range notifyMsg {
+					sendingMsg.Append(msg)
+				}
+				bot.SendGroupMessage(notify.GroupCode, sendingMsg)
 			case concern.DouyuLive:
 				notify := (inotify).(*douyu.ConcernLiveNotify)
 				logger.WithField("site", douyu.Site).
@@ -256,7 +267,36 @@ func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMes
 			result = append(result, message.NewText(notify.RoomUrl))
 		}
 	case concern.BilibiliNews:
-		// TODO
+		notify := (inotify).(*bilibili.ConcernNewsNotify)
+		result = append(result, message.NewText(fmt.Sprintf("%v有新动态了：\n", notify.Name)))
+		for index, card := range notify.Cards {
+			// TODO
+			switch card.GetDesc().GetType() {
+			case bilibili.DynamicDescType_WithOrigin:
+			case bilibili.DynamicDescType_WithImage:
+				cardImage, err := notify.GetCardWithImage(index)
+				if err != nil {
+					logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
+					continue
+				}
+				cardImage.GetItem()
+				result = append(result, message.NewText("发布了新图文：(TODO)"))
+			case bilibili.DynamicDescType_TextOnly:
+				cardText, err := notify.GetCardTextOnly(index)
+				if err != nil {
+					logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
+					continue
+				}
+				result = append(result, message.NewText("发布了新动态："+cardText.GetItem().GetContent()))
+			case bilibili.DynamicDescType_WithVideo:
+				cardVideo, err := notify.GetCardWithVideo(index)
+				if err != nil {
+					logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
+					continue
+				}
+				result = append(result, message.NewText("发布了视频："+cardVideo.GetItem().GetTitle()))
+			}
+		}
 	case concern.DouyuLive:
 		notify := (inotify).(*douyu.ConcernLiveNotify)
 		switch notify.ShowStatus {

@@ -156,7 +156,7 @@ func (c *Concern) emitFreshCore() {
 			continue
 		}
 		if ok, _ := c.StateManager.FreshCheck(id, true); !ok {
-			logger.WithField("id", id).WithField("result", ok).Debug("fresh check failed")
+			logger.WithField("id", id).WithField("result", ok).Trace("fresh check failed")
 			continue
 		}
 		ctype, err := c.StateManager.GetConcern(id)

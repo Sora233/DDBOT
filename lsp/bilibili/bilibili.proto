@@ -99,7 +99,7 @@ message DynamicSvrSpaceHistoryResponse {
                 int64 dynamic_id = 1;
                 int64 orig_dy_id = 2;
                 DynamicDescType orig_type = 3;
-                int32 pre_dy_id = 4;
+                int64 pre_dy_id = 4;
                 int32 comment = 5;
                 int32 like = 6;
                 int32 view = 7;
