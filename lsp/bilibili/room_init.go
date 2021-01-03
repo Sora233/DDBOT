@@ -37,7 +37,7 @@ func RoomInit(roomId int64) (*RoomInitResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	if rir.Code != 0 {
+	if rir.Code == -412 {
 		proxy_pool.Delete(resp.Proxy)
 	}
 	return rir, nil

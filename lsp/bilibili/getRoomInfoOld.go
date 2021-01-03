@@ -38,7 +38,7 @@ func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	if grioResp.Code != 0 {
+	if grioResp.Code == -412 {
 		proxy_pool.Delete(resp.Proxy)
 	}
 	return grioResp, nil

@@ -2,6 +2,7 @@ package bilibili
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 )
 
@@ -9,10 +10,42 @@ type NewsInfo struct {
 	UserInfo
 	NewsType   DynamicDescType
 	OriginType DynamicDescType
-	Content    DynamicDescType
+	Card       interface{} // should be in CardWithImage / CardWithOrig / CardWithVideo / CardTextOnly
+	Display    *DynamicSvrSpaceHistoryResponse_Data_Card_Display
 }
 
-// TODO
+func (n *NewsInfo) Type() EventType {
+	return News
+}
+
+func (n *NewsInfo) GetCardWithImage() (*CardWithImage, error) {
+	if n.NewsType == DynamicDescType_WithImage {
+		return n.Card.(*CardWithImage), nil
+	}
+	return nil, errors.New("type mismatch")
+}
+
+func (n *NewsInfo) GetCardWithOrig() (*CardWithOrig, error) {
+	if n.NewsType == DynamicDescType_WithOrigin {
+		return n.Card.(*CardWithOrig), nil
+	}
+	return nil, errors.New("type mismatch")
+}
+
+func (n *NewsInfo) GetCardWithVideo() (*CardWithVideo, error) {
+	if n.NewsType == DynamicDescType_WithVideo {
+		return n.Card.(*CardWithVideo), nil
+	}
+	return nil, errors.New("type mismatch")
+}
+
+func (n *NewsInfo) GetCardTextOnly() (*CardTextOnly, error) {
+	if n.NewsType == DynamicDescType_TextOnly {
+		return n.Card.(*CardTextOnly), nil
+	}
+	return nil, errors.New("type mismatch")
+}
+
 type ConcernNewsNotify struct {
 	GroupCode int64 `json:"group_code"`
 	NewsInfo

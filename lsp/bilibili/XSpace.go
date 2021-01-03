@@ -37,7 +37,7 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	if xsai.Code != 0 {
+	if xsai.Code == -412 {
 		proxy_pool.Delete(resp.Proxy)
 	}
 	return xsai, nil
