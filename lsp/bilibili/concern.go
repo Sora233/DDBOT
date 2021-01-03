@@ -197,6 +197,10 @@ func (c *Concern) emitFreshCore() {
 			logger.WithField("emit", e).Errorf("emit element is not int64 mid")
 			continue
 		}
+		if ok, _ := c.StateManager.FreshCheck(mid, true); !ok {
+			logger.WithField("mid", mid).WithField("result", ok).Debug("fresh check failed")
+			continue
+		}
 		ctype, err := c.StateManager.GetConcern(mid)
 		if err != nil {
 			logger.WithField("mid", mid).Errorf("get concern failed %v", err)
