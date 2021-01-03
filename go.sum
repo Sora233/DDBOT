@@ -30,6 +30,8 @@ github.com/Sora233/zhima-proxy-pool v0.0.0-20210102052502-04d9c57192e1 h1:HP9dEy
 github.com/Sora233/zhima-proxy-pool v0.0.0-20210102052502-04d9c57192e1/go.mod h1:axlNpaq86R7luharXNfI0L6WnvIJJVZqc8ewoTHik98=
 github.com/Sora233/zhima-proxy-pool v0.0.0-20210102103433-f11000e2571c h1:chiLolFRvS7pPOOZO8cXCB0UbxbMHkdHkAHlAUxykGg=
 github.com/Sora233/zhima-proxy-pool v0.0.0-20210102103433-f11000e2571c/go.mod h1:axlNpaq86R7luharXNfI0L6WnvIJJVZqc8ewoTHik98=
+github.com/Sora233/zhima-proxy-pool v0.0.0-20210103024455-9363625b197a h1:TP8+vRusf75OTs2NUDU1hiWuA+j7KkRRbmifXJhrsgM=
+github.com/Sora233/zhima-proxy-pool v0.0.0-20210103024455-9363625b197a/go.mod h1:axlNpaq86R7luharXNfI0L6WnvIJJVZqc8ewoTHik98=
 github.com/a8m/syncmap v0.0.0-20200818084611-4bbbd178de97/go.mod h1:f3iF7/3t9i9hsYF8DPgT0XeIVyNzevhMCKf2445Q6pE=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=

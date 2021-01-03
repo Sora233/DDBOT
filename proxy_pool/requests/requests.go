@@ -62,9 +62,6 @@ func Get(url string, params requests.Params, maxRetry int, options ...GetOption)
 			break
 		}
 	}
-	if err != nil {
-		proxy_pool.Delete(proxy)
-	}
 	return &ResponseWithProxy{
 		Response: resp,
 		Proxy:    proxy,

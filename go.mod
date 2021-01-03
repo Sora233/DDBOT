@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/Logiase/MiraiGo-Template v0.0.0-20201012145238-b21d29851007
 	github.com/Mrs4s/MiraiGo v0.0.0-20201220054233-37f37c3eb564
-	github.com/Sora233/zhima-proxy-pool v0.0.0-20210102103433-f11000e2571c
+	github.com/Sora233/zhima-proxy-pool v0.0.0-20210103024455-9363625b197a
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.790
 	github.com/asmcos/requests v0.0.0-20200816142649-95abc76c8cac
 	github.com/forestgiant/sliceutil v0.0.0-20160425183142-94783f95db6c
