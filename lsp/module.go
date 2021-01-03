@@ -94,10 +94,10 @@ func (l *Lsp) Init() {
 		log.WithField("api", api).Debug("debug")
 		cfg := &zhimaproxypool.Config{
 			ApiAddr:   api,
-			BackUpCap: 50,
-			ActiveCap: 3,
-			ClearTime: time.Second * 90,
-			TimeLimit: time.Minute * 175,
+			BackUpCap: config.GlobalConfig.GetInt("zhimaProxyPool.BackUpCap"),
+			ActiveCap: config.GlobalConfig.GetInt("zhimaProxyPool.ActiveCap"),
+			ClearTime: time.Second * time.Duration(config.GlobalConfig.GetInt("zhimaProxyPool.ClearTime")),
+			TimeLimit: time.Minute * time.Duration(config.GlobalConfig.GetInt("zhimaProxyPool.TimeLimit")),
 		}
 		zhimaPool := zhimaproxypool.NewZhimaProxyPool(cfg, zhima.NewBuntdbPersister())
 		proxy_pool.Init(zhima.NewZhimaWrapper(zhimaPool))
