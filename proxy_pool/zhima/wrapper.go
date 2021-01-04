@@ -5,15 +5,15 @@ import (
 	zhima_proxy_pool "github.com/Sora233/zhima-proxy-pool"
 )
 
-type ZhimaWrapper struct {
+type Wrapper struct {
 	pool *zhima_proxy_pool.ZhimaProxyPool
 }
 
-func (z *ZhimaWrapper) Get() (proxy_pool.IProxy, error) {
+func (z *Wrapper) Get() (proxy_pool.IProxy, error) {
 	return z.pool.Get()
 }
 
-func (z *ZhimaWrapper) Delete(iproxy proxy_pool.IProxy) bool {
+func (z *Wrapper) Delete(iproxy proxy_pool.IProxy) bool {
 	if proxy, ok := iproxy.(*zhima_proxy_pool.Proxy); ok {
 		return z.pool.Delete(proxy)
 	} else {
@@ -21,10 +21,10 @@ func (z *ZhimaWrapper) Delete(iproxy proxy_pool.IProxy) bool {
 	}
 }
 
-func (z *ZhimaWrapper) Stop() error {
+func (z *Wrapper) Stop() error {
 	return z.pool.Stop()
 }
 
-func NewZhimaWrapper(pool *zhima_proxy_pool.ZhimaProxyPool) *ZhimaWrapper {
-	return &ZhimaWrapper{pool: pool}
+func NewZhimaWrapper(pool *zhima_proxy_pool.ZhimaProxyPool) *Wrapper {
+	return &Wrapper{pool: pool}
 }
