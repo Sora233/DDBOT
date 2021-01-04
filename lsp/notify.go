@@ -52,16 +52,29 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			}
 			cardImage.GetItem()
 			result = append(result, message.NewText(fmt.Sprintf("%v发布了新态：\n%v\n%v\n", notify.Name, date, cardImage.GetItem().GetDescription())))
-			for _, pic := range cardImage.GetItem().GetPictures() {
-				img, err := localutils.ImageGetAndNorm(pic.GetImgSrc())
+			if cardImage.GetItem().GetPicturesCount() == 1 {
+				pic := cardImage.GetItem().GetPictures()[0]
+				img, err := localutils.ImageGet(pic.GetImgSrc())
 				if err != nil {
 					continue
 				}
-				pic, err := bot.UploadGroupImage(notify.GroupCode, img)
+				groupImage, err := bot.UploadGroupImage(notify.GroupCode, img)
 				if err != nil {
 					continue
 				}
-				result = append(result, pic)
+				result = append(result, groupImage)
+			} else {
+				for _, pic := range cardImage.GetItem().GetPictures() {
+					img, err := localutils.ImageGetAndNorm(pic.GetImgSrc())
+					if err != nil {
+						continue
+					}
+					groupImage, err := bot.UploadGroupImage(notify.GroupCode, img)
+					if err != nil {
+						continue
+					}
+					result = append(result, groupImage)
+				}
 			}
 		case bilibili.DynamicDescType_TextOnly:
 			cardText, err := notify.GetCardTextOnly(index)
