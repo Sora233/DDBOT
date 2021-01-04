@@ -147,7 +147,7 @@ message DynamicSvrSpaceHistoryResponse {
 
 message CardWithImage {
     message Item {
-        int32 id = 1;
+        int64 id = 1;
         string title = 2;
         string description = 3;
         string category = 4;
@@ -159,7 +159,7 @@ message CardWithImage {
         }
         repeated Picture pictures = 5;
         int32 pictures_count = 6;
-        int32 upload_time = 7;
+        int64 upload_time = 7;
     }
     Item item = 1;
 }
@@ -167,7 +167,7 @@ message CardWithImage {
 message CardWithOrig {
     message Item {
         string content = 1;
-        int32 timestamp = 2;
+        int64 timestamp = 2;
         DynamicDescType orig_type = 3;
     }
     Item item = 1;
@@ -188,7 +188,7 @@ message CardWithVideo {
         string desc = 1;
         int32 duration = 2;
         string dynamic = 3;
-        int32 pubdate = 4;
+        int64 pubdate = 4;
         string title = 5;
         string tname = 6;
         int32 videos = 7;
@@ -199,13 +199,11 @@ message CardWithVideo {
 
 message CardTextOnly {
     message Item {
-        int32 rp_id = 1;
-        int32 uid = 2;
+        int64 rp_id = 1;
+        int64 uid = 2;
         string content = 3;
         string ctrl = 4;
-        int32 orig_by_id = 5;
-        int32 pre_by_id = 6;
-        int32 timestamp = 7;
+        int64 timestamp = 7;
         int32 reply = 8;
     }
     Item item = 1;
