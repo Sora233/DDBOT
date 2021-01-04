@@ -82,7 +82,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
 				continue
 			}
-			result = append(result, message.NewText(fmt.Sprintf("%v发布了新动态：\n%v\n%v", notify.Name, date, cardText.GetItem().GetContent())))
+			result = append(result, message.NewText(fmt.Sprintf("%v发布了新动态：\n%v\n%v\n", notify.Name, date, cardText.GetItem().GetContent())))
 		case bilibili.DynamicDescType_WithVideo:
 			cardVideo, err := notify.GetCardWithVideo(index)
 			if err != nil {
