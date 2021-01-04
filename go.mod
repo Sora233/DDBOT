@@ -3,8 +3,8 @@ module github.com/Sora233/Sora233-MiraiGo
 go 1.15
 
 require (
-	github.com/Logiase/MiraiGo-Template v0.0.0-20201012145238-b21d29851007
-	github.com/Mrs4s/MiraiGo v0.0.0-20201220054233-37f37c3eb564
+	github.com/Logiase/MiraiGo-Template v0.0.0-20201230072030-576f07174255
+	github.com/Mrs4s/MiraiGo v0.0.0-20201227141240-b569935970d8
 	github.com/Sora233/zhima-proxy-pool v0.0.0-20210103024455-9363625b197a
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.790
 	github.com/asmcos/requests v0.0.0-20200816142649-95abc76c8cac
@@ -25,5 +25,3 @@ require (
 	golang.org/x/text v0.3.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
-
-replace github.com/Logiase/MiraiGo-Template v0.0.0-20201012145238-b21d29851007 => github.com/Sora233/MiraiGo-Template v0.0.0-20201221153314-a72ef88f33fc

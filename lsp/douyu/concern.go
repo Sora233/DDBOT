@@ -125,19 +125,19 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 	log := logger.WithField("group_code", groupCode).WithField("all", all)
 	var result []*ConcernLiveNotify
 
-	mids, _, err := c.StateManager.ListByGroup(groupCode, func(id int64, p concern.Type) bool {
+	ids, _, err := c.StateManager.ListByGroup(groupCode, func(id int64, p concern.Type) bool {
 		return p.ContainAny(concern.DouyuLive)
 	})
 	if err != nil {
 		return nil, err
 	}
-	if len(mids) != 0 {
+	if len(ids) != 0 {
 		result = make([]*ConcernLiveNotify, 0)
 	}
-	for _, mid := range mids {
-		liveInfo, err := c.StateManager.GetLiveInfo(mid)
+	for _, id := range ids {
+		liveInfo, err := c.StateManager.GetLiveInfo(id)
 		if err != nil {
-			log.WithField("mid", mid).Errorf("get LiveInfo err %v", err)
+			log.WithField("id", id).Errorf("get LiveInfo err %v", err)
 			continue
 		}
 		if all || liveInfo.Living() {
@@ -159,6 +159,7 @@ func (c *Concern) emitFreshCore() {
 			logger.WithField("id", id).WithField("result", ok).Trace("fresh check failed")
 			continue
 		}
+		logger.WithField("id", id).Debug("fresh")
 		ctype, err := c.StateManager.GetConcern(id)
 		if err != nil {
 			logger.WithField("id", id).Errorf("get concern failed %v", err)
@@ -168,7 +169,7 @@ func (c *Concern) emitFreshCore() {
 			oldInfo, _ := c.findRoom(id, false)
 			liveInfo, err := c.findRoom(id, true)
 			if err != nil {
-				logger.WithField("mid", id).Errorf("load liveinfo failed %v", err)
+				logger.WithField("id", id).Errorf("load liveinfo failed %v", err)
 				continue
 			}
 			if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {

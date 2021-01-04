@@ -218,6 +218,7 @@ func (c *Concern) emitFreshCore() {
 			logger.WithField("mid", mid).WithField("result", ok).Trace("fresh check failed")
 			continue
 		}
+		logger.WithField("mid", mid).Debug("fresh")
 		ctype, err := c.StateManager.GetConcern(mid)
 		if err != nil {
 			logger.WithField("mid", mid).Errorf("get concern failed %v", err)
@@ -226,7 +227,7 @@ func (c *Concern) emitFreshCore() {
 		if ctype.ContainAll(concern.BibiliLive) {
 			c.freshLive(mid)
 		}
-		if ctype.ContainAny(concern.BilibiliNews) {
+		if ctype.ContainAll(concern.BilibiliNews) {
 			c.freshNews(mid)
 		}
 	}
