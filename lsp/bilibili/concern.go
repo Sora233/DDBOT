@@ -256,6 +256,13 @@ func (c *Concern) freshNews(mid int64) {
 		logger.WithField("mid", mid).Debugf("oldNewsInfo nil, skip notify")
 		return
 	}
+	if oldNewsInfo.Timestamp > newNewsInfo.Timestamp {
+		logger.WithField("mid", mid).
+			WithField("old_timestamp", oldNewsInfo.Timestamp).
+			WithField("new_timestamp", newNewsInfo.Timestamp).
+			Debugf("newNewsInfo timestamp is less than oldNewsInfo timestamp, maybe some dynamic is deleted, skip.")
+		return
+	}
 	if newNewsInfo.LastDynamicId == 0 || len(newNewsInfo.Cards) == 0 {
 		logger.WithField("mid", mid).Debugf("newNewsInfo is empty")
 		return

@@ -9,6 +9,7 @@ import (
 type NewsInfo struct {
 	UserInfo
 	LastDynamicId int64                                       `json:"last_dynamic_id"`
+	Timestamp     int32                                       `json:"timestamp"`
 	Cards         []*DynamicSvrSpaceHistoryResponse_Data_Card `json:"-"`
 }
 
@@ -145,24 +146,28 @@ func NewLiveInfo(userInfo *UserInfo, liveTitle string, cover string, status Live
 	}
 }
 
-func NewNewsInfo(userInfo *UserInfo, dynamicId int64) *NewsInfo {
+func NewNewsInfo(userInfo *UserInfo, dynamicId int64, timestamp int32) *NewsInfo {
 	if userInfo == nil {
 		return nil
 	}
 	return &NewsInfo{
 		UserInfo:      *userInfo,
 		LastDynamicId: dynamicId,
+		Timestamp:     timestamp,
 	}
 }
 
 func NewNewsInfoWithDetail(userInfo *UserInfo, cards []*DynamicSvrSpaceHistoryResponse_Data_Card) *NewsInfo {
 	var dynamicId int64
+	var timestamp int32
 	if len(cards) > 0 {
 		dynamicId = cards[0].GetDesc().GetDynamicId()
+		timestamp = cards[0].GetDesc().GetTimestamp()
 	}
 	return &NewsInfo{
 		UserInfo:      *userInfo,
 		LastDynamicId: dynamicId,
+		Timestamp:     timestamp,
 		Cards:         cards,
 	}
 }
