@@ -101,7 +101,7 @@ func (l *Lsp) Init() {
 			TimeLimit: time.Minute * time.Duration(config.GlobalConfig.GetInt("zhimaProxyPool.TimeLimit")),
 		}
 		zhimaPool := zhimaproxypool.NewZhimaProxyPool(cfg, zhima.NewBuntdbPersister())
-		proxy_pool.Init(zhima.NewZhimaWrapper(zhimaPool))
+		proxy_pool.Init(zhima.NewZhimaWrapper(zhimaPool, 15))
 	default:
 		log.Errorf("unknown proxy type")
 	}
