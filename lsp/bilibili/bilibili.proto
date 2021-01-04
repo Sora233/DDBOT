@@ -30,6 +30,8 @@ enum DynamicDescType {
     WithImage = 2;
     TextOnly = 4;
     WithVideo = 8;
+    WithPost = 64;
+    WithMusic = 256;
 }
 
 message RoomInitResponse {
