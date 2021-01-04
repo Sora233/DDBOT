@@ -1,7 +1,6 @@
 package lsp
 
 import (
-	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
@@ -19,9 +18,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/local_proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/py"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/zhima"
-	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
-	"github.com/asmcos/requests"
 	"strings"
 	"sync"
 	"time"
@@ -259,97 +256,14 @@ func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMes
 	switch inotify.Type() {
 	case concern.BibiliLive:
 		notify := (inotify).(*bilibili.ConcernLiveNotify)
-		switch notify.Status {
-		case bilibili.LiveStatus_Living:
-			result = append(result, message.NewText(fmt.Sprintf("%s正在直播【%s】\n", notify.Name, notify.LiveTitle)))
-			result = append(result, message.NewText(notify.RoomUrl))
-			coverResp, err := requests.Get(notify.Cover)
-			if err == nil {
-				if cover, err := bot.UploadGroupImage(notify.GroupCode, coverResp.Content()); err == nil {
-					result = append(result, cover)
-				}
-			}
-		case bilibili.LiveStatus_NoLiving:
-			result = append(result, message.NewText(fmt.Sprintf("%s暂未直播\n", notify.Name)))
-			result = append(result, message.NewText(notify.RoomUrl))
-		}
+		result = append(result, l.notifyBilibiliLive(bot, notify)...)
 	case concern.BilibiliNews:
 		notify := (inotify).(*bilibili.ConcernNewsNotify)
-		for index, card := range notify.Cards {
-			dynamicUrl := bilibili.DynamicUrl(card.GetDesc().GetDynamicIdStr())
-			date := time.Unix(int64(card.GetDesc().GetTimestamp()), 0).Format("2006-01-02 15:04:05")
-			switch card.GetDesc().GetType() {
-			case bilibili.DynamicDescType_WithOrigin:
-				cardOrigin, err := notify.GetCardWithOrig(index)
-				if err != nil {
-					logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
-					continue
-				}
-				originName := cardOrigin.GetOriginUser().GetInfo().GetUname()
-				result = append(result, message.NewText(fmt.Sprintf("%v转发了%v的动态，并说：\n%v\n", notify.Name, originName, cardOrigin.GetItem().GetContent())))
-			case bilibili.DynamicDescType_WithImage:
-				cardImage, err := notify.GetCardWithImage(index)
-				if err != nil {
-					logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
-					continue
-				}
-				cardImage.GetItem()
-				result = append(result, message.NewText(fmt.Sprintf("%v发布了新态：\n%v\n%v\n", notify.Name, date, cardImage.GetItem().GetDescription())))
-				for _, pic := range cardImage.GetItem().GetPictures() {
-					img, err := localutils.ImageGetAndNorm(pic.GetImgSrc())
-					if err != nil {
-						continue
-					}
-					pic, err := bot.UploadGroupImage(notify.GroupCode, img)
-					if err != nil {
-						continue
-					}
-					result = append(result, pic)
-				}
-			case bilibili.DynamicDescType_TextOnly:
-				cardText, err := notify.GetCardTextOnly(index)
-				if err != nil {
-					logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
-					continue
-				}
-				result = append(result, message.NewText(fmt.Sprintf("%v发布了新动态：\n%v\n%v\n", notify.Name, date, cardText.GetItem().GetContent())))
-			case bilibili.DynamicDescType_WithVideo:
-				cardVideo, err := notify.GetCardWithVideo(index)
-				if err != nil {
-					logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
-					continue
-				}
-				result = append(result, message.NewText(fmt.Sprintf("%v发布了新视频：\n%v\n%v\n", notify.Name, date, cardVideo.GetItem().GetTitle())))
-				img, err := localutils.ImageGetAndNorm(cardVideo.GetItem().GetPic())
-				if err != nil {
-					continue
-				}
-				cover, err := bot.UploadGroupImage(notify.GroupCode, img)
-				if err != nil {
-					continue
-				}
-				result = append(result, cover)
-			}
-			result = append(result, message.NewText(dynamicUrl))
-		}
+		result = append(result, l.notifyBilibiliNews(bot, notify)...)
 	case concern.DouyuLive:
 		notify := (inotify).(*douyu.ConcernLiveNotify)
-		switch notify.ShowStatus {
-		case douyu.ShowStatus_Living:
-			result = append(result, message.NewText(fmt.Sprintf("斗鱼-%s正在直播【%s】\n", notify.Nickname, notify.RoomName)))
-			result = append(result, message.NewText(notify.RoomUrl))
-			coverResp, err := requests.Get(notify.GetAvatar().GetBig())
-			if err == nil {
-				if cover, err := bot.UploadGroupImage(notify.GroupCode, coverResp.Content()); err == nil {
-					result = append(result, cover)
-				}
-			}
-		case douyu.ShowStatus_NoLiving:
-			result = append(result, message.NewText(fmt.Sprintf("斗鱼-%s暂未直播\n", notify.Nickname)))
-			result = append(result, message.NewText(notify.RoomUrl))
-		}
+		result = append(result, l.notifyDouyuLive(bot, notify)...)
 	}
-
 	return result
 }
 
