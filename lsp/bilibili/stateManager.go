@@ -3,6 +3,7 @@ package bilibili
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
 	"github.com/tidwall/buntdb"
@@ -43,6 +44,7 @@ func (c *StateManager) GetUserInfo(mid int64) (*UserInfo, error) {
 		}
 		err = json.Unmarshal([]byte(val), userInfo)
 		if err != nil {
+			fmt.Println(val)
 			return err
 		}
 		return nil
@@ -82,6 +84,7 @@ func (c *StateManager) GetLiveInfo(mid int64) (*LiveInfo, error) {
 		}
 		err = json.Unmarshal([]byte(val), liveInfo)
 		if err != nil {
+			fmt.Println(val)
 			return err
 		}
 		return nil
@@ -120,6 +123,7 @@ func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 		}
 		err = json.Unmarshal([]byte(val), newsInfo)
 		if err != nil {
+			fmt.Println(val)
 			return err
 		}
 		return nil

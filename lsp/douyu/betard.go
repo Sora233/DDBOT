@@ -1,6 +1,7 @@
 package douyu
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,13 +17,15 @@ const (
 )
 
 func Betard(id int64) (*BetardResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
 		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
 	url := DouyuPath(PathBetard) + fmt.Sprintf("/%v", id)
-	resp, err := requests.Get(url, nil, 3)
+	resp, err := requests.Get(ctx, url, nil, 3)
 	if err != nil {
 		return nil, err
 	}

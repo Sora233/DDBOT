@@ -3,6 +3,7 @@ package douyu
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
 	"github.com/tidwall/buntdb"
@@ -26,6 +27,7 @@ func (c *StateManager) GetLiveInfo(id int64) (*LiveInfo, error) {
 		}
 		err = json.Unmarshal([]byte(val), liveInfo)
 		if err != nil {
+			fmt.Println(val)
 			return err
 		}
 		return nil

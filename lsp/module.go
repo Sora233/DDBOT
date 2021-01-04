@@ -16,6 +16,7 @@ import (
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/local_proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/py"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/zhima"
 	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
@@ -102,6 +103,11 @@ func (l *Lsp) Init() {
 		}
 		zhimaPool := zhimaproxypool.NewZhimaProxyPool(cfg, zhima.NewBuntdbPersister())
 		proxy_pool.Init(zhima.NewZhimaWrapper(zhimaPool, 15))
+	case "localProxyPool":
+		proxies := config.GlobalConfig.GetStringSlice("localProxyPool.proxy")
+		pool := local_proxy_pool.NewLocalPool(proxies)
+		proxy_pool.Init(pool)
+		log.WithField("local_proxy_num", len(proxies)).Debug("debug")
 	default:
 		log.Errorf("unknown proxy type")
 	}

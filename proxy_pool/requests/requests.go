@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"context"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/asmcos/requests"
@@ -30,8 +31,8 @@ type ResponseWithProxy struct {
 	Proxy proxy_pool.IProxy
 }
 
-func Get(url string, params requests.Params, maxRetry int, options ...GetOption) (*ResponseWithProxy, error) {
-	req := requests.Requests()
+func Get(ctx context.Context, url string, params requests.Params, maxRetry int, options ...GetOption) (*ResponseWithProxy, error) {
+	req := requests.RequestsWithContext(ctx)
 	DefaultTimeoutOption(req)
 	for _, opt := range options {
 		opt(req)

@@ -1,4 +1,4 @@
-package local_pool
+package local_proxy_pool
 
 import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"

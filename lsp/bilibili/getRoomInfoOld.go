@@ -1,6 +1,7 @@
 package bilibili
 
 import (
+	"context"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
@@ -17,6 +18,8 @@ type GetRoomInfoOldRequest struct {
 }
 
 func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
@@ -29,7 +32,7 @@ func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(url, params, 3, requests.CookieOption(&http.Cookie{Name: "DedeUserID", Value: "2"}))
+	resp, err := requests.Get(ctx, url, params, 3, requests.CookieOption(&http.Cookie{Name: "DedeUserID", Value: "2"}))
 	if err != nil {
 		return nil, err
 	}

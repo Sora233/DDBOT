@@ -1,6 +1,7 @@
 package bilibili
 
 import (
+	"context"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
@@ -18,6 +19,8 @@ type DynamicSrvSpaceHistoryRequest struct {
 }
 
 func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
@@ -30,7 +33,7 @@ func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, err
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(url, params, 3)
+	resp, err := requests.Get(ctx, url, params, 3)
 	if err != nil {
 		return nil, err
 	}
