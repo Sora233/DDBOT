@@ -10,7 +10,8 @@ const (
 	BaseHost        = "https://api.bilibili.com"
 	BaseLiveHost    = "https://api.live.bilibili.com"
 	BaseDynamicHost = "https://api.vc.bilibili.com"
-	VideoHost       = "https://www.bilibili.com/video"
+	VideoView       = "https://www.bilibili.com/video"
+	DynamicView     = "https://t.bilibili.com"
 )
 
 var BasePath = map[string]string{
@@ -29,5 +30,9 @@ func BPath(path string) string {
 }
 
 func BVIDUrl(bvid string) string {
-	return fmt.Sprintf("%v/%v", VideoHost, bvid)
+	return fmt.Sprintf("%v/%v", VideoView, bvid)
+}
+
+func DynamicUrl(dynamicIdStr string) string {
+	return fmt.Sprintf("%v/%v", DynamicView, dynamicIdStr)
 }

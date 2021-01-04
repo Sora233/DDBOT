@@ -107,6 +107,7 @@ message DynamicSvrSpaceHistoryResponse {
                 int32 timestamp = 9;
                 DynamicDescType type = 10;
                 string bvid = 11;
+                string dynamic_id_str = 12;
             }
             message Extra {
                 int32 is_space_top = 1;
@@ -174,6 +175,7 @@ message CardWithOrig {
             int64 uid = 1;
             string uname = 2;
         }
+        Info info = 1;
     }
 
     OriginUser origin_user = 3;

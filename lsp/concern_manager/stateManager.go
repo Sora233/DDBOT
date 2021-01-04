@@ -401,6 +401,6 @@ func NewStateManager(keySet KeySet, emitChan chan interface{}) *StateManager {
 	sm := &StateManager{
 		KeySet: keySet,
 	}
-	sm.emitQueue = utils.NewEmitQueue(emitChan, time.Second*1)
+	sm.emitQueue = utils.NewEmitQueue(emitChan, time.Second*3)
 	return sm
 }
