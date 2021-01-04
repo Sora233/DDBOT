@@ -32,7 +32,7 @@ func (n *NewsInfo) GetCardWithOrig(index int) (*CardWithOrig, error) {
 	if len(n.Cards) <= index || n.Cards[index].GetCard() == "" {
 		return nil, errors.New("card not found or empty")
 	}
-	if n.Cards[index].GetDesc().GetType() == DynamicDescType_WithImage {
+	if n.Cards[index].GetDesc().GetType() == DynamicDescType_WithOrigin {
 		var card = new(CardWithOrig)
 		err := json.Unmarshal([]byte(n.Cards[index].GetCard()), card)
 		return card, err
@@ -44,7 +44,7 @@ func (n *NewsInfo) GetCardWithVideo(index int) (*CardWithVideo, error) {
 	if len(n.Cards) <= index || n.Cards[index].GetCard() == "" {
 		return nil, errors.New("card not found or empty")
 	}
-	if n.Cards[index].GetDesc().GetType() == DynamicDescType_WithImage {
+	if n.Cards[index].GetDesc().GetType() == DynamicDescType_WithVideo {
 		var card = new(CardWithVideo)
 		err := json.Unmarshal([]byte(n.Cards[index].GetCard()), card)
 		return card, err
@@ -56,7 +56,7 @@ func (n *NewsInfo) GetCardTextOnly(index int) (*CardTextOnly, error) {
 	if len(n.Cards) <= index || n.Cards[index].GetCard() == "" {
 		return nil, errors.New("card not found or empty")
 	}
-	if n.Cards[index].GetDesc().GetType() == DynamicDescType_WithImage {
+	if n.Cards[index].GetDesc().GetType() == DynamicDescType_TextOnly {
 		var card = new(CardTextOnly)
 		err := json.Unmarshal([]byte(n.Cards[index].GetCard()), card)
 		return card, err
