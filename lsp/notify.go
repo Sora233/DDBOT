@@ -43,7 +43,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				continue
 			}
 			originName := cardOrigin.GetOriginUser().GetInfo().GetUname()
-			result = append(result, message.NewText(fmt.Sprintf("%v转发了%v的动态，并说：\n%v\n", notify.Name, originName, cardOrigin.GetItem().GetContent())))
+			result = append(result, message.NewText(fmt.Sprintf("%v转发了%v的动态：\n%v\n", notify.Name, originName, cardOrigin.GetItem().GetContent())))
 		case bilibili.DynamicDescType_WithImage:
 			cardImage, err := notify.GetCardWithImage(index)
 			if err != nil {
