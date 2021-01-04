@@ -106,6 +106,7 @@ message DynamicSvrSpaceHistoryResponse {
                 int32 repost = 8;
                 int32 timestamp = 9;
                 DynamicDescType type = 10;
+                string bvid = 11;
             }
             message Extra {
                 int32 is_space_top = 1;
@@ -187,6 +188,7 @@ message CardWithVideo {
         string title = 5;
         string tname = 6;
         int32 videos = 7;
+        string pic = 8;
     }
     Item item = 1;
 }

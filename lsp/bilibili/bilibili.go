@@ -1,6 +1,7 @@
 package bilibili
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -9,6 +10,7 @@ const (
 	BaseHost        = "https://api.bilibili.com"
 	BaseLiveHost    = "https://api.live.bilibili.com"
 	BaseDynamicHost = "https://api.vc.bilibili.com"
+	VideoHost       = "https://www.bilibili.com/video"
 )
 
 var BasePath = map[string]string{
@@ -24,4 +26,8 @@ func BPath(path string) string {
 	} else {
 		return BasePath[path] + "/" + path
 	}
+}
+
+func BVIDUrl(bvid string) string {
+	return fmt.Sprintf("%v/%v", VideoHost, bvid)
 }

@@ -40,12 +40,7 @@ type Setu struct {
 }
 
 func (s *Setu) Content() ([]byte, error) {
-	req := requests.Requests()
-	resp, err := req.Get(s.Url)
-	if err != nil {
-		return nil, err
-	}
-	return resp.Content(), nil
+	return utils.ImageGet(s.Url)
 }
 
 type Response struct {

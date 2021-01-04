@@ -18,6 +18,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/py"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/zhima"
+	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	"github.com/asmcos/requests"
 	"strings"
@@ -268,9 +269,7 @@ func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMes
 		}
 	case concern.BilibiliNews:
 		notify := (inotify).(*bilibili.ConcernNewsNotify)
-		result = append(result, message.NewText(fmt.Sprintf("%v有新动态了：\n", notify.Name)))
 		for index, card := range notify.Cards {
-			// TODO
 			switch card.GetDesc().GetType() {
 			case bilibili.DynamicDescType_WithOrigin:
 			case bilibili.DynamicDescType_WithImage:
@@ -280,21 +279,42 @@ func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMes
 					continue
 				}
 				cardImage.GetItem()
-				result = append(result, message.NewText("发布了新图文：(TODO)"))
+				result = append(result, message.NewText(fmt.Sprintf("%v发布了新图文：%v\n", notify.Name, cardImage.GetItem().GetDescription())))
+				if len(cardImage.GetItem().GetPictures()) >= 1 {
+					img, err := localutils.ImageGetAndNorm(cardImage.GetItem().GetPictures()[0].GetImgSrc())
+					if err != nil {
+						continue
+					}
+					pic, err := bot.UploadGroupImage(notify.GroupCode, img)
+					if err != nil {
+						continue
+					}
+					result = append(result, pic)
+				}
 			case bilibili.DynamicDescType_TextOnly:
 				cardText, err := notify.GetCardTextOnly(index)
 				if err != nil {
 					logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
 					continue
 				}
-				result = append(result, message.NewText("发布了新动态："+cardText.GetItem().GetContent()))
+				result = append(result, message.NewText(fmt.Sprintf("%v发布了新动态：%v\n", notify.Name, cardText.GetItem().GetContent())))
 			case bilibili.DynamicDescType_WithVideo:
 				cardVideo, err := notify.GetCardWithVideo(index)
 				if err != nil {
 					logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
 					continue
 				}
-				result = append(result, message.NewText("发布了视频："+cardVideo.GetItem().GetTitle()))
+				result = append(result, message.NewText(fmt.Sprintf("%v发布了新视频：%v\n", notify.Name, cardVideo.GetItem().GetTitle())))
+				result = append(result, message.NewText(fmt.Sprintln(cardVideo, bilibili.BVIDUrl(card.GetDesc().GetBvid()))))
+				img, err := localutils.ImageGetAndNorm(cardVideo.GetItem().GetPic())
+				if err != nil {
+					continue
+				}
+				cover, err := bot.UploadGroupImage(notify.GroupCode, img)
+				if err != nil {
+					continue
+				}
+				result = append(result, cover)
 			}
 		}
 	case concern.DouyuLive:

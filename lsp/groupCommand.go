@@ -1,8 +1,6 @@
 package lsp
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
@@ -13,12 +11,8 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
-	"github.com/nfnt/resize"
+	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/tidwall/buntdb"
-	"image"
-	"image/gif"
-	"image/jpeg"
-	"image/png"
 	"math/rand"
 	"runtime/debug"
 	"strconv"
@@ -121,33 +115,13 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		lgc.textReply("获取失败")
 		return
 	}
-	dImage, format, err := image.Decode(bytes.NewReader(imgBytes))
-	if err != nil {
-		log.Errorf("image decode failed %v", err)
-		lgc.textReply("获取失败")
-		return
-	}
-	log = log.WithField("format", format)
-	resizedImage := resize.Thumbnail(1280, 860, dImage, resize.Lanczos3)
-	resizedImageBuffer := bytes.NewBuffer(make([]byte, 0))
-
-	switch format {
-	case "jpeg":
-		err = jpeg.Encode(resizedImageBuffer, resizedImage, nil)
-	case "gif":
-		err = gif.Encode(resizedImageBuffer, resizedImage, nil)
-	case "png":
-		err = png.Encode(resizedImageBuffer, resizedImage)
-	default:
-		err = errors.New("unknown format")
-	}
-
+	resizedImage, err := utils.ImageNormSize(imgBytes)
 	if err != nil {
 		log.Errorf("resized image encode failed %v", err)
 		lgc.textReply("获取失败")
 		return
 	}
-	groupImage, err := bot.UploadGroupImage(groupCode, resizedImageBuffer.Bytes())
+	groupImage, err := bot.UploadGroupImage(groupCode, resizedImage)
 	if err != nil {
 		log.Errorf("upload group image failed %v", err)
 		lgc.textReply("上传失败")

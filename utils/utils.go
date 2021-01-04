@@ -5,7 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/asmcos/requests"
+	"github.com/nfnt/resize"
 	"image"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -111,4 +115,42 @@ func FuncName() string {
 	frames := runtime.CallersFrames(pc[:n])
 	frame, _ := frames.Next()
 	return frame.Function
+}
+
+func ImageGet(url string) ([]byte, error) {
+	req := requests.Requests()
+	resp, err := req.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Content(), nil
+}
+
+func ImageNormSize(origImage []byte) ([]byte, error) {
+	dImage, format, err := image.Decode(bytes.NewReader(origImage))
+	if err != nil {
+		return nil, fmt.Errorf("image decode failed %v", err)
+	}
+	resizedImage := resize.Thumbnail(1280, 860, dImage, resize.Lanczos3)
+	resizedImageBuffer := bytes.NewBuffer(make([]byte, 0))
+	switch format {
+	case "jpeg":
+		err = jpeg.Encode(resizedImageBuffer, resizedImage, nil)
+	case "gif":
+		err = gif.Encode(resizedImageBuffer, resizedImage, nil)
+	case "png":
+		err = png.Encode(resizedImageBuffer, resizedImage)
+	default:
+		err = errors.New("unknown format")
+	}
+	return resizedImageBuffer.Bytes(), err
+}
+
+func ImageGetAndNorm(url string) ([]byte, error) {
+	img, err := ImageGet(url)
+	if err != nil {
+		return img, err
+	}
+	img, err = ImageNormSize(img)
+	return img, err
 }
