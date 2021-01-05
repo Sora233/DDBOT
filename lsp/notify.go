@@ -33,13 +33,14 @@ func (l *Lsp) notifyBilibiliLive(bot *bot.Bot, notify *bilibili.ConcernLiveNotif
 func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotify) []message.IMessageElement {
 	var result []message.IMessageElement
 	for index, card := range notify.Cards {
+		log := logger.WithField("DescType", card.GetDesc().GetType().String())
 		dynamicUrl := bilibili.DynamicUrl(card.GetDesc().GetDynamicIdStr())
 		date := time.Unix(int64(card.GetDesc().GetTimestamp()), 0).Format("2006-01-02 15:04:05")
 		switch card.GetDesc().GetType() {
 		case bilibili.DynamicDescType_WithOrigin:
 			cardOrigin, err := notify.GetCardWithOrig(index)
 			if err != nil {
-				logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
+				log.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
 				continue
 			}
 			originName := cardOrigin.GetOriginUser().GetInfo().GetUname()
@@ -47,7 +48,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 		case bilibili.DynamicDescType_WithImage:
 			cardImage, err := notify.GetCardWithImage(index)
 			if err != nil {
-				logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
+				log.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
 				continue
 			}
 			cardImage.GetItem()
@@ -79,14 +80,14 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 		case bilibili.DynamicDescType_TextOnly:
 			cardText, err := notify.GetCardTextOnly(index)
 			if err != nil {
-				logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
+				log.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
 				continue
 			}
 			result = append(result, message.NewText(fmt.Sprintf("%v发布了新动态：\n%v\n%v\n", notify.Name, date, cardText.GetItem().GetContent())))
 		case bilibili.DynamicDescType_WithVideo:
 			cardVideo, err := notify.GetCardWithVideo(index)
 			if err != nil {
-				logger.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
+				log.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
 				continue
 			}
 			result = append(result, message.NewText(fmt.Sprintf("%v发布了新视频：\n%v\n%v\n", notify.Name, date, cardVideo.GetItem().GetTitle())))
@@ -99,6 +100,12 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				continue
 			}
 			result = append(result, cover)
+		case bilibili.DynamicDescType_WithPost:
+			// TODO
+			log.Debugf("not supported")
+		case bilibili.DynamicDescType_WithMusic:
+			// TODO
+			log.Debugf("not supported")
 		}
 		result = append(result, message.NewText(dynamicUrl))
 	}
