@@ -184,17 +184,14 @@ message CardWithOrig {
 }
 
 message CardWithVideo {
-    message Item {
-        string desc = 1;
-        int32 duration = 2;
-        string dynamic = 3;
-        int64 pubdate = 4;
-        string title = 5;
-        string tname = 6;
-        int32 videos = 7;
-        string pic = 8;
-    }
-    Item item = 1;
+    string desc = 1;
+    int32 duration = 2;
+    string dynamic = 3;
+    int64 pubdate = 4;
+    string title = 5;
+    string tname = 6;
+    int32 videos = 7;
+    string pic = 8;
 }
 
 message CardTextOnly {

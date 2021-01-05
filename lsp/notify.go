@@ -57,10 +57,12 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				pic := cardImage.GetItem().GetPictures()[0]
 				img, err := localutils.ImageGet(pic.GetImgSrc())
 				if err != nil {
+					log.WithField("pic", pic).Errorf("get image failed %v", err)
 					continue
 				}
 				groupImage, err := bot.UploadGroupImage(notify.GroupCode, img)
 				if err != nil {
+					log.WithField("pic", pic).Errorf("upload group image %v", err)
 					continue
 				}
 				result = append(result, groupImage)
@@ -68,10 +70,12 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				for _, pic := range cardImage.GetItem().GetPictures() {
 					img, err := localutils.ImageGetAndNorm(pic.GetImgSrc())
 					if err != nil {
+						log.WithField("pic", pic).Errorf("get image failed %v", err)
 						continue
 					}
 					groupImage, err := bot.UploadGroupImage(notify.GroupCode, img)
 					if err != nil {
+						log.WithField("pic", pic).Errorf("upload group image %v", err)
 						continue
 					}
 					result = append(result, groupImage)
@@ -90,13 +94,15 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				log.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
 				continue
 			}
-			result = append(result, message.NewText(fmt.Sprintf("%v发布了新视频：\n%v\n%v\n", notify.Name, date, cardVideo.GetItem().GetTitle())))
-			img, err := localutils.ImageGetAndNorm(cardVideo.GetItem().GetPic())
+			result = append(result, message.NewText(fmt.Sprintf("%v发布了新视频：\n%v\n%v\n%v\n", notify.Name, date, cardVideo.GetTitle(), cardVideo.GetDynamic())))
+			img, err := localutils.ImageGetAndNorm(cardVideo.GetPic())
 			if err != nil {
+				log.WithField("pic", cardVideo.GetPic()).Errorf("get image failed %v", err)
 				continue
 			}
 			cover, err := bot.UploadGroupImage(notify.GroupCode, img)
 			if err != nil {
+				log.WithField("pic", cardVideo.GetPic()).Errorf("upload group image failed %v", err)
 				continue
 			}
 			result = append(result, cover)
