@@ -17,6 +17,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -90,12 +91,31 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	bot := lgc.bot
 	groupCode := msg.GroupCode
 
+	text := msg.Elements[0].(*message.TextElement).Content
+	args := strings.Split(text, " ")[1:]
+	num := 1
+
+	if len(args) == 1 {
+		parse, err := strconv.ParseInt(args[0], 10, 64)
+		if err == nil {
+			num = int(parse)
+		} else {
+			logger.Errorf("wrong args %v", args[0])
+		}
+	}
+
+	if num <= 0 {
+		num = 1
+	}
+	if num > 10 {
+		num = 10
+	}
+
 	log := logger.WithField("GroupCode", groupCode)
 	log.Info("run setu command")
 	defer log.Info("setu command end")
 
 	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(message.NewReply(msg))
 
 	var options []image_pool.OptionFunc
 	if r18 {
@@ -103,52 +123,84 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	} else {
 		options = append(options, lolicon_pool.R18Option(lolicon_pool.R18_OFF))
 	}
-	img, err := lgc.l.GetImageFromPool(options...)
+	options = append(options, lolicon_pool.NumOption(num))
+	imgs, err := lgc.l.GetImageFromPool(options...)
 	if err != nil {
 		log.Errorf("get from image pool failed %v", err)
 		lgc.textReply("获取失败")
 		return
 	}
-	imgBytes, err := img.Content()
-	if err != nil {
-		log.Errorf("get image bytes failed %v", err)
+	if len(imgs) == 0 {
+		log.Errorf("get empty image")
 		lgc.textReply("获取失败")
 		return
 	}
-	resizedImage, err := utils.ImageNormSize(imgBytes)
-	if err != nil {
-		log.Errorf("resized image encode failed %v", err)
-		lgc.textReply("获取失败")
-		return
-	}
-	groupImage, err := bot.UploadGroupImage(groupCode, resizedImage)
-	if err != nil {
-		log.Errorf("upload group image failed %v", err)
-		lgc.textReply("上传失败")
-		return
-	}
-	sendingMsg.Append(groupImage)
-	if loliconImage, ok := img.(*lolicon_pool.Setu); ok {
-		log.WithField("author", loliconImage.Author).
-			WithField("r18", loliconImage.R18).
-			WithField("pid", loliconImage.Pid).
-			WithField("tags", loliconImage.Tags).
-			WithField("title", loliconImage.Title).
-			WithField("upload_url", groupImage.Url).
-			Debug("debug image")
-		sendingMsg.Append(message.NewText(fmt.Sprintf("标题：%v\n", loliconImage.Title)))
-		sendingMsg.Append(message.NewText(fmt.Sprintf("作者：%v\n", loliconImage.Author)))
-		sendingMsg.Append(message.NewText(fmt.Sprintf("PID：%v\n", loliconImage.Pid)))
-		tagCount := len(loliconImage.Tags)
-		if tagCount >= 2 {
-			tagCount = 2
-		}
-		sendingMsg.Append(message.NewText(fmt.Sprintf("TAG：%v\n", strings.Join(loliconImage.Tags[:tagCount], " "))))
-		sendingMsg.Append(message.NewText(fmt.Sprintf("R18：%v", loliconImage.R18)))
-	}
-	lgc.answer(sendingMsg)
-	return
+	var imgsBytes = make([][]byte, len(imgs))
+	var errs = make([]error, len(imgs))
+	var groupImages = make([]*message.GroupImageElement, len(imgs))
+	var wg sync.WaitGroup
 
+	for index := range imgs {
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			imgsBytes[index], errs[index] = imgs[index].Content()
+		}(index)
+	}
+	wg.Wait()
+
+	for index := range imgs {
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			imgBytes, err := imgsBytes[index], errs[index]
+			if err != nil {
+				errs[index] = fmt.Errorf("get image bytes failed %v", err)
+				return
+			}
+			resizedImage, err := utils.ImageNormSize(imgBytes)
+			if err != nil {
+				logger.Errorf("resize failed, use raw image")
+				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, imgBytes)
+			} else {
+				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, resizedImage)
+			}
+		}(index)
+	}
+	wg.Wait()
+
+	for index := range groupImages {
+		if errs[index] != nil {
+			continue
+		}
+		groupImage := groupImages[index]
+		img := imgs[index]
+		sendingMsg.Append(groupImage)
+		if loliconImage, ok := img.(*lolicon_pool.Setu); ok {
+			log.WithField("author", loliconImage.Author).
+				WithField("r18", loliconImage.R18).
+				WithField("pid", loliconImage.Pid).
+				WithField("tags", loliconImage.Tags).
+				WithField("title", loliconImage.Title).
+				WithField("upload_url", groupImage.Url).
+				Debug("debug image")
+			sendingMsg.Append(message.NewText(fmt.Sprintf("标题：%v\n", loliconImage.Title)))
+			sendingMsg.Append(message.NewText(fmt.Sprintf("作者：%v\n", loliconImage.Author)))
+			sendingMsg.Append(message.NewText(fmt.Sprintf("PID：%v\n", loliconImage.Pid)))
+			tagCount := len(loliconImage.Tags)
+			if tagCount >= 2 {
+				tagCount = 2
+			}
+			sendingMsg.Append(message.NewText(fmt.Sprintf("TAG：%v\n", strings.Join(loliconImage.Tags[:tagCount], " "))))
+			sendingMsg.Append(message.NewText(fmt.Sprintf("R18：%v", loliconImage.R18)))
+		}
+	}
+	if len(sendingMsg.Elements) == 0 {
+		lgc.textReply("获取失败")
+	} else {
+		lgc.reply(sendingMsg)
+	}
+	return
 }
 
 func (lgc *LspGroupCommand) WatchCommand(remove bool) {
@@ -490,8 +542,12 @@ func (lgc *LspGroupCommand) textReply(text string) {
 }
 
 func (lgc *LspGroupCommand) reply(msg *message.SendingMessage) {
-	msg.Append(message.NewReply(lgc.msg))
-	lgc.answer(msg)
+	sendingMsg := message.NewSendingMessage()
+	sendingMsg.Append(message.NewReply(lgc.msg))
+	for _, e := range msg.Elements {
+		sendingMsg.Append(e)
+	}
+	lgc.answer(sendingMsg)
 }
 
 func (lgc *LspGroupCommand) answer(msg *message.SendingMessage) {

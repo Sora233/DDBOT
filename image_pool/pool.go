@@ -9,5 +9,5 @@ type Option map[string]interface{}
 type OptionFunc func(option Option) Option
 
 type Pool interface {
-	Get(...OptionFunc) (Image, error)
+	Get(...OptionFunc) ([]Image, error)
 }

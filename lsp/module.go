@@ -277,7 +277,7 @@ func (l *Lsp) RemoveAll(groupCode int64) {
 	l.douyuConcern.RemoveAll(groupCode)
 }
 
-func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) (image_pool.Image, error) {
+func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.Image, error) {
 	return l.pool.Get(options...)
 }
 

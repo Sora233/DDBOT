@@ -1,7 +1,6 @@
 package lolicon_pool
 
 import (
-	"errors"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/image_pool"
 )
@@ -36,7 +35,7 @@ func R18Option(r18Type R18Type) image_pool.OptionFunc {
 	}
 }
 
-func (pool *LoliconPool) Get(options ...image_pool.OptionFunc) (image_pool.Image, error) {
+func (pool *LoliconPool) Get(options ...image_pool.OptionFunc) ([]image_pool.Image, error) {
 	option := make(image_pool.Option)
 	for _, optionFunc := range options {
 		optionFunc(option)
@@ -75,11 +74,11 @@ func (pool *LoliconPool) Get(options ...image_pool.OptionFunc) (image_pool.Image
 		WithField("quota", resp.Quota).
 		WithField("quota_min_ttl", resp.QuotaMinTTL).
 		Debugf("request done")
-	if len(resp.Data) >= 1 {
-		return resp.Data[0], nil
-	} else {
-		return nil, errors.New("no image")
+	var result []image_pool.Image
+	for _, img := range resp.Data {
+		result = append(result, img)
 	}
+	return result, nil
 }
 
 func NewLoliconPool(apikey string) (*LoliconPool, error) {
