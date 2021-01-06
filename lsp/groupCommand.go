@@ -169,36 +169,48 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	}
 	wg.Wait()
 
-	for index := range groupImages {
-		if errs[index] != nil {
-			continue
+	imgBatch := 2
+	ok := false
+
+	for i := 0; i < len(groupImages); i += imgBatch {
+		last := i + imgBatch
+		if last > len(groupImages) {
+			last = len(groupImages)
 		}
-		groupImage := groupImages[index]
-		img := imgs[index]
-		sendingMsg.Append(groupImage)
-		if loliconImage, ok := img.(*lolicon_pool.Setu); ok {
-			log.WithField("author", loliconImage.Author).
-				WithField("r18", loliconImage.R18).
-				WithField("pid", loliconImage.Pid).
-				WithField("tags", loliconImage.Tags).
-				WithField("title", loliconImage.Title).
-				WithField("upload_url", groupImage.Url).
-				Debug("debug image")
-			sendingMsg.Append(message.NewText(fmt.Sprintf("标题：%v\n", loliconImage.Title)))
-			sendingMsg.Append(message.NewText(fmt.Sprintf("作者：%v\n", loliconImage.Author)))
-			sendingMsg.Append(message.NewText(fmt.Sprintf("PID：%v\n", loliconImage.Pid)))
-			tagCount := len(loliconImage.Tags)
-			if tagCount >= 2 {
-				tagCount = 2
+		groupPart := groupImages[i:last]
+
+		for index, groupImage := range groupPart {
+			if errs[i+index] != nil {
+				continue
 			}
-			sendingMsg.Append(message.NewText(fmt.Sprintf("TAG：%v\n", strings.Join(loliconImage.Tags[:tagCount], " "))))
-			sendingMsg.Append(message.NewText(fmt.Sprintf("R18：%v", loliconImage.R18)))
+			ok = true
+			img := imgs[i+index]
+			sendingMsg.Append(groupImage)
+			if loliconImage, ok := img.(*lolicon_pool.Setu); ok {
+				log.WithField("author", loliconImage.Author).
+					WithField("r18", loliconImage.R18).
+					WithField("pid", loliconImage.Pid).
+					WithField("tags", loliconImage.Tags).
+					WithField("title", loliconImage.Title).
+					WithField("upload_url", groupImage.Url).
+					Debug("debug image")
+				sendingMsg.Append(message.NewText(fmt.Sprintf("标题：%v\n", loliconImage.Title)))
+				sendingMsg.Append(message.NewText(fmt.Sprintf("作者：%v\n", loliconImage.Author)))
+				sendingMsg.Append(message.NewText(fmt.Sprintf("PID：%v\n", loliconImage.Pid)))
+				tagCount := len(loliconImage.Tags)
+				if tagCount >= 2 {
+					tagCount = 2
+				}
+				sendingMsg.Append(message.NewText(fmt.Sprintf("TAG：%v\n", strings.Join(loliconImage.Tags[:tagCount], " "))))
+				sendingMsg.Append(message.NewText(fmt.Sprintf("R18：%v", loliconImage.R18)))
+			}
 		}
-	}
-	if len(sendingMsg.Elements) == 0 {
-		lgc.textReply("获取失败")
-	} else {
 		lgc.reply(sendingMsg)
+		sendingMsg = message.NewSendingMessage()
+	}
+
+	if !ok {
+		lgc.textReply("获取失败")
 	}
 	return
 }
