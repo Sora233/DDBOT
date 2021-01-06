@@ -113,7 +113,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			// TODO
 			log.Debugf("not supported")
 		}
-		result = append(result, message.NewText(dynamicUrl))
+		result = append(result, message.NewText(dynamicUrl+"\n"))
 	}
 	return result
 }
