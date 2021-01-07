@@ -154,3 +154,23 @@ func ImageGetAndNorm(url string) ([]byte, error) {
 	img, err = ImageNormSize(img)
 	return img, err
 }
+
+func PrefixMatch(opts []string, target string) (string, bool) {
+	if len(opts) == 0 {
+		return "", false
+	}
+	var (
+		found  = false
+		result = ""
+	)
+	for _, opt := range opts {
+		if strings.HasPrefix(opt, target) {
+			if found == true {
+				return "", false
+			}
+			found = true
+			result = opt
+		}
+	}
+	return result, found
+}

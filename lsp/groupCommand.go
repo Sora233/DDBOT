@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"errors"
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
@@ -12,6 +13,8 @@ import (
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
+	"github.com/alecthomas/kong"
+	"github.com/forestgiant/sliceutil"
 	"github.com/tidwall/buntdb"
 	"math/rand"
 	"runtime/debug"
@@ -25,6 +28,10 @@ type LspGroupCommand struct {
 	bot *miraiBot.Bot
 	msg *message.GroupMessage
 	l   *Lsp
+
+	args  []string
+	debug bool
+	exit  bool
 }
 
 func NewLspGroupCommand(bot *miraiBot.Bot, msg *message.GroupMessage, l *Lsp) *LspGroupCommand {
@@ -35,6 +42,14 @@ func NewLspGroupCommand(bot *miraiBot.Bot, msg *message.GroupMessage, l *Lsp) *L
 	}
 }
 
+func (lgc *LspGroupCommand) Exit(int) {
+	lgc.exit = true
+}
+
+func (lgc *LspGroupCommand) Debug() {
+	lgc.debug = true
+}
+
 func (lgc *LspGroupCommand) Execute() {
 	defer func() {
 		if err := recover(); err != nil {
@@ -42,6 +57,18 @@ func (lgc *LspGroupCommand) Execute() {
 				Errorf("panic recovered")
 		}
 	}()
+	if lgc.debug {
+		var ok bool
+		if sliceutil.Contains([]int64{12532362}, lgc.msg.GroupCode) {
+			ok = true
+		}
+		if sliceutil.Contains([]int64{382652405}, lgc.msg.Sender) {
+			ok = true
+		}
+		if !ok {
+			return
+		}
+	}
 	if text, ok := lgc.msg.Elements[0].(*message.TextElement); ok {
 		args := strings.Split(text.Content, " ")
 		switch strings.TrimSpace(args[0]) {
@@ -72,17 +99,18 @@ func (lgc *LspGroupCommand) Execute() {
 
 func (lgc *LspGroupCommand) LspCommand() {
 	msg := lgc.msg
-	bot := lgc.bot
 	groupCode := msg.GroupCode
 
 	log := logger.WithField("GroupCode", groupCode)
 	log.Infof("run lsp command")
 	defer log.Info("lsp command end")
 
-	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(message.NewReply(msg))
-	sendingMsg.Append(message.NewText("LSP竟然是你"))
-	bot.SendGroupMessage(groupCode, sendingMsg)
+	var lspCmd struct{}
+	lgc.parseArgs(&lspCmd, "lsp")
+	if lgc.exit {
+		return
+	}
+	lgc.textReply("LSP竟然是你")
 	return
 }
 
@@ -91,18 +119,25 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	bot := lgc.bot
 	groupCode := msg.GroupCode
 
-	text := msg.Elements[0].(*message.TextElement).Content
-	args := strings.Split(text, " ")[1:]
-	num := 1
+	log := logger.WithField("GroupCode", groupCode)
+	log.Info("run setu command")
+	defer log.Info("setu command end")
 
-	if len(args) == 1 {
-		parse, err := strconv.ParseInt(args[0], 10, 64)
-		if err == nil {
-			num = int(parse)
-		} else {
-			logger.Errorf("wrong args %v", args[0])
-		}
+	var setuCmd struct {
+		Num int `arg:"" optional:"" help:"image number"`
 	}
+	var name string
+	if r18 {
+		name = "黄图"
+	} else {
+		name = "色图"
+	}
+	lgc.parseArgs(&setuCmd, name)
+	if lgc.exit {
+		return
+	}
+
+	num := setuCmd.Num
 
 	if num <= 0 {
 		num = 1
@@ -110,10 +145,6 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	if num > 10 {
 		num = 10
 	}
-
-	log := logger.WithField("GroupCode", groupCode)
-	log.Info("run setu command")
-	defer log.Info("setu command end")
 
 	sendingMsg := message.NewSendingMessage()
 
@@ -216,54 +247,42 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 }
 
 func (lgc *LspGroupCommand) WatchCommand(remove bool) {
-	msg := lgc.msg
-	groupCode := msg.GroupCode
+	var (
+		msg       = lgc.msg
+		groupCode = msg.GroupCode
+		site      = bilibili.Site
+		watchType = concern.BibiliLive
+		err       error
+	)
 
 	log := logger.WithField("GroupCode", groupCode)
 	log.Info("run watch command")
 	defer log.Info("watch command end")
 
-	text := msg.Elements[0].(*message.TextElement).Content
-
-	args := strings.Split(text, " ")[1:]
-
-	if len(args) == 0 {
-		log.WithField("content", text).Errorf("watch need args")
-		lgc.textReply("参数错误 - Usage: /watch [bilibili/douyu] [news/live] id")
+	var watchCmd struct {
+		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu"`
+		Type string `optional:"" short:"t" default:"live" help:"news / live"`
+		Id   int64  `arg:""`
+	}
+	var name string
+	if remove {
+		name = "unwatch"
+	} else {
+		name = "watch"
+	}
+	lgc.parseArgs(&watchCmd, name)
+	if lgc.exit {
 		return
 	}
-	site := bilibili.Site
-	watchType := concern.BibiliLive
 
-	id, err := strconv.ParseInt(args[len(args)-1], 10, 64)
+	site, watchType, err = lgc.parseRawConcern(watchCmd.Site, watchCmd.Type)
 	if err != nil {
-		log.WithField("content", text).Errorf("watch args error")
-		lgc.textReply("参数错误 - 未知的id：" + args[len(args)-1])
+		log.WithField("args", lgc.getArgs()).Errorf("parse raw concern failed %v", err)
+		lgc.textReply(fmt.Sprintf("参数错误 - %v", err))
 		return
 	}
 
-	args = args[:len(args)-1]
-	if len(args) > 2 {
-		log.WithField("content", text).Errorf("watch args error")
-		lgc.textReply("参数错误")
-		return
-	}
-
-	switch strings.Join(args, ":") {
-	case bilibili.Site, bilibili.Site + ":live":
-		site = "bilibili"
-		watchType = concern.BibiliLive
-	case douyu.Site, douyu.Site + ":live":
-		site = "douyu"
-		watchType = concern.DouyuLive
-	case bilibili.Site + ":news":
-		site = "bilibili"
-		watchType = concern.BilibiliNews
-	default:
-		log.WithField("content", text).Errorf("watch args error")
-		lgc.textReply("参数错误")
-		return
-	}
+	id := watchCmd.Id
 
 	switch site {
 	case bilibili.Site:
@@ -271,7 +290,6 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 			// unwatch
 			if err := lgc.l.bilibiliConcern.Remove(groupCode, id, watchType); err != nil {
 				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
-				break
 			} else {
 				log.WithField("mid", id).Debugf("unwatch success")
 				lgc.textReply("unwatch成功")
@@ -283,7 +301,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		if err != nil {
 			log.WithField("mid", id).Errorf("watch error %v", err)
 			lgc.textReply(fmt.Sprintf("watch失败 - %v", err))
-			break
+			return
 		}
 		log.WithField("mid", id).Debugf("watch success")
 		lgc.textReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", userInfo.Name))
@@ -292,7 +310,6 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 			// unwatch
 			if err := lgc.l.douyuConcern.Remove(groupCode, id, watchType); err != nil {
 				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
-				break
 			} else {
 				log.WithField("mid", id).Debugf("unwatch success")
 				lgc.textReply("unwatch成功")
@@ -322,33 +339,26 @@ func (lgc *LspGroupCommand) ListLivingCommand() {
 	log.Info("run list living command")
 	defer log.Info("list living command end")
 
-	text := msg.Elements[0].(*message.TextElement).Content
-
-	args := strings.Split(text, " ")[1:]
-
-	if len(args) == 0 || len(args) > 2 {
-		lgc.textReply("参数错误")
+	var listLivingCmd struct {
+		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu"`
+		All  bool   `optional:"" short:"a" default:"false" help:"show all"`
+	}
+	lgc.parseArgs(&listLivingCmd, "list")
+	if lgc.exit {
 		return
 	}
 
+	site, err := lgc.parseRawSite(listLivingCmd.Site)
+	if err != nil {
+		log.WithField("args", lgc.getArgs()).Errorf("parse raw site failed %v", err)
+		lgc.textReply(fmt.Sprintf("失败 - %v", err))
+		return
+	}
+
+	all := listLivingCmd.All
+
 	listMsg := message.NewSendingMessage()
 
-	site := ""
-	all := false
-
-	for _, arg := range args {
-		switch arg {
-		case bilibili.Site:
-			site = bilibili.Site
-		case douyu.Site:
-			site = douyu.Site
-		case "all":
-			all = true
-		default:
-			lgc.textReply("参数错误")
-			return
-		}
-	}
 	switch site {
 	case bilibili.Site:
 		living, err := lgc.l.bilibiliConcern.ListLiving(groupCode, all)
@@ -407,48 +417,46 @@ func (lgc *LspGroupCommand) RollCommand() {
 	log.Info("run roll command")
 	defer log.Info("roll command end")
 
-	text := msg.Elements[0].(*message.TextElement).Content
-
-	args := strings.Split(text, " ")[1:]
+	var rollCmd struct {
+		RangeArg string `arg:"" optional:"" help:"roll range, eg. 100 / 50-100"`
+	}
+	lgc.parseArgs(&rollCmd, "roll")
+	if lgc.exit {
+		return
+	}
 
 	var (
 		max int64 = 100
 		min int64 = 1
 		err error
 	)
-	if len(args) >= 2 {
-		lgc.textReply(fmt.Sprintf("多余的参数 - %v", args[1:]))
-		return
-	}
 
-	if len(args) == 1 {
-		rollarg := args[0]
-		if strings.Contains(rollarg, "-") {
-			rolls := strings.Split(rollarg, "-")
-			if len(rolls) != 2 {
-				lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
-				return
-			}
-			min, err = strconv.ParseInt(rolls[0], 10, 64)
-			if err != nil {
-				lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
-				return
-			}
-			max, err = strconv.ParseInt(rolls[1], 10, 64)
-			if err != nil {
-				lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
-				return
-			}
-		} else {
-			max, err = strconv.ParseInt(rollarg, 10, 64)
-			if err != nil {
-				lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
-				return
-			}
+	rollarg := rollCmd.RangeArg
+	if strings.Contains(rollarg, "-") {
+		rolls := strings.Split(rollarg, "-")
+		if len(rolls) != 2 {
+			lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+			return
+		}
+		min, err = strconv.ParseInt(rolls[0], 10, 64)
+		if err != nil {
+			lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+			return
+		}
+		max, err = strconv.ParseInt(rolls[1], 10, 64)
+		if err != nil {
+			lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+			return
+		}
+	} else {
+		max, err = strconv.ParseInt(rollarg, 10, 64)
+		if err != nil {
+			lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+			return
 		}
 	}
 	if min > max {
-		lgc.textReply(fmt.Sprintf("参数解析错误 - %v", args))
+		lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
 		return
 	}
 	result := rand.Int63n(max-min+1) + min
@@ -456,6 +464,12 @@ func (lgc *LspGroupCommand) RollCommand() {
 }
 
 func (lgc *LspGroupCommand) CheckinCommand() {
+	var checkinCmd struct{}
+	lgc.parseArgs(&checkinCmd, "签到")
+	if lgc.exit {
+		return
+	}
+
 	msg := lgc.msg
 	groupCode := msg.GroupCode
 
@@ -564,4 +578,90 @@ func (lgc *LspGroupCommand) reply(msg *message.SendingMessage) {
 
 func (lgc *LspGroupCommand) answer(msg *message.SendingMessage) {
 	lgc.bot.SendGroupMessage(lgc.msg.GroupCode, msg)
+}
+
+func (lgc *LspGroupCommand) getArgs() []string {
+	if lgc.args == nil {
+		text := lgc.msg.Elements[0].(*message.TextElement).Content
+		lgc.args = strings.Split(text, " ")[1:]
+	}
+	return lgc.args
+}
+
+func (lgc *LspGroupCommand) parseArgs(ast interface{}, name string) {
+	args := lgc.getArgs()
+	cmdOut := &strings.Builder{}
+	k, err := kong.New(ast, kong.Exit(lgc.Exit), kong.Name(name), kong.UsageOnError())
+	if err != nil {
+		logger.Errorf("kong new failed %v", err)
+		lgc.textReply("失败")
+		lgc.Exit(0)
+		return
+	}
+	k.Stdout = cmdOut
+	_, err = k.Parse(args)
+	if lgc.exit {
+		logger.WithField("content", args).Debug("exit")
+		lgc.textReply(cmdOut.String())
+		return
+	}
+	if err != nil {
+		logger.WithField("content", args).Errorf("kong parse failed %v", err)
+		lgc.textReply(fmt.Sprintf("失败 - %v", err))
+		lgc.Exit(0)
+		return
+	}
+}
+
+func (lgc *LspGroupCommand) parseRawConcern(rawSite string, rawType string) (string, concern.Type, error) {
+	var (
+		site      string
+		_type     string
+		found     bool
+		watchType concern.Type
+		err       error
+	)
+	rawSite = strings.Trim(rawSite, "\"")
+	rawType = strings.Trim(rawType, "\"")
+	site, err = lgc.parseRawSite(rawSite)
+	if err != nil {
+		return "", concern.Empty, err
+	}
+	_type, found = utils.PrefixMatch([]string{"live", "news"}, rawType)
+	if !found {
+		return "", concern.Empty, errors.New("can not determine type")
+	}
+
+	switch _type {
+	case "live":
+		if site == bilibili.Site {
+			watchType = concern.BibiliLive
+		} else if site == douyu.Site {
+			watchType = concern.DouyuLive
+		} else {
+			return "", concern.Empty, errors.New("unknown watch type")
+		}
+	case "news":
+		if site == bilibili.Site {
+			watchType = concern.DouyuLive
+		} else {
+			return "", concern.Empty, errors.New("unknown watch type")
+		}
+	default:
+		return "", concern.Empty, errors.New("unknown watch type")
+	}
+	return site, watchType, nil
+}
+
+func (lgc *LspGroupCommand) parseRawSite(rawSite string) (string, error) {
+	var (
+		found bool
+		site  string
+	)
+
+	site, found = utils.PrefixMatch([]string{bilibili.Site, douyu.Site}, rawSite)
+	if !found {
+		return "", errors.New("can not determine site")
+	}
+	return site, nil
 }

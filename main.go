@@ -5,6 +5,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/lsp"
+	"github.com/alecthomas/kong"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -19,6 +20,21 @@ func init() {
 }
 
 func main() {
+	var cli struct {
+		Play  bool `optional:"" help:"run the play function"`
+		Debug bool `optional:"" help:"enable debug mode"`
+	}
+	kong.Parse(&cli)
+
+	if cli.Debug {
+		lsp.Debug = true
+	}
+
+	if cli.Play {
+		play()
+		return
+	}
+
 	logrus.SetLevel(logrus.DebugLevel)
 
 	// 快速初始化

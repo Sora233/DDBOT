@@ -28,6 +28,8 @@ const ModuleName = "me.sora233.Lsp"
 
 var logger = utils.GetModuleLogger(ModuleName)
 
+var Debug = false
+
 type Lsp struct {
 	bilibiliConcern *bilibili.Concern
 	douyuConcern    *douyu.Concern
@@ -145,6 +147,9 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			return
 		}
 		cmd := NewLspGroupCommand(bot, msg, l)
+		if Debug {
+			cmd.Debug()
+		}
 		go cmd.Execute()
 	})
 
