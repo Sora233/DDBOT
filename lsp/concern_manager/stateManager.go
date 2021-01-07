@@ -169,6 +169,9 @@ func (c *StateManager) List(filter func(groupCode int64, id int64, p concern.Typ
 				return false
 			}
 			ctype := concern.FromString(value)
+			if ctype == concern.Empty {
+				return true
+			}
 			if filter(groupCode, id, ctype) == true {
 				idGroups = append(idGroups, groupCode)
 				ids = append(ids, id)

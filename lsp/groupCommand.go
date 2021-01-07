@@ -83,7 +83,7 @@ func (lgc *LspGroupCommand) Execute() {
 		case "/unwatch":
 			lgc.WatchCommand(true)
 		case "/list":
-			lgc.ListLivingCommand()
+			lgc.ListCommand()
 		case "/签到":
 			lgc.CheckinCommand()
 		case "/roll":
@@ -275,12 +275,13 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		return
 	}
 
-	site, watchType, err = lgc.parseRawConcern(watchCmd.Site, watchCmd.Type)
+	site, watchType, err = lgc.parseRawSiteAndType(watchCmd.Site, watchCmd.Type)
 	if err != nil {
 		log.WithField("args", lgc.getArgs()).Errorf("parse raw concern failed %v", err)
 		lgc.textReply(fmt.Sprintf("参数错误 - %v", err))
 		return
 	}
+	log = log.WithField("site", site).WithField("type", watchType)
 
 	id := watchCmd.Id
 
@@ -331,7 +332,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	}
 }
 
-func (lgc *LspGroupCommand) ListLivingCommand() {
+func (lgc *LspGroupCommand) ListCommand() {
 	msg := lgc.msg
 	groupCode := msg.GroupCode
 
@@ -341,6 +342,7 @@ func (lgc *LspGroupCommand) ListLivingCommand() {
 
 	var listLivingCmd struct {
 		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu"`
+		Type string `optional:"" short:"t" default:"live" help:"news / live"`
 		All  bool   `optional:"" short:"a" default:"false" help:"show all"`
 	}
 	lgc.parseArgs(&listLivingCmd, "list")
@@ -348,19 +350,21 @@ func (lgc *LspGroupCommand) ListLivingCommand() {
 		return
 	}
 
-	site, err := lgc.parseRawSite(listLivingCmd.Site)
+	site, ctype, err := lgc.parseRawSiteAndType(listLivingCmd.Site, listLivingCmd.Type)
 	if err != nil {
 		log.WithField("args", lgc.getArgs()).Errorf("parse raw site failed %v", err)
 		lgc.textReply(fmt.Sprintf("失败 - %v", err))
 		return
 	}
+	log = log.WithField("site", site).WithField("type", ctype)
 
 	all := listLivingCmd.All
 
 	listMsg := message.NewSendingMessage()
 
-	switch site {
-	case bilibili.Site:
+	switch ctype {
+	case concern.BibiliLive:
+		listMsg.Append(message.NewText("当前直播：\n"))
 		living, err := lgc.l.bilibiliConcern.ListLiving(groupCode, all)
 		if err != nil {
 			log.Debugf("list living failed %v", err)
@@ -380,7 +384,28 @@ func (lgc *LspGroupCommand) ListLivingCommand() {
 				listMsg.Append(msg)
 			}
 		}
-	case douyu.Site:
+		if len(listMsg.Elements) == 0 {
+			listMsg.Append(message.NewText("无人直播"))
+		}
+	case concern.BilibiliNews:
+		listMsg.Append(message.NewText("当前关注：\n"))
+		news, err := lgc.l.bilibiliConcern.ListNews(groupCode, all)
+		if err != nil {
+			log.Debugf("list news failed %v", err)
+			lgc.textReply(fmt.Sprintf("list news 失败 - %v", err))
+			return
+		}
+		if news == nil {
+			lgc.textReply("关注列表为空，可以使用/watch命令关注")
+			return
+		}
+		for idx, newsInfo := range news {
+			if idx != 0 {
+				listMsg.Append(message.NewText("\n"))
+			}
+			listMsg.Append(message.NewText(newsInfo.Name))
+		}
+	case concern.DouyuLive:
 		living, err := lgc.l.douyuConcern.ListLiving(groupCode, all)
 		if err != nil {
 			log.Debugf("list living failed %v", err)
@@ -402,10 +427,9 @@ func (lgc *LspGroupCommand) ListLivingCommand() {
 		}
 	}
 
-	if len(listMsg.Elements) == 0 {
-		listMsg.Append(message.NewText("无人直播"))
-	}
 	lgc.answer(listMsg)
+	//lgc.privateAnswer(listMsg)
+	//lgc.textReply("该命令较为刷屏，已通过私聊发送")
 
 }
 
@@ -580,6 +604,15 @@ func (lgc *LspGroupCommand) answer(msg *message.SendingMessage) {
 	lgc.bot.SendGroupMessage(lgc.msg.GroupCode, msg)
 }
 
+func (lgc *LspGroupCommand) privateAnswer(msg *message.SendingMessage) {
+	uin := lgc.msg.Sender.Uin
+	if lgc.msg.Sender.IsFriend {
+		lgc.bot.SendPrivateMessage(uin, msg)
+	} else {
+		lgc.bot.SendTempMessage(lgc.msg.GroupCode, uin, msg)
+	}
+}
+
 func (lgc *LspGroupCommand) getArgs() []string {
 	if lgc.args == nil {
 		text := lgc.msg.Elements[0].(*message.TextElement).Content
@@ -613,7 +646,7 @@ func (lgc *LspGroupCommand) parseArgs(ast interface{}, name string) {
 	}
 }
 
-func (lgc *LspGroupCommand) parseRawConcern(rawSite string, rawType string) (string, concern.Type, error) {
+func (lgc *LspGroupCommand) parseRawSiteAndType(rawSite string, rawType string) (string, concern.Type, error) {
 	var (
 		site      string
 		_type     string
@@ -643,7 +676,7 @@ func (lgc *LspGroupCommand) parseRawConcern(rawSite string, rawType string) (str
 		}
 	case "news":
 		if site == bilibili.Site {
-			watchType = concern.DouyuLive
+			watchType = concern.BilibiliNews
 		} else {
 			return "", concern.Empty, errors.New("unknown watch type")
 		}

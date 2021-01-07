@@ -147,6 +147,30 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 	return result, nil
 }
 
+func (c *Concern) ListNews(groupCode int64, all bool) ([]*ConcernNewsNotify, error) {
+	log := logger.WithField("group_code", groupCode).WithField("all", all)
+	var result []*ConcernNewsNotify
+
+	mids, _, err := c.StateManager.ListByGroup(groupCode, func(id int64, p concern.Type) bool {
+		return p.ContainAny(concern.BilibiliNews)
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(mids) != 0 {
+		result = make([]*ConcernNewsNotify, 0)
+	}
+	for _, mid := range mids {
+		newsInfo, err := c.StateManager.GetNewsInfo(mid)
+		if err != nil {
+			log.WithField("mid", mid).Errorf("get newsInfo err %v", err)
+			continue
+		}
+		result = append(result, NewConcernNewsNotify(groupCode, newsInfo))
+	}
+	return result, nil
+}
+
 func (c *Concern) notifyLoop() {
 	for ievent := range c.eventChan {
 		if c.stopped {
