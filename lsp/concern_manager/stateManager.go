@@ -78,7 +78,11 @@ func (c *StateManager) Remove(groupCode int64, id int64, ctype concern.Type) err
 		}
 		oldState := concern.FromString(val)
 		newState := oldState.Remove(ctype)
-		_, _, err = tx.Set(groupStateKey, newState.String(), nil)
+		if newState == concern.Empty {
+			_, err = tx.Delete(groupStateKey)
+		} else {
+			_, _, err = tx.Set(groupStateKey, newState.String(), nil)
+		}
 		if err != nil {
 			return err
 		}
@@ -384,13 +388,32 @@ func (c *StateManager) freshConcern() error {
 	if err != nil {
 		return err
 	}
+
+	all := make(map[string]bool)
+
+	db.View(func(tx *buntdb.Tx) error {
+		return tx.Ascend(c.ConcernStateKey(), func(key, value string) bool {
+			all[key] = true
+			return true
+		})
+	})
 	err = db.Update(func(tx *buntdb.Tx) error {
 		for index := range ids {
 			id := ids[index]
 			ctype := types[index]
 			key := c.ConcernStateKey(id)
-			tx.Set(key, ctype.String(), nil)
-
+			if ctype == concern.Empty {
+				tx.Delete(key)
+			} else {
+				tx.Set(key, ctype.String(), nil)
+			}
+			delete(all, key)
+		}
+		return nil
+	})
+	err = db.Update(func(tx *buntdb.Tx) error {
+		for key := range all {
+			tx.Delete(key)
 		}
 		return nil
 	})
