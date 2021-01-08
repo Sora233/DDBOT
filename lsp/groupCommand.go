@@ -249,7 +249,10 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 				sendingMsg.Append(message.NewText(fmt.Sprintf("R18：%v", loliconImage.R18)))
 			}
 		}
-		lgc.reply(sendingMsg)
+		r := lgc.reply(sendingMsg)
+		if r.Id == -1 {
+			log.WithField("response", r).Errorf("send failed")
+		}
 		sendingMsg = message.NewSendingMessage()
 	}
 
@@ -697,27 +700,23 @@ func (lgc *LspGroupCommand) requireAnyPermission(uin int64, command string, leve
 	return ok
 }
 
-func (lgc *LspGroupCommand) textReply(text string) {
-	msg := lgc.msg
-	bot := lgc.bot
-
+func (lgc *LspGroupCommand) textReply(text string) *message.GroupMessage {
 	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(message.NewReply(msg))
 	sendingMsg.Append(message.NewText(text))
-	bot.SendGroupMessage(msg.GroupCode, sendingMsg)
+	return lgc.reply(sendingMsg)
 }
 
-func (lgc *LspGroupCommand) reply(msg *message.SendingMessage) {
+func (lgc *LspGroupCommand) reply(msg *message.SendingMessage) *message.GroupMessage {
 	sendingMsg := message.NewSendingMessage()
 	sendingMsg.Append(message.NewReply(lgc.msg))
 	for _, e := range msg.Elements {
 		sendingMsg.Append(e)
 	}
-	lgc.answer(sendingMsg)
+	return lgc.answer(sendingMsg)
 }
 
-func (lgc *LspGroupCommand) answer(msg *message.SendingMessage) {
-	lgc.bot.SendGroupMessage(lgc.msg.GroupCode, msg)
+func (lgc *LspGroupCommand) answer(msg *message.SendingMessage) *message.GroupMessage {
+	return lgc.bot.SendGroupMessage(lgc.msg.GroupCode, msg)
 }
 
 func (lgc *LspGroupCommand) privateAnswer(msg *message.SendingMessage) {
@@ -729,8 +728,8 @@ func (lgc *LspGroupCommand) privateAnswer(msg *message.SendingMessage) {
 	}
 }
 
-func (lgc *LspGroupCommand) noPermissionReply() {
-	lgc.textReply("权限不够")
+func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {
+	return lgc.textReply("权限不够")
 }
 
 func (lgc *LspGroupCommand) getArgs() []string {
