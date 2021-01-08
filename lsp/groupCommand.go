@@ -617,6 +617,8 @@ func (lgc *LspGroupCommand) GrantCommand() {
 			log.Errorf("can not find uin")
 			err = errors.New("未找到用户")
 		}
+	} else {
+		log.Errorf("unknown grant")
 	}
 	if err != nil {
 		log.Errorf("grant failed %v", err)
@@ -628,7 +630,6 @@ func (lgc *LspGroupCommand) GrantCommand() {
 
 func (lgc *LspGroupCommand) ImageContent() {
 	msg := lgc.msg
-	bot := lgc.bot
 
 	groupCode := msg.GroupCode
 
@@ -639,16 +640,10 @@ func (lgc *LspGroupCommand) ImageContent() {
 			if img, ok := e.(*message.ImageElement); ok {
 				rating := lgc.l.checkImage(img)
 				if rating == aliyun.SceneSexy {
-					sendingMsg := message.NewSendingMessage()
-					sendingMsg.Append(message.NewReply(msg))
-					sendingMsg.Append(message.NewText("就这"))
-					bot.SendGroupMessage(groupCode, sendingMsg)
+					lgc.textReply("就这")
 					return
 				} else if rating == aliyun.ScenePorn {
-					sendingMsg := message.NewSendingMessage()
-					sendingMsg.Append(message.NewReply(msg))
-					sendingMsg.Append(message.NewText("多发点"))
-					bot.SendGroupMessage(groupCode, sendingMsg)
+					lgc.textReply("多发点")
 					return
 				}
 			} else {
