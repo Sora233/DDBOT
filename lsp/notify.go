@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
@@ -19,7 +20,7 @@ func (l *Lsp) notifyBilibiliLive(bot *bot.Bot, notify *bilibili.ConcernLiveNotif
 		result = append(result, message.NewText(notify.RoomUrl))
 		coverResp, err := requests.Get(notify.Cover)
 		if err == nil {
-			if cover, err := bot.UploadGroupImage(notify.GroupCode, coverResp.Content()); err == nil {
+			if cover, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(coverResp.Content())); err == nil {
 				result = append(result, cover)
 			}
 		}
@@ -60,7 +61,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					log.WithField("pic", pic).Errorf("get image failed %v", err)
 					continue
 				}
-				groupImage, err := bot.UploadGroupImage(notify.GroupCode, img)
+				groupImage, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(img))
 				if err != nil {
 					log.WithField("pic", pic).Errorf("upload group image %v", err)
 					continue
@@ -73,7 +74,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 						log.WithField("pic", pic).Errorf("get image failed %v", err)
 						continue
 					}
-					groupImage, err := bot.UploadGroupImage(notify.GroupCode, img)
+					groupImage, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(img))
 					if err != nil {
 						log.WithField("pic", pic).Errorf("upload group image %v", err)
 						continue
@@ -100,7 +101,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				log.WithField("pic", cardVideo.GetPic()).Errorf("get image failed %v", err)
 				continue
 			}
-			cover, err := bot.UploadGroupImage(notify.GroupCode, img)
+			cover, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(img))
 			if err != nil {
 				log.WithField("pic", cardVideo.GetPic()).Errorf("upload group image failed %v", err)
 				continue
@@ -126,7 +127,7 @@ func (l *Lsp) notifyDouyuLive(bot *bot.Bot, notify *douyu.ConcernLiveNotify) []m
 		result = append(result, message.NewText(notify.RoomUrl))
 		coverResp, err := requests.Get(notify.GetAvatar().GetBig())
 		if err == nil {
-			if cover, err := bot.UploadGroupImage(notify.GroupCode, coverResp.Content()); err == nil {
+			if cover, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(coverResp.Content())); err == nil {
 				result = append(result, cover)
 			}
 		}

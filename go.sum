@@ -19,6 +19,8 @@ github.com/Mrs4s/MiraiGo v0.0.0-20201220054233-37f37c3eb564 h1:H18aT8gLb4Xtbb1in
 github.com/Mrs4s/MiraiGo v0.0.0-20201220054233-37f37c3eb564/go.mod h1:7brUNAmygY22+PDCUiVT4MLeyvGHDBjW9f+67DKeHTw=
 github.com/Mrs4s/MiraiGo v0.0.0-20201227141240-b569935970d8 h1:NpceCtYeyHaM3vhWL4i+iOz2pjnhDDHMEl4Y1kLx9zI=
 github.com/Mrs4s/MiraiGo v0.0.0-20201227141240-b569935970d8/go.mod h1:7brUNAmygY22+PDCUiVT4MLeyvGHDBjW9f+67DKeHTw=
+github.com/Mrs4s/MiraiGo v0.0.0-20210108093149-f40ac95fffa4 h1:1AEB2CdtzpDjQzpQFGVjV203ybjCSaqo/gmKdYmr8Jo=
+github.com/Mrs4s/MiraiGo v0.0.0-20210108093149-f40ac95fffa4/go.mod h1:HW2e375lCQiRwtuA/LV6ZVTsi7co1TRfBn+L5Ow77Bo=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/Sora233/requests v0.0.0-20210104080357-9a4215af615c h1:CORAhK8+Nd7FJAkvu4n3r9+JUVFtY8SNNdcGwkO5Dl4=
 github.com/Sora233/requests v0.0.0-20210104080357-9a4215af615c/go.mod h1:k/QNjrV73zXkn1r3iG0rwZLc1naFS55Q67I/Wyo/UkI=

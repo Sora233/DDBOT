@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
@@ -204,9 +205,9 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 			resizedImage, err := utils.ImageNormSize(imgBytes)
 			if err != nil {
 				logger.Errorf("resize failed, use raw image")
-				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, imgBytes)
+				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(imgBytes))
 			} else {
-				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, resizedImage)
+				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(resizedImage))
 			}
 		}(index)
 	}
