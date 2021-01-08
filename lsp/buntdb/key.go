@@ -62,6 +62,10 @@ func DouyuCurrentLiveKey(keys ...interface{}) string {
 	return NamedKey("DouyuCurrentLive", keys)
 }
 
+func PermissionKey(keys ...interface{}) string {
+	return NamedKey("Permission", keys)
+}
+
 func ParseConcernStateKey(key string) (groupCode int64, id int64, err error) {
 	keys := strings.Split(key, ":")
 	if len(keys) != 3 {

@@ -77,7 +77,11 @@ func (lgc *LspGroupCommand) Execute() {
 		case "/色图":
 			lgc.SetuCommand(false)
 		case "/黄图":
-			lgc.SetuCommand(true)
+			if lgc.l.CheckGroupCommandPermission(lgc.msg.GroupCode, lgc.msg.Sender.Uin, "黄图") {
+				lgc.SetuCommand(true)
+			} else {
+				lgc.textReply("权限不够")
+			}
 		case "/watch":
 			lgc.WatchCommand(false)
 		case "/unwatch":
@@ -484,6 +488,7 @@ func (lgc *LspGroupCommand) RollCommand() {
 		return
 	}
 	result := rand.Int63n(max-min+1) + min
+	log = log.WithField("roll", result)
 	lgc.textReply(strconv.FormatInt(result, 10))
 }
 

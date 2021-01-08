@@ -14,6 +14,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/permission"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/local_proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/py"
@@ -36,6 +37,8 @@ type Lsp struct {
 	pool            image_pool.Pool
 	concernNotify   chan concern.Notify
 	stop            chan interface{}
+
+	*permission.StateManager
 }
 
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
@@ -50,6 +53,8 @@ func (l *Lsp) Init() {
 		panic(err)
 	}
 	aliyun.InitAliyun()
+	l.StateManager = permission.NewStateManager()
+
 	l.bilibiliConcern = bilibili.NewConcern(l.concernNotify)
 	l.douyuConcern = douyu.NewConcern(l.concernNotify)
 
