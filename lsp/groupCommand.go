@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
+	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 	"github.com/Sora233/Sora233-MiraiGo/image_pool"
@@ -12,6 +13,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/permission"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/alecthomas/kong"
 	"github.com/forestgiant/sliceutil"
@@ -77,11 +79,11 @@ func (lgc *LspGroupCommand) Execute() {
 		case "/色图":
 			lgc.SetuCommand(false)
 		case "/黄图":
-			if lgc.l.CheckGroupCommandPermission(lgc.msg.GroupCode, lgc.msg.Sender.Uin, "黄图") {
-				lgc.SetuCommand(true)
-			} else {
-				lgc.textReply("权限不够")
+			if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, HuangtuCommand, permission.Role|permission.Group|permission.Command) {
+				lgc.noPermissionReply()
+				return
 			}
+			lgc.SetuCommand(true)
 		case "/watch":
 			lgc.WatchCommand(false)
 		case "/unwatch":
@@ -92,6 +94,12 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.CheckinCommand()
 		case "/roll":
 			lgc.RollCommand()
+		case "/grant":
+			if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, GrantCommand, permission.Role|permission.Group) {
+				lgc.noPermissionReply()
+				return
+			}
+			lgc.GrantCommand()
 		default:
 		}
 	} else {
@@ -493,18 +501,18 @@ func (lgc *LspGroupCommand) RollCommand() {
 }
 
 func (lgc *LspGroupCommand) CheckinCommand() {
-	var checkinCmd struct{}
-	lgc.parseArgs(&checkinCmd, "签到")
-	if lgc.exit {
-		return
-	}
-
 	msg := lgc.msg
 	groupCode := msg.GroupCode
 
 	log := logger.WithField("GroupCode", groupCode)
 	log.Infof("run checkin command")
 	defer log.Info("checkin command end")
+
+	var checkinCmd struct{}
+	lgc.parseArgs(&checkinCmd, "签到")
+	if lgc.exit {
+		return
+	}
 
 	db, err := localdb.GetClient()
 	if err != nil {
@@ -554,6 +562,70 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 	}
 }
 
+func (lgc *LspGroupCommand) GrantCommand() {
+	msg := lgc.msg
+	groupCode := msg.GroupCode
+
+	log := logger.WithField("GroupCode", groupCode)
+	log.Infof("run grant command")
+	defer log.Info("grant command end")
+
+	var grantCmd struct {
+		Command string `optional:"" short:"c" xor:"1" help:"command name"`
+		Role    string `optinal:"" short:"r" xor:"1" enum:"Admin," help:"role name"`
+		Target  int64  `arg:""`
+	}
+	lgc.parseArgs(&grantCmd, "grant")
+	if lgc.exit {
+		return
+	}
+	grantFrom := msg.Sender.Uin
+	grantTo := grantCmd.Target
+	if grantCmd.Command == "" && grantCmd.Role == "" {
+		log.Errorf("command and role both empty")
+		lgc.textReply("参数错误 - 必须指定-c / -r")
+		return
+	}
+	log = log.WithField("grantFrom", grantFrom).WithField("grantTo", grantTo)
+	var (
+		err error
+	)
+	if grantCmd.Command != "" {
+		if !CheckCommand(grantCmd.Command) {
+			log.WithField("command", grantCmd.Command).Errorf("unknown command")
+			lgc.textReply("错误的command name")
+			return
+		}
+		if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, grantCmd.Command, permission.Role|permission.Group) {
+			lgc.noPermissionReply()
+			return
+		}
+		if lgc.bot.FindGroup(groupCode).FindMember(grantTo) != nil {
+			err = lgc.l.GrantPermission(groupCode, grantTo, grantCmd.Command)
+		} else {
+			log.Errorf("can not find uin")
+			err = errors.New("未找到用户")
+		}
+	} else if grantCmd.Role != "" {
+		if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, grantCmd.Command, permission.Role) {
+			lgc.noPermissionReply()
+			return
+		}
+		if lgc.bot.FindGroup(groupCode).FindMember(grantTo) != nil {
+			err = lgc.l.GrantRole(grantTo, permission.FromString(grantCmd.Role))
+		} else {
+			log.Errorf("can not find uin")
+			err = errors.New("未找到用户")
+		}
+	}
+	if err != nil {
+		log.Errorf("grant failed %v", err)
+		lgc.textReply(fmt.Sprintf("失败 - %v", err))
+		return
+	}
+	lgc.textReply("成功")
+}
+
 func (lgc *LspGroupCommand) ImageContent() {
 	msg := lgc.msg
 	bot := lgc.bot
@@ -586,6 +658,49 @@ func (lgc *LspGroupCommand) ImageContent() {
 	}
 }
 
+func (lgc *LspGroupCommand) checkGroupOwnerOrAdministrator(groupCode int64, uin int64) bool {
+	lgc.bot.ReloadGroupList()
+	groupInfo := lgc.bot.FindGroup(groupCode)
+	if groupInfo == nil {
+		logger.Errorf("nil group info")
+		return false
+	}
+	groupMemberInfo := groupInfo.FindMember(uin)
+	if groupMemberInfo == nil {
+		logger.Errorf("nil member info")
+		return false
+	}
+	logger.WithField("uin", uin).
+		WithField("group_code", groupCode).
+		WithField("permission", groupMemberInfo.Permission).
+		Debug("debug member permission")
+	for _, g := range groupInfo.Members {
+		fmt.Printf("%v %v %v\n", g.Nickname, g.Uin, g.Permission)
+	}
+	return groupMemberInfo.Permission == client.Administrator || groupMemberInfo.Permission == client.Owner
+}
+
+func (lgc *LspGroupCommand) requireAnyPermission(uin int64, command string, level permission.Level) bool {
+	var ok = false
+	if level&permission.Role != 0 {
+		ok = ok || lgc.l.CheckRole(uin, permission.Admin)
+	}
+	if level&permission.Group != 0 {
+		ok = ok || lgc.checkGroupOwnerOrAdministrator(lgc.msg.GroupCode, uin)
+	}
+	if level&permission.Command != 0 {
+		if CheckCommand(command) {
+			ok = ok || lgc.l.CheckGroupCommandPermission(lgc.msg.GroupCode, uin, command)
+		}
+	}
+	logger.WithField("uin", uin).
+		WithField("command", command).
+		WithField("group_code", lgc.msg.GroupCode).
+		WithField("result", ok).
+		Debug("debug permission")
+	return ok
+}
+
 func (lgc *LspGroupCommand) textReply(text string) {
 	msg := lgc.msg
 	bot := lgc.bot
@@ -616,6 +731,10 @@ func (lgc *LspGroupCommand) privateAnswer(msg *message.SendingMessage) {
 	} else {
 		lgc.bot.SendTempMessage(lgc.msg.GroupCode, uin, msg)
 	}
+}
+
+func (lgc *LspGroupCommand) noPermissionReply() {
+	lgc.textReply("权限不够")
 }
 
 func (lgc *LspGroupCommand) getArgs() []string {

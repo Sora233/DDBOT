@@ -1,6 +1,7 @@
 package permission
 
 import (
+	"errors"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/tidwall/buntdb"
@@ -74,6 +75,46 @@ func (c *StateManager) CheckGroupCommandPermission(groupCode int64, caller int64
 			Errorf("check group command err %v", err)
 	}
 	return result
+}
+
+func (c *StateManager) GrantRole(target int64, role Type) error {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
+	}
+	err = db.Update(func(tx *buntdb.Tx) error {
+		key := c.PermissionKey(target, role.String())
+		_, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			tx.Set(key, "", nil)
+			return nil
+		} else if err == nil {
+			return errors.New("already exist")
+		} else {
+			return err
+		}
+	})
+	return err
+}
+
+func (c *StateManager) GrantPermission(groupCode int64, target int64, command string) error {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
+	}
+	err = db.Update(func(tx *buntdb.Tx) error {
+		key := c.PermissionKey(groupCode, target, command)
+		_, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			tx.Set(key, "", nil)
+			return nil
+		} else if err == nil {
+			return ErrPermisionExist
+		} else {
+			return err
+		}
+	})
+	return err
 }
 
 func NewStateManager() *StateManager {
