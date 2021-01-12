@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
-	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 	"github.com/Sora233/Sora233-MiraiGo/image_pool"
@@ -62,7 +61,7 @@ func (lgc *LspGroupCommand) Execute() {
 	}()
 	if lgc.debug {
 		var ok bool
-		if sliceutil.Contains([]int64{12532362}, lgc.msg.GroupCode) {
+		if sliceutil.Contains([]int64{12532362}, lgc.groupCode()) {
 			ok = true
 		}
 		if sliceutil.Contains([]int64{382652405}, lgc.msg.Sender) {
@@ -79,7 +78,7 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.LspCommand()
 		case "/色图":
 			if !lgc.groupEnabled(SetuCommand) {
-				logger.WithField("group_code", lgc.msg.GroupCode).
+				logger.WithField("group_code", lgc.groupCode()).
 					WithField("command", SetuCommand).
 					Debug("not enabled")
 				return
@@ -87,12 +86,17 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.SetuCommand(false)
 		case "/黄图":
 			if !lgc.groupEnabled(HuangtuCommand) {
-				logger.WithField("group_code", lgc.msg.GroupCode).
+				logger.WithField("group_code", lgc.groupCode()).
 					WithField("command", HuangtuCommand).
 					Debug("not enabled")
 				return
 			}
-			if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, HuangtuCommand, permission.Role|permission.Group|permission.Command) {
+			uin := lgc.uin()
+			groupCode := lgc.groupCode()
+			if !lgc.l.RequireAny(permission.RoleRequireOption(uin),
+				permission.GroupRequireOption(groupCode, uin),
+				permission.GroupCommandRequireOption(groupCode, uin, HuangtuCommand),
+			) {
 				lgc.noPermissionReply()
 				return
 			}
@@ -108,19 +112,21 @@ func (lgc *LspGroupCommand) Execute() {
 		case "/roll":
 			lgc.RollCommand()
 		case "/grant":
-			if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, GrantCommand, permission.Role|permission.Group) {
+			if !lgc.l.RequireAny(permission.RoleRequireOption(lgc.uin()),
+				permission.GroupRequireOption(lgc.groupCode(), lgc.uin()),
+			) {
 				lgc.noPermissionReply()
 				return
 			}
 			lgc.GrantCommand()
 		case "/enable":
-			if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, EnableCommand, permission.Role) {
+			if !lgc.l.RequireAny(permission.RoleRequireOption(lgc.uin())) {
 				lgc.noPermissionReply()
 				return
 			}
 			lgc.EnableCommand(false)
 		case "/disable":
-			if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, DisableCommand, permission.Role) {
+			if !lgc.l.RequireAny(permission.RoleRequireOption(lgc.uin())) {
 				lgc.noPermissionReply()
 				return
 			}
@@ -128,7 +134,7 @@ func (lgc *LspGroupCommand) Execute() {
 		default:
 		}
 	} else {
-		if lgc.msg.Sender.Uin != lgc.bot.Uin {
+		if lgc.uin() != lgc.bot.Uin {
 			lgc.ImageContent()
 		}
 	}
@@ -663,7 +669,9 @@ func (lgc *LspGroupCommand) GrantCommand() {
 			lgc.textReply("错误的command name")
 			return
 		}
-		if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, grantCmd.Command, permission.Role|permission.Group) {
+		if !lgc.l.RequireAny(permission.RoleRequireOption(lgc.uin()),
+			permission.GroupRequireOption(lgc.groupCode(), lgc.uin()),
+		) {
 			lgc.noPermissionReply()
 			return
 		}
@@ -674,7 +682,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 			err = errors.New("未找到用户")
 		}
 	} else if grantCmd.Role != "" {
-		if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, grantCmd.Command, permission.Role) {
+		if !lgc.l.RequireAny(permission.RoleRequireOption(lgc.uin())) {
 			lgc.noPermissionReply()
 			return
 		}
@@ -720,51 +728,22 @@ func (lgc *LspGroupCommand) ImageContent() {
 	}
 }
 
-func (lgc *LspGroupCommand) checkGroupOwnerOrAdministrator(groupCode int64, uin int64) bool {
-	lgc.bot.ReloadGroupList()
-	groupInfo := lgc.bot.FindGroup(groupCode)
-	if groupInfo == nil {
-		logger.Errorf("nil group info")
-		return false
-	}
-	groupMemberInfo := groupInfo.FindMember(uin)
-	if groupMemberInfo == nil {
-		logger.Errorf("nil member info")
-		return false
-	}
-	logger.WithField("uin", uin).
-		WithField("group_code", groupCode).
-		WithField("permission", groupMemberInfo.Permission).
-		Debug("debug member permission")
-	for _, g := range groupInfo.Members {
-		fmt.Printf("%v %v %v\n", g.Nickname, g.Uin, g.Permission)
-	}
-	return groupMemberInfo.Permission == client.Administrator || groupMemberInfo.Permission == client.Owner
+func (lgc *LspGroupCommand) uin() int64 {
+	return lgc.msg.Sender.Uin
+}
+
+func (lgc *LspGroupCommand) groupCode() int64 {
+	return lgc.msg.GroupCode
+}
+
+func (lgc *LspGroupCommand) requireAnyAll(groupCode int64, uin int64, command string) bool {
+	return lgc.l.RequireAny(permission.RoleRequireOption(uin),
+		permission.GroupRequireOption(groupCode, uin),
+		permission.GroupCommandRequireOption(groupCode, uin, command))
 }
 
 func (lgc *LspGroupCommand) groupEnabled(command string) bool {
-	return lgc.l.CheckGroupCommandEnabled(lgc.msg.GroupCode, command)
-}
-
-func (lgc *LspGroupCommand) requireAnyPermission(uin int64, command string, level permission.Level) bool {
-	var ok = false
-	if level&permission.Role != 0 {
-		ok = ok || lgc.l.CheckRole(uin, permission.Admin)
-	}
-	if level&permission.Group != 0 {
-		ok = ok || lgc.checkGroupOwnerOrAdministrator(lgc.msg.GroupCode, uin)
-	}
-	if level&permission.Command != 0 {
-		if CheckCommand(command) {
-			ok = ok || lgc.l.CheckGroupCommandPermission(lgc.msg.GroupCode, uin, command)
-		}
-	}
-	logger.WithField("uin", uin).
-		WithField("command", command).
-		WithField("group_code", lgc.msg.GroupCode).
-		WithField("result", ok).
-		Debug("debug permission")
-	return ok
+	return lgc.l.CheckGroupCommandEnabled(lgc.groupCode(), command)
 }
 
 func (lgc *LspGroupCommand) textReply(text string) *message.GroupMessage {
@@ -783,15 +762,14 @@ func (lgc *LspGroupCommand) reply(msg *message.SendingMessage) *message.GroupMes
 }
 
 func (lgc *LspGroupCommand) answer(msg *message.SendingMessage) *message.GroupMessage {
-	return lgc.bot.SendGroupMessage(lgc.msg.GroupCode, msg)
+	return lgc.bot.SendGroupMessage(lgc.groupCode(), msg)
 }
 
 func (lgc *LspGroupCommand) privateAnswer(msg *message.SendingMessage) {
-	uin := lgc.msg.Sender.Uin
 	if lgc.msg.Sender.IsFriend {
-		lgc.bot.SendPrivateMessage(uin, msg)
+		lgc.bot.SendPrivateMessage(lgc.uin(), msg)
 	} else {
-		lgc.bot.SendTempMessage(lgc.msg.GroupCode, uin, msg)
+		lgc.bot.SendTempMessage(lgc.groupCode(), lgc.uin(), msg)
 	}
 }
 

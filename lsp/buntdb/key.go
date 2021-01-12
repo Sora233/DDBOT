@@ -61,7 +61,6 @@ func DouyuFreshKey(keys ...interface{}) string {
 func DouyuCurrentLiveKey(keys ...interface{}) string {
 	return NamedKey("DouyuCurrentLive", keys)
 }
-
 func PermissionKey(keys ...interface{}) string {
 	return NamedKey("Permission", keys)
 }
