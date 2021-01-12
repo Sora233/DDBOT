@@ -108,13 +108,36 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			}
 			result = append(result, cover)
 		case bilibili.DynamicDescType_WithPost:
-			// TODO
-			log.Debugf("not supported")
-			result = append(result, message.NewText("未兼容的动态类型\n"))
+			cardPost, err := notify.GetCardWithPost(index)
+			if err != nil {
+				log.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
+				continue
+			}
+			result = append(result, message.NewText(fmt.Sprintf("%v发布了新专栏：\n%v\n%v\n%v...\n", notify.Name, date, cardPost.Title, cardPost.Summary)))
+			var img []byte
+			if len(cardPost.GetImageUrls()) >= 1 {
+				img, err = localutils.ImageGet(cardPost.GetImageUrls()[0])
+			} else {
+				img, err = localutils.ImageGet(cardPost.GetBannerUrl())
+			}
+			if err != nil {
+				log.WithField("image_url", cardPost.GetImageUrls()).
+					WithField("banner_url", cardPost.GetBannerUrl()).
+					Errorf("get image failed %v", err)
+				continue
+			}
+			cover, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(img))
+			if err != nil {
+				log.WithField("image_url", cardPost.GetImageUrls()).
+					WithField("banner_url", cardPost.GetBannerUrl()).
+					Errorf("upload group image failed %v", err)
+				continue
+			}
+			result = append(result, cover)
 		case bilibili.DynamicDescType_WithMusic:
 			// TODO
 			log.Debugf("not supported")
-			result = append(result, message.NewText("未兼容的动态类型\n"))
+			result = append(result, message.NewText(fmt.Sprintf("%v发布了新动态：\n", notify.Name)))
 		}
 		log.WithField("dynamicUrl", dynamicUrl).Debug("append")
 		result = append(result, message.NewText(dynamicUrl+"\n"))

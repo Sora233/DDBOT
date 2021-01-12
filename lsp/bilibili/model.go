@@ -65,6 +65,18 @@ func (n *NewsInfo) GetCardTextOnly(index int) (*CardTextOnly, error) {
 	return nil, errors.New("type mismatch")
 }
 
+func (n *NewsInfo) GetCardWithPost(index int) (*CardWithPost, error) {
+	if len(n.Cards) <= index || n.Cards[index].GetCard() == "" {
+		return nil, errors.New("card not found or empty")
+	}
+	if n.Cards[index].GetDesc().GetType() == DynamicDescType_WithPost {
+		var card = new(CardWithPost)
+		err := json.Unmarshal([]byte(n.Cards[index].GetCard()), card)
+		return card, err
+	}
+	return nil, errors.New("type mismatch")
+}
+
 func (n *NewsInfo) ToString() string {
 	if n == nil {
 		return ""

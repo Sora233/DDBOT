@@ -205,3 +205,11 @@ message CardTextOnly {
     }
     Item item = 1;
 }
+
+message CardWithPost {
+    string title = 1;
+    string summary = 2;
+    repeated string image_urls = 3;
+    string banner_url = 4;
+    string publish_time = 5;
+}
