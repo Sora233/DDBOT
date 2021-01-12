@@ -10,12 +10,15 @@ const (
 	ListCommand    = "list"
 	SetuCommand    = "色图"
 	HuangtuCommand = "黄图"
+	EnableCommand  = "enable"
+	DisableCommand = "disable"
 )
 
 var all = [...]string{
 	RollCommand, CheckinCommand, GrantCommand,
 	LspCommand, WatchCommand, UnwatchCommand,
 	ListCommand, SetuCommand, HuangtuCommand,
+	EnableCommand, DisableCommand,
 }
 
 func CheckCommand(command string) bool {

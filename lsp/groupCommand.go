@@ -78,8 +78,20 @@ func (lgc *LspGroupCommand) Execute() {
 		case "/lsp":
 			lgc.LspCommand()
 		case "/色图":
+			if !lgc.groupEnabled(SetuCommand) {
+				logger.WithField("group_code", lgc.msg.GroupCode).
+					WithField("command", SetuCommand).
+					Debug("not enabled")
+				return
+			}
 			lgc.SetuCommand(false)
 		case "/黄图":
+			if !lgc.groupEnabled(HuangtuCommand) {
+				logger.WithField("group_code", lgc.msg.GroupCode).
+					WithField("command", HuangtuCommand).
+					Debug("not enabled")
+				return
+			}
 			if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, HuangtuCommand, permission.Role|permission.Group|permission.Command) {
 				lgc.noPermissionReply()
 				return
@@ -101,6 +113,18 @@ func (lgc *LspGroupCommand) Execute() {
 				return
 			}
 			lgc.GrantCommand()
+		case "/enable":
+			if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, EnableCommand, permission.Role) {
+				lgc.noPermissionReply()
+				return
+			}
+			lgc.EnableCommand(false)
+		case "/disable":
+			if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, EnableCommand, permission.Role) {
+				lgc.noPermissionReply()
+				return
+			}
+			lgc.EnableCommand(true)
 		default:
 		}
 	} else {
@@ -566,6 +590,45 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 	}
 }
 
+func (lgc *LspGroupCommand) EnableCommand(disable bool) {
+	msg := lgc.msg
+	groupCode := msg.GroupCode
+
+	log := logger.WithField("GroupCode", groupCode)
+	log.Infof("run enable command")
+	defer log.Info("enable command end")
+
+	var enableCmd struct {
+		Command string `arg:"" help:"command name"`
+	}
+	name := "enable"
+	if disable {
+		name = "disable"
+	}
+	lgc.parseArgs(&enableCmd, name)
+	if lgc.exit {
+		return
+	}
+	log = log.WithField("command", enableCmd.Command).WithField("disable", disable)
+	if !CheckCommand(enableCmd.Command) {
+		log.Errorf("unknown command")
+		lgc.textReply("错误的command name")
+		return
+	}
+	var err error
+	if disable {
+		err = lgc.l.DisableGroupCommand(groupCode, enableCmd.Command)
+	} else {
+		err = lgc.l.EnableGroupCommand(groupCode, enableCmd.Command)
+	}
+	if err != nil {
+		log.Errorf("err %v", err)
+		lgc.textReply(fmt.Sprintf("失败 - %v", err))
+		return
+	}
+	lgc.textReply("成功")
+}
+
 func (lgc *LspGroupCommand) GrantCommand() {
 	msg := lgc.msg
 	groupCode := msg.GroupCode
@@ -677,6 +740,10 @@ func (lgc *LspGroupCommand) checkGroupOwnerOrAdministrator(groupCode int64, uin 
 		fmt.Printf("%v %v %v\n", g.Nickname, g.Uin, g.Permission)
 	}
 	return groupMemberInfo.Permission == client.Administrator || groupMemberInfo.Permission == client.Owner
+}
+
+func (lgc *LspGroupCommand) groupEnabled(command string) bool {
+	return lgc.l.CheckGroupCommandEnabled(lgc.msg.GroupCode, command)
 }
 
 func (lgc *LspGroupCommand) requireAnyPermission(uin int64, command string, level permission.Level) bool {

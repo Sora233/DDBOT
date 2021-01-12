@@ -45,6 +45,65 @@ func (c *StateManager) CheckRole(caller int64, role Type) bool {
 	return result
 }
 
+func (c *StateManager) EnableGroupCommand(groupCode int64, command string) error {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
+	}
+	err = db.Update(func(tx *buntdb.Tx) error {
+		key := c.GroupEnabledKey(groupCode, command)
+		_, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			_, _, err = tx.Set(key, "", nil)
+			return err
+		} else if err != nil {
+			return err
+		} else {
+			return errors.New("already enabled")
+		}
+	})
+	return err
+}
+
+func (c *StateManager) DisableGroupCommand(groupCode int64, command string) error {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
+	}
+	err = db.Update(func(tx *buntdb.Tx) error {
+		key := c.GroupEnabledKey(groupCode, command)
+		_, err := tx.Delete(key)
+		return err
+	})
+	return err
+}
+
+func (c *StateManager) CheckGroupCommandEnabled(groupCode int64, command string) bool {
+	var result bool
+	db, err := localdb.GetClient()
+	if err != nil {
+		logger.Errorf("get db failed %v", err)
+		return false
+	}
+	err = db.View(func(tx *buntdb.Tx) error {
+		key := c.GroupEnabledKey(groupCode, command)
+		_, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		result = true
+		return nil
+	})
+	if err != nil {
+		logger.WithField("group_code", groupCode).
+			WithField("command", command).
+			Errorf("check group enable err %v", err)
+	}
+	return result
+}
+
 func (c *StateManager) CheckGroupCommandPermission(groupCode int64, caller int64, command string) bool {
 	if c.CheckRole(caller, Admin) {
 		return true
