@@ -225,7 +225,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					for _, msg := range notifyMsg {
 						sendingMsg.Append(msg)
 					}
-					bot.SendGroupMessage(notify.GroupCode, sendingMsg)
+					l.sendGroupMessage(notify.GroupCode, sendingMsg)
 				}
 			case concern.BilibiliNews:
 				notify := (inotify).(*bilibili.ConcernNewsNotify)
@@ -239,7 +239,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				for _, msg := range notifyMsg {
 					sendingMsg.Append(msg)
 				}
-				bot.SendGroupMessage(notify.GroupCode, sendingMsg)
+				l.sendGroupMessage(notify.GroupCode, sendingMsg)
 			case concern.DouyuLive:
 				notify := (inotify).(*douyu.ConcernLiveNotify)
 				logger.WithField("site", douyu.Site).
@@ -248,13 +248,13 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					WithField("Title", notify.RoomName).
 					WithField("Status", notify.ShowStatus.String()).
 					Info("notify")
-				if notify.ShowStatus == douyu.ShowStatus_Living {
+				if notify.Living() {
 					sendingMsg := message.NewSendingMessage()
 					notifyMsg := l.NotifyMessage(bot, notify)
 					for _, msg := range notifyMsg {
 						sendingMsg.Append(msg)
 					}
-					bot.SendGroupMessage(notify.GroupCode, sendingMsg)
+					l.sendGroupMessage(notify.GroupCode, sendingMsg)
 				}
 			}
 		}
@@ -289,6 +289,13 @@ func (l *Lsp) RemoveAll(groupCode int64) {
 
 func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.Image, error) {
 	return l.pool.Get(options...)
+}
+
+func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) {
+	res := bot.Instance.SendGroupMessage(groupCode, msg)
+	if res.Id == -1 {
+		logger.WithField("group_code", groupCode).Errorf("send group message failed")
+	}
 }
 
 var Instance *Lsp
