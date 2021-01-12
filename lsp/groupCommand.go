@@ -93,7 +93,8 @@ func (lgc *LspGroupCommand) Execute() {
 			}
 			uin := lgc.uin()
 			groupCode := lgc.groupCode()
-			if !lgc.l.RequireAny(permission.RoleRequireOption(uin),
+			if !lgc.l.RequireAny(
+				permission.RoleRequireOption(uin),
 				permission.GroupRequireOption(groupCode, uin),
 				permission.GroupCommandRequireOption(groupCode, uin, HuangtuCommand),
 			) {
@@ -102,8 +103,22 @@ func (lgc *LspGroupCommand) Execute() {
 			}
 			lgc.SetuCommand(true)
 		case "/watch":
+			if !lgc.l.RequireAny(
+				permission.RoleRequireOption(lgc.uin()),
+				permission.GroupRequireOption(lgc.groupCode(), lgc.uin()),
+			) {
+				lgc.noPermissionReply()
+				return
+			}
 			lgc.WatchCommand(false)
 		case "/unwatch":
+			if !lgc.l.RequireAny(
+				permission.RoleRequireOption(lgc.uin()),
+				permission.GroupRequireOption(lgc.groupCode(), lgc.uin()),
+			) {
+				lgc.noPermissionReply()
+				return
+			}
 			lgc.WatchCommand(true)
 		case "/list":
 			lgc.ListCommand()
@@ -112,7 +127,8 @@ func (lgc *LspGroupCommand) Execute() {
 		case "/roll":
 			lgc.RollCommand()
 		case "/grant":
-			if !lgc.l.RequireAny(permission.RoleRequireOption(lgc.uin()),
+			if !lgc.l.RequireAny(
+				permission.RoleRequireOption(lgc.uin()),
 				permission.GroupRequireOption(lgc.groupCode(), lgc.uin()),
 			) {
 				lgc.noPermissionReply()
@@ -737,9 +753,11 @@ func (lgc *LspGroupCommand) groupCode() int64 {
 }
 
 func (lgc *LspGroupCommand) requireAnyAll(groupCode int64, uin int64, command string) bool {
-	return lgc.l.RequireAny(permission.RoleRequireOption(uin),
+	return lgc.l.RequireAny(
+		permission.RoleRequireOption(uin),
 		permission.GroupRequireOption(groupCode, uin),
-		permission.GroupCommandRequireOption(groupCode, uin, command))
+		permission.GroupCommandRequireOption(groupCode, uin, command),
+	)
 }
 
 func (lgc *LspGroupCommand) groupEnabled(command string) bool {
