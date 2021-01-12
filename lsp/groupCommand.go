@@ -150,6 +150,12 @@ func (lgc *LspGroupCommand) Execute() {
 		default:
 		}
 	} else {
+		if !lgc.groupEnabled(ImageContentCommand) {
+			logger.WithField("group_code", lgc.groupCode()).
+				WithField("command", ImageContentCommand).
+				Debug("not enabled")
+			return
+		}
 		if lgc.uin() != lgc.bot.Uin {
 			lgc.ImageContent()
 		}
