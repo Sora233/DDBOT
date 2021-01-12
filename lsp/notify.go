@@ -110,9 +110,11 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 		case bilibili.DynamicDescType_WithPost:
 			// TODO
 			log.Debugf("not supported")
+			result = append(result, message.NewText("未兼容的动态类型\n"))
 		case bilibili.DynamicDescType_WithMusic:
 			// TODO
 			log.Debugf("not supported")
+			result = append(result, message.NewText("未兼容的动态类型\n"))
 		}
 		log.WithField("dynamicUrl", dynamicUrl).Debug("append")
 		result = append(result, message.NewText(dynamicUrl+"\n"))
