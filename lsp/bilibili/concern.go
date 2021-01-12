@@ -284,7 +284,12 @@ func (c *Concern) freshNews(mid int64) {
 		logger.WithField("mid", mid).
 			WithField("old_timestamp", oldNewsInfo.Timestamp).
 			WithField("new_timestamp", newNewsInfo.Timestamp).
-			Debugf("newNewsInfo timestamp is less than oldNewsInfo timestamp, maybe some dynamic is deleted, skip.")
+			Debugf("newNewsInfo timestamp is less than oldNewsInfo timestamp, " +
+				"maybe some dynamic is deleted, clear newsInfo.")
+		err := c.clearUserNews(mid)
+		if err != nil {
+			logger.WithField("mid", err).Errorf("clear user NewsInfo err %v", err)
+		}
 		return
 	}
 	if newNewsInfo.LastDynamicId == 0 || len(newNewsInfo.Cards) == 0 {
@@ -380,4 +385,12 @@ func (c *Concern) findUserNews(mid int64, load bool) (*NewsInfo, error) {
 		return newsInfo, nil
 	}
 	return c.StateManager.GetNewsInfo(mid)
+}
+
+func (c *Concern) clearUserNews(mid int64) error {
+	newsInfo, err := c.findUserNews(mid, false)
+	if err != nil {
+		return err
+	}
+	return c.StateManager.DeleteNewsInfo(newsInfo)
 }

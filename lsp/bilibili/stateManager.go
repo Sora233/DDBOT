@@ -110,6 +110,21 @@ func (c *StateManager) AddNewsInfo(newsInfo *NewsInfo) error {
 	return err
 }
 
+func (c *StateManager) DeleteNewsInfo(newsInfo *NewsInfo) error {
+	if newsInfo == nil {
+		return errors.New("nil NewsInfo")
+	}
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
+	}
+	err = db.Update(func(tx *buntdb.Tx) error {
+		_, err := tx.Delete(c.CurrentNewsKey(newsInfo.Mid))
+		return err
+	})
+	return err
+}
+
 func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 	var newsInfo = &NewsInfo{}
 	db, err := localdb.GetClient()

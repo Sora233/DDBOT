@@ -2,6 +2,7 @@ package concern_manager
 
 import (
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
+	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
@@ -427,6 +428,6 @@ func NewStateManager(keySet KeySet, emitChan chan interface{}) *StateManager {
 	sm := &StateManager{
 		KeySet: keySet,
 	}
-	sm.emitQueue = utils.NewEmitQueue(emitChan, time.Second*3)
+	sm.emitQueue = utils.NewEmitQueue(emitChan, config.GlobalConfig.GetDuration("concern.emitInterval"))
 	return sm
 }
