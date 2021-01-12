@@ -120,7 +120,7 @@ func (lgc *LspGroupCommand) Execute() {
 			}
 			lgc.EnableCommand(false)
 		case "/disable":
-			if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, EnableCommand, permission.Role) {
+			if !lgc.requireAnyPermission(lgc.msg.Sender.Uin, DisableCommand, permission.Role) {
 				lgc.noPermissionReply()
 				return
 			}
