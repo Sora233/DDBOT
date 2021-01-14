@@ -91,31 +91,19 @@ func (lgc *LspGroupCommand) Execute() {
 					Debug("not enabled")
 				return
 			}
-			uin := lgc.uin()
-			groupCode := lgc.groupCode()
-			if !lgc.l.RequireAny(
-				permission.RoleRequireOption(uin),
-				permission.GroupRequireOption(groupCode, uin),
-				permission.GroupCommandRequireOption(groupCode, uin, HuangtuCommand),
-			) {
+			if !lgc.requireAnyAll(lgc.groupCode(), lgc.uin(), HuangtuCommand) {
 				lgc.noPermissionReply()
 				return
 			}
 			lgc.SetuCommand(true)
 		case "/watch":
-			if !lgc.l.RequireAny(
-				permission.RoleRequireOption(lgc.uin()),
-				permission.GroupRequireOption(lgc.groupCode(), lgc.uin()),
-			) {
+			if !lgc.requireAnyAll(lgc.groupCode(), lgc.uin(), WatchCommand) {
 				lgc.noPermissionReply()
 				return
 			}
 			lgc.WatchCommand(false)
 		case "/unwatch":
-			if !lgc.l.RequireAny(
-				permission.RoleRequireOption(lgc.uin()),
-				permission.GroupRequireOption(lgc.groupCode(), lgc.uin()),
-			) {
+			if !lgc.requireAnyAll(lgc.groupCode(), lgc.uin(), UnwatchCommand) {
 				lgc.noPermissionReply()
 				return
 			}
@@ -638,7 +626,7 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 		return
 	}
 	log = log.WithField("command", enableCmd.Command).WithField("disable", disable)
-	if !CheckCommand(enableCmd.Command) {
+	if !CheckCommand(enableCmd.Command) || enableCmd.Command == EnableCommand || enableCmd.Command == DisableCommand {
 		log.Errorf("unknown command")
 		lgc.textReply("错误的command name")
 		return
@@ -686,7 +674,10 @@ func (lgc *LspGroupCommand) GrantCommand() {
 		err error
 	)
 	if grantCmd.Command != "" {
-		if !CheckCommand(grantCmd.Command) {
+		if !CheckCommand(grantCmd.Command) ||
+			grantCmd.Command == GrantCommand ||
+			grantCmd.Command == EnableCommand ||
+			grantCmd.Command == DisableCommand {
 			log.WithField("command", grantCmd.Command).Errorf("unknown command")
 			lgc.textReply("错误的command name")
 			return
