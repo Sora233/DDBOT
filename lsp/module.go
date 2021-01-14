@@ -287,6 +287,7 @@ func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMes
 func (l *Lsp) FreshIndex() {
 	l.bilibiliConcern.FreshIndex()
 	l.douyuConcern.FreshIndex()
+	l.StateManager.FreshIndex()
 }
 
 func (l *Lsp) RemoveAll(groupCode int64) {

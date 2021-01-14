@@ -257,13 +257,14 @@ func (c *StateManager) requireGroupCommand(opt *groupCommandRequireOption) bool 
 	return false
 }
 
+func (c *StateManager) FreshIndex() {
+	db, _ := localdb.GetClient()
+	db.CreateIndex(c.PermissionKey(), c.PermissionKey("*"), buntdb.IndexString)
+}
+
 func NewStateManager() *StateManager {
 	sm := &StateManager{
 		KeySet: NewKeySet(),
-	}
-	db, err := localdb.GetClient()
-	if err == nil {
-		db.CreateIndex(sm.PermissionKey(), sm.PermissionKey("*"), buntdb.IndexString)
 	}
 	return sm
 }
