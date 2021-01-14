@@ -570,12 +570,6 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		key := localdb.Key("Score", groupCode, msg.Sender.Uin)
 		dateMarker := localdb.Key("ScoreDate", groupCode, msg.Sender.Uin, date, nil)
 
-		_, err := tx.Get(dateMarker)
-		if err != buntdb.ErrNotFound {
-			lgc.textReply("明天再来吧")
-			return nil
-		}
-
 		val, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
 			score = 0
@@ -586,6 +580,12 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 				return err
 			}
 		}
+		_, err = tx.Get(dateMarker)
+		if err != buntdb.ErrNotFound {
+			lgc.textReply(fmt.Sprintf("明天再来吧，当前积分为%v\n", score))
+			return nil
+		}
+
 		score += 1
 		_, _, err = tx.Set(key, strconv.FormatInt(score, 10), nil)
 		if err != nil {
