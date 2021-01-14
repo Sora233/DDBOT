@@ -440,7 +440,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 				listMsg.Append(msg)
 			}
 		}
-		if len(listMsg.Elements) == 0 {
+		if len(listMsg.Elements) == 1 {
 			listMsg.Append(message.NewText("无人直播"))
 		}
 	case concern.BilibiliNews:
@@ -459,9 +459,10 @@ func (lgc *LspGroupCommand) ListCommand() {
 			if idx != 0 {
 				listMsg.Append(message.NewText("\n"))
 			}
-			listMsg.Append(message.NewText(newsInfo.Name))
+			listMsg.Append(message.NewText(fmt.Sprintf("%v %v", newsInfo.Name, newsInfo.Mid)))
 		}
 	case concern.DouyuLive:
+		listMsg.Append(message.NewText("当前直播：\n"))
 		living, err := lgc.l.douyuConcern.ListLiving(groupCode, all)
 		if err != nil {
 			log.Debugf("list living failed %v", err)
@@ -480,6 +481,9 @@ func (lgc *LspGroupCommand) ListCommand() {
 			for _, msg := range notifyMsg {
 				listMsg.Append(msg)
 			}
+		}
+		if len(listMsg.Elements) == 1 {
+			listMsg.Append(message.NewText("无人直播"))
 		}
 	}
 
