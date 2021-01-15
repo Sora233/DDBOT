@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
+	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 	"github.com/Sora233/Sora233-MiraiGo/image_pool"
@@ -61,10 +62,10 @@ func (lgc *LspGroupCommand) Execute() {
 	}()
 	if lgc.debug {
 		var ok bool
-		if sliceutil.Contains([]int64{12532362}, lgc.groupCode()) {
+		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.group"), lgc.groupCode()) {
 			ok = true
 		}
-		if sliceutil.Contains([]int64{382652405}, lgc.msg.Sender) {
+		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.uin"), lgc.msg.Sender) {
 			ok = true
 		}
 		if !ok {
