@@ -22,8 +22,6 @@ github.com/Mrs4s/MiraiGo v0.0.0-20210108093149-f40ac95fffa4/go.mod h1:HW2e375lCQ
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/Sora233/requests v0.0.0-20210104080357-9a4215af615c h1:CORAhK8+Nd7FJAkvu4n3r9+JUVFtY8SNNdcGwkO5Dl4=
 github.com/Sora233/requests v0.0.0-20210104080357-9a4215af615c/go.mod h1:k/QNjrV73zXkn1r3iG0rwZLc1naFS55Q67I/Wyo/UkI=
-github.com/Sora233/zhima-proxy-pool v0.0.0-20210104071713-b194709dfebb h1:/x3Y0M+4Wg/QEsr02SruJ8tMB2ol33kjf+VuGUtrvaM=
-github.com/Sora233/zhima-proxy-pool v0.0.0-20210104071713-b194709dfebb/go.mod h1:axlNpaq86R7luharXNfI0L6WnvIJJVZqc8ewoTHik98=
 github.com/Sora233/zhima-proxy-pool v0.0.0-20210109082808-e71055c4dde4 h1:2k4uoTY1T8kcgQIiDBAg8qo1CvGMDPtUH1/MoJ4wOMo=
 github.com/Sora233/zhima-proxy-pool v0.0.0-20210109082808-e71055c4dde4/go.mod h1:axlNpaq86R7luharXNfI0L6WnvIJJVZqc8ewoTHik98=
 github.com/a8m/syncmap v0.0.0-20200818084611-4bbbd178de97/go.mod h1:f3iF7/3t9i9hsYF8DPgT0XeIVyNzevhMCKf2445Q6pE=
