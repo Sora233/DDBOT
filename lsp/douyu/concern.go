@@ -159,7 +159,7 @@ func (c *Concern) emitFreshCore() {
 			logger.WithField("id", id).WithField("result", ok).Trace("fresh check failed")
 			continue
 		}
-		logger.WithField("id", id).Debug("fresh")
+		logger.WithField("id", id).Trace("fresh")
 		ctype, err := c.StateManager.GetConcern(id)
 		if err != nil {
 			logger.WithField("id", id).Errorf("get concern failed %v", err)
