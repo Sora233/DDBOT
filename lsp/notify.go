@@ -52,7 +52,6 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				log.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
 				continue
 			}
-			cardImage.GetItem()
 			result = append(result, message.NewText(fmt.Sprintf("%v发布了新态：\n%v\n%v\n", notify.Name, date, cardImage.GetItem().GetDescription())))
 			if cardImage.GetItem().GetPicturesCount() == 1 {
 				pic := cardImage.GetItem().GetPictures()[0]

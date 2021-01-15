@@ -210,7 +210,7 @@ func (l *Lsp) checkImage(img *message.ImageElement) string {
 func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 	defer func() {
 		if err := recover(); err != nil {
-			logger.WithField("stack", string(debug.Stack())).Errorf("concern notify recoverd")
+			logger.WithField("stack", string(debug.Stack())).Errorf("concern notify recoverd %v", err)
 			go l.ConcernNotify(bot)
 		}
 	}()
