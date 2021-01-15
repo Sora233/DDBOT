@@ -20,6 +20,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/py"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/zhima"
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
+	"github.com/sirupsen/logrus"
 	"runtime/debug"
 	"strings"
 	"sync"
@@ -50,6 +51,15 @@ func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
 }
 
 func (l *Lsp) Init() {
+	log := logger.WithField("log_level", config.GlobalConfig.GetString("logLevel"))
+	lev, err := logrus.ParseLevel(config.GlobalConfig.GetString("logLevel"))
+	if err != nil {
+		logrus.SetLevel(logrus.DebugLevel)
+		log.Warn("unknown log level")
+	} else {
+		logrus.SetLevel(lev)
+		log.Info("set log level")
+	}
 	if err := localdb.InitBuntDB(); err != nil {
 		panic(err)
 	}
@@ -60,7 +70,7 @@ func (l *Lsp) Init() {
 	l.douyuConcern = douyu.NewConcern(l.concernNotify)
 
 	imagePoolType := config.GlobalConfig.GetString("imagePool.type")
-	log := logger.WithField("image_pool_type", imagePoolType)
+	log = logger.WithField("image_pool_type", imagePoolType)
 
 	switch imagePoolType {
 	case "loliconPool":
