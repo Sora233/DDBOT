@@ -201,7 +201,6 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 }
 
 func (l *Lsp) checkImage(img *message.ImageElement) string {
-	logger.WithField("image_url", img.Url).Info("image here")
 	resp, err := aliyun.Audit(img.Url)
 	if err != nil {
 		logger.Errorf("aliyun request error %v", err)
