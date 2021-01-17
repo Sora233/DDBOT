@@ -154,7 +154,7 @@ func msgToString(groupMsg *message.GroupMessage) (res string) {
 		case *message.TextElement:
 			res += e.Content
 		case *message.ImageElement:
-			res += "[Image:" + e.Filename + "]"
+			res += "[Image:" + e.Filename + " " + e.Url + "]"
 		case *message.FaceElement:
 			res += "[" + e.Name + "]"
 		case *message.GroupImageElement:
