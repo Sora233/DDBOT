@@ -9,7 +9,7 @@ import (
 	"os"
 	"os/signal"
 
-	_ "github.com/Logiase/MiraiGo-Template/modules/logging"
+	_ "github.com/Sora233/Sora233-MiraiGo/logging"
 	_ "github.com/Sora233/Sora233-MiraiGo/lsp"
 )
 
