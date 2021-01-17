@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"fmt"
 	"strconv"
 	"sync"
 
@@ -161,7 +162,11 @@ func msgToString(groupMsg *message.GroupMessage) (res string) {
 			res += "[Image: " + e.ImageId + " " + e.Url + "]"
 		case *message.GroupFlashImgElement:
 			// NOTE: ignore other components
-			return "[Image (flash):" + e.Filename + " " + e.Url + "]"
+			img, err := bot.Instance.QueryGroupImage(groupMsg.GroupCode, e.Md5, e.Size)
+			if err != nil {
+				return "[Image (flash img):" + e.Filename + fmt.Sprintf(" {ERROR_URL:%v} ]", err)
+			}
+			return "[Image (flash img):" + e.Filename + " " + img.Url + "]"
 		case *message.AtElement:
 			res += e.Display
 		case *message.RedBagElement:
