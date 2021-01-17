@@ -137,7 +137,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			WithField("group_name", request.GroupName).
 			WithField("invitor_uin", request.InvitorUin).
 			WithField("invitor_nick", request.InvitorNick).
-			Debug("new group invited")
+			Info("new group invited")
 		request.Accept()
 	})
 
@@ -145,16 +145,19 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		logger.WithField("uin", request.RequesterUin).
 			WithField("nickname", request.RequesterNick).
 			WithField("message", request.Message).
-			Debug("new friend")
+			Info("new friend")
 		request.Accept()
 	})
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
-		logger.WithField("group_code", info.Code).Debugf("join group")
 		l.FreshIndex()
+		logger.WithField("group_code", info.Code).Info("join group")
+		minfo := info.FindMember(bot.Uin)
+		minfo.EditCard("【bot】")
 	})
+
 	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
-		logger.WithField("group_code", event.Group.Code).Debugf("leave group")
+		logger.WithField("group_code", event.Group.Code).Info("leave group")
 		l.RemoveAll(event.Group.Code)
 	})
 
