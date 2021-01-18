@@ -167,7 +167,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if len(msg.Elements) <= 0 {
 			return
 		}
-		if err := l.LspStateManager.SaveMessageImageUrl(msg.GroupCode, msg); err != nil {
+		if err := l.LspStateManager.SaveMessageImageUrl(msg.GroupCode, msg.Id, msg.Elements); err != nil {
 			logger.Errorf("SaveMessageImageUrl failed %v", err)
 		}
 		cmd := NewLspGroupCommand(bot, msg, l)
@@ -321,6 +321,8 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 	res := bot.Instance.SendGroupMessage(groupCode, msg)
 	if res.Id == -1 {
 		logger.WithField("group_code", groupCode).Errorf("send group message failed")
+	} else {
+		l.LspStateManager.SaveMessageImageUrl(groupCode, res.Id, msg.Elements)
 	}
 	return res
 }

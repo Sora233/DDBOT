@@ -75,11 +75,12 @@ func (lgc *LspGroupCommand) Execute() {
 			return
 		}
 	}
-	logger.WithField("cmd", lgc.getCmd()).WithField("args", lgc.getArgs()).Debug("execute")
 
 	if lgc.getCmd() != "" && !strings.HasPrefix(lgc.getCmd(), "/") {
 		return
 	}
+
+	logger.WithField("cmd", lgc.getCmd()).WithField("args", lgc.getArgs()).Debug("execute")
 
 	args := lgc.getArgs()
 

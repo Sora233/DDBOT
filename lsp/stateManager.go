@@ -19,31 +19,40 @@ type StateManager struct {
 	KeySet
 }
 
-func (s *StateManager) SaveMessageImageUrl(groupCode int64, msg *message.GroupMessage) error {
+func (s *StateManager) SaveMessageImageUrl(groupCode int64, messageID int32, msgs []message.IMessageElement) error {
 	db, err := localdb.GetClient()
 	if err != nil {
 		return err
 	}
-	imgs := utils.MessageFilter(msg.Elements, func(e message.IMessageElement) bool {
+	imgs := utils.MessageFilter(msgs, func(e message.IMessageElement) bool {
 		return e.Type() == message.Image
 	})
 	var urls []string
 	for _, img := range imgs {
-		if i, ok := img.(*message.ImageElement); ok {
+		switch i := img.(type) {
+		case *message.ImageElement:
+			if i.Url != "" {
+				urls = append(urls, i.Url)
+			}
+		case *message.GroupImageElement:
+			if i.Url != "" {
+				urls = append(urls, i.Url)
+			}
+		case *message.FriendImageElement:
 			if i.Url != "" {
 				urls = append(urls, i.Url)
 			}
 		}
 	}
-	if len(urls) >= 0 {
+	if len(urls) > 0 {
 		logger.WithField("group_code", groupCode).
-			WithField("message_id", msg.Id).
+			WithField("message_id", messageID).
 			WithField("urls", urls).Debug("save image")
 	} else {
 		return nil
 	}
 	return db.Update(func(tx *buntdb.Tx) error {
-		key := s.GroupMessageImageKey(groupCode, msg.Id)
+		key := s.GroupMessageImageKey(groupCode, messageID)
 		_, _, err := tx.Set(key, strings.Join(urls, " "), &buntdb.SetOptions{Expires: true, TTL: time.Minute * 30})
 		return err
 	})

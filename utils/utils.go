@@ -191,7 +191,7 @@ func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
 	cascade := gocv.NewCascadeClassifier()
 	defer cascade.Close()
 	if ok := cascade.Load("lbpcascade_animeface.xml"); !ok {
-		panic(errors.New("not ok"))
+		return nil, errors.New("cascade.Load not ok")
 	}
 
 	format, err := ImageFormat(imgBytes)
