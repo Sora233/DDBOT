@@ -5,12 +5,91 @@ import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/Sora233-MiraiGo/concern"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
 	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/asmcos/requests"
+	"runtime/debug"
 	"time"
 )
+
+func (l *Lsp) ConcernNotify(bot *bot.Bot) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.WithField("stack", string(debug.Stack())).Errorf("concern notify recoverd %v", err)
+			go l.ConcernNotify(bot)
+		}
+	}()
+	for {
+		select {
+		case inotify := <-l.concernNotify:
+			switch inotify.Type() {
+			case concern.BibiliLive:
+				notify := (inotify).(*bilibili.ConcernLiveNotify)
+				logger.WithField("site", bilibili.Site).
+					WithField("GroupCode", notify.GroupCode).
+					WithField("Name", notify.Name).
+					WithField("Title", notify.LiveTitle).
+					WithField("Status", notify.Status.String()).
+					Info("notify")
+				if notify.Status == bilibili.LiveStatus_Living {
+					sendingMsg := message.NewSendingMessage()
+					notifyMsg := l.NotifyMessage(bot, notify)
+					for _, msg := range notifyMsg {
+						sendingMsg.Append(msg)
+					}
+					l.sendGroupMessage(notify.GroupCode, sendingMsg)
+				}
+			case concern.BilibiliNews:
+				notify := (inotify).(*bilibili.ConcernNewsNotify)
+				logger.WithField("site", bilibili.Site).
+					WithField("GroupCode", notify.GroupCode).
+					WithField("Name", notify.Name).
+					WithField("NewsCount", len(notify.Cards)).
+					Info("notify")
+				sendingMsg := message.NewSendingMessage()
+				notifyMsg := l.NotifyMessage(bot, notify)
+				for _, msg := range notifyMsg {
+					sendingMsg.Append(msg)
+				}
+				l.sendGroupMessage(notify.GroupCode, sendingMsg)
+			case concern.DouyuLive:
+				notify := (inotify).(*douyu.ConcernLiveNotify)
+				logger.WithField("site", douyu.Site).
+					WithField("GroupCode", notify.GroupCode).
+					WithField("Name", notify.Nickname).
+					WithField("Title", notify.RoomName).
+					WithField("Status", notify.ShowStatus.String()).
+					Info("notify")
+				if notify.Living() {
+					sendingMsg := message.NewSendingMessage()
+					notifyMsg := l.NotifyMessage(bot, notify)
+					for _, msg := range notifyMsg {
+						sendingMsg.Append(msg)
+					}
+					l.sendGroupMessage(notify.GroupCode, sendingMsg)
+				}
+			}
+		}
+	}
+}
+
+func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMessageElement {
+	var result []message.IMessageElement
+	switch inotify.Type() {
+	case concern.BibiliLive:
+		notify := (inotify).(*bilibili.ConcernLiveNotify)
+		result = append(result, l.notifyBilibiliLive(bot, notify)...)
+	case concern.BilibiliNews:
+		notify := (inotify).(*bilibili.ConcernNewsNotify)
+		result = append(result, l.notifyBilibiliNews(bot, notify)...)
+	case concern.DouyuLive:
+		notify := (inotify).(*douyu.ConcernLiveNotify)
+		result = append(result, l.notifyDouyuLive(bot, notify)...)
+	}
+	return result
+}
 
 func (l *Lsp) notifyBilibiliLive(bot *bot.Bot, notify *bilibili.ConcernLiveNotify) []message.IMessageElement {
 	var result []message.IMessageElement
