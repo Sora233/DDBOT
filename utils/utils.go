@@ -10,6 +10,7 @@ import (
 	"gocv.io/x/gocv"
 	"image"
 	"image/color"
+	"image/draw"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
@@ -161,6 +162,11 @@ func ImageGetAndNorm(url string) ([]byte, error) {
 	return img, err
 }
 
+func ImageFormat(origImage []byte) (string, error) {
+	_, format, err := image.Decode(bytes.NewReader(origImage))
+	return format, err
+}
+
 func PrefixMatch(opts []string, target string) (string, bool) {
 	if len(opts) == 0 {
 		return "", false
@@ -181,19 +187,69 @@ func PrefixMatch(opts []string, target string) (string, bool) {
 	return result, found
 }
 
-func OpenCvAnimeFaceDetect(image []byte) ([]byte, error) {
+func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
 	cascade := gocv.NewCascadeClassifier()
+	defer cascade.Close()
 	if ok := cascade.Load("lbpcascade_animeface.xml"); !ok {
 		panic(errors.New("not ok"))
 	}
 
-	img, err := gocv.IMDecode(image, gocv.IMReadColor)
+	format, err := ImageFormat(imgBytes)
+	if err == nil && format == "gif" {
+		g, err := gif.DecodeAll(bytes.NewReader(imgBytes))
+		if err != nil {
+			return nil, err
+		}
+		for index := range g.Image {
+			frame := g.Image[index]
+			var frameByte = new(bytes.Buffer)
+			err := jpeg.Encode(frameByte, frame, nil)
+			if err != nil {
+				continue
+			}
+			img, err := gocv.IMDecode(frameByte.Bytes(), gocv.IMReadColor)
+			if err != nil || img.Empty() {
+				continue
+			}
+			defer img.Close()
+			rec := cascade.DetectMultiScale(img)
+			for _, r := range rec {
+				gocv.Rectangle(&img, r, color.RGBA{
+					R: 255,
+					G: 0,
+					B: 0,
+					A: 0,
+				}, 2)
+			}
+			markedImgBytes, err := gocv.IMEncode(gocv.JPEGFileExt, img)
+			if err != nil {
+				continue
+			}
+			markedImg, err := jpeg.Decode(bytes.NewReader(markedImgBytes))
+			if err != nil {
+				continue
+			}
+			palettedImage := image.NewPaletted(frame.Bounds(), frame.Palette)
+			draw.Draw(palettedImage, frame.Bounds(), markedImg, image.Point{}, draw.Src)
+			g.Image[index] = palettedImage
+		}
+		var result = new(bytes.Buffer)
+		err = gif.EncodeAll(result, g)
+		if err != nil {
+			return nil, err
+		}
+		return result.Bytes(), nil
+	}
+
+	img, err := gocv.IMDecode(imgBytes, gocv.IMReadColor)
 	if err != nil {
 		return nil, err
 	}
 	if img.Empty() {
 		return nil, errors.New("不支持的格式")
 	}
+	defer img.Close()
+
 	rec := cascade.DetectMultiScale(img)
 
 	logger.WithField("method", "OpenCvAnimeFaceDetect").
