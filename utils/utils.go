@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/asmcos/requests"
 	"github.com/nfnt/resize"
+	"gocv.io/x/gocv"
 	"image"
+	"image/color"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
@@ -118,6 +121,9 @@ func FuncName() string {
 }
 
 func ImageGet(url string) ([]byte, error) {
+	if url == "" {
+		return nil, errors.New("empty url")
+	}
 	req := requests.Requests()
 	resp, err := req.Get(url)
 	if err != nil {
@@ -173,4 +179,44 @@ func PrefixMatch(opts []string, target string) (string, bool) {
 		}
 	}
 	return result, found
+}
+
+func OpenCvAnimeFaceDetect(image []byte) ([]byte, error) {
+	cascade := gocv.NewCascadeClassifier()
+	if ok := cascade.Load("lbpcascade_animeface.xml"); !ok {
+		panic(errors.New("not ok"))
+	}
+
+	img, err := gocv.IMDecode(image, gocv.IMReadColor)
+	if err != nil {
+		return nil, err
+	}
+	if img.Empty() {
+		return nil, errors.New("不支持的格式")
+	}
+	rec := cascade.DetectMultiScale(img)
+
+	logger.WithField("method", "OpenCvAnimeFaceDetect").
+		WithField("face_count", len(rec)).
+		Debug("face detect")
+
+	for _, r := range rec {
+		gocv.Rectangle(&img, r, color.RGBA{
+			R: 255,
+			G: 0,
+			B: 0,
+			A: 0,
+		}, 2)
+	}
+	return gocv.IMEncode(gocv.JPEGFileExt, img)
+}
+
+func MessageFilter(msg []message.IMessageElement, filter func(message.IMessageElement) bool) []message.IMessageElement {
+	var result []message.IMessageElement
+	for _, e := range msg {
+		if filter(e) {
+			result = append(result, e)
+		}
+	}
+	return result
 }

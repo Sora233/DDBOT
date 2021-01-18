@@ -32,17 +32,20 @@ type LspGroupCommand struct {
 	msg *message.GroupMessage
 	l   *Lsp
 
+	cmd   string
 	args  []string
 	debug bool
 	exit  bool
 }
 
 func NewLspGroupCommand(bot *miraiBot.Bot, msg *message.GroupMessage, l *Lsp) *LspGroupCommand {
-	return &LspGroupCommand{
+	c := &LspGroupCommand{
 		bot: bot,
 		msg: msg,
 		l:   l,
 	}
+	c.ParseCmdArgs()
+	return c
 }
 
 func (lgc *LspGroupCommand) Exit(int) {
@@ -72,9 +75,24 @@ func (lgc *LspGroupCommand) Execute() {
 			return
 		}
 	}
-	if text, ok := lgc.msg.Elements[0].(*message.TextElement); ok {
-		args := strings.Split(text.Content, " ")
-		switch strings.TrimSpace(args[0]) {
+
+	logger.WithField("cmd", lgc.getCmd()).WithField("args", lgc.getArgs()).Debug("execute")
+
+	args := lgc.getArgs()
+
+	if args == nil {
+		if !lgc.groupEnabled(ImageContentCommand) {
+			logger.WithField("group_code", lgc.groupCode()).
+				WithField("command", ImageContentCommand).
+				Debug("not enabled")
+			return
+		}
+		if lgc.uin() != lgc.bot.Uin {
+			lgc.ImageContent()
+		}
+		return
+	} else {
+		switch lgc.getCmd() {
 		case "/lsp":
 			lgc.LspCommand()
 		case "/色图":
@@ -116,7 +134,7 @@ func (lgc *LspGroupCommand) Execute() {
 		case "/roll":
 			lgc.RollCommand()
 		case "/grant":
-			if !lgc.l.RequireAny(
+			if !lgc.l.PermissionStateManager.RequireAny(
 				permission.RoleRequireOption(lgc.uin()),
 				permission.GroupRequireOption(lgc.groupCode(), lgc.uin()),
 			) {
@@ -125,29 +143,22 @@ func (lgc *LspGroupCommand) Execute() {
 			}
 			lgc.GrantCommand()
 		case "/enable":
-			if !lgc.l.RequireAny(permission.RoleRequireOption(lgc.uin())) {
+			if !lgc.l.PermissionStateManager.RequireAny(permission.RoleRequireOption(lgc.uin())) {
 				lgc.noPermissionReply()
 				return
 			}
 			lgc.EnableCommand(false)
 		case "/disable":
-			if !lgc.l.RequireAny(permission.RoleRequireOption(lgc.uin())) {
+			if !lgc.l.PermissionStateManager.RequireAny(permission.RoleRequireOption(lgc.uin())) {
 				lgc.noPermissionReply()
 				return
 			}
 			lgc.EnableCommand(true)
+		case "/face":
+			lgc.FaceCommand()
 		default:
 		}
-	} else {
-		if !lgc.groupEnabled(ImageContentCommand) {
-			logger.WithField("group_code", lgc.groupCode()).
-				WithField("command", ImageContentCommand).
-				Debug("not enabled")
-			return
-		}
-		if lgc.uin() != lgc.bot.Uin {
-			lgc.ImageContent()
-		}
+		return
 	}
 }
 
@@ -290,10 +301,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 				sendingMsg.Append(message.NewText(fmt.Sprintf("R18：%v", loliconImage.R18)))
 			}
 		}
-		r := lgc.reply(sendingMsg)
-		if r.Id == -1 {
-			log.WithField("response", r).Errorf("send failed")
-		}
+		lgc.reply(sendingMsg)
 		sendingMsg = message.NewSendingMessage()
 	}
 
@@ -638,9 +646,9 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 	}
 	var err error
 	if disable {
-		err = lgc.l.DisableGroupCommand(groupCode, enableCmd.Command)
+		err = lgc.l.PermissionStateManager.DisableGroupCommand(groupCode, enableCmd.Command)
 	} else {
-		err = lgc.l.EnableGroupCommand(groupCode, enableCmd.Command)
+		err = lgc.l.PermissionStateManager.EnableGroupCommand(groupCode, enableCmd.Command)
 	}
 	if err != nil {
 		log.Errorf("err %v", err)
@@ -687,25 +695,25 @@ func (lgc *LspGroupCommand) GrantCommand() {
 			lgc.textReply("错误的command name")
 			return
 		}
-		if !lgc.l.RequireAny(permission.RoleRequireOption(lgc.uin()),
+		if !lgc.l.PermissionStateManager.RequireAny(permission.RoleRequireOption(lgc.uin()),
 			permission.GroupRequireOption(lgc.groupCode(), lgc.uin()),
 		) {
 			lgc.noPermissionReply()
 			return
 		}
 		if lgc.bot.FindGroup(groupCode).FindMember(grantTo) != nil {
-			err = lgc.l.GrantPermission(groupCode, grantTo, grantCmd.Command)
+			err = lgc.l.PermissionStateManager.GrantPermission(groupCode, grantTo, grantCmd.Command)
 		} else {
 			log.Errorf("can not find uin")
 			err = errors.New("未找到用户")
 		}
 	} else if grantCmd.Role != "" {
-		if !lgc.l.RequireAny(permission.RoleRequireOption(lgc.uin())) {
+		if !lgc.l.PermissionStateManager.RequireAny(permission.RoleRequireOption(lgc.uin())) {
 			lgc.noPermissionReply()
 			return
 		}
 		if lgc.bot.FindGroup(groupCode).FindMember(grantTo) != nil {
-			err = lgc.l.GrantRole(grantTo, permission.FromString(grantCmd.Role))
+			err = lgc.l.PermissionStateManager.GrantRole(grantTo, permission.FromString(grantCmd.Role))
 		} else {
 			log.Errorf("can not find uin")
 			err = errors.New("未找到用户")
@@ -719,6 +727,42 @@ func (lgc *LspGroupCommand) GrantCommand() {
 		return
 	}
 	lgc.textReply("成功")
+}
+
+func (lgc *LspGroupCommand) FaceCommand() {
+	msg := lgc.msg
+	groupCode := msg.GroupCode
+
+	log := logger.WithField("GroupCode", groupCode)
+	log.Infof("run face command")
+	defer log.Info("face command end")
+
+	for _, e := range msg.Elements {
+		if e.Type() == message.Image {
+			if ie, ok := e.(*message.ImageElement); ok {
+				lgc.faceDetect(ie.Url)
+				return
+			} else {
+				log.Errorf("cast to ImageElement failed")
+				lgc.textReply("失败")
+				return
+			}
+		} else if e.Type() == message.Reply {
+			if re, ok := e.(*message.ReplyElement); ok {
+				urls := lgc.l.LspStateManager.GetMessageImageUrl(groupCode, re.ReplySeq)
+				if len(urls) >= 1 {
+					lgc.faceDetect(urls[0])
+					return
+				}
+			} else {
+				log.Errorf("cast to ReplyElement failed")
+				lgc.textReply("失败")
+				return
+			}
+		}
+	}
+	log.Debug("no image found")
+	lgc.textReply("参数错误 - 未找到图片")
 }
 
 func (lgc *LspGroupCommand) ImageContent() {
@@ -746,6 +790,32 @@ func (lgc *LspGroupCommand) ImageContent() {
 	}
 }
 
+func (lgc *LspGroupCommand) faceDetect(url string) {
+	log := logger.WithField("GroupCode", lgc.groupCode())
+	log.WithField("detect_url", url).Debug("face detect")
+	img, err := utils.ImageGet(url)
+	if err != nil {
+		log.Errorf("get image err %v", err)
+		lgc.textReply(fmt.Sprintf("获取图片失败 - %v", err))
+		return
+	}
+	img, err = utils.OpenCvAnimeFaceDetect(img)
+	if err != nil {
+		log.Errorf("detect image err %v", err)
+		lgc.textReply(fmt.Sprintf("检测失败 - %v", err))
+		return
+	}
+	sendingMsg := message.NewSendingMessage()
+	groupImg, err := lgc.bot.UploadGroupImage(lgc.groupCode(), bytes.NewReader(img))
+	if err != nil {
+		log.Errorf("upload group image failed %v", err)
+		lgc.textReply(fmt.Sprintf("上传失败 - %v", err))
+		return
+	}
+	sendingMsg.Append(groupImg)
+	lgc.reply(sendingMsg)
+}
+
 func (lgc *LspGroupCommand) uin() int64 {
 	return lgc.msg.Sender.Uin
 }
@@ -755,7 +825,7 @@ func (lgc *LspGroupCommand) groupCode() int64 {
 }
 
 func (lgc *LspGroupCommand) requireAnyAll(groupCode int64, uin int64, command string) bool {
-	return lgc.l.RequireAny(
+	return lgc.l.PermissionStateManager.RequireAny(
 		permission.RoleRequireOption(uin),
 		permission.GroupRequireOption(groupCode, uin),
 		permission.GroupCommandRequireOption(groupCode, uin, command),
@@ -763,7 +833,7 @@ func (lgc *LspGroupCommand) requireAnyAll(groupCode int64, uin int64, command st
 }
 
 func (lgc *LspGroupCommand) groupEnabled(command string) bool {
-	return lgc.l.CheckGroupCommandEnabled(lgc.groupCode(), command)
+	return lgc.l.PermissionStateManager.CheckGroupCommandEnabled(lgc.groupCode(), command)
 }
 
 func (lgc *LspGroupCommand) textReply(text string) *message.GroupMessage {
@@ -782,7 +852,7 @@ func (lgc *LspGroupCommand) reply(msg *message.SendingMessage) *message.GroupMes
 }
 
 func (lgc *LspGroupCommand) answer(msg *message.SendingMessage) *message.GroupMessage {
-	return lgc.bot.SendGroupMessage(lgc.groupCode(), msg)
+	return lgc.l.sendGroupMessage(lgc.groupCode(), msg)
 }
 
 func (lgc *LspGroupCommand) privateAnswer(msg *message.SendingMessage) {
@@ -797,16 +867,36 @@ func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {
 	return lgc.textReply("权限不够")
 }
 
-func (lgc *LspGroupCommand) getArgs() []string {
-	if lgc.args == nil {
-		text := lgc.msg.Elements[0].(*message.TextElement).Content
-		lgc.args = strings.Split(text, " ")[1:]
+func (lgc *LspGroupCommand) ParseCmdArgs() {
+	for _, e := range lgc.msg.Elements {
+		if te, ok := e.(*message.TextElement); ok {
+			text := strings.TrimSpace(te.Content)
+			if text == "" {
+				continue
+			}
+			splitStr := strings.Split(text, " ")
+			if len(splitStr) >= 1 {
+				lgc.cmd = strings.TrimSpace(splitStr[0])
+				lgc.args = splitStr[1:]
+			}
+			break
+		}
 	}
+}
+
+func (lgc *LspGroupCommand) getCmdArgs() (string, []string) {
+	return lgc.cmd, lgc.args
+}
+
+func (lgc *LspGroupCommand) getCmd() string {
+	return lgc.cmd
+}
+func (lgc *LspGroupCommand) getArgs() []string {
 	return lgc.args
 }
 
 func (lgc *LspGroupCommand) parseArgs(ast interface{}, name string) {
-	args := lgc.getArgs()
+	_, args := lgc.getCmdArgs()
 	cmdOut := &strings.Builder{}
 	k, err := kong.New(ast, kong.Exit(lgc.Exit), kong.Name(name), kong.UsageOnError())
 	if err != nil {

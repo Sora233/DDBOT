@@ -20,6 +20,7 @@ require (
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/afero v1.5.1 // indirect
 	github.com/tidwall/buntdb v1.1.7
+	gocv.io/x/gocv v0.26.0
 	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

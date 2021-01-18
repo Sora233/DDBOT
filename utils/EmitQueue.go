@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var logger = utils.GetModuleLogger("emit_queue")
+var logger = utils.GetModuleLogger("utils")
 
 type EmitQueue struct {
 	*sync.Cond

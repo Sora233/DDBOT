@@ -40,7 +40,8 @@ type Lsp struct {
 	concernNotify   chan concern.Notify
 	stop            chan interface{}
 
-	*permission.StateManager
+	PermissionStateManager *permission.StateManager
+	LspStateManager        *StateManager
 }
 
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
@@ -64,7 +65,8 @@ func (l *Lsp) Init() {
 		panic(err)
 	}
 	aliyun.InitAliyun()
-	l.StateManager = permission.NewStateManager()
+	l.PermissionStateManager = permission.NewStateManager()
+	l.LspStateManager = NewStateManager()
 
 	l.bilibiliConcern = bilibili.NewConcern(l.concernNotify)
 	l.douyuConcern = douyu.NewConcern(l.concernNotify)
@@ -164,6 +166,9 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	bot.OnGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {
 		if len(msg.Elements) <= 0 {
 			return
+		}
+		if err := l.LspStateManager.SaveMessageImageUrl(msg.GroupCode, msg); err != nil {
+			logger.Errorf("SaveMessageImageUrl failed %v", err)
 		}
 		cmd := NewLspGroupCommand(bot, msg, l)
 		if Debug {
@@ -299,7 +304,8 @@ func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMes
 func (l *Lsp) FreshIndex() {
 	l.bilibiliConcern.FreshIndex()
 	l.douyuConcern.FreshIndex()
-	l.StateManager.FreshIndex()
+	l.PermissionStateManager.FreshIndex()
+	l.LspStateManager.FreshIndex()
 }
 
 func (l *Lsp) RemoveAll(groupCode int64) {
@@ -311,11 +317,12 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 	return l.pool.Get(options...)
 }
 
-func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) {
+func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *message.GroupMessage {
 	res := bot.Instance.SendGroupMessage(groupCode, msg)
 	if res.Id == -1 {
 		logger.WithField("group_code", groupCode).Errorf("send group message failed")
 	}
+	return res
 }
 
 var Instance *Lsp
