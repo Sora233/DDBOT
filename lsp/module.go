@@ -322,7 +322,9 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 	if res.Id == -1 {
 		logger.WithField("group_code", groupCode).Errorf("send group message failed")
 	} else {
-		l.LspStateManager.SaveMessageImageUrl(groupCode, res.Id, msg.Elements)
+		if err := l.LspStateManager.SaveMessageImageUrl(groupCode, res.Id, msg.Elements); err != nil {
+			logger.WithField("group_code", groupCode).Error("save message image url failed %v", err)
+		}
 	}
 	return res
 }
