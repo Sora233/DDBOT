@@ -12,6 +12,11 @@ func InitBuntDB() error {
 	if err != nil {
 		return err
 	}
+	buntDB.SetConfig(buntdb.Config{
+		SyncPolicy:           buntdb.EverySecond,
+		AutoShrinkPercentage: 100,
+		AutoShrinkMinSize:    1 * 1024 * 1024,
+	})
 	db = buntDB
 	return nil
 }
