@@ -35,9 +35,13 @@ func (s *StateManager) SaveMessageImageUrl(groupCode int64, msg *message.GroupMe
 			}
 		}
 	}
-	logger.WithField("group_code", groupCode).
-		WithField("message_id", msg.Id).
-		WithField("urls", urls).Debug("save image")
+	if len(urls) >= 0 {
+		logger.WithField("group_code", groupCode).
+			WithField("message_id", msg.Id).
+			WithField("urls", urls).Debug("save image")
+	} else {
+		return nil
+	}
 	return db.Update(func(tx *buntdb.Tx) error {
 		key := s.GroupMessageImageKey(groupCode, msg.Id)
 		_, _, err := tx.Set(key, strings.Join(urls, " "), &buntdb.SetOptions{Expires: true, TTL: time.Minute * 30})
