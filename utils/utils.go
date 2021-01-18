@@ -196,6 +196,7 @@ func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
 
 	format, err := ImageFormat(imgBytes)
 	if err == nil && format == "gif" {
+		// TODO: gif not work properly for now
 		g, err := gif.DecodeAll(bytes.NewReader(imgBytes))
 		if err != nil {
 			return nil, err
