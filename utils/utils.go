@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/asmcos/requests"
+	"github.com/ericpauley/go-quantize/quantize"
 	"github.com/nfnt/resize"
 	"gocv.io/x/gocv"
 	"image"
@@ -142,9 +143,11 @@ func ImageNormSize(origImage []byte) ([]byte, error) {
 	resizedImageBuffer := bytes.NewBuffer(make([]byte, 0))
 	switch format {
 	case "jpeg":
-		err = jpeg.Encode(resizedImageBuffer, resizedImage, nil)
+		err = jpeg.Encode(resizedImageBuffer, resizedImage, &jpeg.Options{Quality: 100})
 	case "gif":
-		err = gif.Encode(resizedImageBuffer, resizedImage, nil)
+		err = gif.Encode(resizedImageBuffer, resizedImage, &gif.Options{
+			Quantizer: quantize.MedianCutQuantizer{},
+		})
 	case "png":
 		err = png.Encode(resizedImageBuffer, resizedImage)
 	default:
@@ -196,7 +199,6 @@ func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
 
 	format, err := ImageFormat(imgBytes)
 	if err == nil && format == "gif" {
-		// TODO: gif not work properly for now
 		g, err := gif.DecodeAll(bytes.NewReader(imgBytes))
 		if err != nil {
 			return nil, err
@@ -204,33 +206,36 @@ func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
 		for index := range g.Image {
 			frame := g.Image[index]
 			var frameByte = new(bytes.Buffer)
-			err := jpeg.Encode(frameByte, frame, nil)
+			err := png.Encode(frameByte, frame)
 			if err != nil {
 				continue
 			}
-			img, err := gocv.IMDecode(frameByte.Bytes(), gocv.IMReadColor)
-			if err != nil || img.Empty() {
+			img, err := gocv.IMDecode(frameByte.Bytes(), gocv.IMReadUnchanged)
+			if err != nil {
 				continue
 			}
 			defer img.Close()
+			if img.Empty() {
+				continue
+			}
 			rec := cascade.DetectMultiScale(img)
 			for _, r := range rec {
 				gocv.Rectangle(&img, r, color.RGBA{
 					R: 255,
 					G: 0,
 					B: 0,
-					A: 0,
+					A: 255,
 				}, 2)
 			}
-			markedImgBytes, err := gocv.IMEncode(gocv.JPEGFileExt, img)
+			markedImgBytes, err := gocv.IMEncode(gocv.PNGFileExt, img)
 			if err != nil {
 				continue
 			}
-			markedImg, err := jpeg.Decode(bytes.NewReader(markedImgBytes))
+			markedImg, err := png.Decode(bytes.NewReader(markedImgBytes))
 			if err != nil {
 				continue
 			}
-			palettedImage := image.NewPaletted(frame.Bounds(), frame.Palette)
+			palettedImage := image.NewPaletted(frame.Bounds(), quantize.MedianCutQuantizer{}.Quantize(make([]color.Color, 0, 256), markedImg))
 			draw.Draw(palettedImage, frame.Bounds(), markedImg, image.Point{}, draw.Src)
 			g.Image[index] = palettedImage
 		}
@@ -242,14 +247,14 @@ func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
 		return result.Bytes(), nil
 	}
 
-	img, err := gocv.IMDecode(imgBytes, gocv.IMReadColor)
+	img, err := gocv.IMDecode(imgBytes, gocv.IMReadUnchanged)
 	if err != nil {
 		return nil, err
 	}
+	defer img.Close()
 	if img.Empty() {
 		return nil, errors.New("不支持的格式")
 	}
-	defer img.Close()
 
 	rec := cascade.DetectMultiScale(img)
 
@@ -262,10 +267,10 @@ func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
 			R: 255,
 			G: 0,
 			B: 0,
-			A: 0,
+			A: 255,
 		}, 2)
 	}
-	return gocv.IMEncode(gocv.JPEGFileExt, img)
+	return gocv.IMEncode(gocv.PNGFileExt, img)
 }
 
 func MessageFilter(msg []message.IMessageElement, filter func(message.IMessageElement) bool) []message.IMessageElement {
