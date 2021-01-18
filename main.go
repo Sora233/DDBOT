@@ -6,6 +6,8 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/lsp"
 	"github.com/alecthomas/kong"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 
@@ -27,6 +29,7 @@ func main() {
 
 	if cli.Debug {
 		lsp.Debug = true
+		http.ListenAndServe("localhost:6060", nil)
 	}
 
 	if cli.Play {
