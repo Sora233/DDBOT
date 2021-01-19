@@ -114,10 +114,6 @@ func (lgc *LspGroupCommand) Execute() {
 					Debug("not enabled")
 				return
 			}
-			if !lgc.requireAnyAll(lgc.groupCode(), lgc.uin(), HuangtuCommand) {
-				lgc.noPermissionReply()
-				return
-			}
 			lgc.SetuCommand(true)
 		case "/watch":
 			if !lgc.requireAnyAll(lgc.groupCode(), lgc.uin(), WatchCommand) {
