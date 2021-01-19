@@ -178,7 +178,7 @@ func (lgc *LspGroupCommand) LspCommand() {
 	defer log.Info("lsp command end")
 
 	var lspCmd struct{}
-	lgc.parseArgs(&lspCmd, "lsp")
+	lgc.parseArgs(&lspCmd, LspCommand)
 	if lgc.exit {
 		return
 	}
@@ -417,7 +417,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 		Type string `optional:"" short:"t" default:"live" help:"news / live"`
 		All  bool   `optional:"" short:"a" default:"false" help:"show all"`
 	}
-	lgc.parseArgs(&listLivingCmd, "list")
+	lgc.parseArgs(&listLivingCmd, ListCommand)
 	if lgc.exit {
 		return
 	}
@@ -520,7 +520,7 @@ func (lgc *LspGroupCommand) RollCommand() {
 	var rollCmd struct {
 		RangeArg string `arg:"" optional:"" help:"roll range, eg. 100 / 50-100"`
 	}
-	lgc.parseArgs(&rollCmd, "roll")
+	lgc.parseArgs(&rollCmd, RollCommand)
 	if lgc.exit {
 		return
 	}
@@ -573,7 +573,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 	defer log.Info("checkin command end")
 
 	var checkinCmd struct{}
-	lgc.parseArgs(&checkinCmd, "签到")
+	lgc.parseArgs(&checkinCmd, CheckinCommand)
 	if lgc.exit {
 		return
 	}
@@ -681,7 +681,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 		Role    string `optinal:"" short:"r" xor:"1" enum:"Admin,GroupAdmin," help:"role name"`
 		Target  int64  `arg:""`
 	}
-	lgc.parseArgs(&grantCmd, "grant")
+	lgc.parseArgs(&grantCmd, GrantCommand)
 	if lgc.exit {
 		return
 	}
