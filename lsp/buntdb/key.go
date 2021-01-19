@@ -64,6 +64,9 @@ func DouyuCurrentLiveKey(keys ...interface{}) string {
 func PermissionKey(keys ...interface{}) string {
 	return NamedKey("Permission", keys)
 }
+func GroupPermissionKey(keys ...interface{}) string {
+	return NamedKey("GroupPermission", keys)
+}
 func GroupEnabledKey(keys ...interface{}) string {
 	return NamedKey("GroupEnable", keys)
 }

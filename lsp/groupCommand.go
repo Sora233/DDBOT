@@ -135,21 +135,28 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.RollCommand()
 		case "/grant":
 			if !lgc.l.PermissionStateManager.RequireAny(
-				permission.RoleRequireOption(lgc.uin()),
-				permission.GroupRequireOption(lgc.groupCode(), lgc.uin()),
+				permission.AdminRoleRequireOption(lgc.uin()),
+				permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
+				permission.QQAdminRequireOption(lgc.groupCode(), lgc.uin()),
 			) {
 				lgc.noPermissionReply()
 				return
 			}
 			lgc.GrantCommand()
 		case "/enable":
-			if !lgc.l.PermissionStateManager.RequireAny(permission.RoleRequireOption(lgc.uin())) {
+			if !lgc.l.PermissionStateManager.RequireAny(
+				permission.AdminRoleRequireOption(lgc.uin()),
+				permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
+			) {
 				lgc.noPermissionReply()
 				return
 			}
 			lgc.EnableCommand(false)
 		case "/disable":
-			if !lgc.l.PermissionStateManager.RequireAny(permission.RoleRequireOption(lgc.uin())) {
+			if !lgc.l.PermissionStateManager.RequireAny(
+				permission.AdminRoleRequireOption(lgc.uin()),
+				permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
+			) {
 				lgc.noPermissionReply()
 				return
 			}
@@ -639,7 +646,10 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 		return
 	}
 	log = log.WithField("command", enableCmd.Command).WithField("disable", disable)
-	if !CheckCommand(enableCmd.Command) || enableCmd.Command == EnableCommand || enableCmd.Command == DisableCommand {
+	if !CheckCommand(enableCmd.Command) ||
+		enableCmd.Command == EnableCommand ||
+		enableCmd.Command == DisableCommand ||
+		enableCmd.Command == GrantCommand {
 		log.Errorf("unknown command")
 		lgc.textReply("错误的command name")
 		return
@@ -668,7 +678,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 
 	var grantCmd struct {
 		Command string `optional:"" short:"c" xor:"1" help:"command name"`
-		Role    string `optinal:"" short:"r" xor:"1" enum:"Admin," help:"role name"`
+		Role    string `optinal:"" short:"r" xor:"1" enum:"Admin,GroupAdmin," help:"role name"`
 		Target  int64  `arg:""`
 	}
 	lgc.parseArgs(&grantCmd, "grant")
@@ -695,8 +705,10 @@ func (lgc *LspGroupCommand) GrantCommand() {
 			lgc.textReply("错误的command name")
 			return
 		}
-		if !lgc.l.PermissionStateManager.RequireAny(permission.RoleRequireOption(lgc.uin()),
-			permission.GroupRequireOption(lgc.groupCode(), lgc.uin()),
+		if !lgc.l.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(lgc.uin()),
+			permission.GroupAdminRoleRequireOption(groupCode, lgc.uin()),
+			permission.QQAdminRequireOption(groupCode, lgc.uin()),
 		) {
 			lgc.noPermissionReply()
 			return
@@ -708,15 +720,37 @@ func (lgc *LspGroupCommand) GrantCommand() {
 			err = errors.New("未找到用户")
 		}
 	} else if grantCmd.Role != "" {
-		if !lgc.l.PermissionStateManager.RequireAny(permission.RoleRequireOption(lgc.uin())) {
-			lgc.noPermissionReply()
-			return
-		}
-		if lgc.bot.FindGroup(groupCode).FindMember(grantTo) != nil {
-			err = lgc.l.PermissionStateManager.GrantRole(grantTo, permission.FromString(grantCmd.Role))
-		} else {
-			log.Errorf("can not find uin")
-			err = errors.New("未找到用户")
+		grantRole := permission.FromString(grantCmd.Role)
+		switch grantRole {
+		case permission.GroupAdmin:
+			if !lgc.l.PermissionStateManager.RequireAny(
+				permission.AdminRoleRequireOption(lgc.uin()),
+				permission.GroupAdminRoleRequireOption(groupCode, lgc.uin()),
+			) {
+				lgc.noPermissionReply()
+				return
+			}
+			if lgc.bot.FindGroup(groupCode).FindMember(grantTo) != nil {
+				err = lgc.l.PermissionStateManager.GrantGroupRole(groupCode, grantTo, grantRole)
+			} else {
+				log.Errorf("can not find uin")
+				err = errors.New("未找到用户")
+			}
+		case permission.Admin:
+			if !lgc.l.PermissionStateManager.RequireAny(
+				permission.AdminRoleRequireOption(lgc.uin()),
+			) {
+				lgc.noPermissionReply()
+				return
+			}
+			if lgc.bot.FindGroup(groupCode).FindMember(grantTo) != nil {
+				err = lgc.l.PermissionStateManager.GrantRole(grantTo, grantRole)
+			} else {
+				log.Errorf("can not find uin")
+				err = errors.New("未找到用户")
+			}
+		default:
+			err = errors.New("invalid role")
 		}
 	} else {
 		log.Errorf("unknown grant")
@@ -826,8 +860,9 @@ func (lgc *LspGroupCommand) groupCode() int64 {
 
 func (lgc *LspGroupCommand) requireAnyAll(groupCode int64, uin int64, command string) bool {
 	return lgc.l.PermissionStateManager.RequireAny(
-		permission.RoleRequireOption(uin),
-		permission.GroupRequireOption(groupCode, uin),
+		permission.AdminRoleRequireOption(uin),
+		permission.GroupAdminRoleRequireOption(groupCode, uin),
+		permission.QQAdminRequireOption(groupCode, uin),
 		permission.GroupCommandRequireOption(groupCode, uin, command),
 	)
 }

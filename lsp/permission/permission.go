@@ -6,6 +6,7 @@ const (
 	Unknown RoleType = 0
 
 	Admin RoleType = 1 << iota
+	GroupAdmin
 )
 
 type Level int64
@@ -22,6 +23,8 @@ func (t RoleType) String() string {
 	switch t {
 	case Admin:
 		return "Admin"
+	case GroupAdmin:
+		return "GroupAdmin"
 	default:
 		return ""
 	}
@@ -31,6 +34,8 @@ func FromString(s string) RoleType {
 	switch s {
 	case "Admin":
 		return Admin
+	case "GroupAdmin":
+		return GroupAdmin
 	default:
 		return Unknown
 	}
@@ -40,29 +45,42 @@ type RequireOption interface {
 	Type() Level
 }
 
-type roleRequireOption struct {
+type adminRoleRequireOption struct {
 	uin int64
 }
 
-func (r *roleRequireOption) Type() Level {
+func (r *adminRoleRequireOption) Type() Level {
 	return Role
 }
 
-func RoleRequireOption(uin int64) RequireOption {
-	return &roleRequireOption{uin}
+func AdminRoleRequireOption(uin int64) RequireOption {
+	return &adminRoleRequireOption{uin}
 }
 
-type groupRequireOption struct {
+type groupAdminRoleRequireOption struct {
 	groupCode int64
 	uin       int64
 }
 
-func (g *groupRequireOption) Type() Level {
+func (g *groupAdminRoleRequireOption) Type() Level {
+	return Role
+}
+
+func GroupAdminRoleRequireOption(groupCode int64, uin int64) RequireOption {
+	return &groupAdminRoleRequireOption{groupCode: groupCode, uin: uin}
+}
+
+type qqAdminRequireOption struct {
+	groupCode int64
+	uin       int64
+}
+
+func (g *qqAdminRequireOption) Type() Level {
 	return Group
 }
 
-func GroupRequireOption(groupCode int64, uin int64) RequireOption {
-	return &groupRequireOption{
+func QQAdminRequireOption(groupCode int64, uin int64) RequireOption {
+	return &qqAdminRequireOption{
 		groupCode: groupCode,
 		uin:       uin,
 	}

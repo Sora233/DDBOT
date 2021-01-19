@@ -139,6 +139,16 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			WithField("invitor_uin", request.InvitorUin).
 			WithField("invitor_nick", request.InvitorNick).
 			Info("new group invited")
+		fi := bot.FindFriend(request.InvitorUin)
+		if fi == nil {
+			request.Reject(false, "未找到阁下的好友信息，请添加好友进行操作")
+			return
+		}
+		sendingMsg := message.NewSendingMessage()
+		sendingMsg.Append(message.NewText("阁下的群邀请已通过，基于对阁下的信任，阁下已获得在本bot该群内的控制权限，相信阁下不会滥用本bot。\n管理命令:\n"))
+		sendingMsg.Append(message.NewText("/grant\n/enable\n/disable\n请使用对应命令 -h查看帮助"))
+		bot.SendPrivateMessage(request.InvitorUin, sendingMsg)
+		l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin)
 		request.Accept()
 	})
 
@@ -148,6 +158,9 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			WithField("message", request.Message).
 			Info("new friend")
 		request.Accept()
+		sendingMsg := message.NewSendingMessage()
+		sendingMsg.Append(message.NewText("阁下的好友请求已通过，现在可以给bot发送加群邀请了。"))
+		bot.SendPrivateMessage(request.RequesterUin, sendingMsg)
 	})
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
@@ -233,6 +246,7 @@ func (l *Lsp) FreshIndex() {
 func (l *Lsp) RemoveAll(groupCode int64) {
 	l.bilibiliConcern.RemoveAll(groupCode)
 	l.douyuConcern.RemoveAll(groupCode)
+	l.PermissionStateManager.RemoveAll(groupCode)
 }
 
 func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.Image, error) {
