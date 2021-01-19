@@ -163,6 +163,8 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.EnableCommand(true)
 		case "/face":
 			lgc.FaceCommand()
+		case "/about":
+			lgc.AboutCommand()
 		default:
 		}
 		return
@@ -503,7 +505,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 		}
 	}
 
-	lgc.answer(listMsg)
+	lgc.send(listMsg)
 	//lgc.privateAnswer(listMsg)
 	//lgc.textReply("该命令较为刷屏，已通过私聊发送")
 
@@ -799,12 +801,23 @@ func (lgc *LspGroupCommand) FaceCommand() {
 	lgc.textReply("参数错误 - 未找到图片")
 }
 
-func (lgc *LspGroupCommand) ImageContent() {
+func (lgc *LspGroupCommand) AboutCommand() {
 	msg := lgc.msg
-
 	groupCode := msg.GroupCode
 
-	log := logger.WithField("GroupCode", groupCode)
+	log := logger.WithField("group_code", groupCode)
+	log.Info("run about command")
+	defer log.Info("about command end")
+
+	sendingMsg := message.NewSendingMessage()
+	sendingMsg.Append(message.NewText("LspBot by Sora233 (https://github.com/Sora233/Sora233-MiraiGo)"))
+	lgc.send(sendingMsg)
+}
+
+func (lgc *LspGroupCommand) ImageContent() {
+	msg := lgc.msg
+	groupCode := msg.GroupCode
+	log := logger.WithField("group_code", groupCode)
 
 	for _, e := range msg.Elements {
 		if e.Type() == message.Image {
@@ -883,10 +896,10 @@ func (lgc *LspGroupCommand) reply(msg *message.SendingMessage) *message.GroupMes
 	for _, e := range msg.Elements {
 		sendingMsg.Append(e)
 	}
-	return lgc.answer(sendingMsg)
+	return lgc.send(sendingMsg)
 }
 
-func (lgc *LspGroupCommand) answer(msg *message.SendingMessage) *message.GroupMessage {
+func (lgc *LspGroupCommand) send(msg *message.SendingMessage) *message.GroupMessage {
 	return lgc.l.sendGroupMessage(lgc.groupCode(), msg)
 }
 
