@@ -680,7 +680,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 
 	var grantCmd struct {
 		Command string `optional:"" short:"c" xor:"1" help:"command name"`
-		Role    string `optinal:"" short:"r" xor:"1" enum:"Admin,GroupAdmin," help:"role name"`
+		Role    string `optional:"" short:"r" xor:"1" enum:"Admin,GroupAdmin," help:"Admin / GroupAdmin"`
 		Target  int64  `arg:""`
 	}
 	lgc.parseArgs(&grantCmd, GrantCommand)
