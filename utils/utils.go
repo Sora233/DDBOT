@@ -191,11 +191,10 @@ func PrefixMatch(opts []string, target string) (string, bool) {
 }
 
 func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
-	cascade := gocv.NewCascadeClassifier()
-	defer cascade.Close()
-	if ok := cascade.Load("lbpcascade_animeface.xml"); !ok {
-		return nil, errors.New("cascade.Load not ok")
-	}
+	animeCascade := NewAnimeCascadeClassifier()
+	faceCascade := NewFaceCascadeClassifier()
+	defer animeCascade.Close()
+	defer faceCascade.Close()
 
 	format, err := ImageFormat(imgBytes)
 	if err == nil && format == "gif" {
@@ -218,7 +217,14 @@ func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
 			if img.Empty() {
 				continue
 			}
-			rec := cascade.DetectMultiScale(img)
+			var rec []image.Rectangle
+			rec = animeCascade.DetectMultiScale(img)
+			if len(rec) == 0 {
+				rec = faceCascade.DetectMultiScale(img)
+			}
+			if len(rec) == 0 {
+				continue
+			}
 			for _, r := range rec {
 				gocv.Rectangle(&img, r, color.RGBA{
 					R: 255,
@@ -256,8 +262,11 @@ func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
 		return nil, errors.New("不支持的格式")
 	}
 
-	rec := cascade.DetectMultiScale(img)
-
+	var rec []image.Rectangle
+	rec = animeCascade.DetectMultiScale(img)
+	if len(rec) == 0 {
+		rec = faceCascade.DetectMultiScale(img)
+	}
 	logger.WithField("method", "OpenCvAnimeFaceDetect").
 		WithField("face_count", len(rec)).
 		Debug("face detect")
@@ -285,4 +294,19 @@ func MessageFilter(msg []message.IMessageElement, filter func(message.IMessageEl
 
 func MessageTextf(format string, args ...interface{}) *message.TextElement {
 	return message.NewText(fmt.Sprintf(format, args...))
+}
+
+func NewAnimeCascadeClassifier() gocv.CascadeClassifier {
+	cascade := gocv.NewCascadeClassifier()
+	if !cascade.Load("lbpcascade_animeface.xml") {
+		logger.Errorf("load lbpcascade_animeface.xml failed")
+	}
+	return cascade
+}
+func NewFaceCascadeClassifier() gocv.CascadeClassifier {
+	cascade := gocv.NewCascadeClassifier()
+	if !cascade.Load("haarcascade_frontalface_default.xml") {
+		logger.Errorf("load haarcascade_frontalface_default.xml failed")
+	}
+	return cascade
 }
