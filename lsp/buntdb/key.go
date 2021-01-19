@@ -70,6 +70,12 @@ func GroupPermissionKey(keys ...interface{}) string {
 func GroupEnabledKey(keys ...interface{}) string {
 	return NamedKey("GroupEnable", keys)
 }
+func GroupMessageImageKey(keys ...interface{}) string {
+	return NamedKey("GroupMessageImage", keys)
+}
+func GroupMuteKey(keys ...interface{}) string {
+	return NamedKey("GroupMute", keys)
+}
 
 func ParseConcernStateKey(key string) (groupCode int64, id int64, err error) {
 	keys := strings.Split(key, ":")

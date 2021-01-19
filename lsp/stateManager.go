@@ -12,7 +12,11 @@ import (
 type KeySet struct{}
 
 func (KeySet) GroupMessageImageKey(keys ...interface{}) string {
-	return localdb.NamedKey("GroupMessageImage", keys)
+	return localdb.GroupMessageImageKey(keys...)
+}
+
+func (KeySet) GroupMuteKey(keys ...interface{}) string {
+	return localdb.GroupMuteKey(keys...)
 }
 
 type StateManager struct {
@@ -74,6 +78,46 @@ func (s *StateManager) GetMessageImageUrl(groupCode int64, messageID int32) []st
 	})
 	return result
 }
+
+func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return nil
+	}
+	return db.Update(func(tx *buntdb.Tx) error {
+		key := s.GroupMuteKey(groupCode, uin)
+		if t == 0 {
+			_, err := tx.Delete(key)
+			return err
+		} else {
+			_, _, err := tx.Set(key, "", &buntdb.SetOptions{
+				Expires: true,
+				TTL:     time.Second * time.Duration(t),
+			})
+			return err
+		}
+	})
+}
+
+func (s *StateManager) IsMuted(groupCode int64, uin int64) bool {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return false
+	}
+	var result = true
+	db.View(func(tx *buntdb.Tx) error {
+		key := s.GroupMuteKey(groupCode, uin)
+		_, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			result = false
+			return nil
+		} else {
+			return err
+		}
+	})
+	return result
+}
+
 func (s *StateManager) FreshIndex() {
 	db, _ := localdb.GetClient()
 	db.CreateIndex(s.GroupMessageImageKey(), s.GroupMessageImageKey("*"), buntdb.IndexString)

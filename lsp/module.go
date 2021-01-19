@@ -186,7 +186,13 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if Debug {
 			cmd.Debug()
 		}
-		go cmd.Execute()
+		if !l.LspStateManager.IsMuted(msg.GroupCode, bot.Uin) {
+			go cmd.Execute()
+		}
+	})
+
+	bot.OnGroupMuted(func(qqClient *client.QQClient, event *client.GroupMuteEvent) {
+		l.LspStateManager.Muted(event.GroupCode, event.TargetUin, event.Time)
 	})
 
 	bot.OnPrivateMessage(func(qqClient *client.QQClient, msg *message.PrivateMessage) {
