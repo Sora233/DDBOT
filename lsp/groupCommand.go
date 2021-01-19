@@ -294,15 +294,15 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 					WithField("title", loliconImage.Title).
 					WithField("upload_url", groupImage.Url).
 					Debug("debug image")
-				sendingMsg.Append(message.NewText(fmt.Sprintf("标题：%v\n", loliconImage.Title)))
-				sendingMsg.Append(message.NewText(fmt.Sprintf("作者：%v\n", loliconImage.Author)))
-				sendingMsg.Append(message.NewText(fmt.Sprintf("PID：%v\n", loliconImage.Pid)))
+				sendingMsg.Append(utils.MessageTextf("标题：%v\n", loliconImage.Title))
+				sendingMsg.Append(utils.MessageTextf("作者：%v\n", loliconImage.Author))
+				sendingMsg.Append(utils.MessageTextf("PID：%v\n", loliconImage.Pid))
 				tagCount := len(loliconImage.Tags)
 				if tagCount >= 2 {
 					tagCount = 2
 				}
-				sendingMsg.Append(message.NewText(fmt.Sprintf("TAG：%v\n", strings.Join(loliconImage.Tags[:tagCount], " "))))
-				sendingMsg.Append(message.NewText(fmt.Sprintf("R18：%v", loliconImage.R18)))
+				sendingMsg.Append(utils.MessageTextf("TAG：%v\n", strings.Join(loliconImage.Tags[:tagCount], " ")))
+				sendingMsg.Append(utils.MessageTextf("R18：%v", loliconImage.R18))
 			}
 		}
 		lgc.reply(sendingMsg)
@@ -472,7 +472,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 			if idx != 0 {
 				listMsg.Append(message.NewText("\n"))
 			}
-			listMsg.Append(message.NewText(fmt.Sprintf("%v %v", newsInfo.Name, newsInfo.Mid)))
+			listMsg.Append(utils.MessageTextf("%v %v", newsInfo.Name, newsInfo.Mid))
 		}
 	case concern.DouyuLive:
 		listMsg.Append(message.NewText("当前直播：\n"))

@@ -282,3 +282,7 @@ func MessageFilter(msg []message.IMessageElement, filter func(message.IMessageEl
 	}
 	return result
 }
+
+func MessageTextf(format string, args ...interface{}) *message.TextElement {
+	return message.NewText(fmt.Sprintf(format, args...))
+}
