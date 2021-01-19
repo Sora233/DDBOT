@@ -166,7 +166,7 @@ func ImageGetAndNorm(url string) ([]byte, error) {
 }
 
 func ImageFormat(origImage []byte) (string, error) {
-	_, format, err := image.Decode(bytes.NewReader(origImage))
+	_, format, err := image.DecodeConfig(bytes.NewReader(origImage))
 	return format, err
 }
 
