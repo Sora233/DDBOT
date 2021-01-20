@@ -91,7 +91,7 @@ func (c *StateManager) EnableGroupCommand(groupCode int64, command string) error
 			return err
 		}
 		if replaced && prev == Enable {
-			return ErrPermisionExist
+			return ErrPermissionExist
 		}
 		return nil
 	})
@@ -109,7 +109,7 @@ func (c *StateManager) DisableGroupCommand(groupCode int64, command string) erro
 			return err
 		}
 		if replaced && prev == Disable {
-			return ErrPermisionExist
+			return ErrPermissionExist
 		}
 		return nil
 	})
@@ -219,12 +219,34 @@ func (c *StateManager) GrantRole(target int64, role RoleType) error {
 			tx.Set(key, "", nil)
 			return nil
 		} else if err == nil {
-			return ErrPermisionExist
+			return ErrPermissionExist
 		} else {
 			return err
 		}
 	})
 	return err
+}
+
+func (c *StateManager) UngrantRole(target int64, role RoleType) error {
+	if role.String() == "" {
+		return errors.New("error role")
+	}
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
+	}
+	return db.Update(func(tx *buntdb.Tx) error {
+		key := c.PermissionKey(target, role.String())
+		_, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			return ErrPermissionNotExist
+		} else if err == nil {
+			tx.Delete(key)
+			return nil
+		} else {
+			return err
+		}
+	})
 }
 
 func (c *StateManager) GrantGroupRole(groupCode int64, target int64, role RoleType) error {
@@ -235,19 +257,40 @@ func (c *StateManager) GrantGroupRole(groupCode int64, target int64, role RoleTy
 	if err != nil {
 		return err
 	}
-	err = db.Update(func(tx *buntdb.Tx) error {
+	return db.Update(func(tx *buntdb.Tx) error {
 		key := c.GroupPermissionKey(groupCode, target, role.String())
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
 			tx.Set(key, "", nil)
 			return nil
 		} else if err == nil {
-			return ErrPermisionExist
+			return ErrPermissionExist
 		} else {
 			return err
 		}
 	})
-	return err
+}
+
+func (c *StateManager) UngrantGroupRole(groupCode int64, target int64, role RoleType) error {
+	if role.String() == "" {
+		return errors.New("error role")
+	}
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
+	}
+	return db.Update(func(tx *buntdb.Tx) error {
+		key := c.GroupPermissionKey(groupCode, target, role.String())
+		_, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			return ErrPermissionNotExist
+		} else if err == nil {
+			tx.Delete(key)
+			return nil
+		} else {
+			return err
+		}
+	})
 }
 
 func (c *StateManager) GrantPermission(groupCode int64, target int64, command string) error {
@@ -255,19 +298,37 @@ func (c *StateManager) GrantPermission(groupCode int64, target int64, command st
 	if err != nil {
 		return err
 	}
-	err = db.Update(func(tx *buntdb.Tx) error {
+	return db.Update(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(groupCode, target, command)
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
 			tx.Set(key, "", nil)
 			return nil
 		} else if err == nil {
-			return ErrPermisionExist
+			return ErrPermissionExist
 		} else {
 			return err
 		}
 	})
-	return err
+}
+
+func (c *StateManager) UngrantPermission(groupCode int64, target int64, command string) error {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
+	}
+	return db.Update(func(tx *buntdb.Tx) error {
+		key := c.PermissionKey(groupCode, target, command)
+		_, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			return ErrPermissionNotExist
+		} else if err == nil {
+			tx.Delete(key)
+			return nil
+		} else {
+			return err
+		}
+	})
 }
 
 func (c *StateManager) RequireAny(option ...RequireOption) bool {

@@ -720,6 +720,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 	var grantCmd struct {
 		Command string `optional:"" short:"c" xor:"1" help:"command name"`
 		Role    string `optional:"" short:"r" xor:"1" enum:"Admin,GroupAdmin," help:"Admin / GroupAdmin"`
+		Delete  bool   `short:"d" help:"perform a ungrant instead"`
 		Target  int64  `arg:""`
 	}
 	lgc.parseArgs(&grantCmd, GrantCommand)
@@ -733,13 +734,15 @@ func (lgc *LspGroupCommand) GrantCommand() {
 		lgc.textReply("参数错误 - 必须指定-c / -r")
 		return
 	}
-	log = log.WithField("grantFrom", grantFrom).WithField("grantTo", grantTo)
+	del := grantCmd.Delete
+	log = log.WithField("grantFrom", grantFrom).WithField("grantTo", grantTo).WithField("delete", del)
 	var (
 		err error
 	)
 	if grantCmd.Command != "" {
+		log = log.WithField("command", grantCmd.Command)
 		if !CheckOperateableCommand(grantCmd.Command) {
-			log.WithField("command", grantCmd.Command).Errorf("unknown command")
+			log.Errorf("unknown command")
 			lgc.textReply("失败 - invalid command name")
 			return
 		}
@@ -752,13 +755,18 @@ func (lgc *LspGroupCommand) GrantCommand() {
 			return
 		}
 		if lgc.bot.FindGroup(groupCode).FindMember(grantTo) != nil {
-			err = lgc.l.PermissionStateManager.GrantPermission(groupCode, grantTo, grantCmd.Command)
+			if del {
+				err = lgc.l.PermissionStateManager.UngrantPermission(groupCode, grantTo, grantCmd.Command)
+			} else {
+				err = lgc.l.PermissionStateManager.GrantPermission(groupCode, grantTo, grantCmd.Command)
+			}
 		} else {
 			log.Errorf("can not find uin")
 			err = errors.New("未找到用户")
 		}
 	} else if grantCmd.Role != "" {
 		grantRole := permission.FromString(grantCmd.Role)
+		log = log.WithField("role", grantRole.String())
 		switch grantRole {
 		case permission.GroupAdmin:
 			if !lgc.l.PermissionStateManager.RequireAny(
@@ -769,7 +777,11 @@ func (lgc *LspGroupCommand) GrantCommand() {
 				return
 			}
 			if lgc.bot.FindGroup(groupCode).FindMember(grantTo) != nil {
-				err = lgc.l.PermissionStateManager.GrantGroupRole(groupCode, grantTo, grantRole)
+				if del {
+					err = lgc.l.PermissionStateManager.UngrantGroupRole(groupCode, grantTo, grantRole)
+				} else {
+					err = lgc.l.PermissionStateManager.GrantGroupRole(groupCode, grantTo, grantRole)
+				}
 			} else {
 				log.Errorf("can not find uin")
 				err = errors.New("未找到用户")
@@ -782,7 +794,11 @@ func (lgc *LspGroupCommand) GrantCommand() {
 				return
 			}
 			if lgc.bot.FindGroup(groupCode).FindMember(grantTo) != nil {
-				err = lgc.l.PermissionStateManager.GrantRole(grantTo, grantRole)
+				if del {
+					err = lgc.l.PermissionStateManager.UngrantRole(grantTo, grantRole)
+				} else {
+					err = lgc.l.PermissionStateManager.GrantRole(grantTo, grantRole)
+				}
 			} else {
 				log.Errorf("can not find uin")
 				err = errors.New("未找到用户")
@@ -798,6 +814,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 		lgc.textReply(fmt.Sprintf("失败 - %v", err))
 		return
 	}
+	log.Debug("grant success")
 	lgc.textReply("成功")
 }
 

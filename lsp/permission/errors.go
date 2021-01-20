@@ -3,5 +3,6 @@ package permission
 import "errors"
 
 var (
-	ErrPermisionExist = errors.New("already exist")
+	ErrPermissionExist    = errors.New("already exist")
+	ErrPermissionNotExist = errors.New("not exist")
 )
