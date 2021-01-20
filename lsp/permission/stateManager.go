@@ -104,7 +104,7 @@ func (c *StateManager) DisableGroupCommand(groupCode int64, command string) erro
 	}
 	return db.Update(func(tx *buntdb.Tx) error {
 		key := c.GroupEnabledKey(groupCode, command)
-		prev, replaced, err := tx.Set(key, Enable, nil)
+		prev, replaced, err := tx.Set(key, Disable, nil)
 		if err != nil {
 			return err
 		}

@@ -22,6 +22,8 @@ github.com/Mrs4s/MiraiGo v0.0.0-20210108093149-f40ac95fffa4/go.mod h1:HW2e375lCQ
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/Sora233/requests v0.0.0-20210104080357-9a4215af615c h1:CORAhK8+Nd7FJAkvu4n3r9+JUVFtY8SNNdcGwkO5Dl4=
 github.com/Sora233/requests v0.0.0-20210104080357-9a4215af615c/go.mod h1:k/QNjrV73zXkn1r3iG0rwZLc1naFS55Q67I/Wyo/UkI=
+github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882 h1:WXXRCSYXZsFd3ETkh+imU6Gz/Xdm0lXgAQILgBau0XY=
+github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882/go.mod h1:Ne6TKi7A5rdDza+cg+7YpXK1wJx7XdFZsJDqGG3lszI=
 github.com/Sora233/zhima-proxy-pool v0.0.0-20210109082808-e71055c4dde4 h1:2k4uoTY1T8kcgQIiDBAg8qo1CvGMDPtUH1/MoJ4wOMo=
 github.com/Sora233/zhima-proxy-pool v0.0.0-20210109082808-e71055c4dde4/go.mod h1:axlNpaq86R7luharXNfI0L6WnvIJJVZqc8ewoTHik98=
 github.com/a8m/syncmap v0.0.0-20200818084611-4bbbd178de97/go.mod h1:f3iF7/3t9i9hsYF8DPgT0XeIVyNzevhMCKf2445Q6pE=
@@ -58,8 +60,6 @@ github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4/go.mod h1:H
 github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 h1:Ghm4eQYC0nEPnSJdVkTrXpu9KtoVCSo1hg7mtI7G9KU=
 github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239/go.mod h1:Gdwt2ce0yfBxPvZrHkprdPPTTS3N5rwmLE8T22KBXlw=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
-github.com/forestgiant/sliceutil v0.0.0-20160425183142-94783f95db6c h1:pBgVXWDXju1m8W4lnEeIqTHPOzhTUO81a7yknM/xQR4=
-github.com/forestgiant/sliceutil v0.0.0-20160425183142-94783f95db6c/go.mod h1:pFdJbAhRf7rh6YYMUdIQGyzne6zYL1tCUW8QV2B3UfY=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
