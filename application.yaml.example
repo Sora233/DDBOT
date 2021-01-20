@@ -34,10 +34,10 @@ zhimaProxyPool:
   type: socks
 
 imagePool:
-  type: loliconPool
+  type: off
 
 proxy:
-  type: localProxyPool
+  type: off
 
 debug:
   group:
@@ -45,4 +45,4 @@ debug:
   uin:
     - 0
 
-logLevel: info
+logLevel: debug

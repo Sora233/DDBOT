@@ -66,6 +66,69 @@
 
 阁下可添加Demo机器人体验 1561991863
 
+### 使用
+
+- 请先安装 [gocv](https://github.com/hybridgroup/gocv)
+- 然后`go build`
+
+<del>讲道理如果不需要face命令是可以不要gocv依赖的，但我太菜不知道怎么实现，如果有人知道可以教我写代码</del>
+
+### 配置
+
+模板为application.yaml.example
+
+```yaml
+bot:
+  account: # bot账号
+  password: # bot密码
+
+moderatecontent:
+  apikey: # 已弃用
+
+# https://api.aliyun.com/#/?product=imageaudit
+aliyun: # 阿里云鉴权，用于图片识别，如果为空则图片识别功能无法工作
+  accessKeyID: # 鉴权的账号应该开通内容审核功能（目前免费）
+  accessKeySecret:
+
+localPool: # 图片功能，使用本地图库
+  imageDir: # 本地路径
+
+loliconPool: # 图片功能，使用api.lolicon.app图库
+  apikey: # 看api.lolicon.app网站内说明
+
+pyProxyPool: # 代理池配置，py代理池 https://github.com/jhao104/proxy_pool
+  host: http://127.0.0.1:5010
+
+localProxyPool: # 代理池配置，固定代理
+  proxy:
+    - 127.0.0.1:8888
+
+concern:
+  emitInterval: 5s # 订阅的刷新频率，5s表示每5秒刷新一个ID，过快可能导致ip被暂时封禁
+
+zhimaProxyPool: # 代理池配置，芝麻http代理 http://h.zhimaruanjian.com/
+  api:
+  type: socks
+  BackUpCap: 50
+  ActiveCap: 4
+  ClearTime: 600
+  TimeLimit: 175
+
+imagePool:
+  type: off # localPool / loliconPool
+
+proxy:
+  type: off # pyProxyPool / zhimaProxyPool
+
+debug: # debug模式，只有以下群或qq号可以触发命令
+  group:
+    - 0
+  uin:
+    - 0
+
+logLevel: info # 日志等级
+```
+
 # 敬告
 
 - 请勿滥用

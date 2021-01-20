@@ -1,5 +1,9 @@
 package aliyun
 
+import "errors"
+
+var ErrNotInit = errors.New("not init")
+
 type AuditResponse struct {
 	Data struct {
 		Results []struct {

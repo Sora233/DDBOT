@@ -38,6 +38,7 @@ type Lsp struct {
 	pool            image_pool.Pool
 	concernNotify   chan concern.Notify
 	stop            chan interface{}
+	status          *Status
 
 	PermissionStateManager *permission.StateManager
 	LspStateManager        *StateManager
@@ -63,7 +64,16 @@ func (l *Lsp) Init() {
 	if err := localdb.InitBuntDB(); err != nil {
 		panic(err)
 	}
-	aliyun.InitAliyun()
+
+	keyId := config.GlobalConfig.GetString("aliyun.accessKeyID")
+	keySecret := config.GlobalConfig.GetString("aliyun.accessKeySecret")
+	if keyId != "" && keySecret != "" {
+		aliyun.InitAliyun(keyId, keySecret)
+		l.status.AliyunEnable = true
+	} else {
+		log.Debug("aliyun not init, some feature is not usable")
+	}
+
 	l.PermissionStateManager = permission.NewStateManager()
 	l.LspStateManager = NewStateManager()
 
@@ -82,6 +92,7 @@ func (l *Lsp) Init() {
 		} else {
 			l.pool = pool
 			log.Debugf("init image pool")
+			l.status.ImagePoolEnable = true
 		}
 	case "localPool":
 		pool, err := local_pool.NewLocalPool(config.GlobalConfig.GetString("localPool.imageDir"))
@@ -90,7 +101,9 @@ func (l *Lsp) Init() {
 		} else {
 			l.pool = pool
 			log.Debugf("init image pool")
+			l.status.ImagePoolEnable = true
 		}
+	case "off":
 	default:
 		log.Errorf("unknown pool")
 	}
@@ -106,6 +119,7 @@ func (l *Lsp) Init() {
 			log.Errorf("init py pool err %v", err)
 		} else {
 			proxy_pool.Init(pyPool)
+			l.status.ProxyPoolEnable = true
 		}
 	case "zhimaProxyPool":
 		api := config.GlobalConfig.GetString("zhimaProxyPool.api")
@@ -119,11 +133,14 @@ func (l *Lsp) Init() {
 		}
 		zhimaPool := zhimaproxypool.NewZhimaProxyPool(cfg, zhima.NewBuntdbPersister())
 		proxy_pool.Init(zhima.NewZhimaWrapper(zhimaPool, 15))
+		l.status.ProxyPoolEnable = true
 	case "localProxyPool":
 		proxies := config.GlobalConfig.GetStringSlice("localProxyPool.proxy")
 		pool := local_proxy_pool.NewLocalPool(proxies)
 		proxy_pool.Init(pool)
 		log.WithField("local_proxy_num", len(proxies)).Debug("debug")
+		l.status.ProxyPoolEnable = true
+	case "off":
 	default:
 		log.Errorf("unknown proxy type")
 	}
@@ -256,6 +273,9 @@ func (l *Lsp) RemoveAll(groupCode int64) {
 }
 
 func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.Image, error) {
+	if l.pool == nil {
+		return nil, image_pool.ErrNotInit
+	}
 	return l.pool.Get(options...)
 }
 
@@ -277,6 +297,7 @@ func init() {
 	Instance = &Lsp{
 		concernNotify: make(chan concern.Notify, 500),
 		stop:          make(chan interface{}),
+		status:        NewStatus(),
 	}
 	bot.RegisterModule(Instance)
 }

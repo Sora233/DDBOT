@@ -241,6 +241,11 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	log.Info("run setu command")
 	defer log.Info("setu command end")
 
+	if !lgc.l.status.ImagePoolEnable {
+		log.Debug("image pool not setup")
+		return
+	}
+
 	var setuCmd struct {
 		Num int `arg:"" optional:"" help:"image number"`
 	}
@@ -707,7 +712,15 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 	}
 	if err != nil {
 		log.Errorf("err %v", err)
-		lgc.textReply(fmt.Sprintf("失败 - %v", err))
+		if err == permission.ErrPermissionExist {
+			if disable {
+				lgc.textReply("失败 - 该命令已禁用")
+			} else {
+				lgc.textReply("失败 - 该命令已启用")
+			}
+		} else {
+			lgc.textReply(fmt.Sprintf("失败 - %v", err))
+		}
 		return
 	}
 	lgc.textReply("成功")
@@ -815,7 +828,13 @@ func (lgc *LspGroupCommand) GrantCommand() {
 	}
 	if err != nil {
 		log.Errorf("grant failed %v", err)
-		lgc.textReply(fmt.Sprintf("失败 - %v", err))
+		if err == permission.ErrPermissionExist {
+			lgc.textReply("失败 - 目标已有该权限")
+		} else if err == permission.ErrPermissionNotExist {
+			lgc.textReply("失败 - 目标未有该权限")
+		} else {
+			lgc.textReply(fmt.Sprintf("失败 - %v", err))
+		}
 		return
 	}
 	log.Debug("grant success")
@@ -918,6 +937,11 @@ func (lgc *LspGroupCommand) ImageContent() {
 	msg := lgc.msg
 	groupCode := msg.GroupCode
 	log := logger.WithField("group_code", groupCode)
+
+	if !lgc.l.status.AliyunEnable {
+		logger.Debug("aliyun not setup")
+		return
+	}
 
 	for _, e := range msg.Elements {
 		if e.Type() == message.Image {

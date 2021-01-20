@@ -2,7 +2,6 @@ package aliyun
 
 import (
 	"encoding/json"
-	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 )
@@ -17,17 +16,18 @@ var client *sdk.Client
 
 var qpsLimit = make(chan interface{}, 2)
 
-func InitAliyun() {
-	keyId := config.GlobalConfig.GetString("aliyun.accessKeyID")
-	keySecret := config.GlobalConfig.GetString("aliyun.accessKeySecret")
-	c, err := sdk.NewClientWithAccessKey("cn-shanghai", keyId, keySecret)
+func InitAliyun(accessKeyID string, accessKeySecret string) {
+	c, err := sdk.NewClientWithAccessKey("cn-shanghai", accessKeyID, accessKeySecret)
 	if err != nil {
-		panic(err)
+		return
 	}
 	client = c
 }
 
 func Audit(url string) (*AuditResponse, error) {
+	if client == nil {
+		return nil, ErrNotInit
+	}
 	qpsLimit <- struct{}{}
 	defer func() { <-qpsLimit }()
 	request := requests.NewCommonRequest()
