@@ -863,7 +863,7 @@ func (lgc *LspGroupCommand) AboutCommand() {
 	defer log.Info("about command end")
 
 	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(message.NewText("LspBot by Sora233 (https://github.com/Sora233/Sora233-MiraiGo)"))
+	sendingMsg.Append(message.NewText("一个多功能机器人，常用功能b站直播、动态推送，斗鱼直播推送，阁下也可添加bot好友并邀请至阁下的其他群内\nby Sora233\n如果喜欢请点一个Start：https://github.com/Sora233/Sora233-MiraiGo"))
 	lgc.send(sendingMsg)
 }
 
