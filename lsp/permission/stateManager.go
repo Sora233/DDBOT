@@ -264,10 +264,11 @@ func (c *StateManager) RequireAny(option ...RequireOption) bool {
 			case *adminRoleRequireOption:
 				ok = ok || c.requireAdminRole(opt)
 			case *groupAdminRoleRequireOption:
+				ok = ok || c.requireGroupAdminRole(opt)
 			}
 		case Group:
 			opt := iopt.(*qqAdminRequireOption)
-			ok = ok || c.requireGroup(opt)
+			ok = ok || c.requireQQGroupAdmin(opt)
 		case Command:
 			opt := iopt.(*groupCommandRequireOption)
 			ok = ok || c.requireGroupCommand(opt)
@@ -327,7 +328,7 @@ func (c *StateManager) requireGroupAdminRole(opt *groupAdminRoleRequireOption) b
 	return false
 }
 
-func (c *StateManager) requireGroup(opt *qqAdminRequireOption) bool {
+func (c *StateManager) requireQQGroupAdmin(opt *qqAdminRequireOption) bool {
 	uin := opt.uin
 	groupCode := opt.groupCode
 	if c.CheckGroupAdministrator(groupCode, uin) {
