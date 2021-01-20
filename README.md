@@ -4,7 +4,7 @@
 
 -----
 
-### **基本功能：**
+## **基本功能：**
 
 - **B站直播/动态推送**
     - 让阁下在DD的时候不错过任何一场突击。
@@ -66,14 +66,32 @@
 
 阁下可添加Demo机器人体验 1561991863
 
-### 使用
+## 使用
 
-- 请先安装 [gocv](https://github.com/hybridgroup/gocv)
-- 然后`go build`
+自行编译
 
-<del>讲道理如果不需要face命令是可以不要gocv依赖的，但我太菜不知道怎么实现，如果有人知道可以教我写代码</del>
+## 编译
 
-### 配置
+go >= 1.15
+
+- ### 启用gocv
+
+请先安装 [gocv](https://github.com/hybridgroup/gocv)
+
+```
+go build
+```
+
+- ### 禁用gocv
+
+禁用gocv将导致face命令无法正常工作
+
+```
+go mod edit -droprequire gocv.io/x/gocv
+go build -tags nocv
+```
+
+## 配置
 
 模板为application.yaml.example
 
@@ -129,12 +147,12 @@ debug: # debug模式，只有以下群或qq号可以触发命令
 logLevel: info # 日志等级
 ```
 
-# 敬告
+## 敬告
 
 - 请勿滥用
 - 禁止商用
 
-### 贡献
+## 贡献
 
 发现问题或功能建议请到 [issues](https://github.com/Sora233/Sora233-MiraiGo/issues)
 

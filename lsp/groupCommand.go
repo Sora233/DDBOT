@@ -971,6 +971,10 @@ func (lgc *LspGroupCommand) faceDetect(url string) {
 		return
 	}
 	img, err = utils.OpenCvAnimeFaceDetect(img)
+	if err == utils.ErrGoCvNotSetUp {
+		log.Debug("gocv not setup")
+		return
+	}
 	if err != nil {
 		log.Errorf("detect image err %v", err)
 		lgc.textReply(fmt.Sprintf("检测失败 - %v", err))
