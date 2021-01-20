@@ -77,7 +77,7 @@ func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
 		return result.Bytes(), nil
 	}
 
-	img, err := gocv.IMDecode(imgBytes, gocv.IMReadUnchanged)
+	img, err := gocv.IMDecode(imgBytes, gocv.IMReadColor)
 	if err != nil {
 		return nil, err
 	}
