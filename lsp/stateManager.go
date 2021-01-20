@@ -121,6 +121,7 @@ func (s *StateManager) IsMuted(groupCode int64, uin int64) bool {
 func (s *StateManager) FreshIndex() {
 	db, _ := localdb.GetClient()
 	db.CreateIndex(s.GroupMessageImageKey(), s.GroupMessageImageKey("*"), buntdb.IndexString)
+	db.CreateIndex(s.GroupMuteKey(), s.GroupMuteKey("*"), buntdb.IndexString)
 }
 
 func NewStateManager() *StateManager {
