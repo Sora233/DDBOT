@@ -73,6 +73,6 @@
 
 ### 贡献
 
-发现问题或功能建议请到 [issu(https://github.com/Sora233/Sora233-MiraiGo/issues)
+发现问题或功能建议请到 [issues](https://github.com/Sora233/Sora233-MiraiGo/issues)
 
 其他用法问题请到 [discussions](https://github.com/Sora233/Sora233-MiraiGo/discussions)
