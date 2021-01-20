@@ -48,7 +48,7 @@
 <details>
   <summary>里命令</summary>
 
-以下命令默认关闭
+以下命令默认禁用
 
 - **Pixiv图片**
     - 由 [api.olicon.app](https://api.lolicon.app/#/) 提供
@@ -73,4 +73,6 @@
 
 ### 贡献
 
-发现问题或功能建议请到issue
+发现问题或功能建议请到 [issu(https://github.com/Sora233/Sora233-MiraiGo/issues)
+
+其他用法问题请到 [discussions](https://github.com/Sora233/Sora233-MiraiGo/discussions)
