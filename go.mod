@@ -7,7 +7,7 @@ require (
 	github.com/Mrs4s/MiraiGo v0.0.0-20210108093149-f40ac95fffa4
 	github.com/Sora233/zhima-proxy-pool v0.0.0-20210109082808-e71055c4dde4
 	github.com/alecthomas/kong v0.2.12
-	github.com/aliyun/alibaba-cloud-sdk-go v1.61.868
+	github.com/aliyun/alibaba-cloud-sdk-go v1.61.871
 	github.com/asmcos/requests v0.0.0-20200816142649-95abc76c8cac
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
 	github.com/forestgiant/sliceutil v0.0.0-20160425183142-94783f95db6c
