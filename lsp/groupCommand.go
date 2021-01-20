@@ -578,27 +578,29 @@ func (lgc *LspGroupCommand) RollCommand() {
 	)
 
 	rollarg := rollCmd.RangeArg
-	if strings.Contains(rollarg, "-") {
-		rolls := strings.Split(rollarg, "-")
-		if len(rolls) != 2 {
-			lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
-			return
-		}
-		min, err = strconv.ParseInt(rolls[0], 10, 64)
-		if err != nil {
-			lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
-			return
-		}
-		max, err = strconv.ParseInt(rolls[1], 10, 64)
-		if err != nil {
-			lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
-			return
-		}
-	} else {
-		max, err = strconv.ParseInt(rollarg, 10, 64)
-		if err != nil {
-			lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
-			return
+	if rollarg != "" {
+		if strings.Contains(rollarg, "-") {
+			rolls := strings.Split(rollarg, "-")
+			if len(rolls) != 2 {
+				lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+				return
+			}
+			min, err = strconv.ParseInt(rolls[0], 10, 64)
+			if err != nil {
+				lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+				return
+			}
+			max, err = strconv.ParseInt(rolls[1], 10, 64)
+			if err != nil {
+				lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+				return
+			}
+		} else {
+			max, err = strconv.ParseInt(rollarg, 10, 64)
+			if err != nil {
+				lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+				return
+			}
 		}
 	}
 	if min > max {
