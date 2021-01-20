@@ -207,6 +207,8 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.FaceCommand()
 		case "/about":
 			lgc.AboutCommand()
+		case "/help":
+			lgc.HelpCommand()
 		default:
 		}
 		return
@@ -826,6 +828,11 @@ func (lgc *LspGroupCommand) FaceCommand() {
 	log.Infof("run face command")
 	defer log.Info("face command end")
 
+	lgc.parseArgs(&struct{}{}, FaceCommand, kong.Description("电脑使用/face [图片] 或者 回复图片消息+/face触发"))
+	if lgc.exit {
+		return
+	}
+
 	for _, e := range msg.Elements {
 		if e.Type() == message.Image {
 			if ie, ok := e.(*message.ImageElement); ok {
@@ -855,16 +862,54 @@ func (lgc *LspGroupCommand) FaceCommand() {
 }
 
 func (lgc *LspGroupCommand) AboutCommand() {
-	msg := lgc.msg
-	groupCode := msg.GroupCode
-
-	log := logger.WithField("group_code", groupCode)
+	log := logger.WithField("group_code", lgc.groupCode())
 	log.Info("run about command")
 	defer log.Info("about command end")
 
-	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(message.NewText("一个多功能机器人，常用功能b站直播、动态推送，斗鱼直播推送，阁下也可添加bot好友并邀请至阁下的其他群内\nby Sora233\n如果喜欢请点一个Start：https://github.com/Sora233/Sora233-MiraiGo"))
-	lgc.send(sendingMsg)
+	lgc.parseArgs(&struct{}{}, AboutCommand, kong.Description("print about message"))
+	if lgc.exit {
+		return
+	}
+
+	text := "一个多功能机器人，包括b站直播、动态推送，斗鱼直播推送，阁下也可添加bot好友并邀请至阁下的其他群内\n" +
+		"by Sora233\n" +
+		"如果喜欢请点一个Star：https://github.com/Sora233/Sora233-MiraiGo"
+	lgc.textSend(text)
+}
+
+func (lgc *LspGroupCommand) HelpCommand() {
+	log := logger.WithField("group_code", lgc.groupCode())
+	log.Info("run help command")
+	defer log.Info("help command end")
+
+	lgc.parseArgs(&struct{}{}, HelpCommand, kong.Description("print help message"))
+	if lgc.exit {
+		return
+	}
+
+	help := "部分指令：\n" +
+		"/watch 用于订阅推送，例如：\n" +
+		"订阅b站uid为2的用户的直播信息：/watch -s bilibili -t live 2\n" +
+		"订阅b站uid为2的用户的动态信息：/watch -s bilibili -t news 2\n" +
+		"uid即b站用户空间末尾的数字\n" +
+		"订阅斗鱼6655号直播间：/watch -s douyu -t live 6655\n" +
+		"可以用相应的/unwatch命令取消订阅\n" +
+		"取消订阅斗鱼6655直播间：/unwatch -s douyu -t live 6655\n" +
+		"该系列命令默认情况下仅管理员可用\n" +
+		"/list 用于查看当前订阅，例如：\n" +
+		"查看当前b站订阅列表中正在直播的：/list -s bilibili -t live\n" +
+		"/grant 用于管理员给其他成员设置权限，例如：\n" +
+		"/grant -c watch 1234567 给qq号为1234567的用户使用watch命令的权限\n" +
+		"设置的权限可以使用-d参数取消：\n" +
+		"/grant -d -c watch 1234567 取消qq号为1234567的用户的watch命令权限\n" +
+		"/enable和/disable 用于开启与禁用命令，例如：\n" +
+		"/enable watch 将开启watch命令\n" +
+		"/disable watch 将禁用watch命令，调用watch命令将不再有任何反应\n" +
+		"最后，一些里命令不便在此列出\n" +
+		"其他使用问题请在此提出：https://github.com/Sora233/Sora233-MiraiGo/discussions"
+	lgc.privateTextSend(help)
+	lgc.privateTextSend("请勿私聊，私聊不会回复")
+	lgc.textReply("该命令较为刷屏，已通过私信回复\n阁下也可查看https://github.com/Sora233/Sora233-MiraiGo/blob/master/README.md")
 }
 
 func (lgc *LspGroupCommand) ImageContent() {
@@ -949,6 +994,12 @@ func (lgc *LspGroupCommand) textReply(text string) *message.GroupMessage {
 	return lgc.reply(sendingMsg)
 }
 
+func (lgc *LspGroupCommand) textSend(text string) *message.GroupMessage {
+	sendingMsg := message.NewSendingMessage()
+	sendingMsg.Append(message.NewText(text))
+	return lgc.send(sendingMsg)
+}
+
 func (lgc *LspGroupCommand) reply(msg *message.SendingMessage) *message.GroupMessage {
 	sendingMsg := message.NewSendingMessage()
 	sendingMsg.Append(message.NewReply(lgc.msg))
@@ -962,12 +1013,18 @@ func (lgc *LspGroupCommand) send(msg *message.SendingMessage) *message.GroupMess
 	return lgc.l.sendGroupMessage(lgc.groupCode(), msg)
 }
 
-func (lgc *LspGroupCommand) privateAnswer(msg *message.SendingMessage) {
+func (lgc *LspGroupCommand) privateSend(msg *message.SendingMessage) {
 	if lgc.msg.Sender.IsFriend {
 		lgc.bot.SendPrivateMessage(lgc.uin(), msg)
 	} else {
 		lgc.bot.SendTempMessage(lgc.groupCode(), lgc.uin(), msg)
 	}
+}
+
+func (lgc *LspGroupCommand) privateTextSend(text string) {
+	sendingMsg := message.NewSendingMessage()
+	sendingMsg.Append(message.NewText(text))
+	lgc.privateSend(sendingMsg)
 }
 
 func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {
@@ -1002,10 +1059,11 @@ func (lgc *LspGroupCommand) getArgs() []string {
 	return lgc.args
 }
 
-func (lgc *LspGroupCommand) parseArgs(ast interface{}, name string) {
+func (lgc *LspGroupCommand) parseArgs(ast interface{}, name string, options ...kong.Option) {
 	_, args := lgc.getCmdArgs()
 	cmdOut := &strings.Builder{}
-	k, err := kong.New(ast, kong.Exit(lgc.Exit), kong.Name(name), kong.UsageOnError())
+	options = append(options, kong.Name(name), kong.UsageOnError(), kong.Exit(lgc.Exit))
+	k, err := kong.New(ast, options...)
 	if err != nil {
 		logger.Errorf("kong new failed %v", err)
 		lgc.textReply("失败")

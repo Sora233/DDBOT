@@ -16,6 +16,8 @@ const (
 	DisableCommand      = "disable"
 	FaceCommand         = "face"
 	ImageContentCommand = "ic"
+	HelpCommand         = "help"
+	AboutCommand        = "about"
 )
 
 var all = [...]string{
@@ -27,7 +29,7 @@ var all = [...]string{
 }
 
 var nonOprateable = [...]string{
-	EnableCommand, DisableCommand, GrantCommand,
+	EnableCommand, DisableCommand, GrantCommand, HelpCommand, AboutCommand,
 }
 
 func CheckValidCommand(command string) bool {
