@@ -1,5 +1,7 @@
 package lsp
 
+import "github.com/forestgiant/sliceutil"
+
 const (
 	RollCommand         = "roll"
 	CheckinCommand      = "签到"
@@ -12,6 +14,7 @@ const (
 	HuangtuCommand      = "黄图"
 	EnableCommand       = "enable"
 	DisableCommand      = "disable"
+	FaceCommand         = "face"
 	ImageContentCommand = "ic"
 )
 
@@ -20,13 +23,17 @@ var all = [...]string{
 	LspCommand, WatchCommand, UnwatchCommand,
 	ListCommand, SetuCommand, HuangtuCommand,
 	EnableCommand, DisableCommand, ImageContentCommand,
+	FaceCommand,
 }
 
-func CheckCommand(command string) bool {
-	for _, e := range all {
-		if e == command {
-			return true
-		}
-	}
-	return false
+var nonOprateable = [...]string{
+	EnableCommand, DisableCommand, GrantCommand,
+}
+
+func CheckValidCommand(command string) bool {
+	return sliceutil.Contains(all, command)
+}
+
+func CheckOperateableCommand(command string) bool {
+	return sliceutil.Contains(all, command) && !sliceutil.Contains(nonOprateable, command)
 }

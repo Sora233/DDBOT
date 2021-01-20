@@ -98,6 +98,12 @@ func (lgc *LspGroupCommand) Execute() {
 	} else {
 		switch lgc.getCmd() {
 		case "/lsp":
+			if lgc.groupDisabled(LspCommand) {
+				logger.WithField("group_code", lgc.groupCode()).
+					WithField("command", LspCommand).
+					Debug("disabled")
+				return
+			}
 			lgc.LspCommand()
 		case "/色图":
 			if !lgc.groupEnabled(SetuCommand) {
@@ -116,22 +122,52 @@ func (lgc *LspGroupCommand) Execute() {
 			}
 			lgc.SetuCommand(true)
 		case "/watch":
+			if lgc.groupDisabled(WatchCommand) {
+				logger.WithField("group_code", lgc.groupCode()).
+					WithField("command", WatchCommand).
+					Debug("disabled")
+				return
+			}
 			if !lgc.requireAnyAll(lgc.groupCode(), lgc.uin(), WatchCommand) {
 				lgc.noPermissionReply()
 				return
 			}
 			lgc.WatchCommand(false)
 		case "/unwatch":
+			if lgc.groupDisabled(UnwatchCommand) {
+				logger.WithField("group_code", lgc.groupCode()).
+					WithField("command", UnwatchCommand).
+					Debug("disabled")
+				return
+			}
 			if !lgc.requireAnyAll(lgc.groupCode(), lgc.uin(), UnwatchCommand) {
 				lgc.noPermissionReply()
 				return
 			}
 			lgc.WatchCommand(true)
 		case "/list":
+			if lgc.groupDisabled(ListCommand) {
+				logger.WithField("group_code", lgc.groupCode()).
+					WithField("command", ListCommand).
+					Debug("disabled")
+				return
+			}
 			lgc.ListCommand()
 		case "/签到":
+			if lgc.groupDisabled(CheckinCommand) {
+				logger.WithField("group_code", lgc.groupCode()).
+					WithField("command", CheckinCommand).
+					Debug("disabled")
+				return
+			}
 			lgc.CheckinCommand()
 		case "/roll":
+			if lgc.groupDisabled(RollCommand) {
+				logger.WithField("group_code", lgc.groupCode()).
+					WithField("command", RollCommand).
+					Debug("disabled")
+				return
+			}
 			lgc.RollCommand()
 		case "/grant":
 			if !lgc.l.PermissionStateManager.RequireAny(
@@ -162,6 +198,12 @@ func (lgc *LspGroupCommand) Execute() {
 			}
 			lgc.EnableCommand(true)
 		case "/face":
+			if lgc.groupDisabled(FaceCommand) {
+				logger.WithField("group_code", lgc.groupCode()).
+					WithField("command", FaceCommand).
+					Debug("disabled")
+				return
+			}
 			lgc.FaceCommand()
 		case "/about":
 			lgc.AboutCommand()
@@ -648,12 +690,9 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 		return
 	}
 	log = log.WithField("command", enableCmd.Command).WithField("disable", disable)
-	if !CheckCommand(enableCmd.Command) ||
-		enableCmd.Command == EnableCommand ||
-		enableCmd.Command == DisableCommand ||
-		enableCmd.Command == GrantCommand {
+	if !CheckOperateableCommand(enableCmd.Command) {
 		log.Errorf("unknown command")
-		lgc.textReply("错误的command name")
+		lgc.textReply("失败 - invalid command name")
 		return
 	}
 	var err error
@@ -699,12 +738,9 @@ func (lgc *LspGroupCommand) GrantCommand() {
 		err error
 	)
 	if grantCmd.Command != "" {
-		if !CheckCommand(grantCmd.Command) ||
-			grantCmd.Command == GrantCommand ||
-			grantCmd.Command == EnableCommand ||
-			grantCmd.Command == DisableCommand {
+		if !CheckOperateableCommand(grantCmd.Command) {
 			log.WithField("command", grantCmd.Command).Errorf("unknown command")
-			lgc.textReply("错误的command name")
+			lgc.textReply("失败 - invalid command name")
 			return
 		}
 		if !lgc.l.PermissionStateManager.RequireAny(
@@ -880,8 +916,14 @@ func (lgc *LspGroupCommand) requireAnyAll(groupCode int64, uin int64, command st
 	)
 }
 
+// explicit defined and enabled
 func (lgc *LspGroupCommand) groupEnabled(command string) bool {
 	return lgc.l.PermissionStateManager.CheckGroupCommandEnabled(lgc.groupCode(), command)
+}
+
+// explicit defined and disabled
+func (lgc *LspGroupCommand) groupDisabled(command string) bool {
+	return lgc.l.PermissionStateManager.CheckGroupCommandDisabled(lgc.groupCode(), command)
 }
 
 func (lgc *LspGroupCommand) textReply(text string) *message.GroupMessage {

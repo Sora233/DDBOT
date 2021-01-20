@@ -19,6 +19,9 @@ const (
 	Empty Level = 0
 )
 
+const Enable = "enable"
+const Disable = "disable"
+
 func (t RoleType) String() string {
 	switch t {
 	case Admin:

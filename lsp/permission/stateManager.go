@@ -84,19 +84,17 @@ func (c *StateManager) EnableGroupCommand(groupCode int64, command string) error
 	if err != nil {
 		return err
 	}
-	err = db.Update(func(tx *buntdb.Tx) error {
+	return db.Update(func(tx *buntdb.Tx) error {
 		key := c.GroupEnabledKey(groupCode, command)
-		_, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			_, _, err = tx.Set(key, "", nil)
+		prev, replaced, err := tx.Set(key, Enable, nil)
+		if err != nil {
 			return err
-		} else if err != nil {
-			return err
-		} else {
-			return errors.New("already enabled")
 		}
+		if replaced && prev == Enable {
+			return ErrPermisionExist
+		}
+		return nil
 	})
-	return err
 }
 
 func (c *StateManager) DisableGroupCommand(groupCode int64, command string) error {
@@ -104,15 +102,34 @@ func (c *StateManager) DisableGroupCommand(groupCode int64, command string) erro
 	if err != nil {
 		return err
 	}
-	err = db.Update(func(tx *buntdb.Tx) error {
+	return db.Update(func(tx *buntdb.Tx) error {
 		key := c.GroupEnabledKey(groupCode, command)
-		_, err := tx.Delete(key)
-		return err
+		prev, replaced, err := tx.Set(key, Enable, nil)
+		if err != nil {
+			return err
+		}
+		if replaced && prev == Disable {
+			return ErrPermisionExist
+		}
+		return nil
 	})
-	return err
 }
 
+// explicit enabled, must exist
 func (c *StateManager) CheckGroupCommandEnabled(groupCode int64, command string) bool {
+	return c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
+		return exist && val == Enable
+	})
+}
+
+// explicit disabled, must exist
+func (c *StateManager) CheckGroupCommandDisabled(groupCode int64, command string) bool {
+	return c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
+		return exist && val == Disable
+	})
+}
+
+func (c *StateManager) CheckGroupCommandFunc(groupCode int64, command string, f func(val string, exist bool) bool) bool {
 	var result bool
 	db, err := localdb.GetClient()
 	if err != nil {
@@ -121,13 +138,11 @@ func (c *StateManager) CheckGroupCommandEnabled(groupCode int64, command string)
 	}
 	err = db.View(func(tx *buntdb.Tx) error {
 		key := c.GroupEnabledKey(groupCode, command)
-		_, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			return nil
-		} else if err != nil {
+		val, err := tx.Get(key)
+		if err != nil && err != buntdb.ErrNotFound {
 			return err
 		}
-		result = true
+		result = f(val, err == nil)
 		return nil
 	})
 	if err != nil {
