@@ -51,6 +51,12 @@ func Get(ctx context.Context, url string, params requests.Params, maxRetry int, 
 		retry = 0
 	)
 	for {
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+			break
+		default:
+		}
 		resp, err = req.Get(url, params)
 		if err != nil {
 			retry += 1
