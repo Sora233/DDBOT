@@ -210,12 +210,14 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnGroupMuted(func(qqClient *client.QQClient, event *client.GroupMuteEvent) {
-		l.LspStateManager.Muted(event.GroupCode, event.TargetUin, event.Time)
+		if err := l.LspStateManager.Muted(event.GroupCode, event.TargetUin, event.Time); err != nil {
+			logger.Errorf("Muted failed %v", err)
+		}
 	})
 
 	bot.OnPrivateMessage(func(qqClient *client.QQClient, msg *message.PrivateMessage) {
-		cmds := strings.Split(msg.ToString(), " ")
-		if cmds[0] == "/ping" {
+		cmds := strings.TrimSpace(msg.ToString())
+		if cmds == "/ping" {
 			sendingMsg := message.NewSendingMessage()
 			sendingMsg.Append(message.NewText("pong"))
 			qqClient.SendPrivateMessage(msg.Sender.Uin, sendingMsg)
