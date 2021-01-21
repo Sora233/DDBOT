@@ -262,11 +262,9 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 
 	num := setuCmd.Num
 
-	if num <= 0 {
-		num = 1
-	}
-	if num > 10 {
-		num = 10
+	if num <= 0 || num > 10 {
+		lgc.textReply("失败 - 数量范围为1-10")
+		return
 	}
 
 	sendingMsg := message.NewSendingMessage()
@@ -930,7 +928,7 @@ func (lgc *LspGroupCommand) HelpCommand() {
 		"其他使用问题请在此提出：https://github.com/Sora233/Sora233-MiraiGo/discussions"
 	lgc.privateTextSend(help)
 	lgc.privateTextSend("请勿私聊，私聊不会回复")
-	lgc.textReply("该命令较为刷屏，已通过私信回复\n阁下也可查看https://github.com/Sora233/Sora233-MiraiGo/blob/master/README.md")
+	lgc.textReply("该命令较为刷屏，已通过私信回复\n若临时会话被禁止，阁下可添加bot为好友后重试或者查看https://github.com/Sora233/Sora233-MiraiGo/blob/master/README.md")
 }
 
 func (lgc *LspGroupCommand) ImageContent() {
