@@ -134,7 +134,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					log.Errorf("Unmarshal origin cardWithImage failed %v", err)
 					continue
 				}
-				result = append(result, localutils.MessageTextf("%v\n", originName, origin.GetItem().GetDescription()))
+				result = append(result, localutils.MessageTextf("%v\n", origin.GetItem().GetDescription()))
 				for _, pic := range origin.GetItem().GetPictures() {
 					img, err := localutils.ImageGet(pic.GetImgSrc())
 					if err != nil {
