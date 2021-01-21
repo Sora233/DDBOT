@@ -21,6 +21,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/zhima"
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	"github.com/sirupsen/logrus"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -219,6 +220,12 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			sendingMsg.Append(message.NewText("pong"))
 			qqClient.SendPrivateMessage(msg.Sender.Uin, sendingMsg)
 		}
+	})
+	bot.OnDisconnected(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
+		go func() {
+			time.Sleep(time.Second * 3)
+			os.Exit(1)
+		}()
 	})
 }
 
