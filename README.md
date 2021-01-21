@@ -22,6 +22,12 @@
     - 主要用来刷屏
     - 命令
         - /list
+- **人脸识别**
+    - 主要用来玩
+    - 支持二次元人脸
+    - 命令
+        - /face (电脑使用/face [图片] 或者 回复图片消息+/face触发)
+    - *recall不高*
 - **Roll**
     - 没什么用的roll点
     - 命令
@@ -50,14 +56,10 @@
 
 以下命令默认禁用
 
-- **Pixiv图片**
+- **随机图片**
     - 由 [api.olicon.app](https://api.lolicon.app/#/) 提供
     - 命令
         - /色图
-- **人脸识别**
-    - 支持二次元人脸
-    - 命令
-        - /face (电脑使用/face [图片] 或者 回复图片消息+/face触发)
 - **色图判定**
     - 由阿里云提供
     - 命令 ic (该命令启用后自动对图片触发，无需输入命令)
@@ -93,7 +95,7 @@ go build -tags nocv
 
 ## 配置
 
-模板为application.yaml.example
+模板为application.yaml.example，好后将文件改名为application.yaml
 
 ```yaml
 bot:
