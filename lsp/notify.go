@@ -149,7 +149,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					result = append(result, groupImage)
 				}
 			case bilibili.DynamicDescType_TextOnly:
-				result = append(result, localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n原动态：\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+				result = append(result, localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n\n原动态：\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
 				origin := new(bilibili.CardTextOnly)
 				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
 				if err != nil {
@@ -158,7 +158,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				}
 				result = append(result, localutils.MessageTextf("%v\n", origin.GetItem().GetContent()))
 			case bilibili.DynamicDescType_WithVideo:
-				result = append(result, localutils.MessageTextf("%v转发了%v的投稿：\n%v\n%v\n原视频：\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+				result = append(result, localutils.MessageTextf("%v转发了%v的投稿：\n%v\n%v\n\n原视频：\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
 				origin := new(bilibili.CardWithVideo)
 				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
 				if err != nil {
@@ -178,7 +178,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				}
 				result = append(result, cover)
 			case bilibili.DynamicDescType_WithPost:
-				result = append(result, localutils.MessageTextf("%v转发了%v的专栏：\n%v\n%v\n原专栏：\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+				result = append(result, localutils.MessageTextf("%v转发了%v的专栏：\n%v\n%v\n\n原专栏：\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
 				origin := new(bilibili.CardWithPost)
 				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
 				if err != nil {
