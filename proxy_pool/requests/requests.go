@@ -24,6 +24,12 @@ func TimeoutOption(d time.Duration) GetOption {
 	}
 }
 
+func HeaderOption(key, value string) GetOption {
+	return func(request *requests.Request) {
+		request.Header.Set(key, value)
+	}
+}
+
 var DefaultTimeoutOption = TimeoutOption(time.Second * 5)
 
 type ResponseWithProxy struct {

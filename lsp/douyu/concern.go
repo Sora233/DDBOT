@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/concern"
-	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
-	"github.com/tidwall/buntdb"
 )
 
 var logger = utils.GetModuleLogger("douyu-concern")
@@ -72,21 +70,30 @@ type Concern struct {
 }
 
 func (c *Concern) Start() {
-	db, err := localdb.GetClient()
-	if err == nil {
-		db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexBinary)
-	}
 
-	err = c.StateManager.Start()
+	err := c.StateManager.Start()
 	if err != nil {
 		logger.Errorf("state manager start err %v", err)
 	}
 
 	go c.notifyLoop()
-	go c.emitFreshCore()
+	go c.EmitFreshCore("douyu", func(ctype concern.Type, id interface{}) error {
+		roomid, ok := id.(int64)
+		if !ok {
+			return errors.New("cast fresh id to int64 failed")
+		}
+		if ctype.ContainAll(concern.DouyuLive) {
+			oldInfo, _ := c.findRoom(roomid, false)
+			liveInfo, err := c.findRoom(roomid, true)
+			if err != nil {
+				return fmt.Errorf("load liveinfo failed %v", err)
+			}
+			if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {
+				c.eventChan <- liveInfo
+			}
+		}
+		return nil
+	})
 }
 
 func (c *Concern) Add(groupCode int64, id int64, ctype concern.Type) (*LiveInfo, error) {
@@ -125,7 +132,7 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 	log := logger.WithField("group_code", groupCode).WithField("all", all)
 	var result []*ConcernLiveNotify
 
-	ids, _, err := c.StateManager.ListByGroup(groupCode, func(id int64, p concern.Type) bool {
+	ids, _, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
 		return p.ContainAny(concern.DouyuLive)
 	})
 	if err != nil {
@@ -135,7 +142,7 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 		result = make([]*ConcernLiveNotify, 0)
 	}
 	for _, id := range ids {
-		liveInfo, err := c.StateManager.GetLiveInfo(id)
+		liveInfo, err := c.StateManager.GetLiveInfo(id.(int64))
 		if err != nil {
 			log.WithField("id", id).Errorf("get LiveInfo err %v", err)
 			continue
@@ -146,37 +153,6 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 	}
 
 	return result, nil
-}
-
-func (c *Concern) emitFreshCore() {
-	for e := range c.emitChan {
-		id, ok := e.(int64)
-		if !ok {
-			logger.WithField("emit", e).Errorf("emit element is not int64 id")
-			continue
-		}
-		if ok, _ := c.StateManager.FreshCheck(id, true); !ok {
-			logger.WithField("id", id).WithField("result", ok).Trace("fresh check failed")
-			continue
-		}
-		logger.WithField("id", id).Trace("fresh")
-		ctype, err := c.StateManager.GetConcern(id)
-		if err != nil {
-			logger.WithField("id", id).Errorf("get concern failed %v", err)
-			continue
-		}
-		if ctype.ContainAll(concern.DouyuLive) {
-			oldInfo, _ := c.findRoom(id, false)
-			liveInfo, err := c.findRoom(id, true)
-			if err != nil {
-				logger.WithField("id", id).Errorf("load liveinfo failed %v", err)
-				continue
-			}
-			if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {
-				c.eventChan <- liveInfo
-			}
-		}
-	}
 }
 
 func (c *Concern) notifyLoop() {
@@ -194,8 +170,8 @@ func (c *Concern) notifyLoop() {
 				WithField("videoLoop", event.GetVideoLoop().String())
 			log.Debugf("debug event")
 
-			groups, _, _, err := c.StateManager.List(func(groupCode int64, id int64, p concern.Type) bool {
-				return id == event.RoomId && p.ContainAny(concern.DouyuLive)
+			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+				return id.(int64) == event.RoomId && p.ContainAny(concern.DouyuLive)
 			})
 			if err != nil {
 				log.Errorf("list id failed %v", err)

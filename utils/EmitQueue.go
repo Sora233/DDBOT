@@ -59,7 +59,7 @@ func (q *EmitQueue) core() {
 }
 
 func (q *EmitQueue) Stop() {
-
+	// TODO
 }
 
 func NewEmitQueue(c chan<- interface{}, interval time.Duration) *EmitQueue {

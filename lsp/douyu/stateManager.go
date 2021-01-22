@@ -11,16 +11,13 @@ import (
 
 type StateManager struct {
 	*concern_manager.StateManager
+	*extraKey
 }
 
 func (c *StateManager) GetLiveInfo(id int64) (*LiveInfo, error) {
 	var liveInfo = &LiveInfo{}
-	db, err := localdb.GetClient()
-	if err != nil {
-		return nil, err
-	}
 
-	err = db.View(func(tx *buntdb.Tx) error {
+	err := c.RTxCover(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.CurrentLiveKey(id))
 		if err != nil {
 			return err
@@ -31,6 +28,7 @@ func (c *StateManager) GetLiveInfo(id int64) (*LiveInfo, error) {
 			return err
 		}
 		return nil
+
 	})
 	if err != nil {
 		return nil, err
@@ -42,15 +40,23 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	if liveInfo == nil {
 		return errors.New("nil LiveInfo")
 	}
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	err = db.Update(func(tx *buntdb.Tx) error {
+
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set(c.CurrentLiveKey(liveInfo.RoomId), liveInfo.ToString(), nil)
 		return err
+
 	})
-	return err
+}
+
+func (c *StateManager) FreshIndex() {
+	c.StateManager.FreshIndex()
+	db, err := localdb.GetClient()
+	if err == nil {
+		db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
+		db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
+		db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
+		db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexBinary)
+	}
 }
 
 func (c *StateManager) Start() error {
@@ -59,6 +65,7 @@ func (c *StateManager) Start() error {
 
 func NewStateManager(emitChan chan interface{}) *StateManager {
 	sm := &StateManager{}
+	sm.extraKey = NewExtraKey()
 	sm.StateManager = concern_manager.NewStateManager(NewKeySet(), emitChan)
 	return sm
 }

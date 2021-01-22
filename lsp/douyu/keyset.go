@@ -17,16 +17,19 @@ func (l *keySet) FreshKey(keys ...interface{}) string {
 	return buntdb.DouyuFreshKey(keys...)
 }
 
-func (l *keySet) CurrentLiveKey(keys ...interface{}) string {
+func (l *keySet) ParseGroupConcernStateKey(key string) (int64, interface{}, error) {
+	return buntdb.ParseYoutubeConcernStateKey(key)
+}
+
+type extraKey struct {
+}
+
+func (l *extraKey) CurrentLiveKey(keys ...interface{}) string {
 	return buntdb.DouyuCurrentLiveKey(keys...)
 }
 
-func (l *keySet) ParseCurrentLiveKey(key string) (int64, error) {
-	return buntdb.ParseCurrentLiveKey(key)
-}
-
-func (l *keySet) ParseGroupConcernStateKey(key string) (int64, int64, error) {
-	return buntdb.ParseConcernStateKey(key)
+func NewExtraKey() *extraKey {
+	return &extraKey{}
 }
 
 func NewKeySet() *keySet {

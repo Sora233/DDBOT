@@ -61,6 +61,15 @@ func DouyuFreshKey(keys ...interface{}) string {
 func DouyuCurrentLiveKey(keys ...interface{}) string {
 	return NamedKey("DouyuCurrentLive", keys)
 }
+func YoutubeGroupConcernStateKey(keys ...interface{}) string {
+	return NamedKey("YoutubeConcernState", keys)
+}
+func YoutubeAllConcernStateKey(keys ...interface{}) string {
+	return NamedKey("YoutubeAllConcernStateKey", keys)
+}
+func YoutubeFreshKey(keys ...interface{}) string {
+	return NamedKey("youtubeFresh", keys)
+}
 func PermissionKey(keys ...interface{}) string {
 	return NamedKey("Permission", keys)
 }
@@ -92,14 +101,15 @@ func ParseConcernStateKey(key string) (groupCode int64, id int64, err error) {
 	}
 	return groupCode, id, nil
 }
-func ParseCurrentLiveKey(key string) (id int64, err error) {
+func ParseYoutubeConcernStateKey(key string) (groupCode int64, id string, err error) {
 	keys := strings.Split(key, ":")
-	if len(keys) != 2 {
-		return 0, errors.New("invalid key")
+	if len(keys) != 3 {
+		return 0, "", errors.New("invalid key")
 	}
-	id, err = strconv.ParseInt(keys[1], 10, 64)
+	groupCode, err = strconv.ParseInt(keys[1], 10, 64)
 	if err != nil {
-		return 0, err
+		return 0, "", err
 	}
-	return id, nil
+	return groupCode, keys[2], nil
+
 }

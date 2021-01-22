@@ -3,6 +3,7 @@ module github.com/Sora233/Sora233-MiraiGo
 go 1.15
 
 require (
+	github.com/Jeffail/gabs/v2 v2.6.0
 	github.com/Logiase/MiraiGo-Template v0.0.0-20201230072030-576f07174255
 	github.com/Mrs4s/MiraiGo v0.0.0-20210108093149-f40ac95fffa4
 	github.com/Sora233/zhima-proxy-pool v0.0.0-20210109082808-e71055c4dde4

@@ -8,6 +8,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/youtube"
 	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/asmcos/requests"
 	"runtime/debug"
@@ -70,6 +71,8 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					}
 					l.sendGroupMessage(notify.GroupCode, sendingMsg)
 				}
+			case concern.Youtube:
+				// TODO
 			}
 		}
 	}
@@ -87,6 +90,9 @@ func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMes
 	case concern.DouyuLive:
 		notify := (inotify).(*douyu.ConcernLiveNotify)
 		result = append(result, l.notifyDouyuLive(bot, notify)...)
+	case concern.Youtube:
+		notify := (inotify).(*youtube.ConcernNotify)
+		result = append(result, l.notifyYoutube(bot, notify)...)
 	}
 	return result
 }
@@ -309,5 +315,11 @@ func (l *Lsp) notifyDouyuLive(bot *bot.Bot, notify *douyu.ConcernLiveNotify) []m
 		result = append(result, localutils.MessageTextf("斗鱼-%s暂未直播\n", notify.Nickname))
 		result = append(result, message.NewText(notify.RoomUrl))
 	}
+	return result
+}
+
+func (l *Lsp) notifyYoutube(bot *bot.Bot, notify *youtube.ConcernNotify) []message.IMessageElement {
+	var result []message.IMessageElement
+	// TODO
 	return result
 }

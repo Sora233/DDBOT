@@ -17,18 +17,15 @@ func (k *keySet) FreshKey(keys ...interface{}) string {
 	return buntdb.BilibliFreshKey(keys...)
 }
 
-func (k *keySet) CurrentLiveKey(keys ...interface{}) string {
-	return buntdb.BilibiliCurrentLiveKey(keys...)
-}
-
-func (k *keySet) ParseGroupConcernStateKey(key string) (int64, int64, error) {
+func (k *keySet) ParseGroupConcernStateKey(key string) (int64, interface{}, error) {
 	return buntdb.ParseConcernStateKey(key)
-}
-func (k *keySet) ParseCurrentLiveKey(key string) (int64, error) {
-	return buntdb.ParseCurrentLiveKey(key)
 }
 
 type extraKey struct {
+}
+
+func (k *extraKey) CurrentLiveKey(keys ...interface{}) string {
+	return buntdb.BilibiliCurrentLiveKey(keys...)
 }
 
 func (k *extraKey) UserInfoKey(keys ...interface{}) string {

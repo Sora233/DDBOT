@@ -3,26 +3,26 @@ package concern_manager
 import (
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
+	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
-	"github.com/Sora233/Sora233-MiraiGo/utils"
+	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/forestgiant/sliceutil"
 	"github.com/tidwall/buntdb"
 	"strings"
 	"time"
 )
 
+var logger = utils.GetModuleLogger("concern_manager")
+
 type StateManager struct {
 	KeySet
-	emitQueue *utils.EmitQueue
+	emitChan  chan interface{}
+	emitQueue *localutils.EmitQueue
 }
 
-func (c *StateManager) CheckGroupConcern(groupCode int64, id int64, ctype concern.Type) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	err = db.View(func(tx *buntdb.Tx) error {
+func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype concern.Type) error {
+	return c.RTxCover(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
 		if err == nil {
 			if concern.FromString(val).ContainAll(ctype) {
@@ -31,15 +31,10 @@ func (c *StateManager) CheckGroupConcern(groupCode int64, id int64, ctype concer
 		}
 		return nil
 	})
-	return err
 }
 
-func (c *StateManager) CheckConcern(id int64, ctype concern.Type) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	err = db.View(func(tx *buntdb.Tx) error {
+func (c *StateManager) CheckConcern(id interface{}, ctype concern.Type) error {
+	return c.RTxCover(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.ConcernStateKey(id))
 		if err == nil {
 			if concern.FromString(val).ContainAny(ctype) {
@@ -48,11 +43,9 @@ func (c *StateManager) CheckConcern(id int64, ctype concern.Type) error {
 		}
 		return nil
 	})
-	return err
 }
 
-func (c *StateManager) AddGroupConcern(groupCode int64, id int64, ctype concern.Type) error {
-	var err error
+func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype concern.Type) (err error) {
 	groupStateKey := c.GroupConcernStateKey(groupCode, id)
 	stateKey := c.ConcernStateKey(id)
 	err = c.upsertConcernType(groupStateKey, ctype)
@@ -66,12 +59,8 @@ func (c *StateManager) AddGroupConcern(groupCode int64, id int64, ctype concern.
 	return err
 }
 
-func (c *StateManager) Remove(groupCode int64, id int64, ctype concern.Type) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	err = db.Update(func(tx *buntdb.Tx) error {
+func (c *StateManager) Remove(groupCode int64, id interface{}, ctype concern.Type) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		groupStateKey := c.GroupConcernStateKey(groupCode, id)
 		val, err := tx.Get(groupStateKey)
 		if err != nil {
@@ -89,15 +78,10 @@ func (c *StateManager) Remove(groupCode int64, id int64, ctype concern.Type) err
 		}
 		return nil
 	})
-	return err
 }
 
-func (c *StateManager) RemoveAll(groupCode int64) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	err = db.Update(func(tx *buntdb.Tx) error {
+func (c *StateManager) RemoveAll(groupCode int64) (err error) {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		var removeKey []string
 		var iterErr error
 		iterErr = tx.Ascend(c.GroupConcernStateKey(groupCode), func(key, value string) bool {
@@ -113,20 +97,11 @@ func (c *StateManager) RemoveAll(groupCode int64) error {
 		tx.DropIndex(c.GroupConcernStateKey(groupCode))
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // GetGroupConcern return the concern.Type in specific group for a id
-func (c *StateManager) GetGroupConcern(groupCode int64, id int64) (concern.Type, error) {
-	var result concern.Type
-	db, err := localdb.GetClient()
-	if err != nil {
-		return result, err
-	}
-	err = db.View(func(tx *buntdb.Tx) error {
+func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result concern.Type, err error) {
+	err = c.RTxCover(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
 		if err != nil {
 			return err
@@ -138,13 +113,8 @@ func (c *StateManager) GetGroupConcern(groupCode int64, id int64) (concern.Type,
 }
 
 // GetConcern return the concern.Type combined from all group for a id
-func (c *StateManager) GetConcern(id int64) (concern.Type, error) {
-	var result concern.Type
-	db, err := localdb.GetClient()
-	if err != nil {
-		return result, err
-	}
-	err = db.View(func(tx *buntdb.Tx) error {
+func (c *StateManager) GetConcern(id interface{}) (result concern.Type, err error) {
+	err = c.RTxCover(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.ConcernStateKey(id))
 		if err != nil {
 			return err
@@ -155,16 +125,12 @@ func (c *StateManager) GetConcern(id int64) (concern.Type, error) {
 	return result, err
 }
 
-func (c *StateManager) List(filter func(groupCode int64, id int64, p concern.Type) bool) (idGroups []int64, ids []int64, idTypes []concern.Type, err error) {
-	var db *buntdb.DB
-	db, err = localdb.GetClient()
-	if err != nil {
-		return
-	}
-	err = db.View(func(tx *buntdb.Tx) error {
+func (c *StateManager) List(filter func(groupCode int64, id interface{}, p concern.Type) bool) (idGroups []int64, ids []interface{}, idTypes []concern.Type, err error) {
+	err = c.RTxCover(func(tx *buntdb.Tx) error {
 		var iterErr error
 		err := tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
-			var groupCode, id int64
+			var groupCode int64
+			var id interface{}
 			groupCode, id, iterErr = c.ParseGroupConcernStateKey(key)
 			if iterErr != nil {
 				return false
@@ -194,16 +160,11 @@ func (c *StateManager) List(filter func(groupCode int64, id int64, p concern.Typ
 	return
 }
 
-func (c *StateManager) ListByGroup(groupCode int64, filter func(id int64, p concern.Type) bool) (ids []int64, idTypes []concern.Type, err error) {
-	var db *buntdb.DB
-	db, err = localdb.GetClient()
-	if err != nil {
-		return
-	}
-	err = db.View(func(tx *buntdb.Tx) error {
+func (c *StateManager) ListByGroup(groupCode int64, filter func(id interface{}, p concern.Type) bool) (ids []interface{}, idTypes []concern.Type, err error) {
+	err = c.RTxCover(func(tx *buntdb.Tx) error {
 		var iterErr error
 		err := tx.Ascend(c.GroupConcernStateKey(groupCode), func(key, value string) bool {
-			var id int64
+			var id interface{}
 			_, id, iterErr = c.ParseGroupConcernStateKey(key)
 			if iterErr != nil {
 				return false
@@ -229,14 +190,13 @@ func (c *StateManager) ListByGroup(groupCode int64, filter func(id int64, p conc
 	return
 }
 
-func (c *StateManager) GroupTypeById(ids []int64, types []concern.Type) ([]int64, []concern.Type, error) {
+func (c *StateManager) GroupTypeById(ids []interface{}, types []concern.Type) ([]interface{}, []concern.Type, error) {
 	if len(ids) != len(types) {
 		return nil, nil, ErrLengthMismatch
 	}
 	var (
-		idTypeMap = make(map[int64]concern.Type)
-
-		result     []int64
+		idTypeMap  = make(map[interface{}]concern.Type)
+		result     []interface{}
 		resultType []concern.Type
 	)
 	for index := range ids {
@@ -256,12 +216,8 @@ func (c *StateManager) GroupTypeById(ids []int64, types []concern.Type) ([]int64
 	return result, resultType, nil
 }
 
-func (c *StateManager) FreshCheck(id int64, setTTL bool) (result bool, err error) {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return false, err
-	}
-	err = db.Update(func(tx *buntdb.Tx) error {
+func (c *StateManager) FreshCheck(id interface{}, setTTL bool) (result bool, err error) {
+	err = c.RWTxCover(func(tx *buntdb.Tx) error {
 		freshKey := c.FreshKey(id)
 		_, err := tx.Get(freshKey)
 		if err == buntdb.ErrNotFound {
@@ -314,7 +270,8 @@ func (c *StateManager) FreshAll() {
 		groupCodes = append(groupCodes, groupInfo.Code)
 	}
 	var removeKey []string
-	db.View(func(tx *buntdb.Tx) error {
+
+	c.RTxCover(func(tx *buntdb.Tx) error {
 		tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
 			groupCode, _, err := c.ParseGroupConcernStateKey(key)
 			if err != nil {
@@ -326,7 +283,7 @@ func (c *StateManager) FreshAll() {
 		})
 		return nil
 	})
-	db.Update(func(tx *buntdb.Tx) error {
+	c.RWTxCover(func(tx *buntdb.Tx) error {
 		for _, key := range removeKey {
 			tx.Delete(key)
 		}
@@ -335,12 +292,7 @@ func (c *StateManager) FreshAll() {
 }
 
 func (c *StateManager) upsertConcernType(key string, ctype concern.Type) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-
-	err = db.Update(func(tx *buntdb.Tx) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
 			tx.Set(key, ctype.String(), nil)
@@ -351,8 +303,8 @@ func (c *StateManager) upsertConcernType(key string, ctype concern.Type) error {
 			return err
 		}
 		return nil
+
 	})
-	return err
 }
 
 func (c *StateManager) Start() error {
@@ -360,13 +312,13 @@ func (c *StateManager) Start() error {
 	if err != nil {
 		return err
 	}
-	_, ids, _, err := c.List(func(groupCode int64, id int64, p concern.Type) bool {
+	_, ids, _, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
 		return true
 	})
 	if err != nil {
 		return err
 	}
-	idSet := make(map[int64]bool)
+	idSet := make(map[interface{}]bool)
 	for _, id := range ids {
 		idSet[id] = true
 	}
@@ -377,7 +329,7 @@ func (c *StateManager) Start() error {
 }
 
 func (c *StateManager) freshConcern() error {
-	_, ids, types, err := c.List(func(groupCode int64, id int64, p concern.Type) bool {
+	_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
 		return true
 	})
 	if err != nil {
@@ -387,20 +339,17 @@ func (c *StateManager) freshConcern() error {
 	if err != nil {
 		return err
 	}
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
 
 	all := make(map[string]bool)
 
-	db.View(func(tx *buntdb.Tx) error {
+	c.RTxCover(func(tx *buntdb.Tx) error {
 		return tx.Ascend(c.ConcernStateKey(), func(key, value string) bool {
 			all[key] = true
 			return true
 		})
 	})
-	err = db.Update(func(tx *buntdb.Tx) error {
+
+	c.RWTxCover(func(tx *buntdb.Tx) error {
 		for index := range ids {
 			id := ids[index]
 			ctype := types[index]
@@ -414,19 +363,59 @@ func (c *StateManager) freshConcern() error {
 		}
 		return nil
 	})
-	err = db.Update(func(tx *buntdb.Tx) error {
+
+	err = c.RWTxCover(func(tx *buntdb.Tx) error {
 		for key := range all {
 			tx.Delete(key)
 		}
 		return nil
+
 	})
 	return err
+}
+
+func (c *StateManager) EmitFreshCore(name string, fresher func(ctype concern.Type, id interface{}) error) {
+	for id := range c.emitChan {
+		if ok, _ := c.FreshCheck(id, true); !ok {
+			logger.WithField("id", id).WithField("result", ok).Trace("fresh check failed")
+			continue
+		}
+		logger.WithField("id", id).Trace("fresh")
+		ctype, err := c.GetConcern(id)
+		if err != nil {
+			logger.WithField("id", id).Errorf("get concern failed %v", err)
+			continue
+		}
+		if err := fresher(ctype, id); err != nil {
+			logger.WithField("id", id).WithField("name", name).Errorf("fresher error %v", err)
+		}
+	}
+}
+
+func (c *StateManager) RTxCover(f func(tx *buntdb.Tx) error) error {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
+	}
+	return db.View(func(tx *buntdb.Tx) error {
+		return f(tx)
+	})
+}
+
+func (c *StateManager) RWTxCover(f func(tx *buntdb.Tx) error) error {
+	db, err := localdb.GetClient()
+	if err != nil {
+		return err
+	}
+	return db.Update(func(tx *buntdb.Tx) error {
+		return f(tx)
+	})
 }
 
 func NewStateManager(keySet KeySet, emitChan chan interface{}) *StateManager {
 	sm := &StateManager{
 		KeySet: keySet,
 	}
-	sm.emitQueue = utils.NewEmitQueue(emitChan, config.GlobalConfig.GetDuration("concern.emitInterval"))
+	sm.emitQueue = localutils.NewEmitQueue(emitChan, config.GlobalConfig.GetDuration("concern.emitInterval"))
 	return sm
 }

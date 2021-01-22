@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/concern"
-	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
 	"github.com/forestgiant/sliceutil"
-	"github.com/tidwall/buntdb"
 )
 
 var logger = utils.GetModuleLogger("bilibili-concern")
@@ -47,22 +45,25 @@ func NewConcern(notify chan<- concern.Notify) *Concern {
 }
 
 func (c *Concern) Start() {
-	db, err := localdb.GetClient()
-	if err == nil {
-		db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.UserInfoKey(), c.UserInfoKey("*", buntdb.IndexString))
-		db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexBinary)
-	}
-
-	err = c.StateManager.Start()
+	err := c.StateManager.Start()
 	if err != nil {
 		logger.Errorf("state manager start err %v", err)
 	}
 
 	go c.notifyLoop()
-	go c.emitFreshCore()
+	go c.EmitFreshCore("bilibili", func(ctype concern.Type, id interface{}) error {
+		mid, ok := id.(int64)
+		if !ok {
+			return errors.New("cast fresh id to int64 failed")
+		}
+		if ctype.ContainAll(concern.BibiliLive) {
+			c.freshLive(mid)
+		}
+		if ctype.ContainAll(concern.BilibiliNews) {
+			c.freshNews(mid)
+		}
+		return nil
+	})
 }
 
 func (c *Concern) Stop() {
@@ -125,7 +126,7 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 	log := logger.WithField("group_code", groupCode).WithField("all", all)
 	var result []*ConcernLiveNotify
 
-	mids, _, err := c.StateManager.ListByGroup(groupCode, func(id int64, p concern.Type) bool {
+	mids, _, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
 		return p.ContainAny(concern.BibiliLive)
 	})
 	if err != nil {
@@ -135,7 +136,7 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 		result = make([]*ConcernLiveNotify, 0)
 	}
 	for _, mid := range mids {
-		liveInfo, err := c.StateManager.GetLiveInfo(mid)
+		liveInfo, err := c.StateManager.GetLiveInfo(mid.(int64))
 		if err != nil {
 			log.WithField("mid", mid).Errorf("get LiveInfo err %v", err)
 			continue
@@ -151,7 +152,7 @@ func (c *Concern) ListNews(groupCode int64, all bool) ([]*ConcernNewsNotify, err
 	log := logger.WithField("group_code", groupCode).WithField("all", all)
 	var result []*ConcernNewsNotify
 
-	mids, _, err := c.StateManager.ListByGroup(groupCode, func(id int64, p concern.Type) bool {
+	mids, _, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
 		return p.ContainAny(concern.BilibiliNews)
 	})
 	if err != nil {
@@ -161,7 +162,7 @@ func (c *Concern) ListNews(groupCode int64, all bool) ([]*ConcernNewsNotify, err
 		result = make([]*ConcernNewsNotify, 0)
 	}
 	for _, mid := range mids {
-		newsInfo, err := c.StateManager.GetNewsInfo(mid)
+		newsInfo, err := c.StateManager.GetNewsInfo(mid.(int64))
 		if err != nil {
 			log.WithField("mid", mid).Errorf("get newsInfo err %v", err)
 			continue
@@ -188,8 +189,8 @@ func (c *Concern) notifyLoop() {
 				WithField("type", event.Type())
 			log.Debugf("debug event")
 
-			groups, _, _, err := c.StateManager.List(func(groupCode int64, id int64, p concern.Type) bool {
-				return id == event.Mid && p.ContainAny(concern.BibiliLive)
+			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+				return id.(int64) == event.Mid && p.ContainAny(concern.BibiliLive)
 			})
 			if err != nil {
 				log.Errorf("list id failed %v", err)
@@ -215,8 +216,8 @@ func (c *Concern) notifyLoop() {
 				WithField("type", event.Type())
 			log.Debugf("debug event")
 
-			groups, _, _, err := c.StateManager.List(func(groupCode int64, id int64, p concern.Type) bool {
-				return id == event.Mid && p.ContainAny(concern.BilibiliNews)
+			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+				return id.(int64) == event.Mid && p.ContainAny(concern.BilibiliNews)
 			})
 			if err != nil {
 				log.Errorf("list id failed %v", err)
@@ -228,32 +229,6 @@ func (c *Concern) notifyLoop() {
 			}
 		}
 
-	}
-}
-
-func (c *Concern) emitFreshCore() {
-	for e := range c.emitChan {
-		mid, ok := e.(int64)
-		if !ok {
-			logger.WithField("emit", e).Errorf("emit element is not int64 mid")
-			continue
-		}
-		if ok, _ := c.StateManager.FreshCheck(mid, true); !ok {
-			logger.WithField("mid", mid).WithField("result", ok).Trace("fresh check failed")
-			continue
-		}
-		logger.WithField("mid", mid).Trace("fresh")
-		ctype, err := c.StateManager.GetConcern(mid)
-		if err != nil {
-			logger.WithField("mid", mid).Errorf("get concern failed %v", err)
-			continue
-		}
-		if ctype.ContainAll(concern.BibiliLive) {
-			c.freshLive(mid)
-		}
-		if ctype.ContainAll(concern.BilibiliNews) {
-			c.freshNews(mid)
-		}
 	}
 }
 
