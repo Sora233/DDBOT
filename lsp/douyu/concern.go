@@ -95,7 +95,7 @@ func (c *Concern) Start() {
 	})
 }
 
-func (c *Concern) Add(groupCode int64, id int64, ctype concern.Type) (*LiveInfo, error) {
+func (c *Concern) Add(groupCode int64, id interface{}, ctype concern.Type) (*LiveInfo, error) {
 	var err error
 	log := logger.WithField("GroupCode", groupCode)
 
@@ -107,7 +107,7 @@ func (c *Concern) Add(groupCode int64, id int64, ctype concern.Type) (*LiveInfo,
 		return nil, err
 	}
 
-	betardResp, err := Betard(id)
+	betardResp, err := Betard(id.(int64))
 	if err != nil {
 		log.WithField("id", id).Error(err)
 		return nil, fmt.Errorf("查询房间信息失败 %v - %v", id, err)

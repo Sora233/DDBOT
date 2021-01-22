@@ -18,6 +18,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var ErrGoCvNotSetUp = errors.New("gocv not setup")
@@ -201,4 +202,13 @@ func MessageFilter(msg []message.IMessageElement, filter func(message.IMessageEl
 
 func MessageTextf(format string, args ...interface{}) *message.TextElement {
 	return message.NewText(fmt.Sprintf(format, args...))
+}
+
+func UnquoteString(s string) (string, error) {
+	return strconv.Unquote(fmt.Sprintf(`"%s"`, strings.Trim(s, `"`)))
+}
+
+func TimestampFormat(ts int64) string {
+	t := time.Unix(ts, 0)
+	return t.Format("2006-01-02 15:04:05")
 }

@@ -15,6 +15,7 @@ import (
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/permission"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/youtube"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/alecthomas/kong"
 	"github.com/forestgiant/sliceutil"
@@ -381,9 +382,9 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	defer log.Info("watch command end")
 
 	var watchCmd struct {
-		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu"`
+		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
 		Type string `optional:"" short:"t" default:"live" help:"news / live"`
-		Id   int64  `arg:""`
+		Id   string `arg:""`
 	}
 	var name string
 	if remove {
@@ -408,45 +409,76 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 
 	switch site {
 	case bilibili.Site:
+		mid, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			log.WithField("id", id).Errorf("not a int")
+			lgc.textReply("失败 - bilibili mid格式错误")
+			return
+		}
 		if remove {
 			// unwatch
-			if err := lgc.l.bilibiliConcern.Remove(groupCode, id, watchType); err != nil {
+			if err := lgc.l.bilibiliConcern.Remove(groupCode, mid, watchType); err != nil {
 				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
-				log.WithField("mid", id).Debugf("unwatch success")
+				log.WithField("mid", mid).Debugf("unwatch success")
 				lgc.textReply("unwatch成功")
 			}
 			return
 		}
 		// watch
-		userInfo, err := lgc.l.bilibiliConcern.Add(groupCode, id, watchType)
+		userInfo, err := lgc.l.bilibiliConcern.Add(groupCode, mid, watchType)
 		if err != nil {
-			log.WithField("mid", id).Errorf("watch error %v", err)
+			log.WithField("mid", mid).Errorf("watch error %v", err)
 			lgc.textReply(fmt.Sprintf("watch失败 - %v", err))
 			return
 		}
-		log.WithField("mid", id).Debugf("watch success")
+		log.WithField("mid", mid).Debugf("watch success")
 		lgc.textReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", userInfo.Name))
 	case douyu.Site:
+		mid, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			log.WithField("id", id).Errorf("not a int")
+			lgc.textReply("失败 - douyu id格式错误")
+			return
+		}
 		if remove {
 			// unwatch
-			if err := lgc.l.douyuConcern.Remove(groupCode, id, watchType); err != nil {
+			if err := lgc.l.douyuConcern.Remove(groupCode, mid, watchType); err != nil {
 				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
-				log.WithField("mid", id).Debugf("unwatch success")
+				log.WithField("mid", mid).Debugf("unwatch success")
 				lgc.textReply("unwatch成功")
 			}
 			return
 		}
 		// watch
-		userInfo, err := lgc.l.douyuConcern.Add(groupCode, id, watchType)
+		userInfo, err := lgc.l.douyuConcern.Add(groupCode, mid, watchType)
 		if err != nil {
-			log.WithField("mid", id).Errorf("watch error %v", err)
+			log.WithField("mid", mid).Errorf("watch error %v", err)
 			lgc.textReply(fmt.Sprintf("watch失败 - %v", err))
 			break
 		}
-		log.WithField("mid", id).Debugf("watch success")
+		log.WithField("mid", mid).Debugf("watch success")
 		lgc.textReply(fmt.Sprintf("watch成功 - 斗鱼用户 %v", userInfo.Nickname))
+	case youtube.Site:
+		if remove {
+			// unwatch
+			if err := lgc.l.youtubeConcern.Remove(groupCode, id, watchType); err != nil {
+				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
+			} else {
+				log.WithField("id", id).Debugf("unwatch success")
+				lgc.textReply("unwatch成功")
+			}
+			return
+		}
+		info, err := lgc.l.youtubeConcern.Add(groupCode, id, watchType)
+		if err != nil {
+			log.WithField("id", id).Errorf("watch error %v", err)
+			lgc.textReply(fmt.Sprintf("watch失败 - %v", err))
+			break
+		}
+		log.WithField("id", id).Debugf("watch success")
+		lgc.textReply(fmt.Sprintf("watch成功 - YTB用户 %v", info.VideoInfo[0].ChannelName))
 	default:
 		log.WithField("site", site).Error("unsupported")
 		lgc.textReply("未支持的网站")
@@ -531,7 +563,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 		living, err := lgc.l.douyuConcern.ListLiving(groupCode, all)
 		if err != nil {
 			log.Debugf("list living failed %v", err)
-			lgc.textReply(fmt.Sprintf("list living 失败 - %v", err))
+			lgc.textReply(fmt.Sprintf("失败 - %v", err))
 			return
 		}
 		if living == nil {
@@ -549,6 +581,24 @@ func (lgc *LspGroupCommand) ListCommand() {
 		}
 		if len(listMsg.Elements) == 1 {
 			listMsg.Append(message.NewText("无人直播"))
+		}
+	case concern.Youtube:
+		listMsg.Append(message.NewText("当前关注：\n"))
+		living, err := lgc.l.youtubeConcern.ListLiving(groupCode, all)
+		if err != nil {
+			log.Debugf("list living failed %v", err)
+			lgc.textReply(fmt.Sprintf("失败 - %v", err))
+			return
+		}
+		if living == nil {
+			lgc.textReply("关注列表为空，可以使用/watch命令关注")
+			return
+		}
+		for idx, info := range living {
+			if idx != 0 {
+				listMsg.Append(message.NewText("\n"))
+			}
+			listMsg.Append(utils.MessageTextf("%v %v", info.ChannelName, info.ChannelId))
 		}
 	}
 
@@ -1138,6 +1188,8 @@ func (lgc *LspGroupCommand) parseRawSiteAndType(rawSite string, rawType string) 
 			watchType = concern.BibiliLive
 		} else if site == douyu.Site {
 			watchType = concern.DouyuLive
+		} else if site == youtube.Site {
+			watchType = concern.Youtube
 		} else {
 			return "", concern.Empty, errors.New("unknown watch type")
 		}
@@ -1159,7 +1211,7 @@ func (lgc *LspGroupCommand) parseRawSite(rawSite string) (string, error) {
 		site  string
 	)
 
-	site, found = utils.PrefixMatch([]string{bilibili.Site, douyu.Site}, rawSite)
+	site, found = utils.PrefixMatch([]string{bilibili.Site, douyu.Site, youtube.Site}, rawSite)
 	if !found {
 		return "", errors.New("can not determine site")
 	}

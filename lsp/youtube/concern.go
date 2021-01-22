@@ -2,8 +2,10 @@ package youtube
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/concern"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
 )
 
 var logger = utils.GetModuleLogger("youtube")
@@ -13,6 +15,54 @@ type Concern struct {
 
 	eventChan chan ConcernEvent
 	notify    chan<- concern.Notify
+}
+
+func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Info, err error) {
+	log := logger.WithField("group_code", groupCode)
+
+	err = c.StateManager.CheckConcern(id, ctype)
+	if err != nil {
+		if err == concern_manager.ErrAlreadyExists {
+			return nil, errors.New("已经watch过了")
+		}
+		return nil, err
+	}
+	videoInfo, err := XFetchInfo(id)
+	if err != nil {
+		log.WithField("id", id).Errorf("XFetchInfo failed %v", err)
+		return nil, fmt.Errorf("查询channel信息失败 %v - %v", id, err)
+	}
+	err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
+	if err != nil {
+		return nil, err
+	}
+	return &Info{videoInfo}, nil
+}
+
+func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernNotify, error) {
+	log := logger.WithField("group_code", groupCode).WithField("all", all)
+	var result []*ConcernNotify
+
+	ids, _, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
+		return p.ContainAny(concern.Youtube)
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(ids) != 0 {
+		result = make([]*ConcernNotify, 0)
+	}
+	for _, id := range ids {
+		info, err := c.findInfo(id.(string), false)
+		if err != nil {
+			log.WithField("id", id.(string)).Errorf("findInfo failed %v", err)
+			continue
+		}
+		if len(info.VideoInfo) > 0 {
+			result = append(result, NewConcernNotify(groupCode, info.VideoInfo[0]))
+		}
+	}
+	return result, nil
 }
 
 func (c *Concern) Start() {

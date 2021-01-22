@@ -12,7 +12,6 @@ import (
 	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/asmcos/requests"
 	"runtime/debug"
-	"time"
 )
 
 func (l *Lsp) ConcernNotify(bot *bot.Bot) {
@@ -72,7 +71,22 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					l.sendGroupMessage(notify.GroupCode, sendingMsg)
 				}
 			case concern.Youtube:
-				// TODO
+				notify := (inotify).(*youtube.ConcernNotify)
+				logger.WithField("site", youtube.Site).
+					WithField("GroupCode", notify.GroupCode).
+					WithField("ChannelName", notify.ChannelName).
+					WithField("ChannelID", notify.ChannelId).
+					WithField("VideoId", notify.VideoId).
+					WithField("VideoTitle", notify.VideoTitle).
+					WithField("VideoStatus", notify.VideoStatus.String()).
+					WithField("VideoType", notify.VideoType.String()).
+					Info("notify")
+				sendingMsg := message.NewSendingMessage()
+				notifyMsg := l.notifyYoutube(bot, notify)
+				for _, msg := range notifyMsg {
+					sendingMsg.Append(msg)
+				}
+				l.sendGroupMessage(notify.GroupCode, sendingMsg)
 			}
 		}
 	}
@@ -101,7 +115,7 @@ func (l *Lsp) notifyBilibiliLive(bot *bot.Bot, notify *bilibili.ConcernLiveNotif
 	var result []message.IMessageElement
 	switch notify.Status {
 	case bilibili.LiveStatus_Living:
-		result = append(result, localutils.MessageTextf("%s正在直播【%s】\n", notify.Name, notify.LiveTitle))
+		result = append(result, localutils.MessageTextf("%s正在直播【%v】\n", notify.Name, notify.LiveTitle))
 		result = append(result, message.NewText(notify.RoomUrl))
 		coverResp, err := requests.Get(notify.Cover)
 		if err == nil {
@@ -121,7 +135,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 	for index, card := range notify.Cards {
 		log := logger.WithField("DescType", card.GetDesc().GetType().String())
 		dynamicUrl := bilibili.DynamicUrl(card.GetDesc().GetDynamicIdStr())
-		date := time.Unix(int64(card.GetDesc().GetTimestamp()), 0).Format("2006-01-02 15:04:05")
+		date := localutils.TimestampFormat(int64(card.GetDesc().GetTimestamp()))
 		switch card.GetDesc().GetType() {
 		case bilibili.DynamicDescType_WithOrigin:
 			cardOrigin, err := notify.GetCardWithOrig(index)
@@ -303,7 +317,7 @@ func (l *Lsp) notifyDouyuLive(bot *bot.Bot, notify *douyu.ConcernLiveNotify) []m
 	var result []message.IMessageElement
 	switch notify.ShowStatus {
 	case douyu.ShowStatus_Living:
-		result = append(result, localutils.MessageTextf("斗鱼-%s正在直播【%s】\n", notify.Nickname, notify.RoomName))
+		result = append(result, localutils.MessageTextf("斗鱼-%s正在直播【%v】\n", notify.Nickname, notify.RoomName))
 		result = append(result, message.NewText(notify.RoomUrl))
 		coverResp, err := requests.Get(notify.GetAvatar().GetBig())
 		if err == nil {
@@ -320,6 +334,26 @@ func (l *Lsp) notifyDouyuLive(bot *bot.Bot, notify *douyu.ConcernLiveNotify) []m
 
 func (l *Lsp) notifyYoutube(bot *bot.Bot, notify *youtube.ConcernNotify) []message.IMessageElement {
 	var result []message.IMessageElement
-	// TODO
+	if notify.IsLive() {
+		if notify.IsLiving() {
+			result = append(result, localutils.MessageTextf("YTB-%v正在直播：\n%v\n", notify.ChannelName, notify.VideoTitle))
+		} else {
+			result = append(result, localutils.MessageTextf("YTB-%v发布了直播预约：\n%v\n时间：%v\n", notify.ChannelName, notify.VideoTitle, localutils.TimestampFormat(notify.VideoTimestamp)))
+		}
+	} else if notify.IsVideo() {
+		result = append(result, localutils.MessageTextf("YTB-%s发布了新视频：\n%v\n", notify.ChannelName, notify.VideoTitle))
+	}
+	img, err := localutils.ImageGet(notify.Cover)
+	if err != nil {
+		logger.WithField("group_code", notify.GroupCode).Errorf("get cover failed %v", err)
+	} else {
+		groupImg, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(img))
+		if err != nil {
+			logger.WithField("group_code", notify.GroupCode).Errorf("upload group image failed %v", err)
+		} else {
+			result = append(result, groupImg)
+		}
+	}
+	result = append(result, message.NewText(youtube.VideoView+notify.VideoId+"\n"))
 	return result
 }

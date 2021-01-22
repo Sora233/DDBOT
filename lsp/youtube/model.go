@@ -3,7 +3,8 @@ package youtube
 import "github.com/Sora233/Sora233-MiraiGo/concern"
 
 type UserInfo struct {
-	ChannelId string `json:"channel_id"`
+	ChannelId   string `json:"channel_id"`
+	ChannelName string `json:"channel_name"`
 }
 
 type EventType int64
@@ -19,6 +20,7 @@ type ConcernEvent interface {
 // VideoInfo may be a video or a live, depend on the VideoType
 type VideoInfo struct {
 	UserInfo
+	Cover          string      `json:"cover"`
 	VideoId        string      `json:"video_id"`
 	VideoTitle     string      `json:"video_title"`
 	VideoType      VideoType   `json:"video_type"`

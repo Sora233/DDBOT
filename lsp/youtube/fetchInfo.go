@@ -2,10 +2,12 @@ package youtube
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/Jeffail/gabs/v2"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -14,14 +16,14 @@ import (
 const VideoPath = "https://www.youtube.com/channel/%s/videos?view=57&flow=grid"
 
 type Searcher struct {
-	VideoList []*gabs.Container
+	Sub []*gabs.Container
 }
 
 func (r *Searcher) search(key string, j *gabs.Container) {
 	if len(j.ChildrenMap()) != 0 {
 		for k, v := range j.ChildrenMap() {
 			if k == key {
-				r.VideoList = append(r.VideoList, v)
+				r.Sub = append(r.Sub, v)
 				continue
 			}
 			r.search(key, v)
@@ -45,6 +47,9 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 		ed := time.Now()
 		log.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
+
+	var channelName string
+
 	path := fmt.Sprintf(VideoPath, channelID)
 	resp, err := requests.Get(ctx, path, nil, 3,
 		requests.HeaderOption("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"),
@@ -53,15 +58,49 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	var videoInfos []*VideoInfo
-	root, err := gabs.ParseJSON(resp.Content())
+	content := resp.Content()
+	var reg *regexp.Regexp
+	if strings.Contains(string(content), `window["ytInitialData"]`) {
+		reg = regexp.MustCompile("window\\[\"ytInitialData\"\\] = (?P<json>.*);")
+	} else {
+		reg = regexp.MustCompile(">var ytInitialData = (?P<json>.*?);</script>")
+	}
+	result := reg.FindSubmatch(content)
+
+	if len(result) <= reg.SubexpIndex("json") {
+		return nil, errors.New("no json data matched")
+	}
+
+	root, err := gabs.ParseJSON(result[reg.SubexpIndex("json")])
 	if err != nil {
 		return nil, err
 	}
-	var searcher = new(Searcher)
-	searcher.search("gridVideoRenderer", root)
-	searcher.search("videoRenderer", root)
-	for _, videoJson := range searcher.VideoList {
+
+	var videoSearcher = new(Searcher)
+	var infoSearcher = new(Searcher)
+
+	videoSearcher.search("gridVideoRenderer", root)
+	videoSearcher.search("videoRenderer", root)
+	infoSearcher.search("channelMetadataRenderer", root)
+
+	reg = regexp.MustCompile(`\\u[0-9]{4}`)
+	if len(infoSearcher.Sub) >= 1 {
+		channelName = infoSearcher.Sub[0].S("title").String()
+		allCode := reg.FindAllString(channelName, -1)
+		for _, code := range allCode {
+			unquote, err := utils.UnquoteString(code)
+			if err != nil {
+				log.WithField("quote_string", code).Errorf("unquote failed %v, err", err)
+				continue
+			}
+			channelName = strings.ReplaceAll(channelName, code, unquote)
+		}
+	} else {
+		channelName = "<nil>"
+	}
+
+	var videoInfos []*VideoInfo
+	for _, videoJson := range videoSearcher.Sub {
 		var i = new(VideoInfo)
 		i.VideoId = strings.Trim(videoJson.S("videoId").String(), `"`)
 		if videoJson.ExistsP("title.simpleText") {
@@ -91,7 +130,7 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 		switch videoJson.S("thumbnailOverlays", "0", "thumbnailOverlayTimeStatusRenderer", "style").String() {
 		case "UPCOMING":
 			i.VideoStatus = VideoStatus_Waiting
-			i.VideoTimestamp, _ = strconv.ParseInt(videoJson.Path("upcomingEventData.upcomingEventData").String(), 10, 64)
+			i.VideoTimestamp, _ = strconv.ParseInt(videoJson.Path("upcomingEventData.startTime").String(), 10, 64)
 		case "LIVE":
 			i.VideoStatus = VideoStatus_Living
 		case "null":
@@ -101,6 +140,26 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 			i.VideoStatus = VideoStatus_Upload
 		}
 		i.ChannelId = channelID
+		i.ChannelName = channelName
+
+		var thumbnailSeacher = new(Searcher)
+		thumbnailSeacher.search("thumbnail", videoJson)
+		for _, thumbnail := range thumbnailSeacher.Sub {
+			var size int64 = 0
+			for _, obj := range thumbnail.S("thumbnails").Children() {
+				if obj.Exists("height") {
+					height, err := strconv.ParseInt(obj.S("height").String(), 10, 64)
+					if err != nil {
+						continue
+					}
+					if size < height {
+						size = height
+						i.Cover = obj.S("url").String()
+					}
+				}
+			}
+		}
+
 		videoInfos = append(videoInfos, i)
 	}
 	return videoInfos, nil
