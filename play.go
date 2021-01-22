@@ -39,7 +39,7 @@ func play() {
 	req.Proxy("http://172.16.1.135:3128")
 	req.Header.Set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36")
 	req.Header.Set("accept-language", "zh-CN")
-	resp, err := req.Get("https://www.youtube.com/channel/UCUKngXhjnKJ6KCyuC7ejI_w/videos?view=57&flow=grid")
+	resp, err := req.Get("https://www.youtube.com/channel/UCuzqZZQ0zILo1ryYPicNs-Q/videos?view=57&flow=grid")
 	if err != nil {
 		panic(err)
 	}
@@ -62,14 +62,8 @@ func play() {
 	r.search("videoRenderer", j)
 
 	for _, s := range r.Sub {
-		q := s.Search("thumbnailOverlays", "0",
-			"thumbnailOverlayTimeStatusRenderer", "text",
-			"accessibility", "accessibilityData", "label")
-		if q != nil {
-			fmt.Println(q.String())
-		} else {
-			//fmt.Println(s.String())
-		}
+		fmt.Println(s.String())
+		break
 	}
 
 }

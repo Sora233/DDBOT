@@ -63,9 +63,9 @@ func (c *StateManager) Start() error {
 	return c.StateManager.Start()
 }
 
-func NewStateManager(emitChan chan interface{}) *StateManager {
+func NewStateManager() *StateManager {
 	sm := &StateManager{}
 	sm.extraKey = NewExtraKey()
-	sm.StateManager = concern_manager.NewStateManager(NewKeySet(), emitChan)
+	sm.StateManager = concern_manager.NewStateManager(NewKeySet())
 	return sm
 }

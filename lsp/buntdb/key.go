@@ -53,7 +53,7 @@ func DouyuGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("DouyuConcernState", keys)
 }
 func DouyuAllConcernStateKey(keys ...interface{}) string {
-	return NamedKey("DouyuAllConcernStateKey", keys)
+	return NamedKey("DouyuAllConcernState", keys)
 }
 func DouyuFreshKey(keys ...interface{}) string {
 	return NamedKey("douyuFresh", keys)
@@ -65,10 +65,13 @@ func YoutubeGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("YoutubeConcernState", keys)
 }
 func YoutubeAllConcernStateKey(keys ...interface{}) string {
-	return NamedKey("YoutubeAllConcernStateKey", keys)
+	return NamedKey("YoutubeAllConcernState", keys)
 }
 func YoutubeFreshKey(keys ...interface{}) string {
 	return NamedKey("youtubeFresh", keys)
+}
+func YoutubeUserInfoKey(keys ...interface{}) string {
+	return NamedKey("YoutubeUserInfo", keys)
 }
 func PermissionKey(keys ...interface{}) string {
 	return NamedKey("Permission", keys)

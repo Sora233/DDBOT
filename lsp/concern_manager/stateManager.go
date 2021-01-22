@@ -412,10 +412,11 @@ func (c *StateManager) RWTxCover(f func(tx *buntdb.Tx) error) error {
 	})
 }
 
-func NewStateManager(keySet KeySet, emitChan chan interface{}) *StateManager {
+func NewStateManager(keySet KeySet) *StateManager {
 	sm := &StateManager{
-		KeySet: keySet,
+		emitChan: make(chan interface{}),
+		KeySet:   keySet,
 	}
-	sm.emitQueue = localutils.NewEmitQueue(emitChan, config.GlobalConfig.GetDuration("concern.emitInterval"))
+	sm.emitQueue = localutils.NewEmitQueue(sm.emitChan, config.GlobalConfig.GetDuration("concern.emitInterval"))
 	return sm
 }

@@ -62,7 +62,6 @@ func NewConcernLiveNotify(groupCode int64, l *LiveInfo) *ConcernLiveNotify {
 type Concern struct {
 	*StateManager
 
-	emitChan  chan interface{}
 	eventChan chan ConcernEvent
 	notify    chan<- concern.Notify
 	stop      chan interface{}
@@ -215,10 +214,8 @@ func (c *Concern) findRoom(id int64, load bool) (*LiveInfo, error) {
 }
 
 func NewConcern(notify chan<- concern.Notify) *Concern {
-	emitChan := make(chan interface{})
 	c := &Concern{
-		emitChan:     emitChan,
-		StateManager: NewStateManager(emitChan),
+		StateManager: NewStateManager(),
 		eventChan:    make(chan ConcernEvent, 500),
 		notify:       notify,
 		stop:         make(chan interface{}),

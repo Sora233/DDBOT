@@ -33,10 +33,8 @@ type Concern struct {
 }
 
 func NewConcern(notify chan<- concern.Notify) *Concern {
-	emitChan := make(chan interface{})
 	c := &Concern{
-		emitChan:     emitChan,
-		StateManager: NewStateManager(emitChan),
+		StateManager: NewStateManager(),
 		eventChan:    make(chan ConcernEvent, 500),
 		notify:       notify,
 		stop:         make(chan interface{}),

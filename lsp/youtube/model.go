@@ -6,7 +6,19 @@ type UserInfo struct {
 	ChannelId string `json:"channel_id"`
 }
 
+type EventType int64
+
+const (
+	Video EventType = iota
+)
+
+type ConcernEvent interface {
+	Type() EventType
+}
+
+// VideoInfo may be a video or a live, depend on the VideoType
 type VideoInfo struct {
+	UserInfo
 	VideoId        string      `json:"video_id"`
 	VideoTitle     string      `json:"video_title"`
 	VideoType      VideoType   `json:"video_type"`
@@ -14,15 +26,57 @@ type VideoInfo struct {
 	VideoTimestamp int64       `json:"video_timestamp"`
 }
 
+func (v *VideoInfo) Type() EventType {
+	return Video
+}
+
+func (v *VideoInfo) IsLive() bool {
+	if v == nil {
+		return false
+	}
+	return v.VideoType == VideoType_FirstLive || v.VideoType == VideoType_Live
+}
+
+func (v *VideoInfo) IsLiving() bool {
+	if v == nil {
+		return false
+	}
+	return v.IsLive() && v.VideoStatus == VideoStatus_Living
+}
+
+func (v *VideoInfo) IsWaiting() bool {
+	if v == nil {
+		return false
+	}
+	return v.IsLive() && v.VideoStatus == VideoStatus_Waiting
+}
+
+func (v *VideoInfo) IsVideo() bool {
+	if v == nil {
+		return false
+	}
+	return v.VideoType == VideoType_Video
+}
+
 type Info struct {
 	VideoInfo []*VideoInfo `json:"video_info"`
 }
 
 type ConcernNotify struct {
-	Info
+	VideoInfo
 	GroupCode int64 `json:"group_code"`
 }
 
 func (c *ConcernNotify) Type() concern.Type {
 	return concern.Youtube
+}
+
+func NewConcernNotify(groupCode int64, info *VideoInfo) *ConcernNotify {
+	if info == nil {
+		return nil
+	}
+	return &ConcernNotify{
+		VideoInfo: *info,
+		GroupCode: groupCode,
+	}
 }

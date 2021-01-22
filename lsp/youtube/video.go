@@ -35,13 +35,15 @@ func (r *Searcher) search(key string, j *gabs.Container) {
 	}
 }
 
-func Video(channelID string) ([]*VideoInfo, error) {
+func XFetchInfo(channelID string) ([]*VideoInfo, error) {
+	log := logger.WithField("channel_id", channelID)
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
-		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
+		log.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
 	path := fmt.Sprintf(VideoPath, channelID)
 	resp, err := requests.Get(ctx, path, nil, 3,
@@ -71,18 +73,34 @@ func Video(channelID string) ([]*VideoInfo, error) {
 			}
 			i.VideoTitle = sb.String()
 		}
-		switch videoJson.Search("thumbnailOverlays", "0",
+
+		switch videoJson.S("thumbnailOverlays", "0",
 			"thumbnailOverlayTimeStatusRenderer", "text",
 			"accessibility", "accessibilityData", "label").String() {
+		case "PREMIERE", "首播", "プレミア":
+			i.VideoType = VideoType_FirstLive
+		case "LIVE", "直播", "ライブ":
+			i.VideoType = VideoType_Live
+		case "null":
+			log.Error("null video type")
+			continue
+		default:
+			i.VideoType = VideoType_Video
+		}
+
+		switch videoJson.S("thumbnailOverlays", "0", "thumbnailOverlayTimeStatusRenderer", "style").String() {
 		case "UPCOMING":
 			i.VideoStatus = VideoStatus_Waiting
 			i.VideoTimestamp, _ = strconv.ParseInt(videoJson.Path("upcomingEventData.upcomingEventData").String(), 10, 64)
 		case "LIVE":
 			i.VideoStatus = VideoStatus_Living
 		case "null":
+			log.Error("null video status")
+			continue
 		default:
 			i.VideoStatus = VideoStatus_Upload
 		}
+		i.ChannelId = channelID
 		videoInfos = append(videoInfos, i)
 	}
 	return videoInfos, nil

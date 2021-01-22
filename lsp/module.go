@@ -15,6 +15,7 @@ import (
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/permission"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/youtube"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/local_proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/py"
@@ -36,6 +37,7 @@ var Debug = false
 type Lsp struct {
 	bilibiliConcern *bilibili.Concern
 	douyuConcern    *douyu.Concern
+	youtubeConcern  *youtube.Concern
 	pool            image_pool.Pool
 	concernNotify   chan concern.Notify
 	stop            chan interface{}
@@ -80,6 +82,7 @@ func (l *Lsp) Init() {
 
 	l.bilibiliConcern = bilibili.NewConcern(l.concernNotify)
 	l.douyuConcern = douyu.NewConcern(l.concernNotify)
+	l.youtubeConcern = youtube.NewConcern(l.concernNotify)
 
 	imagePoolType := config.GlobalConfig.GetString("imagePool.type")
 	log = logger.WithField("image_pool_type", imagePoolType)
@@ -234,6 +237,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 func (l *Lsp) Start(bot *bot.Bot) {
 	l.bilibiliConcern.Start()
 	l.douyuConcern.Start()
+	l.youtubeConcern.Start()
 	go l.ConcernNotify(bot)
 }
 
@@ -271,6 +275,7 @@ func (l *Lsp) checkImage(img *message.ImageElement) string {
 func (l *Lsp) FreshIndex() {
 	l.bilibiliConcern.FreshIndex()
 	l.douyuConcern.FreshIndex()
+	l.youtubeConcern.FreshIndex()
 	l.PermissionStateManager.FreshIndex()
 	l.LspStateManager.FreshIndex()
 }
@@ -278,6 +283,7 @@ func (l *Lsp) FreshIndex() {
 func (l *Lsp) RemoveAll(groupCode int64) {
 	l.bilibiliConcern.RemoveAll(groupCode)
 	l.douyuConcern.RemoveAll(groupCode)
+	l.youtubeConcern.RemoveAll(groupCode)
 	l.PermissionStateManager.RemoveAll(groupCode)
 }
 

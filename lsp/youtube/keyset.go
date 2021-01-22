@@ -24,3 +24,14 @@ func (k *KeySet) ParseGroupConcernStateKey(key string) (int64, interface{}, erro
 func NewKeySet() *KeySet {
 	return new(KeySet)
 }
+
+type extraKey struct {
+}
+
+func (e *extraKey) UserInfoKey(keys ...interface{}) string {
+	return buntdb.YoutubeUserInfoKey(keys...)
+}
+
+func NewExtraKey() *extraKey {
+	return &extraKey{}
+}
