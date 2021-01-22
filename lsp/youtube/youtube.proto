@@ -1,0 +1,16 @@
+syntax = "proto3";
+package youtube;
+
+option go_package = "youtube";
+
+enum VideoStatus {
+    Waiting = 0;
+    Living = 1;
+    Upload = 2;
+}
+
+enum VideoType {
+    FirstLive = 0;
+    Live = 1;
+    Video = 2;
+}
