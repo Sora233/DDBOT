@@ -211,5 +211,5 @@ message CardWithPost {
     string summary = 2;
     repeated string image_urls = 3;
     string banner_url = 4;
-    string publish_time = 5;
+    int64 publish_time = 5;
 }
