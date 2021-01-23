@@ -197,8 +197,6 @@ func (lgc *LspGroupCommand) Execute() {
 				return
 			}
 			lgc.FaceCommand()
-		case "/about":
-			lgc.AboutCommand()
 		case "/help":
 			lgc.HelpCommand()
 		default:
@@ -950,26 +948,6 @@ func (lgc *LspGroupCommand) FaceCommand() {
 	lgc.textReply("参数错误 - 未找到图片")
 }
 
-func (lgc *LspGroupCommand) AboutCommand() {
-	log := logger.WithField("group_code", lgc.groupCode())
-	log.Info("run about command")
-	defer log.Info("about command end")
-
-	output := lgc.parseCommandSyntax(&struct{}{}, AboutCommand, kong.Description("print about message"))
-	if output != "" {
-		lgc.textReply(output)
-	}
-	if lgc.exit {
-		return
-	}
-
-	text := "一个多功能看管人专用机器人，包括b站直播、动态推送，斗鱼直播推送，油管直播、视频推送\n" +
-		"只需添加bot好友，阁下也可为自己的群添加自动推送功能\n" +
-		"by Sora233\n" +
-		"如果喜欢请点一个Star：https://github.com/Sora233/Sora233-MiraiGo"
-	lgc.textSend(text)
-}
-
 func (lgc *LspGroupCommand) HelpCommand() {
 	log := logger.WithField("group_code", lgc.groupCode())
 	log.Info("run help command")
@@ -983,30 +961,12 @@ func (lgc *LspGroupCommand) HelpCommand() {
 		return
 	}
 
-	help := "部分指令：\n" +
-		"/watch 用于订阅推送，例如：\n" +
-		"订阅b站uid为2的用户（https://space.bilibili.com/2）的直播信息：/watch -s bilibili -t live 2\n" +
-		"订阅b站uid为2的用户的动态信息：/watch -s bilibili -t news 2\n" +
-		"uid即b站用户空间末尾的数字\n" +
-		"订阅斗鱼6655号直播间（https://www.douyu.com/6655）：/watch -s douyu -t live 6655\n" +
-		"订阅油管karory（https://www.youtube.com/channel/UCGXspjV3G7ZSunbikIdp3EA）直播和视频：/watch -s youtube -t live UCGXspjV3G7ZSunbikIdp3EA\n" +
-		"可以用相应的/unwatch命令取消订阅\n" +
-		"取消订阅斗鱼6655直播间：/unwatch -s douyu -t live 6655\n" +
-		"该系列命令默认情况下仅管理员可用\n" +
-		"/list 用于查看当前订阅，例如：\n" +
-		"查看当前b站订阅列表中正在直播的：/list -s bilibili -t live\n" +
-		"/grant 用于管理员给其他成员设置权限，例如：\n" +
-		"/grant -c watch 1234567 给qq号为1234567的用户使用watch命令的权限\n" +
-		"设置的权限可以使用-d参数取消：\n" +
-		"/grant -d -c watch 1234567 取消qq号为1234567的用户的watch命令权限\n" +
-		"/enable和/disable 用于开启与禁用命令，例如：\n" +
-		"/enable watch 将开启watch命令\n" +
-		"/disable watch 将禁用watch命令，调用watch命令将不再有任何反应\n" +
-		"最后，一些里命令不便在此列出\n" +
-		"其他使用问题请在此提出：https://github.com/Sora233/Sora233-MiraiGo/discussions"
-	lgc.privateTextSend(help)
-	lgc.privateTextSend("请勿私聊，私聊不会回复")
-	lgc.textReply("该命令较为刷屏，已通过私信回复\n若临时会话被禁止，阁下可添加bot为好友后重试或者查看https://github.com/Sora233/Sora233-MiraiGo/blob/master/README.md")
+	text := "一个多功能看管人专用机器人，包括b站直播、动态推送，斗鱼直播推送，油管直播、视频推送\n" +
+		"只需添加bot好友，阁下也可为自己的群添加自动推送功能\n" +
+		"详细命令请添加好友后私聊发送/help\n" +
+		"by Sora233\n" +
+		"如果喜欢请点一个Star：https://github.com/Sora233/Sora233-MiraiGo"
+	lgc.textReply(text)
 }
 
 func (lgc *LspGroupCommand) ImageContent() {
