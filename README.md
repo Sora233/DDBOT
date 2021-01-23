@@ -99,7 +99,7 @@ go build -tags nocv
 
 ## 配置
 
-模板为application.yaml.example，好后将文件改名为application.yaml
+模板为application.yaml.example，配置完成后将文件改名为application.yaml
 
 ```yaml
 bot:
