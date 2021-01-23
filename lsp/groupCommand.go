@@ -478,7 +478,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 			break
 		}
 		log.WithField("id", id).Debugf("watch success")
-		lgc.textReply(fmt.Sprintf("watch成功 - YTB用户 %v", info.VideoInfo[0].ChannelName))
+		lgc.textReply(fmt.Sprintf("watch成功 - YTB用户 %v", info.ChannelName))
 	default:
 		log.WithField("site", site).Error("unsupported")
 		lgc.textReply("未支持的网站")
@@ -494,7 +494,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 	defer log.Info("list living command end")
 
 	var listLivingCmd struct {
-		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu"`
+		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
 		Type string `optional:"" short:"t" default:"live" help:"news / live"`
 		All  bool   `optional:"" short:"a" default:"false" help:"show all"`
 	}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/asmcos/requests"
 	"github.com/ericpauley/go-quantize/quantize"
 	"github.com/nfnt/resize"
@@ -127,6 +128,10 @@ func ImageGet(url string) ([]byte, error) {
 		return nil, errors.New("empty url")
 	}
 	req := requests.Requests()
+	proxy, err := proxy_pool.Get()
+	if err == nil {
+		req.Proxy(proxy.ProxyString())
+	}
 	resp, err := req.Get(url)
 	if err != nil {
 		return nil, err

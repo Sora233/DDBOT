@@ -49,7 +49,7 @@ func Get(ctx context.Context, url string, params requests.Params, maxRetry int, 
 			logger.Errorf("get proxy failed")
 		}
 	} else {
-		req.Proxy("http://" + proxy.ProxyString())
+		req.Proxy(proxy.ProxyString())
 	}
 
 	var (

@@ -37,6 +37,7 @@ func (r *Searcher) search(key string, j *gabs.Container) {
 	}
 }
 
+// very sb
 func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 	log := logger.WithField("channel_id", channelID)
 
@@ -114,11 +115,11 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 		}
 
 		if videoJson.ExistsP("title.simpleText") {
-			i.VideoTitle = videoJson.Path("title.simpleText").String()
+			i.VideoTitle = strings.Trim(videoJson.Path("title.simpleText").String(), `"`)
 		} else if videoJson.ExistsP("title.runs") {
 			sb := strings.Builder{}
 			for _, c := range videoJson.Path("title.runs").Children() {
-				sb.WriteString(c.S("text").String())
+				sb.WriteString(strings.Trim(c.S("text").String(), `"`))
 			}
 			i.VideoTitle = sb.String()
 		}
@@ -167,6 +168,6 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 		}
 		videoInfos = append(videoInfos, i)
 	}
-	log.WithField("video_count", len(videoInfos)).Debugf("fetch info")
+	log.WithField("video_count", len(videoInfos)).Tracef("fetch info")
 	return videoInfos, nil
 }

@@ -1,23 +1,39 @@
 package youtube
 
 import (
+	"encoding/json"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
 	"github.com/tidwall/buntdb"
 )
 
-// TODO
 type StateManager struct {
 	*concern_manager.StateManager
 	*extraKey
 }
 
-func (s *StateManager) AddInfo(info *Info) {
-
+func (s *StateManager) AddInfo(info *Info) error {
+	return s.RWTxCover(func(tx *buntdb.Tx) error {
+		infoKey := s.InfoKey(info.ChannelId)
+		_, _, err := tx.Set(infoKey, info.ToString(), nil)
+		return err
+	})
 }
 
-func (s *StateManager) GetInfo(channelId string) (*Info, error) {
-	return nil, nil
+func (s *StateManager) GetInfo(channelId string) (info *Info, err error) {
+	err = s.RTxCover(func(tx *buntdb.Tx) error {
+		infoKey := s.InfoKey(channelId)
+		val, err := tx.Get(infoKey)
+		if err != nil {
+			return err
+		}
+		info = new(Info)
+		return json.Unmarshal([]byte(val), info)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return
 }
 func (s *StateManager) Start() error {
 	db, err := localdb.GetClient()

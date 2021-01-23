@@ -73,6 +73,9 @@ func YoutubeFreshKey(keys ...interface{}) string {
 func YoutubeUserInfoKey(keys ...interface{}) string {
 	return NamedKey("YoutubeUserInfo", keys)
 }
+func YoutubeInfoKey(keys ...interface{}) string {
+	return NamedKey("YoutubeInfo", keys)
+}
 func PermissionKey(keys ...interface{}) string {
 	return NamedKey("Permission", keys)
 }

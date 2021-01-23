@@ -10,7 +10,7 @@ type Proxy struct {
 }
 
 func (p *Proxy) ProxyString() string {
-	return p.proxy
+	return "http://" + p.proxy
 }
 
 type Pool struct {

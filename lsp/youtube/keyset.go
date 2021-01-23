@@ -32,6 +32,10 @@ func (e *extraKey) UserInfoKey(keys ...interface{}) string {
 	return buntdb.YoutubeUserInfoKey(keys...)
 }
 
+func (e *extraKey) InfoKey(keys ...interface{}) string {
+	return buntdb.YoutubeInfoKey(keys...)
+}
+
 func NewExtraKey() *extraKey {
 	return &extraKey{}
 }

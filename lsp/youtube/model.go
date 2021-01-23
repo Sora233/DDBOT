@@ -1,6 +1,9 @@
 package youtube
 
-import "github.com/Sora233/Sora233-MiraiGo/concern"
+import (
+	"encoding/json"
+	"github.com/Sora233/Sora233-MiraiGo/concern"
+)
 
 type UserInfo struct {
 	ChannelId   string `json:"channel_id"`
@@ -62,6 +65,25 @@ func (v *VideoInfo) IsVideo() bool {
 
 type Info struct {
 	VideoInfo []*VideoInfo `json:"video_info"`
+	UserInfo
+}
+
+func (i *Info) ToString() string {
+	if i == nil {
+		return ""
+	}
+	b, _ := json.Marshal(i)
+	return string(b)
+}
+
+func NewInfo(vinfo []*VideoInfo) *Info {
+	info := new(Info)
+	info.VideoInfo = vinfo
+	if len(vinfo) > 0 {
+		info.ChannelId = vinfo[0].ChannelId
+		info.ChannelName = vinfo[0].ChannelName
+	}
+	return info
 }
 
 type ConcernNotify struct {

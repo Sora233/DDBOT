@@ -36,7 +36,7 @@ func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Inf
 	if err != nil {
 		return nil, err
 	}
-	return &Info{videoInfo}, nil
+	return NewInfo(videoInfo), nil
 }
 
 func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernNotify, error) {
@@ -170,7 +170,7 @@ func (c *Concern) findInfo(channelId string, load bool) (*Info, error) {
 		if err != nil {
 			return nil, err
 		}
-		info = &Info{VideoInfo: vi}
+		info = NewInfo(vi)
 		c.StateManager.AddInfo(info)
 	}
 
