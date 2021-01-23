@@ -98,24 +98,34 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 	} else {
 		channelName = "<nil>"
 	}
+	channelName = strings.Trim(channelName, `"`)
+
+	var idSet = make(map[string]bool)
 
 	var videoInfos []*VideoInfo
 	for _, videoJson := range videoSearcher.Sub {
 		var i = new(VideoInfo)
 		i.VideoId = strings.Trim(videoJson.S("videoId").String(), `"`)
+
+		if _, found := idSet[i.VideoId]; !found {
+			idSet[i.VideoId] = true
+		} else {
+			continue
+		}
+
 		if videoJson.ExistsP("title.simpleText") {
 			i.VideoTitle = videoJson.Path("title.simpleText").String()
 		} else if videoJson.ExistsP("title.runs") {
 			sb := strings.Builder{}
 			for _, c := range videoJson.Path("title.runs").Children() {
-				sb.WriteString(c.String())
+				sb.WriteString(c.S("text").String())
 			}
 			i.VideoTitle = sb.String()
 		}
 
-		switch videoJson.S("thumbnailOverlays", "0",
+		switch strings.Trim(videoJson.S("thumbnailOverlays", "0",
 			"thumbnailOverlayTimeStatusRenderer", "text",
-			"accessibility", "accessibilityData", "label").String() {
+			"accessibility", "accessibilityData", "label").String(), `"`) {
 		case "PREMIERE", "首播", "プレミア":
 			i.VideoType = VideoType_FirstLive
 		case "LIVE", "直播", "ライブ":
@@ -127,7 +137,7 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 			i.VideoType = VideoType_Video
 		}
 
-		switch videoJson.S("thumbnailOverlays", "0", "thumbnailOverlayTimeStatusRenderer", "style").String() {
+		switch strings.Trim(videoJson.S("thumbnailOverlays", "0", "thumbnailOverlayTimeStatusRenderer", "style").String(), `"`) {
 		case "UPCOMING":
 			i.VideoStatus = VideoStatus_Waiting
 			i.VideoTimestamp, _ = strconv.ParseInt(videoJson.Path("upcomingEventData.startTime").String(), 10, 64)
@@ -142,25 +152,21 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 		i.ChannelId = channelID
 		i.ChannelName = channelName
 
-		var thumbnailSeacher = new(Searcher)
-		thumbnailSeacher.search("thumbnail", videoJson)
-		for _, thumbnail := range thumbnailSeacher.Sub {
-			var size int64 = 0
-			for _, obj := range thumbnail.S("thumbnails").Children() {
-				if obj.Exists("height") {
-					height, err := strconv.ParseInt(obj.S("height").String(), 10, 64)
-					if err != nil {
-						continue
-					}
-					if size < height {
-						size = height
-						i.Cover = obj.S("url").String()
-					}
+		var size int64 = -1
+		for _, obj := range videoJson.S("thumbnail", "thumbnails").Children() {
+			if obj.Exists("height") {
+				height, err := strconv.ParseInt(obj.S("height").String(), 10, 64)
+				if err != nil {
+					continue
+				}
+				if size < height {
+					size = height
+					i.Cover = strings.Trim(obj.S("url").String(), `"`)
 				}
 			}
 		}
-
 		videoInfos = append(videoInfos, i)
 	}
+	log.WithField("video_count", len(videoInfos)).Debugf("fetch info")
 	return videoInfos, nil
 }

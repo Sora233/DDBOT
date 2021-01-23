@@ -12,10 +12,6 @@ type StateManager struct {
 	*extraKey
 }
 
-func (s *StateManager) AddChannel(channelId string) {
-
-}
-
 func (s *StateManager) AddInfo(info *Info) {
 
 }

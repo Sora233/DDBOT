@@ -131,6 +131,7 @@ func (c *Concern) freshInfo(channelId string) {
 		for _, newV := range newInfo.VideoInfo {
 			if newV.IsLive() && newV.IsLiving() {
 				c.eventChan <- newV
+				log.Debugf("first load notify")
 			}
 		}
 	} else {
@@ -143,9 +144,11 @@ func (c *Concern) freshInfo(channelId string) {
 						if newV.IsWaiting() && oldV.IsWaiting() && newV.VideoTimestamp != oldV.VideoTimestamp {
 							// live time changed, notify
 							c.eventChan <- newV
+							log.Debugf("live time change notify")
 						} else if newV.IsLiving() && oldV.IsWaiting() {
 							// live begin
 							c.eventChan <- newV
+							log.Debugf("live begin notify")
 						}
 						// any other case?
 					}
@@ -154,6 +157,7 @@ func (c *Concern) freshInfo(channelId string) {
 			if !found {
 				// new video
 				c.eventChan <- newV
+				log.Debugf("new video notify")
 			}
 		}
 	}
