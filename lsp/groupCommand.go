@@ -963,7 +963,8 @@ func (lgc *LspGroupCommand) AboutCommand() {
 		return
 	}
 
-	text := "一个多功能看管人专用机器人，包括b站直播、动态推送，斗鱼直播推送，油管直播、视频推送，阁下也可添加bot好友并邀请至阁下的其他群内\n" +
+	text := "一个多功能看管人专用机器人，包括b站直播、动态推送，斗鱼直播推送，油管直播、视频推送\n" +
+		"只需添加bot好友，阁下也可为自己的群添加自动推送功能\n" +
 		"by Sora233\n" +
 		"如果喜欢请点一个Star：https://github.com/Sora233/Sora233-MiraiGo"
 	lgc.textSend(text)

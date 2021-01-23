@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
@@ -165,8 +166,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			return
 		}
 		sendingMsg := message.NewSendingMessage()
-		sendingMsg.Append(message.NewText("阁下的群邀请已通过，基于对阁下的信任，阁下已获得在本bot该群内的控制权限，相信阁下不会滥用本bot。\n管理命令:\n"))
-		sendingMsg.Append(message.NewText("/grant\n/enable\n/disable\n请使用对应命令 -h查看帮助"))
+		sendingMsg.Append(message.NewText(fmt.Sprintf("阁下的群邀请已通过，基于对阁下的信任，阁下已获得本bot在群【%s】的控制权限，相信阁下不会滥用本bot。", request.GroupName)))
 		bot.SendPrivateMessage(request.InvitorUin, sendingMsg)
 		l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin)
 		request.Accept()
@@ -179,7 +179,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			Info("new friend")
 		request.Accept()
 		sendingMsg := message.NewSendingMessage()
-		sendingMsg.Append(message.NewText("阁下的好友请求已通过，现在可以给bot发送加群邀请了。"))
+		sendingMsg.Append(message.NewText("阁下的好友请求已通过，请使用/help查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。"))
 		bot.SendPrivateMessage(request.RequesterUin, sendingMsg)
 	})
 
