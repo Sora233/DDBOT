@@ -129,9 +129,9 @@ func (c *Concern) freshInfo(channelId string) {
 	if oldInfo == nil {
 		// first load, just notify if living
 		for _, newV := range newInfo.VideoInfo {
-			if newV.IsLive() && newV.IsLiving() {
+			if newV.IsLive() {
 				c.eventChan <- newV
-				log.Debugf("first load notify")
+				log.Debugf("first load live notify")
 			}
 		}
 	} else {

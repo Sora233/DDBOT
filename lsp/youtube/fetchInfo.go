@@ -141,7 +141,7 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 		switch strings.Trim(videoJson.S("thumbnailOverlays", "0", "thumbnailOverlayTimeStatusRenderer", "style").String(), `"`) {
 		case "UPCOMING":
 			i.VideoStatus = VideoStatus_Waiting
-			i.VideoTimestamp, _ = strconv.ParseInt(videoJson.Path("upcomingEventData.startTime").String(), 10, 64)
+			i.VideoTimestamp, _ = strconv.ParseInt(strings.Trim(videoJson.Path("upcomingEventData.startTime").String(), `"`), 10, 64)
 		case "LIVE":
 			i.VideoStatus = VideoStatus_Living
 		case "null":
