@@ -23,7 +23,6 @@ import (
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	"github.com/sirupsen/logrus"
 	"os"
-	"strings"
 	"sync"
 	"time"
 )
@@ -203,7 +202,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if err := l.LspStateManager.SaveMessageImageUrl(msg.GroupCode, msg.Id, msg.Elements); err != nil {
 			logger.Errorf("SaveMessageImageUrl failed %v", err)
 		}
-		cmd := NewLspGroupCommand(bot, msg, l)
+		cmd := NewLspGroupCommand(bot, l, msg)
 		if Debug {
 			cmd.Debug()
 		}
@@ -219,12 +218,14 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnPrivateMessage(func(qqClient *client.QQClient, msg *message.PrivateMessage) {
-		cmds := strings.TrimSpace(msg.ToString())
-		if cmds == "/ping" {
-			sendingMsg := message.NewSendingMessage()
-			sendingMsg.Append(message.NewText("pong"))
-			qqClient.SendPrivateMessage(msg.Sender.Uin, sendingMsg)
+		if len(msg.Elements) == 0 {
+			return
 		}
+		cmd := NewLspPrivateCommand(bot, l, msg)
+		if Debug {
+			cmd.Debug()
+		}
+		go cmd.Execute()
 	})
 	bot.OnDisconnected(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
 		go func() {

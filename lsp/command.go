@@ -20,7 +20,12 @@ const (
 	AboutCommand        = "about"
 )
 
-var all = [...]string{
+// private command
+const (
+	PingCommand = "ping"
+)
+
+var allGroupCommand = [...]string{
 	RollCommand, CheckinCommand, GrantCommand,
 	LspCommand, WatchCommand, UnwatchCommand,
 	ListCommand, SetuCommand, HuangtuCommand,
@@ -28,14 +33,18 @@ var all = [...]string{
 	FaceCommand,
 }
 
+var allPrivateOperate = [...]string{
+	PingCommand, HelpCommand,
+}
+
 var nonOprateable = [...]string{
 	EnableCommand, DisableCommand, GrantCommand, HelpCommand, AboutCommand,
 }
 
 func CheckValidCommand(command string) bool {
-	return sliceutil.Contains(all, command)
+	return sliceutil.Contains(allGroupCommand, command)
 }
 
 func CheckOperateableCommand(command string) bool {
-	return sliceutil.Contains(all, command) && !sliceutil.Contains(nonOprateable, command)
+	return sliceutil.Contains(allGroupCommand, command) && !sliceutil.Contains(nonOprateable, command)
 }

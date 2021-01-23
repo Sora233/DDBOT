@@ -29,32 +29,33 @@ import (
 )
 
 type LspGroupCommand struct {
-	bot *miraiBot.Bot
 	msg *message.GroupMessage
-	l   *Lsp
 
-	cmd   string
-	args  []string
-	debug bool
-	exit  bool
+	*Runtime
 }
 
-func NewLspGroupCommand(bot *miraiBot.Bot, msg *message.GroupMessage, l *Lsp) *LspGroupCommand {
+func NewLspGroupCommand(bot *miraiBot.Bot, l *Lsp, msg *message.GroupMessage) *LspGroupCommand {
 	c := &LspGroupCommand{
-		bot: bot,
-		msg: msg,
-		l:   l,
+		Runtime: NewRuntime(bot, l),
+		msg:     msg,
 	}
-	c.ParseCmdArgs()
+	c.Parse(msg.Elements)
 	return c
 }
 
-func (lgc *LspGroupCommand) Exit(int) {
-	lgc.exit = true
-}
-
-func (lgc *LspGroupCommand) Debug() {
-	lgc.debug = true
+func (lgc *LspGroupCommand) DebugCheck() bool {
+	var ok bool
+	if lgc.debug {
+		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.group"), lgc.groupCode()) {
+			ok = true
+		}
+		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.uin"), lgc.msg.Sender) {
+			ok = true
+		}
+	} else {
+		ok = true
+	}
+	return ok
 }
 
 func (lgc *LspGroupCommand) Execute() {
@@ -64,26 +65,16 @@ func (lgc *LspGroupCommand) Execute() {
 				Errorf("panic recovered")
 		}
 	}()
-	if lgc.debug {
-		var ok bool
-		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.group"), lgc.groupCode()) {
-			ok = true
-		}
-		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.uin"), lgc.msg.Sender) {
-			ok = true
-		}
-		if !ok {
-			return
-		}
+	if !lgc.DebugCheck() {
+		return
 	}
-
-	if lgc.getCmd() != "" && !strings.HasPrefix(lgc.getCmd(), "/") {
+	if lgc.GetCmd() != "" && !strings.HasPrefix(lgc.GetCmd(), "/") {
 		return
 	}
 
-	logger.WithField("cmd", lgc.getCmd()).WithField("args", lgc.getArgs()).Debug("execute")
+	logger.WithField("cmd", lgc.GetCmd()).WithField("args", lgc.GetArgs()).Debug("execute")
 
-	args := lgc.getArgs()
+	args := lgc.GetArgs()
 
 	if args == nil {
 		if !lgc.groupEnabled(ImageContentCommand) {
@@ -97,7 +88,7 @@ func (lgc *LspGroupCommand) Execute() {
 		}
 		return
 	} else {
-		switch lgc.getCmd() {
+		switch lgc.GetCmd() {
 		case "/lsp":
 			if lgc.groupDisabled(LspCommand) {
 				logger.WithField("group_code", lgc.groupCode()).
@@ -225,7 +216,10 @@ func (lgc *LspGroupCommand) LspCommand() {
 	defer log.Info("lsp command end")
 
 	var lspCmd struct{}
-	lgc.parseArgs(&lspCmd, LspCommand)
+	output := lgc.parseCommandSyntax(&lspCmd, LspCommand)
+	if output != "" {
+		lgc.textReply(output)
+	}
 	if lgc.exit {
 		return
 	}
@@ -256,7 +250,10 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	} else {
 		name = "色图"
 	}
-	lgc.parseArgs(&setuCmd, name)
+	output := lgc.parseCommandSyntax(&setuCmd, name)
+	if output != "" {
+		lgc.textReply(output)
+	}
 	if lgc.exit {
 		return
 	}
@@ -392,14 +389,17 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	} else {
 		name = "watch"
 	}
-	lgc.parseArgs(&watchCmd, name)
+	output := lgc.parseCommandSyntax(&watchCmd, name)
+	if output != "" {
+		lgc.textReply(output)
+	}
 	if lgc.exit {
 		return
 	}
 
 	site, watchType, err = lgc.parseRawSiteAndType(watchCmd.Site, watchCmd.Type)
 	if err != nil {
-		log.WithField("args", lgc.getArgs()).Errorf("parse raw concern failed %v", err)
+		log.WithField("args", lgc.GetArgs()).Errorf("parse raw concern failed %v", err)
 		lgc.textReply(fmt.Sprintf("参数错误 - %v", err))
 		return
 	}
@@ -498,14 +498,17 @@ func (lgc *LspGroupCommand) ListCommand() {
 		Type string `optional:"" short:"t" default:"live" help:"news / live"`
 		All  bool   `optional:"" short:"a" default:"false" help:"show all"`
 	}
-	lgc.parseArgs(&listLivingCmd, ListCommand)
+	output := lgc.parseCommandSyntax(&listLivingCmd, ListCommand)
+	if output != "" {
+		lgc.textReply(output)
+	}
 	if lgc.exit {
 		return
 	}
 
 	site, ctype, err := lgc.parseRawSiteAndType(listLivingCmd.Site, listLivingCmd.Type)
 	if err != nil {
-		log.WithField("args", lgc.getArgs()).Errorf("parse raw site failed %v", err)
+		log.WithField("args", lgc.GetArgs()).Errorf("parse raw site failed %v", err)
 		lgc.textReply(fmt.Sprintf("失败 - %v", err))
 		return
 	}
@@ -619,7 +622,10 @@ func (lgc *LspGroupCommand) RollCommand() {
 	var rollCmd struct {
 		RangeArg string `arg:"" optional:"" help:"roll range, eg. 100 / 50-100"`
 	}
-	lgc.parseArgs(&rollCmd, RollCommand)
+	output := lgc.parseCommandSyntax(&rollCmd, RollCommand)
+	if output != "" {
+		lgc.textReply(output)
+	}
 	if lgc.exit {
 		return
 	}
@@ -674,7 +680,10 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 	defer log.Info("checkin command end")
 
 	var checkinCmd struct{}
-	lgc.parseArgs(&checkinCmd, CheckinCommand)
+	output := lgc.parseCommandSyntax(&checkinCmd, CheckinCommand)
+	if output != "" {
+		lgc.textReply(output)
+	}
 	if lgc.exit {
 		return
 	}
@@ -742,10 +751,14 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 	if disable {
 		name = "disable"
 	}
-	lgc.parseArgs(&enableCmd, name)
+	output := lgc.parseCommandSyntax(&enableCmd, name)
+	if output != "" {
+		lgc.textReply(output)
+	}
 	if lgc.exit {
 		return
 	}
+
 	log = log.WithField("command", enableCmd.Command).WithField("disable", disable)
 	if !CheckOperateableCommand(enableCmd.Command) {
 		log.Errorf("unknown command")
@@ -788,10 +801,14 @@ func (lgc *LspGroupCommand) GrantCommand() {
 		Delete  bool   `short:"d" help:"perform a ungrant instead"`
 		Target  int64  `arg:""`
 	}
-	lgc.parseArgs(&grantCmd, GrantCommand)
+	output := lgc.parseCommandSyntax(&grantCmd, GrantCommand)
+	if output != "" {
+		lgc.textReply(output)
+	}
 	if lgc.exit {
 		return
 	}
+
 	grantFrom := msg.Sender.Uin
 	grantTo := grantCmd.Target
 	if grantCmd.Command == "" && grantCmd.Role == "" {
@@ -897,7 +914,10 @@ func (lgc *LspGroupCommand) FaceCommand() {
 	log.Infof("run face command")
 	defer log.Info("face command end")
 
-	lgc.parseArgs(&struct{}{}, FaceCommand, kong.Description("电脑使用/face [图片] 或者 回复图片消息+/face触发"))
+	output := lgc.parseCommandSyntax(&struct{}{}, FaceCommand, kong.Description("电脑使用/face [图片] 或者 回复图片消息+/face触发"))
+	if output != "" {
+		lgc.textReply(output)
+	}
 	if lgc.exit {
 		return
 	}
@@ -935,7 +955,10 @@ func (lgc *LspGroupCommand) AboutCommand() {
 	log.Info("run about command")
 	defer log.Info("about command end")
 
-	lgc.parseArgs(&struct{}{}, AboutCommand, kong.Description("print about message"))
+	output := lgc.parseCommandSyntax(&struct{}{}, AboutCommand, kong.Description("print about message"))
+	if output != "" {
+		lgc.textReply(output)
+	}
 	if lgc.exit {
 		return
 	}
@@ -951,7 +974,10 @@ func (lgc *LspGroupCommand) HelpCommand() {
 	log.Info("run help command")
 	defer log.Info("help command end")
 
-	lgc.parseArgs(&struct{}{}, HelpCommand, kong.Description("print help message"))
+	output := lgc.parseCommandSyntax(&struct{}{}, HelpCommand, kong.Description("print help message"))
+	if output != "" {
+		lgc.textReply(output)
+	}
 	if lgc.exit {
 		return
 	}
@@ -1108,60 +1134,6 @@ func (lgc *LspGroupCommand) privateTextSend(text string) {
 
 func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {
 	return lgc.textReply("权限不够")
-}
-
-func (lgc *LspGroupCommand) ParseCmdArgs() {
-	for _, e := range lgc.msg.Elements {
-		if te, ok := e.(*message.TextElement); ok {
-			text := strings.TrimSpace(te.Content)
-			if text == "" {
-				continue
-			}
-			splitStr := strings.Split(text, " ")
-			if len(splitStr) >= 1 {
-				lgc.cmd = strings.TrimSpace(splitStr[0])
-				lgc.args = splitStr[1:]
-			}
-			break
-		}
-	}
-}
-
-func (lgc *LspGroupCommand) getCmdArgs() (string, []string) {
-	return lgc.cmd, lgc.args
-}
-
-func (lgc *LspGroupCommand) getCmd() string {
-	return lgc.cmd
-}
-func (lgc *LspGroupCommand) getArgs() []string {
-	return lgc.args
-}
-
-func (lgc *LspGroupCommand) parseArgs(ast interface{}, name string, options ...kong.Option) {
-	_, args := lgc.getCmdArgs()
-	cmdOut := &strings.Builder{}
-	options = append(options, kong.Name(name), kong.UsageOnError(), kong.Exit(lgc.Exit))
-	k, err := kong.New(ast, options...)
-	if err != nil {
-		logger.Errorf("kong new failed %v", err)
-		lgc.textReply("失败")
-		lgc.Exit(0)
-		return
-	}
-	k.Stdout = cmdOut
-	_, err = k.Parse(args)
-	if lgc.exit {
-		logger.WithField("content", args).Debug("exit")
-		lgc.textReply(cmdOut.String())
-		return
-	}
-	if err != nil {
-		logger.WithField("content", args).Errorf("kong parse failed %v", err)
-		lgc.textReply(fmt.Sprintf("失败 - %v", err))
-		lgc.Exit(0)
-		return
-	}
 }
 
 func (lgc *LspGroupCommand) parseRawSiteAndType(rawSite string, rawType string) (string, concern.Type, error) {
