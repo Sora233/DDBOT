@@ -364,14 +364,13 @@ func (c *StateManager) freshConcern() error {
 		return nil
 	})
 
-	err = c.RWTxCover(func(tx *buntdb.Tx) error {
+	c.RWTxCover(func(tx *buntdb.Tx) error {
 		for key := range all {
 			tx.Delete(key)
 		}
 		return nil
-
 	})
-	return err
+	return nil
 }
 
 func (c *StateManager) EmitFreshCore(name string, fresher func(ctype concern.Type, id interface{}) error) {

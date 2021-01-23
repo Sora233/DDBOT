@@ -121,11 +121,6 @@ func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 }
 
 func (c *StateManager) Start() error {
-	return c.StateManager.Start()
-}
-
-func (c *StateManager) FreshIndex() {
-	c.StateManager.FreshIndex()
 	db, err := localdb.GetClient()
 	if err == nil {
 		db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
@@ -134,6 +129,7 @@ func (c *StateManager) FreshIndex() {
 		db.CreateIndex(c.UserInfoKey(), c.UserInfoKey("*", buntdb.IndexString))
 		db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexBinary)
 	}
+	return c.StateManager.Start()
 }
 
 func NewStateManager() *StateManager {

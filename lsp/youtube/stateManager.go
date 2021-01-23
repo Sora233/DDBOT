@@ -23,9 +23,7 @@ func (s *StateManager) AddInfo(info *Info) {
 func (s *StateManager) GetInfo(channelId string) (*Info, error) {
 	return nil, nil
 }
-
-func (s *StateManager) FreshIndex() {
-	s.StateManager.FreshIndex()
+func (s *StateManager) Start() error {
 	db, err := localdb.GetClient()
 	if err == nil {
 		db.CreateIndex(s.GroupConcernStateKey(), s.GroupConcernStateKey("*"), buntdb.IndexString)
@@ -33,6 +31,7 @@ func (s *StateManager) FreshIndex() {
 		db.CreateIndex(s.UserInfoKey(), s.UserInfoKey("*", buntdb.IndexString))
 		db.CreateIndex(s.ConcernStateKey(), s.ConcernStateKey("*"), buntdb.IndexBinary)
 	}
+	return s.StateManager.Start()
 }
 
 func NewStateManager() *StateManager {

@@ -48,8 +48,7 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	})
 }
 
-func (c *StateManager) FreshIndex() {
-	c.StateManager.FreshIndex()
+func (c *StateManager) Start() error {
 	db, err := localdb.GetClient()
 	if err == nil {
 		db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
@@ -57,9 +56,6 @@ func (c *StateManager) FreshIndex() {
 		db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
 		db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexBinary)
 	}
-}
-
-func (c *StateManager) Start() error {
 	return c.StateManager.Start()
 }
 
