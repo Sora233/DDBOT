@@ -940,7 +940,7 @@ func (lgc *LspGroupCommand) AboutCommand() {
 		return
 	}
 
-	text := "一个多功能机器人，包括b站直播、动态推送，斗鱼直播推送，阁下也可添加bot好友并邀请至阁下的其他群内\n" +
+	text := "一个多功能看管人专用机器人，包括b站直播、动态推送，斗鱼直播推送，油管直播、视频推送，阁下也可添加bot好友并邀请至阁下的其他群内\n" +
 		"by Sora233\n" +
 		"如果喜欢请点一个Star：https://github.com/Sora233/Sora233-MiraiGo"
 	lgc.textSend(text)
@@ -958,10 +958,11 @@ func (lgc *LspGroupCommand) HelpCommand() {
 
 	help := "部分指令：\n" +
 		"/watch 用于订阅推送，例如：\n" +
-		"订阅b站uid为2的用户的直播信息：/watch -s bilibili -t live 2\n" +
+		"订阅b站uid为2的用户（https://space.bilibili.com/2）的直播信息：/watch -s bilibili -t live 2\n" +
 		"订阅b站uid为2的用户的动态信息：/watch -s bilibili -t news 2\n" +
 		"uid即b站用户空间末尾的数字\n" +
-		"订阅斗鱼6655号直播间：/watch -s douyu -t live 6655\n" +
+		"订阅斗鱼6655号直播间（https://www.douyu.com/6655）：/watch -s douyu -t live 6655\n" +
+		"订阅油管karory（https://www.youtube.com/channel/UCGXspjV3G7ZSunbikIdp3EA）直播和视频：/watch -s youtube -t live UCGXspjV3G7ZSunbikIdp3EA\n" +
 		"可以用相应的/unwatch命令取消订阅\n" +
 		"取消订阅斗鱼6655直播间：/unwatch -s douyu -t live 6655\n" +
 		"该系列命令默认情况下仅管理员可用\n" +
