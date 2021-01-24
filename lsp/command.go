@@ -1,6 +1,6 @@
 package lsp
 
-import "github.com/forestgiant/sliceutil"
+import "github.com/Sora233/sliceutil"
 
 const (
 	RollCommand         = "roll"

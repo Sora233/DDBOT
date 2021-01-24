@@ -6,12 +6,12 @@ require (
 	github.com/Jeffail/gabs/v2 v2.6.0
 	github.com/Logiase/MiraiGo-Template v0.0.0-20201230072030-576f07174255
 	github.com/Mrs4s/MiraiGo v0.0.0-20210108093149-f40ac95fffa4
+	github.com/Sora233/requests v0.0.0-20210124044507-771a1ecd2e93
+	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/Sora233/zhima-proxy-pool v0.0.0-20210124065344-04d96243cadd
 	github.com/alecthomas/kong v0.2.12
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.875
-	github.com/asmcos/requests v0.0.0-20210118082303-cb8f46dd3767
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
-	github.com/forestgiant/sliceutil v0.0.0-20160425183142-94783f95db6c
 	github.com/golang/protobuf v1.4.3
 	github.com/imroc/req v0.3.0
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
@@ -27,7 +27,3 @@ require (
 	golang.org/x/text v0.3.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
-
-replace github.com/asmcos/requests v0.0.0-20200816142649-95abc76c8cac => github.com/Sora233/requests v0.0.0-20210124044507-771a1ecd2e93
-
-replace github.com/forestgiant/sliceutil v0.0.0-20160425183142-94783f95db6c => github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882

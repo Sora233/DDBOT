@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
-	"github.com/asmcos/requests"
+	"github.com/Sora233/requests"
 	"net/http"
 	"time"
 )

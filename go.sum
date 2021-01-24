@@ -38,8 +38,8 @@ github.com/aliyun/alibaba-cloud-sdk-go v1.61.875/go.mod h1:pUKYbK5JQ+1Dfxk80P0qx
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
-github.com/asmcos/requests v0.0.0-20210118082303-cb8f46dd3767 h1:/2W6hzSR62YUThJdMsKkx4n1kpe05cH8T21Jk0j3msA=
-github.com/asmcos/requests v0.0.0-20210118082303-cb8f46dd3767/go.mod h1:2W5PB6UTVRBypeouEebhwOJrDZOfJvPwMP1mtD8ZXM4=
+github.com/asmcos/requests v0.0.0-20200816142649-95abc76c8cac h1:dm7cgiz8qZsGINnLQpq21wCLHZhgPY0lMxq9W53KMTA=
+github.com/asmcos/requests v0.0.0-20200816142649-95abc76c8cac/go.mod h1:Gth3x79qo77CpZ2G1CVOem/N08Vo4kcIRqpfvwssdDY=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/bgentry/speakeasy v0.1.0/go.mod h1:+zsyZBPWlz7T6j88CTgSN5bM796AkVf0kBD4zp0CCIs=

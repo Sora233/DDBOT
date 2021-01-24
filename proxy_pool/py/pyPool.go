@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
-	"github.com/asmcos/requests"
+	"github.com/Sora233/requests"
 )
 
 // https://github.com/jhao104/proxy_pool

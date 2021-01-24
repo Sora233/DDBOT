@@ -6,7 +6,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
-	"github.com/forestgiant/sliceutil"
+	"github.com/Sora233/sliceutil"
 )
 
 var logger = utils.GetModuleLogger("bilibili-concern")

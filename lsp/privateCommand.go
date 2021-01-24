@@ -4,8 +4,8 @@ import (
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
-	"github.com/forestgiant/sliceutil"
 	"runtime/debug"
 	"strings"
 )

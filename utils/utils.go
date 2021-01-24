@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
-	"github.com/asmcos/requests"
+	"github.com/Sora233/requests"
 	"github.com/ericpauley/go-quantize/quantize"
 	"github.com/nfnt/resize"
 	"image"

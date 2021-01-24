@@ -11,7 +11,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/youtube"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
-	"github.com/asmcos/requests"
+	"github.com/Sora233/requests"
 	"runtime/debug"
 )
 

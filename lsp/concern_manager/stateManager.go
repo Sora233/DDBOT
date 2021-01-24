@@ -7,7 +7,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
-	"github.com/forestgiant/sliceutil"
+	"github.com/Sora233/sliceutil"
 	"github.com/tidwall/buntdb"
 	"strings"
 	"time"
