@@ -445,7 +445,11 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 			break
 		}
 		log.WithField("id", id).Debugf("watch success")
-		lgc.textReply(fmt.Sprintf("watch成功 - YTB用户 %v", info.ChannelName))
+		if info.ChannelName == "" {
+			lgc.textReply(fmt.Sprintf("watch成功 - YTB用户，该用户未发任何布直播/视频，无法获取名字"))
+		} else {
+			lgc.textReply(fmt.Sprintf("watch成功 - YTB用户 %v", info.ChannelName))
+		}
 	default:
 		log.WithField("site", site).Error("unsupported")
 		lgc.textReply("未支持的网站")
