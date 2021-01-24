@@ -32,8 +32,7 @@ func (z *Wrapper) Delete(proxy string) bool {
 	}
 
 	if z.deleteCount[proxy] == z.deleteLimit {
-		// TODO
-		//result = z.pool.Delete(proxy)
+		result = z.pool.Delete(proxy)
 		delete(z.deleteCount, proxy)
 	}
 	return result

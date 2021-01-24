@@ -6,10 +6,10 @@ require (
 	github.com/Jeffail/gabs/v2 v2.6.0
 	github.com/Logiase/MiraiGo-Template v0.0.0-20201230072030-576f07174255
 	github.com/Mrs4s/MiraiGo v0.0.0-20210108093149-f40ac95fffa4
-	github.com/Sora233/zhima-proxy-pool v0.0.0-20210109082808-e71055c4dde4
+	github.com/Sora233/zhima-proxy-pool v0.0.0-20210124065344-04d96243cadd
 	github.com/alecthomas/kong v0.2.12
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.875
-	github.com/asmcos/requests v0.0.0-20200816142649-95abc76c8cac
+	github.com/asmcos/requests v0.0.0-20210118082303-cb8f46dd3767
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
 	github.com/forestgiant/sliceutil v0.0.0-20160425183142-94783f95db6c
 	github.com/golang/protobuf v1.4.3
@@ -23,7 +23,7 @@ require (
 	github.com/spf13/afero v1.5.1 // indirect
 	github.com/tidwall/buntdb v1.1.7
 	gocv.io/x/gocv v0.26.0
-	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
+	golang.org/x/sys v0.0.0-20210123231150-1d476976d117 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
