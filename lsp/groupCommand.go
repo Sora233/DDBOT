@@ -91,77 +91,45 @@ func (lgc *LspGroupCommand) Execute() {
 	} else {
 		switch lgc.GetCmd() {
 		case "/lsp":
-			if lgc.groupDisabled(LspCommand) {
-				logger.WithField("group_code", lgc.groupCode()).
-					WithField("command", LspCommand).
-					Debug("disabled")
-				return
+			if lgc.requireNotDisable(LspCommand) {
+				lgc.LspCommand()
 			}
-			lgc.LspCommand()
 		case "/色图":
-			if !lgc.groupEnabled(SetuCommand) {
-				logger.WithField("group_code", lgc.groupCode()).
-					WithField("command", SetuCommand).
-					Debug("not enabled")
-				return
+			if lgc.requireEnable(SetuCommand) {
+				lgc.SetuCommand(false)
 			}
-			lgc.SetuCommand(false)
 		case "/黄图":
-			if !lgc.groupEnabled(HuangtuCommand) {
-				logger.WithField("group_code", lgc.groupCode()).
-					WithField("command", HuangtuCommand).
-					Debug("not enabled")
-				return
+			if lgc.requireEnable(HuangtuCommand) {
+				lgc.SetuCommand(true)
 			}
-			lgc.SetuCommand(true)
 		case "/watch":
-			if lgc.groupDisabled(WatchCommand) {
-				logger.WithField("group_code", lgc.groupCode()).
-					WithField("command", WatchCommand).
-					Debug("disabled")
-				return
+			if lgc.requireNotDisable(WatchCommand) {
+				if !lgc.requireAnyAll(lgc.groupCode(), lgc.uin(), WatchCommand) {
+					lgc.noPermissionReply()
+					return
+				}
+				lgc.WatchCommand(false)
 			}
-			if !lgc.requireAnyAll(lgc.groupCode(), lgc.uin(), WatchCommand) {
-				lgc.noPermissionReply()
-				return
-			}
-			lgc.WatchCommand(false)
 		case "/unwatch":
-			if lgc.groupDisabled(UnwatchCommand) {
-				logger.WithField("group_code", lgc.groupCode()).
-					WithField("command", UnwatchCommand).
-					Debug("disabled")
-				return
+			if lgc.requireNotDisable(UnwatchCommand) {
+				if !lgc.requireAnyAll(lgc.groupCode(), lgc.uin(), UnwatchCommand) {
+					lgc.noPermissionReply()
+					return
+				}
+				lgc.WatchCommand(true)
 			}
-			if !lgc.requireAnyAll(lgc.groupCode(), lgc.uin(), UnwatchCommand) {
-				lgc.noPermissionReply()
-				return
-			}
-			lgc.WatchCommand(true)
 		case "/list":
-			if lgc.groupDisabled(ListCommand) {
-				logger.WithField("group_code", lgc.groupCode()).
-					WithField("command", ListCommand).
-					Debug("disabled")
-				return
+			if lgc.requireNotDisable(ListCommand) {
+				lgc.ListCommand()
 			}
-			lgc.ListCommand()
 		case "/签到":
-			if lgc.groupDisabled(CheckinCommand) {
-				logger.WithField("group_code", lgc.groupCode()).
-					WithField("command", CheckinCommand).
-					Debug("disabled")
-				return
+			if lgc.requireNotDisable(CheckinCommand) {
+				lgc.CheckinCommand()
 			}
-			lgc.CheckinCommand()
 		case "/roll":
-			if lgc.groupDisabled(RollCommand) {
-				logger.WithField("group_code", lgc.groupCode()).
-					WithField("command", RollCommand).
-					Debug("disabled")
-				return
+			if lgc.requireNotDisable(RollCommand) {
+				lgc.RollCommand()
 			}
-			lgc.RollCommand()
 		case "/grant":
 			if !lgc.l.PermissionStateManager.RequireAny(
 				permission.AdminRoleRequireOption(lgc.uin()),
@@ -191,21 +159,13 @@ func (lgc *LspGroupCommand) Execute() {
 			}
 			lgc.EnableCommand(true)
 		case "/face":
-			if lgc.groupDisabled(FaceCommand) {
-				logger.WithField("group_code", lgc.groupCode()).
-					WithField("command", FaceCommand).
-					Debug("disabled")
-				return
+			if lgc.requireNotDisable(FaceCommand) {
+				lgc.FaceCommand()
 			}
-			lgc.FaceCommand()
 		case "/倒放":
-			if lgc.groupDisabled(ReverseCommand) {
-				logger.WithField("group_code", lgc.groupCode()).
-					WithField("command", ReverseCommand).
-					Debug("disabled")
-				return
+			if lgc.requireNotDisable(ReverseCommand) {
+				lgc.ReverseCommand()
 			}
-			lgc.ReverseCommand()
 		case "/help":
 			lgc.HelpCommand()
 		default:
@@ -1089,7 +1049,7 @@ func (lgc *LspGroupCommand) reserveGif(url string) {
 	img, err = utils.ImageReserve(img)
 	if err != nil {
 		log.Errorf("reserve image err %v", err)
-		lgc.textReply(fmt.Sprintf("倒放失败 - %v", err))
+		lgc.textReply(fmt.Sprintf("失败 - %v", err))
 		return
 	}
 	sendingMsg := message.NewSendingMessage()
@@ -1118,6 +1078,26 @@ func (lgc *LspGroupCommand) requireAnyAll(groupCode int64, uin int64, command st
 		permission.QQAdminRequireOption(groupCode, uin),
 		permission.GroupCommandRequireOption(groupCode, uin, command),
 	)
+}
+
+func (lgc *LspGroupCommand) requireEnable(command string) bool {
+	if !lgc.groupEnabled(command) {
+		logger.WithField("group_code", lgc.groupCode()).
+			WithField("command", command).
+			Debug("not enable")
+		return false
+	}
+	return true
+}
+
+func (lgc *LspGroupCommand) requireNotDisable(command string) bool {
+	if lgc.groupDisabled(command) {
+		logger.WithField("group_code", lgc.groupCode()).
+			WithField("command", command).
+			Debug("disabled")
+		return false
+	}
+	return true
 }
 
 // explicit defined and enabled
