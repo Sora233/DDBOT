@@ -4,9 +4,17 @@ import "errors"
 
 var ErrNil = errors.New("<nil>")
 
+type Prefer int64
+
+const (
+	PreferNone Prefer = 1 << iota
+	PreferMainland
+	PreferOversea
+)
+
 type IProxyPool interface {
-	Get() (IProxy, error)
-	Delete(IProxy) bool
+	Get(Prefer) (IProxy, error)
+	Delete(string) bool
 	Stop() error
 }
 
@@ -20,13 +28,13 @@ func Init(proxy IProxyPool) {
 	proxyPool = proxy
 }
 
-func Get() (IProxy, error) {
+func Get(prefer Prefer) (IProxy, error) {
 	if proxyPool == nil {
 		return nil, ErrNil
 	}
-	return proxyPool.Get()
+	return proxyPool.Get(prefer)
 }
-func Delete(proxy IProxy) bool {
+func Delete(proxy string) bool {
 	if proxyPool == nil {
 		return false
 	}

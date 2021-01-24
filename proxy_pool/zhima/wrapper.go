@@ -13,29 +13,28 @@ type Wrapper struct {
 	mutex       *sync.RWMutex
 }
 
-func (z *Wrapper) Get() (proxy_pool.IProxy, error) {
+func (z *Wrapper) Get(prefer proxy_pool.Prefer) (proxy_pool.IProxy, error) {
 	z.mutex.RLock()
 	defer z.mutex.RUnlock()
 	return z.pool.Get()
 }
 
-func (z *Wrapper) Delete(iproxy proxy_pool.IProxy) bool {
+func (z *Wrapper) Delete(proxy string) bool {
 	z.mutex.Lock()
 	defer z.mutex.Unlock()
 
 	var result = false
 
-	if _, found := z.deleteCount[iproxy.ProxyString()]; !found {
-		z.deleteCount[iproxy.ProxyString()] = 1
+	if _, found := z.deleteCount[proxy]; !found {
+		z.deleteCount[proxy] = 1
 	} else {
-		z.deleteCount[iproxy.ProxyString()] += 1
+		z.deleteCount[proxy] += 1
 	}
 
-	if z.deleteCount[iproxy.ProxyString()] == z.deleteLimit {
-		if proxy, ok := iproxy.(*zhima_proxy_pool.Proxy); ok {
-			result = z.pool.Delete(proxy)
-		}
-		delete(z.deleteCount, iproxy.ProxyString())
+	if z.deleteCount[proxy] == z.deleteLimit {
+		// TODO
+		//result = z.pool.Delete(proxy)
+		delete(z.deleteCount, proxy)
 	}
 	return result
 }

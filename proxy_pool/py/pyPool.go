@@ -31,7 +31,7 @@ func (p *PyProxy) ProxyString() string {
 	return "http://" + p.proxy
 }
 
-func (pool *ProxyPool) Get() (proxy_pool.IProxy, error) {
+func (pool *ProxyPool) Get(prefer proxy_pool.Prefer) (proxy_pool.IProxy, error) {
 	if pool == nil {
 		return nil, errors.New("<nil>")
 	}
@@ -56,11 +56,11 @@ type DeleteResponse struct {
 	Src  int `json:"src"`
 }
 
-func (pool *ProxyPool) Delete(proxy proxy_pool.IProxy) bool {
+func (pool *ProxyPool) Delete(proxy string) bool {
 	if pool == nil {
 		return false
 	}
-	resp, err := requests.Get(fmt.Sprintf("%v/delete?proxy=%v", pool.Host, proxy.ProxyString()))
+	resp, err := requests.Get(fmt.Sprintf("%v/delete?proxy=%v", pool.Host, proxy))
 	if err != nil {
 		return false
 	}

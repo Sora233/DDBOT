@@ -33,7 +33,7 @@ func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, err
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(ctx, url, params, 3)
+	resp, err := requests.Get(ctx, url, params, 3, requests.ProxyOption(proxy_pool.PreferNone))
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, err
 	if err != nil {
 		return nil, err
 	}
-	if spaceHistoryResp.Code == -412 {
+	if spaceHistoryResp.Code == -412 && resp.Proxy != "" {
 		proxy_pool.Delete(resp.Proxy)
 	}
 	return spaceHistoryResp, nil

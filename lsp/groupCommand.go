@@ -16,6 +16,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/permission"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/youtube"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/alecthomas/kong"
 	"github.com/forestgiant/sliceutil"
@@ -1000,7 +1001,7 @@ func (lgc *LspGroupCommand) ImageContent() {
 func (lgc *LspGroupCommand) faceDetect(url string) {
 	log := logger.WithField("GroupCode", lgc.groupCode())
 	log.WithField("detect_url", url).Debug("face detect")
-	img, err := utils.ImageGet(url)
+	img, err := utils.ImageGet(url, proxy_pool.PreferNone)
 	if err != nil {
 		log.Errorf("get image err %v", err)
 		lgc.textReply(fmt.Sprintf("获取图片失败 - %v", err))

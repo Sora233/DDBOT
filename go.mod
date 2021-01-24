@@ -28,6 +28,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/asmcos/requests v0.0.0-20200816142649-95abc76c8cac => github.com/Sora233/requests v0.0.0-20210104080357-9a4215af615c
+replace github.com/asmcos/requests v0.0.0-20200816142649-95abc76c8cac => github.com/Sora233/requests v0.0.0-20210124044507-771a1ecd2e93
 
 replace github.com/forestgiant/sliceutil v0.0.0-20160425183142-94783f95db6c => github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882

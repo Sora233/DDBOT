@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Jeffail/gabs/v2"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"regexp"
@@ -55,6 +56,7 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 	resp, err := requests.Get(ctx, path, nil, 3,
 		requests.HeaderOption("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"),
 		requests.HeaderOption("accept-language", "zh-CN"),
+		requests.ProxyOption(proxy_pool.PreferOversea),
 	)
 	if err != nil {
 		return nil, err

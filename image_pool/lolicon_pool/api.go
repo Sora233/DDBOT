@@ -1,9 +1,11 @@
 package lolicon_pool
 
 import (
+	"context"
 	"errors"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
-	requests "github.com/asmcos/requests"
 	"time"
 )
 
@@ -40,7 +42,7 @@ type Setu struct {
 }
 
 func (s *Setu) Content() ([]byte, error) {
-	return utils.ImageGet(s.Url)
+	return utils.ImageGet(s.Url, proxy_pool.PreferNone)
 }
 
 type Response struct {
@@ -64,9 +66,9 @@ func LoliconAppSetu(apikey string, R18 R18Type, keyword string, num int) (*Respo
 	if err != nil {
 		return nil, err
 	}
-	req := requests.Requests()
-	req.SetTimeout(5 * time.Second)
-	resp, err := req.Get(Host, params)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	resp, err := requests.Get(ctx, Host, params, 3, requests.ProxyOption(proxy_pool.PreferMainland))
 	if err != nil {
 		return nil, err
 	}

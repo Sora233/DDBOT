@@ -139,7 +139,21 @@ func (l *Lsp) Init() {
 		proxy_pool.Init(zhima.NewZhimaWrapper(zhimaPool, 15))
 		l.status.ProxyPoolEnable = true
 	case "localProxyPool":
-		proxies := config.GlobalConfig.GetStringSlice("localProxyPool.proxy")
+		overseaProxies := config.GlobalConfig.GetStringSlice("localProxyPool.oversea")
+		mainlandProxies := config.GlobalConfig.GetStringSlice("localProxyPool.mainland")
+		var proxies []*local_proxy_pool.Proxy
+		for _, proxy := range overseaProxies {
+			proxies = append(proxies, &local_proxy_pool.Proxy{
+				Type:  proxy_pool.PreferOversea,
+				Proxy: proxy,
+			})
+		}
+		for _, proxy := range mainlandProxies {
+			proxies = append(proxies, &local_proxy_pool.Proxy{
+				Type:  proxy_pool.PreferMainland,
+				Proxy: proxy,
+			})
+		}
 		pool := local_proxy_pool.NewLocalPool(proxies)
 		proxy_pool.Init(pool)
 		log.WithField("local_proxy_num", len(proxies)).Debug("debug")

@@ -123,12 +123,12 @@ func FuncName() string {
 	return frame.Function
 }
 
-func ImageGet(url string) ([]byte, error) {
+func ImageGet(url string, prefer proxy_pool.Prefer) ([]byte, error) {
 	if url == "" {
 		return nil, errors.New("empty url")
 	}
 	req := requests.Requests()
-	proxy, err := proxy_pool.Get()
+	proxy, err := proxy_pool.Get(prefer)
 	if err == nil {
 		req.Proxy(proxy.ProxyString())
 	}
@@ -161,8 +161,8 @@ func ImageNormSize(origImage []byte) ([]byte, error) {
 	return resizedImageBuffer.Bytes(), err
 }
 
-func ImageGetAndNorm(url string) ([]byte, error) {
-	img, err := ImageGet(url)
+func ImageGetAndNorm(url string, prefer proxy_pool.Prefer) ([]byte, error) {
+	img, err := ImageGet(url, prefer)
 	if err != nil {
 		return img, err
 	}

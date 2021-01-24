@@ -30,26 +30,32 @@ func HeaderOption(key, value string) GetOption {
 	}
 }
 
+func ProxyOption(prefer proxy_pool.Prefer) GetOption {
+	return func(request *requests.Request) {
+		proxy, err := proxy_pool.Get(prefer)
+		if err != nil {
+			if err != proxy_pool.ErrNil {
+				logger.Errorf("get proxy failed")
+			}
+		} else {
+			request.Proxy(proxy.ProxyString())
+		}
+	}
+}
+
 var DefaultTimeoutOption = TimeoutOption(time.Second * 5)
 
 type ResponseWithProxy struct {
 	*requests.Response
-	Proxy proxy_pool.IProxy
+	Proxy string
 }
 
 func Get(ctx context.Context, url string, params requests.Params, maxRetry int, options ...GetOption) (*ResponseWithProxy, error) {
+	var err error
 	req := requests.RequestsWithContext(ctx)
 	DefaultTimeoutOption(req)
 	for _, opt := range options {
 		opt(req)
-	}
-	proxy, err := proxy_pool.Get()
-	if err != nil {
-		if err != proxy_pool.ErrNil {
-			logger.Errorf("get proxy failed")
-		}
-	} else {
-		req.Proxy(proxy.ProxyString())
 	}
 
 	var (
@@ -75,7 +81,8 @@ func Get(ctx context.Context, url string, params requests.Params, maxRetry int, 
 			break
 		}
 	}
-	if err != nil {
+	proxy := req.GetProxy()
+	if err != nil && proxy != "" {
 		proxy_pool.Delete(proxy)
 	}
 	return &ResponseWithProxy{

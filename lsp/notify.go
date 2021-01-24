@@ -9,6 +9,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/youtube"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/asmcos/requests"
 	"runtime/debug"
@@ -156,7 +157,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				}
 				result = append(result, localutils.MessageTextf("%v\n", origin.GetItem().GetDescription()))
 				for _, pic := range origin.GetItem().GetPictures() {
-					img, err := localutils.ImageGet(pic.GetImgSrc())
+					img, err := localutils.ImageGet(pic.GetImgSrc(), proxy_pool.PreferNone)
 					if err != nil {
 						log.WithField("pic", pic).Errorf("get image failed %v", err)
 						continue
@@ -186,7 +187,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					continue
 				}
 				result = append(result, localutils.MessageTextf("%v\n%v\n", origin.GetTitle(), origin.GetDesc()))
-				img, err := localutils.ImageGetAndNorm(origin.GetPic())
+				img, err := localutils.ImageGetAndNorm(origin.GetPic(), proxy_pool.PreferNone)
 				if err != nil {
 					log.WithField("pic", origin.GetPic()).Errorf("get image failed %v", err)
 					continue
@@ -208,9 +209,9 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				result = append(result, localutils.MessageTextf("%v\n%v\n", origin.GetTitle(), origin.GetSummary()))
 				var img []byte
 				if len(origin.GetImageUrls()) >= 1 {
-					img, err = localutils.ImageGet(origin.GetImageUrls()[0])
+					img, err = localutils.ImageGet(origin.GetImageUrls()[0], proxy_pool.PreferNone)
 				} else {
-					img, err = localutils.ImageGet(origin.GetBannerUrl())
+					img, err = localutils.ImageGet(origin.GetBannerUrl(), proxy_pool.PreferNone)
 				}
 				if err != nil {
 					log.WithField("image_url", origin.GetImageUrls()).
@@ -238,7 +239,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			}
 			result = append(result, localutils.MessageTextf("%v发布了新态：\n%v\n%v\n", notify.Name, date, cardImage.GetItem().GetDescription()))
 			for _, pic := range cardImage.GetItem().GetPictures() {
-				img, err := localutils.ImageGet(pic.GetImgSrc())
+				img, err := localutils.ImageGet(pic.GetImgSrc(), proxy_pool.PreferNone)
 				if err != nil {
 					log.WithField("pic", pic).Errorf("get image failed %v", err)
 					continue
@@ -264,7 +265,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				continue
 			}
 			result = append(result, localutils.MessageTextf("%v发布了新视频：\n%v\n%v\n%v\n", notify.Name, date, cardVideo.GetTitle(), cardVideo.GetDynamic()))
-			img, err := localutils.ImageGetAndNorm(cardVideo.GetPic())
+			img, err := localutils.ImageGetAndNorm(cardVideo.GetPic(), proxy_pool.PreferNone)
 			if err != nil {
 				log.WithField("pic", cardVideo.GetPic()).Errorf("get image failed %v", err)
 				continue
@@ -284,9 +285,9 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			result = append(result, localutils.MessageTextf("%v发布了新专栏：\n%v\n%v\n%v...\n", notify.Name, date, cardPost.Title, cardPost.Summary))
 			var img []byte
 			if len(cardPost.GetImageUrls()) >= 1 {
-				img, err = localutils.ImageGet(cardPost.GetImageUrls()[0])
+				img, err = localutils.ImageGet(cardPost.GetImageUrls()[0], proxy_pool.PreferNone)
 			} else {
-				img, err = localutils.ImageGet(cardPost.GetBannerUrl())
+				img, err = localutils.ImageGet(cardPost.GetBannerUrl(), proxy_pool.PreferNone)
 			}
 			if err != nil {
 				log.WithField("image_url", cardPost.GetImageUrls()).
@@ -343,7 +344,7 @@ func (l *Lsp) notifyYoutube(bot *bot.Bot, notify *youtube.ConcernNotify) []messa
 	} else if notify.IsVideo() {
 		result = append(result, localutils.MessageTextf("YTB-%s发布了新视频：\n%v\n", notify.ChannelName, notify.VideoTitle))
 	}
-	img, err := localutils.ImageGet(notify.Cover)
+	img, err := localutils.ImageGet(notify.Cover, proxy_pool.PreferOversea)
 	if err != nil {
 		logger.WithField("group_code", notify.GroupCode).Errorf("get cover failed %v", err)
 	} else {

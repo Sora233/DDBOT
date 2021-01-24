@@ -31,7 +31,7 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(ctx, url, params, 3)
+	resp, err := requests.Get(ctx, url, params, 3, requests.ProxyOption(proxy_pool.PreferNone))
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	if xsai.Code == -412 {
+	if xsai.Code == -412 && resp.Proxy != "" {
 		proxy_pool.Delete(resp.Proxy)
 	}
 	return xsai, nil
