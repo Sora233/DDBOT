@@ -7,6 +7,7 @@ import (
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
 	"github.com/tidwall/buntdb"
+	"time"
 )
 
 type StateManager struct {
@@ -51,7 +52,10 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 		return errors.New("nil LiveInfo")
 	}
 	err := c.RWTxCover(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(c.CurrentLiveKey(liveInfo.Mid), liveInfo.ToString(), nil)
+		_, _, err := tx.Set(c.CurrentLiveKey(liveInfo.Mid), liveInfo.ToString(), &buntdb.SetOptions{
+			Expires: true,
+			TTL:     time.Hour * 24,
+		})
 		return err
 	})
 	return err
@@ -83,7 +87,10 @@ func (c *StateManager) AddNewsInfo(newsInfo *NewsInfo) error {
 		return errors.New("nil NewsInfo")
 	}
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(c.CurrentNewsKey(newsInfo.Mid), newsInfo.ToString(), nil)
+		_, _, err := tx.Set(c.CurrentNewsKey(newsInfo.Mid), newsInfo.ToString(), &buntdb.SetOptions{
+			Expires: true,
+			TTL:     time.Hour * 24,
+		})
 		return err
 	})
 }

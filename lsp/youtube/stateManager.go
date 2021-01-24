@@ -5,6 +5,7 @@ import (
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
 	"github.com/tidwall/buntdb"
+	"time"
 )
 
 type StateManager struct {
@@ -15,7 +16,10 @@ type StateManager struct {
 func (s *StateManager) AddInfo(info *Info) error {
 	return s.RWTxCover(func(tx *buntdb.Tx) error {
 		infoKey := s.InfoKey(info.ChannelId)
-		_, _, err := tx.Set(infoKey, info.ToString(), nil)
+		_, _, err := tx.Set(infoKey, info.ToString(), &buntdb.SetOptions{
+			Expires: true,
+			TTL:     time.Hour * 24,
+		})
 		return err
 	})
 }
