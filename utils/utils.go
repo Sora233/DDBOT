@@ -175,6 +175,35 @@ func ImageFormat(origImage []byte) (string, error) {
 	return format, err
 }
 
+func ImageReserve(imgBytes []byte) ([]byte, error) {
+	format, err := ImageFormat(imgBytes)
+	if err != nil {
+		return nil, err
+	} else if format != "gif" {
+		return nil, errors.New("不是动图")
+	}
+	img, err := gif.DecodeAll(bytes.NewReader(imgBytes))
+	if err != nil {
+		return nil, err
+	}
+	length := len(img.Image)
+	for idx := range img.Image {
+		oidx := length - 1 - idx
+		if idx >= oidx {
+			break
+		}
+		tmp := img.Image[idx]
+		img.Image[idx] = img.Image[oidx]
+		img.Image[oidx] = tmp
+	}
+	var result = bytes.NewBuffer(nil)
+	err = gif.EncodeAll(result, img)
+	if err != nil {
+		return nil, err
+	}
+	return result.Bytes(), nil
+}
+
 func PrefixMatch(opts []string, target string) (string, bool) {
 	if len(opts) == 0 {
 		return "", false

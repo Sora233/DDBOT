@@ -15,6 +15,7 @@ const (
 	EnableCommand       = "enable"
 	DisableCommand      = "disable"
 	FaceCommand         = "face"
+	ReverseCommand      = "reverse"
 	ImageContentCommand = "ic"
 	HelpCommand         = "help"
 	AboutCommand        = "about"

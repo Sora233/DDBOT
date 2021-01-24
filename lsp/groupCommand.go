@@ -198,6 +198,14 @@ func (lgc *LspGroupCommand) Execute() {
 				return
 			}
 			lgc.FaceCommand()
+		case "/倒放":
+			if lgc.groupDisabled(ReverseCommand) {
+				logger.WithField("group_code", lgc.groupCode()).
+					WithField("command", ReverseCommand).
+					Debug("disabled")
+				return
+			}
+			lgc.ReverseCommand()
 		case "/help":
 			lgc.HelpCommand()
 		default:
@@ -949,6 +957,47 @@ func (lgc *LspGroupCommand) FaceCommand() {
 	lgc.textReply("参数错误 - 未找到图片")
 }
 
+func (lgc *LspGroupCommand) ReverseCommand() {
+	log := logger.WithField("GroupCode", lgc.groupCode())
+	log.Info("run reverse command")
+	defer log.Info("reverse command end")
+
+	output := lgc.parseCommandSyntax(&struct{}{}, ReverseCommand, kong.Description("电脑使用/倒放 [图片] 或者 回复图片消息+/倒放触发"))
+	if output != "" {
+		lgc.textReply(output)
+	}
+	if lgc.exit {
+		return
+	}
+
+	for _, e := range lgc.msg.Elements {
+		if e.Type() == message.Image {
+			if ie, ok := e.(*message.ImageElement); ok {
+				lgc.reserveGif(ie.Url)
+				return
+			} else {
+				log.Errorf("cast to ImageElement failed")
+				lgc.textReply("失败")
+				return
+			}
+		} else if e.Type() == message.Reply {
+			if re, ok := e.(*message.ReplyElement); ok {
+				urls := lgc.l.LspStateManager.GetMessageImageUrl(lgc.groupCode(), re.ReplySeq)
+				if len(urls) >= 1 {
+					lgc.reserveGif(urls[0])
+					return
+				}
+			} else {
+				log.Errorf("cast to ReplyElement failed")
+				lgc.textReply("失败")
+				return
+			}
+		}
+	}
+	log.Debug("no image found")
+	lgc.textReply("参数错误 - 未找到图片")
+}
+
 func (lgc *LspGroupCommand) HelpCommand() {
 	log := logger.WithField("group_code", lgc.groupCode())
 	log.Info("run help command")
@@ -1025,6 +1074,32 @@ func (lgc *LspGroupCommand) faceDetect(url string) {
 		return
 	}
 	sendingMsg.Append(groupImg)
+	lgc.reply(sendingMsg)
+}
+
+func (lgc *LspGroupCommand) reserveGif(url string) {
+	log := logger.WithField("GroupCode", lgc.groupCode())
+	log.WithField("reserve_url", url).Debug("reserve image")
+	img, err := utils.ImageGet(url, proxy_pool.PreferNone)
+	if err != nil {
+		log.Errorf("get image err %v", err)
+		lgc.textReply(fmt.Sprintf("获取图片失败 - %v", err))
+		return
+	}
+	img, err = utils.ImageReserve(img)
+	if err != nil {
+		log.Errorf("reserve image err %v", err)
+		lgc.textReply(fmt.Sprintf("倒放失败 - %v", err))
+		return
+	}
+	sendingMsg := message.NewSendingMessage()
+	groupImage, err := lgc.bot.UploadGroupImage(lgc.groupCode(), bytes.NewReader(img))
+	if err != nil {
+		log.Errorf("upload group image failed %v", err)
+		lgc.textReply(fmt.Sprintf("上传失败 - %v", err))
+		return
+	}
+	sendingMsg.Append(groupImage)
 	lgc.reply(sendingMsg)
 }
 
