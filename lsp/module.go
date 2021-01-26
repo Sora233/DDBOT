@@ -24,6 +24,7 @@ import (
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	"github.com/sirupsen/logrus"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -310,11 +311,27 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 }
 
 func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *message.GroupMessage {
-	res := bot.Instance.SendGroupMessage(groupCode, msg)
+	compactMsg := message.NewSendingMessage()
+	sb := strings.Builder{}
+	for _, e := range msg.Elements {
+		if e.Type() == message.Text {
+			sb.WriteString(e.(*message.TextElement).Content)
+		} else {
+			if sb.Len() != 0 {
+				compactMsg.Append(message.NewText(sb.String()))
+				sb = strings.Builder{}
+			}
+			compactMsg.Append(e)
+		}
+	}
+	if sb.Len() != 0 {
+		compactMsg.Append(message.NewText(sb.String()))
+	}
+	res := bot.Instance.SendGroupMessage(groupCode, compactMsg)
 	if res.Id == -1 {
 		logger.WithField("group_code", groupCode).Errorf("send group message failed")
 	} else {
-		if err := l.LspStateManager.SaveMessageImageUrl(groupCode, res.Id, msg.Elements); err != nil {
+		if err := l.LspStateManager.SaveMessageImageUrl(groupCode, res.Id, compactMsg.Elements); err != nil {
 			logger.WithField("group_code", groupCode).Error("save message image url failed %v", err)
 		}
 	}
