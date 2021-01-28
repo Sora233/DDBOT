@@ -7,6 +7,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
+	"reflect"
 )
 
 var logger = utils.GetModuleLogger("douyu-concern")
@@ -79,7 +80,7 @@ func (c *Concern) Start() {
 	go c.EmitFreshCore("douyu", func(ctype concern.Type, id interface{}) error {
 		roomid, ok := id.(int64)
 		if !ok {
-			return errors.New("cast fresh id to int64 failed")
+			return fmt.Errorf("cast fresh id type<%v> to int64 failed", reflect.ValueOf(id).Type().String())
 		}
 		if ctype.ContainAll(concern.DouyuLive) {
 			oldInfo, _ := c.findRoom(roomid, false)
