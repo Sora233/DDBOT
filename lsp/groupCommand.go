@@ -209,7 +209,8 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	}
 
 	var setuCmd struct {
-		Num int `arg:"" optional:"" help:"image number"`
+		Num int    `arg:"" optional:"" help:"image number"`
+		Tag string `optional:"" short:"t" help:"image tag"`
 	}
 	var name string
 	if r18 {
@@ -227,6 +228,10 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 
 	num := setuCmd.Num
 
+	if num == 0 {
+		num = 1
+	}
+
 	if num <= 0 || num > 10 {
 		lgc.textReply("失败 - 数量范围为1-10")
 		return
@@ -239,6 +244,9 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		options = append(options, lolicon_pool.R18Option(lolicon_pool.R18_ON))
 	} else {
 		options = append(options, lolicon_pool.R18Option(lolicon_pool.R18_OFF))
+	}
+	if setuCmd.Tag != "" {
+		options = append(options, lolicon_pool.KeywordOption(setuCmd.Tag))
 	}
 	options = append(options, lolicon_pool.NumOption(num))
 	imgs, err := lgc.l.GetImageFromPool(options...)
