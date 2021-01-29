@@ -5,13 +5,27 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
+	"math/rand"
 	"net/http"
+	"strconv"
+	"sync/atomic"
 	"time"
 )
 
 const (
 	PathGetRoomInfoOld = "/room/v1/Room/getRoomInfoOld"
 )
+
+var buvid int64 = 0
+
+func init() {
+	go func() {
+		for {
+			atomic.StoreInt64(&buvid, rand.Int63n(9000000000000000)+1000000000000000)
+			time.Sleep(time.Minute * 5)
+		}
+	}()
+}
 
 type GetRoomInfoOldRequest struct {
 	Mid int64 `json:"mid"`
@@ -32,7 +46,10 @@ func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(ctx, url, params, 3, requests.CookieOption(&http.Cookie{Name: "DedeUserID", Value: "2"}), requests.ProxyOption(proxy_pool.PreferNone))
+	resp, err := requests.Get(ctx, url, params, 3,
+		requests.ProxyOption(proxy_pool.PreferNone),
+		requests.CookieOption(&http.Cookie{Name: "DedeUserID", Value: "2"}),
+		requests.CookieOption(&http.Cookie{Name: "LIVE_BUVID", Value: genBUVID()}))
 	if err != nil {
 		return nil, err
 	}
@@ -45,4 +62,8 @@ func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
 		proxy_pool.Delete(resp.Proxy)
 	}
 	return grioResp, nil
+}
+
+func genBUVID() string {
+	return "AUTO" + strconv.FormatInt(atomic.LoadInt64(&buvid), 10)
 }
