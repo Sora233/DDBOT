@@ -311,31 +311,40 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 }
 
 func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *message.GroupMessage {
-	compactMsg := message.NewSendingMessage()
-	sb := strings.Builder{}
-	for _, e := range msg.Elements {
-		if e.Type() == message.Text {
-			sb.WriteString(e.(*message.TextElement).Content)
-		} else {
-			if sb.Len() != 0 {
-				compactMsg.Append(message.NewText(sb.String()))
-				sb = strings.Builder{}
-			}
-			compactMsg.Append(e)
-		}
+	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
+		logger.WithField("groupCode", groupCode).Debug("skip muted group")
+		return nil
 	}
-	if sb.Len() != 0 {
-		compactMsg.Append(message.NewText(sb.String()))
-	}
-	res := bot.Instance.SendGroupMessage(groupCode, compactMsg)
+	msg.Elements = l.compactTextElements(msg.Elements)
+	res := bot.Instance.SendGroupMessage(groupCode, msg)
 	if res.Id == -1 {
 		logger.WithField("group_code", groupCode).Errorf("send group message failed")
 	} else {
-		if err := l.LspStateManager.SaveMessageImageUrl(groupCode, res.Id, compactMsg.Elements); err != nil {
+		if err := l.LspStateManager.SaveMessageImageUrl(groupCode, res.Id, msg.Elements); err != nil {
 			logger.WithField("group_code", groupCode).Error("save message image url failed %v", err)
 		}
 	}
 	return res
+}
+
+func (l *Lsp) compactTextElements(elements []message.IMessageElement) []message.IMessageElement {
+	var compactMsg []message.IMessageElement
+	sb := strings.Builder{}
+	for _, e := range elements {
+		if e.Type() == message.Text {
+			sb.WriteString(e.(*message.TextElement).Content)
+		} else {
+			if sb.Len() != 0 {
+				compactMsg = append(compactMsg, message.NewText(sb.String()))
+				sb = strings.Builder{}
+			}
+			compactMsg = append(compactMsg, e)
+		}
+	}
+	if sb.Len() != 0 {
+		compactMsg = append(compactMsg, message.NewText(sb.String()))
+	}
+	return compactMsg
 }
 
 var Instance *Lsp
