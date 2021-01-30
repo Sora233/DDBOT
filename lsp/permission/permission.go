@@ -9,16 +9,6 @@ const (
 	GroupAdmin
 )
 
-type Level int64
-
-const (
-	Command Level = 1 << iota
-	Group
-	Role
-
-	Empty Level = 0
-)
-
 const Enable = "enable"
 const Disable = "disable"
 
@@ -45,15 +35,21 @@ func FromString(s string) RoleType {
 }
 
 type RequireOption interface {
-	Type() Level
+	Validate(s *StateManager) bool
 }
 
 type adminRoleRequireOption struct {
 	uin int64
 }
 
-func (r *adminRoleRequireOption) Type() Level {
-	return Role
+func (r *adminRoleRequireOption) Validate(s *StateManager) bool {
+	if s.CheckRole(r.uin, Admin) {
+		logger.WithField("type", "AdminRole").WithField("uin", r.uin).
+			WithField("result", true).
+			Debug("debug permission")
+		return true
+	}
+	return false
 }
 
 func AdminRoleRequireOption(uin int64) RequireOption {
@@ -65,8 +61,18 @@ type groupAdminRoleRequireOption struct {
 	uin       int64
 }
 
-func (g *groupAdminRoleRequireOption) Type() Level {
-	return Role
+func (g *groupAdminRoleRequireOption) Validate(s *StateManager) bool {
+	uin := g.uin
+	groupCode := g.groupCode
+	if s.CheckGroupRole(groupCode, uin, GroupAdmin) {
+		logger.WithField("type", "GroupAdminRole").
+			WithField("group_code", groupCode).
+			WithField("uin", uin).
+			WithField("result", true).
+			Debug("debug permission")
+		return true
+	}
+	return false
 }
 
 func GroupAdminRoleRequireOption(groupCode int64, uin int64) RequireOption {
@@ -78,8 +84,17 @@ type qqAdminRequireOption struct {
 	uin       int64
 }
 
-func (g *qqAdminRequireOption) Type() Level {
-	return Group
+func (g *qqAdminRequireOption) Validate(s *StateManager) bool {
+	uin := g.uin
+	groupCode := g.groupCode
+	if s.CheckGroupAdministrator(groupCode, uin) {
+		logger.WithField("type", "QQGroupAdmin").WithField("uin", uin).
+			WithField("group_code", groupCode).
+			WithField("result", true).
+			Debug("debug permission")
+		return true
+	}
+	return false
 }
 
 func QQAdminRequireOption(groupCode int64, uin int64) RequireOption {
@@ -95,8 +110,19 @@ type groupCommandRequireOption struct {
 	command   string
 }
 
-func (g *groupCommandRequireOption) Type() Level {
-	return Command
+func (g *groupCommandRequireOption) Validate(s *StateManager) bool {
+	uin := g.uin
+	groupCode := g.groupCode
+	cmd := g.command
+	if s.CheckGroupCommandPermission(groupCode, uin, cmd) {
+		logger.WithField("type", "command").WithField("uin", uin).
+			WithField("command", cmd).
+			WithField("group_code", groupCode).
+			WithField("result", true).
+			Debug("debug permission")
+		return true
+	}
+	return false
 }
 
 func GroupCommandRequireOption(groupCode int64, uin int64, command string) RequireOption {

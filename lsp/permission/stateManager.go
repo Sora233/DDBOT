@@ -332,24 +332,8 @@ func (c *StateManager) UngrantPermission(groupCode int64, target int64, command 
 }
 
 func (c *StateManager) RequireAny(option ...RequireOption) bool {
-	var ok bool
-	for _, iopt := range option {
-		switch iopt.Type() {
-		case Role:
-			switch opt := iopt.(type) {
-			case *adminRoleRequireOption:
-				ok = ok || c.requireAdminRole(opt)
-			case *groupAdminRoleRequireOption:
-				ok = ok || c.requireGroupAdminRole(opt)
-			}
-		case Group:
-			opt := iopt.(*qqAdminRequireOption)
-			ok = ok || c.requireQQGroupAdmin(opt)
-		case Command:
-			opt := iopt.(*groupCommandRequireOption)
-			ok = ok || c.requireGroupCommand(opt)
-		}
-		if ok {
+	for _, opt := range option {
+		if opt.Validate(c) {
 			return true
 		}
 	}
@@ -377,59 +361,6 @@ func (c *StateManager) RemoveAll(groupCode int64) error {
 		return nil
 	})
 	return nil
-}
-
-func (c *StateManager) requireAdminRole(opt *adminRoleRequireOption) bool {
-	uin := opt.uin
-	if c.CheckRole(uin, Admin) {
-		logger.WithField("type", "Role").WithField("uin", uin).
-			WithField("result", true).
-			Debug("debug permission")
-		return true
-	}
-	return false
-}
-
-func (c *StateManager) requireGroupAdminRole(opt *groupAdminRoleRequireOption) bool {
-	uin := opt.uin
-	groupCode := opt.groupCode
-	if c.CheckGroupRole(groupCode, uin, GroupAdmin) {
-		logger.WithField("type", "GroupRole").
-			WithField("group_code", groupCode).
-			WithField("uin", uin).
-			WithField("result", true).
-			Debug("debug permission")
-		return true
-	}
-	return false
-}
-
-func (c *StateManager) requireQQGroupAdmin(opt *qqAdminRequireOption) bool {
-	uin := opt.uin
-	groupCode := opt.groupCode
-	if c.CheckGroupAdministrator(groupCode, uin) {
-		logger.WithField("type", "Group").WithField("uin", uin).
-			WithField("group_code", groupCode).
-			WithField("result", true).
-			Debug("debug permission")
-		return true
-	}
-	return false
-}
-
-func (c *StateManager) requireGroupCommand(opt *groupCommandRequireOption) bool {
-	uin := opt.uin
-	groupCode := opt.groupCode
-	cmd := opt.command
-	if c.CheckGroupCommandPermission(groupCode, uin, cmd) {
-		logger.WithField("type", "command").WithField("uin", uin).
-			WithField("command", cmd).
-			WithField("group_code", groupCode).
-			WithField("result", true).
-			Debug("debug permission")
-		return true
-	}
-	return false
 }
 
 func (c *StateManager) FreshIndex() {
