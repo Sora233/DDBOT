@@ -3,7 +3,7 @@ package local_proxy_pool
 import (
 	"errors"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
-	"math/rand"
+	"sync/atomic"
 )
 
 type Proxy struct {
@@ -19,27 +19,27 @@ func (p *Proxy) Prefer() proxy_pool.Prefer {
 }
 
 type Pool struct {
-	proxies map[proxy_pool.Prefer][]*Proxy
-	total   int
+	proxies   map[proxy_pool.Prefer][]*Proxy
+	cnt       map[proxy_pool.Prefer]*int64
+	total     int
+	preferCnt int64
 }
 
 func (p *Pool) Get(prefer proxy_pool.Prefer) (proxy_pool.IProxy, error) {
 	if prefer == proxy_pool.PreferNone {
-		idx := rand.Intn(p.total)
-		for _, v := range p.proxies {
-			if len(v) > idx {
-				return v[idx], nil
-			} else {
-				idx -= len(v)
-			}
-		}
-		return nil, errors.New("out of range")
-	} else {
-		if s, found := p.proxies[prefer]; !found {
-			return nil, errors.New("no proxy found")
+		cnt := atomic.AddInt64(&p.preferCnt, 1)
+		if cnt%2 == 0 {
+			prefer = proxy_pool.PreferOversea
 		} else {
-			return s[rand.Intn(len(s))], nil
+			prefer = proxy_pool.PreferMainland
 		}
+	}
+
+	if s, found := p.proxies[prefer]; !found {
+		return nil, errors.New("no proxy found")
+	} else {
+		index := atomic.AddInt64(p.cnt[prefer], 1)
+		return s[index%int64(len(s))], nil
 	}
 }
 
@@ -59,6 +59,7 @@ func NewLocalPool(proxies []*Proxy) *Pool {
 	for _, proxy := range proxies {
 		if _, found := pool.proxies[proxy.Type]; !found {
 			pool.proxies[proxy.Type] = make([]*Proxy, 0)
+			pool.cnt[proxy.Type] = new(int64)
 		}
 		pool.proxies[proxy.Type] = append(pool.proxies[proxy.Type], proxy)
 	}
