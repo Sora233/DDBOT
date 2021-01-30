@@ -21,10 +21,14 @@ var buvid int64 = 0
 func init() {
 	go func() {
 		for {
-			atomic.StoreInt64(&buvid, rand.Int63n(9000000000000000)+1000000000000000)
-			time.Sleep(time.Minute * 5)
+			updateBuvid()
+			time.Sleep(time.Second * 30)
 		}
 	}()
+}
+
+func updateBuvid() {
+	atomic.StoreInt64(&buvid, rand.Int63n(9000000000000000)+1000000000000000)
 }
 
 type GetRoomInfoOldRequest struct {
