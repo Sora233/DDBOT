@@ -54,6 +54,7 @@ func (p *Pool) Stop() error {
 func NewLocalPool(proxies []*Proxy) *Pool {
 	pool := &Pool{
 		proxies: make(map[proxy_pool.Prefer][]*Proxy),
+		cnt:     make(map[proxy_pool.Prefer]*int64),
 		total:   len(proxies),
 	}
 	for _, proxy := range proxies {
