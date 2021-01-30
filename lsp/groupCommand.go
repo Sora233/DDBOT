@@ -104,7 +104,7 @@ func (lgc *LspGroupCommand) Execute() {
 			}
 		case "/watch":
 			if lgc.requireNotDisable(WatchCommand) {
-				if !lgc.requireAnyAll(lgc.groupCode(), lgc.uin(), WatchCommand) {
+				if !lgc.requireAnyCommand(WatchCommand, UnwatchCommand) {
 					lgc.noPermissionReply()
 					return
 				}
@@ -112,7 +112,7 @@ func (lgc *LspGroupCommand) Execute() {
 			}
 		case "/unwatch":
 			if lgc.requireNotDisable(UnwatchCommand) {
-				if !lgc.requireAnyAll(lgc.groupCode(), lgc.uin(), UnwatchCommand) {
+				if !lgc.requireAnyCommand(WatchCommand, UnwatchCommand) {
 					lgc.noPermissionReply()
 					return
 				}
@@ -1083,13 +1083,22 @@ func (lgc *LspGroupCommand) groupCode() int64 {
 	return lgc.msg.GroupCode
 }
 
-func (lgc *LspGroupCommand) requireAnyAll(groupCode int64, uin int64, command string) bool {
-	return lgc.l.PermissionStateManager.RequireAny(
-		permission.AdminRoleRequireOption(uin),
-		permission.GroupAdminRoleRequireOption(groupCode, uin),
-		permission.QQAdminRequireOption(groupCode, uin),
-		permission.GroupCommandRequireOption(groupCode, uin, command),
+func (lgc *LspGroupCommand) requireAnyCommand(commands ...string) bool {
+	var ok = lgc.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(lgc.uin()),
+		permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
+		permission.QQAdminRequireOption(lgc.groupCode(), lgc.uin()),
 	)
+	if ok {
+		return true
+	}
+	for _, command := range commands {
+		ok = ok || lgc.l.PermissionStateManager.RequireAny(permission.GroupCommandRequireOption(lgc.groupCode(), lgc.uin(), command))
+		if ok {
+			return true
+		}
+	}
+	return false
 }
 
 func (lgc *LspGroupCommand) requireEnable(command string) bool {
