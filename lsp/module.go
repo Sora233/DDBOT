@@ -315,7 +315,8 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 		logger.WithField("groupCode", groupCode).Debug("skip muted group")
 		return nil
 	}
-	msg.Elements = l.compactTextElements(msg.Elements)
+	// don't know why
+	// msg.Elements = l.compactTextElements(msg.Elements)
 	res := bot.Instance.SendGroupMessage(groupCode, msg)
 	if res.Id == -1 {
 		logger.WithField("group_code", groupCode).Errorf("send group message failed")
