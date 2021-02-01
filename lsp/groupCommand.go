@@ -674,6 +674,8 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 	}
 	date := time.Now().Format("20060102")
 
+	var replyText string
+
 	err = db.Update(func(tx *buntdb.Tx) error {
 		var score int64
 		key := localdb.Key("Score", groupCode, msg.Sender.Uin)
@@ -691,7 +693,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		}
 		_, err = tx.Get(dateMarker)
 		if err != buntdb.ErrNotFound {
-			lgc.textReply(fmt.Sprintf("明天再来吧，当前积分为%v\n", score))
+			replyText = fmt.Sprintf("明天再来吧，当前积分为%v\n", score)
 			return nil
 		}
 
@@ -707,9 +709,10 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 			log.WithField("sender", msg.Sender.Uin).Errorf("update score marker failed %v", err)
 			return err
 		}
-		lgc.textReply(fmt.Sprintf("签到成功！获得1积分，当前积分为%v", score))
+		replyText = fmt.Sprintf("签到成功！获得1积分，当前积分为%v", score)
 		return nil
 	})
+	lgc.textReply(replyText)
 	if err != nil {
 		log.Errorf("签到失败")
 	}
@@ -1130,6 +1133,8 @@ func (lgc *LspGroupCommand) groupEnabled(command string) bool {
 func (lgc *LspGroupCommand) groupDisabled(command string) bool {
 	return lgc.l.PermissionStateManager.CheckGroupCommandDisabled(lgc.groupCode(), command)
 }
+
+// all send method should not be called from inside a rw transaction
 
 func (lgc *LspGroupCommand) textReply(text string) *message.GroupMessage {
 	sendingMsg := message.NewSendingMessage()
