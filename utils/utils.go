@@ -177,6 +177,12 @@ func ImageFormat(origImage []byte) (string, error) {
 }
 
 func ImageReserve(imgBytes []byte) ([]byte, error) {
+	st := time.Now()
+	defer func() {
+		ed := time.Now()
+		logger.WithField("FuncName", FuncName()).Tracef("cost %v", ed.Sub(st))
+	}()
+
 	format, err := ImageFormat(imgBytes)
 	if err != nil {
 		return nil, err
@@ -194,10 +200,10 @@ func ImageReserve(imgBytes []byte) ([]byte, error) {
 	var newImg = make([]*image.Paletted, imgLength)
 	var baseImg = image.NewPaletted(img.Image[0].Bounds(), img.Image[0].Palette)
 	for index, src := range img.Image {
-		draw.Draw(baseImg, src.Rect, src, src.Rect.Min, draw.Over)
+		draw.Draw(baseImg, src.Bounds(), src, src.Rect.Min, draw.Over)
 		pos := imgLength - index - 1
-		newImg[pos] = image.NewPaletted(src.Bounds(), src.Palette)
-		draw.Draw(newImg[pos], baseImg.Rect, baseImg, baseImg.Rect.Min, draw.Src)
+		newImg[pos] = image.NewPaletted(baseImg.Bounds(), baseImg.Palette)
+		draw.Draw(newImg[pos], newImg[pos].Rect, baseImg, baseImg.Rect.Min, draw.Over)
 	}
 	img.Image = newImg
 	var result = bytes.NewBuffer(nil)
