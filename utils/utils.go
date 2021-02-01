@@ -10,6 +10,7 @@ import (
 	"github.com/ericpauley/go-quantize/quantize"
 	"github.com/nfnt/resize"
 	"image"
+	"image/draw"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
@@ -186,16 +187,19 @@ func ImageReserve(imgBytes []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	length := len(img.Image)
-	for idx := range img.Image {
-		oidx := length - 1 - idx
-		if idx >= oidx {
-			break
-		}
-		tmp := img.Image[idx]
-		img.Image[idx] = img.Image[oidx]
-		img.Image[oidx] = tmp
+	if len(img.Image) == 0 {
+		return nil, errors.New("unknown image without frame")
 	}
+	imgLength := len(img.Image)
+	var newImg = make([]*image.Paletted, imgLength)
+	var baseImg = image.NewPaletted(img.Image[0].Bounds(), img.Image[0].Palette)
+	for index, src := range img.Image {
+		draw.Draw(baseImg, src.Rect, src, src.Rect.Min, draw.Over)
+		pos := imgLength - index - 1
+		newImg[pos] = image.NewPaletted(src.Bounds(), src.Palette)
+		draw.Draw(newImg[pos], baseImg.Rect, baseImg, baseImg.Rect.Min, draw.Src)
+	}
+	img.Image = newImg
 	var result = bytes.NewBuffer(nil)
 	err = gif.EncodeAll(result, img)
 	if err != nil {
