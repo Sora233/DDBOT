@@ -20,14 +20,11 @@ func (KeySet) GroupMuteKey(keys ...interface{}) string {
 }
 
 type StateManager struct {
+	*localdb.ShortCut
 	KeySet
 }
 
 func (s *StateManager) SaveMessageImageUrl(groupCode int64, messageID int32, msgs []message.IMessageElement) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
 	imgs := utils.MessageFilter(msgs, func(e message.IMessageElement) bool {
 		return e.Type() == message.Image
 	})
@@ -55,20 +52,16 @@ func (s *StateManager) SaveMessageImageUrl(groupCode int64, messageID int32, msg
 	} else {
 		return nil
 	}
-	return db.Update(func(tx *buntdb.Tx) error {
+	return s.RWTxCover(func(tx *buntdb.Tx) error {
 		key := s.GroupMessageImageKey(groupCode, messageID)
-		_, _, err := tx.Set(key, strings.Join(urls, " "), &buntdb.SetOptions{Expires: true, TTL: time.Minute * 30})
+		_, _, err := tx.Set(key, strings.Join(urls, " "), &buntdb.SetOptions{Expires: true, TTL: time.Hour * 8})
 		return err
 	})
 }
 
 func (s *StateManager) GetMessageImageUrl(groupCode int64, messageID int32) []string {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return nil
-	}
 	var result []string
-	_ = db.View(func(tx *buntdb.Tx) error {
+	s.RTxCover(func(tx *buntdb.Tx) error {
 		key := s.GroupMessageImageKey(groupCode, messageID)
 		val, err := tx.Get(key)
 		if err == nil {
@@ -80,11 +73,7 @@ func (s *StateManager) GetMessageImageUrl(groupCode int64, messageID int32) []st
 }
 
 func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return nil
-	}
-	return db.Update(func(tx *buntdb.Tx) error {
+	return s.RWTxCover(func(tx *buntdb.Tx) error {
 		key := s.GroupMuteKey(groupCode, uin)
 		if t == 0 {
 			_, err := tx.Delete(key)
@@ -100,12 +89,8 @@ func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
 }
 
 func (s *StateManager) IsMuted(groupCode int64, uin int64) bool {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return false
-	}
 	var result = true
-	db.View(func(tx *buntdb.Tx) error {
+	err := s.RTxCover(func(tx *buntdb.Tx) error {
 		key := s.GroupMuteKey(groupCode, uin)
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -115,6 +100,9 @@ func (s *StateManager) IsMuted(groupCode int64, uin int64) bool {
 			return err
 		}
 	})
+	if err != nil {
+		result = false
+	}
 	return result
 }
 
@@ -126,6 +114,6 @@ func (s *StateManager) FreshIndex() {
 
 func NewStateManager() *StateManager {
 	return &StateManager{
-		KeySet{},
+		KeySet: KeySet{},
 	}
 }

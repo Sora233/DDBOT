@@ -16,6 +16,7 @@ import (
 var logger = utils.GetModuleLogger("concern_manager")
 
 type StateManager struct {
+	*localdb.ShortCut
 	KeySet
 	emitChan  chan interface{}
 	emitQueue *localutils.EmitQueue
@@ -389,26 +390,6 @@ func (c *StateManager) EmitFreshCore(name string, fresher func(ctype concern.Typ
 			logger.WithField("id", id).WithField("name", name).Errorf("fresher error %v", err)
 		}
 	}
-}
-
-func (c *StateManager) RTxCover(f func(tx *buntdb.Tx) error) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	return db.View(func(tx *buntdb.Tx) error {
-		return f(tx)
-	})
-}
-
-func (c *StateManager) RWTxCover(f func(tx *buntdb.Tx) error) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	return db.Update(func(tx *buntdb.Tx) error {
-		return f(tx)
-	})
 }
 
 func NewStateManager(keySet KeySet) *StateManager {

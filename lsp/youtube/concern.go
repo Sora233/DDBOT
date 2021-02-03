@@ -135,6 +135,7 @@ func (c *Concern) freshInfo(channelId string) {
 			}
 		}
 	} else {
+		var notifyCount = 0
 		for _, newV := range newInfo.VideoInfo {
 			var found bool
 			for _, oldV := range oldInfo.VideoInfo {
@@ -156,8 +157,12 @@ func (c *Concern) freshInfo(channelId string) {
 			}
 			if !found {
 				// new video
-				c.eventChan <- newV
-				log.Debugf("new video notify")
+				if notifyCount == 0 {
+					c.eventChan <- newV
+					log.Debugf("new video notify")
+					notifyCount += 1
+					// notify video most once
+				}
 			}
 		}
 	}

@@ -29,7 +29,7 @@ func main() {
 
 	if cli.Debug {
 		lsp.Debug = true
-		http.ListenAndServe("localhost:6060", nil)
+		go http.ListenAndServe("localhost:6060", nil)
 	}
 
 	if cli.Play {

@@ -12,6 +12,7 @@ import (
 var logger = utils.GetModuleLogger("permission")
 
 type StateManager struct {
+	*localdb.ShortCut
 	*KeySet
 }
 
@@ -19,15 +20,8 @@ func (c *StateManager) CheckRole(caller int64, role RoleType) bool {
 	if role.String() == "" {
 		return false
 	}
-	var (
-		result bool
-	)
-	db, err := localdb.GetClient()
-	if err != nil {
-		logger.Errorf("get db failed %v", err)
-		return false
-	}
-	err = db.View(func(tx *buntdb.Tx) error {
+	var result bool
+	err := c.RTxCover(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(caller, role.String())
 		_, err := tx.Get(key)
 		if err == nil {
@@ -43,6 +37,7 @@ func (c *StateManager) CheckRole(caller int64, role RoleType) bool {
 		logger.WithField("caller", caller).
 			WithField("role", role.String()).
 			Errorf("check role err %v", err)
+		result = false
 	}
 	return result
 }
@@ -50,15 +45,8 @@ func (c *StateManager) CheckGroupRole(groupCode int64, caller int64, role RoleTy
 	if role.String() == "" {
 		return false
 	}
-	var (
-		result bool
-	)
-	db, err := localdb.GetClient()
-	if err != nil {
-		logger.Errorf("get db failed %v", err)
-		return false
-	}
-	err = db.View(func(tx *buntdb.Tx) error {
+	var result bool
+	err := c.RTxCover(func(tx *buntdb.Tx) error {
 		key := c.GroupPermissionKey(groupCode, caller, role.String())
 		_, err := tx.Get(key)
 		if err == nil {
@@ -75,16 +63,13 @@ func (c *StateManager) CheckGroupRole(groupCode int64, caller int64, role RoleTy
 			WithField("caller", caller).
 			WithField("role", role.String()).
 			Errorf("check group role err %v", err)
+		result = false
 	}
 	return result
 }
 
 func (c *StateManager) EnableGroupCommand(groupCode int64, command string) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	return db.Update(func(tx *buntdb.Tx) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.GroupEnabledKey(groupCode, command)
 		prev, replaced, err := tx.Set(key, Enable, nil)
 		if err != nil {
@@ -98,11 +83,7 @@ func (c *StateManager) EnableGroupCommand(groupCode int64, command string) error
 }
 
 func (c *StateManager) DisableGroupCommand(groupCode int64, command string) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	return db.Update(func(tx *buntdb.Tx) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.GroupEnabledKey(groupCode, command)
 		prev, replaced, err := tx.Set(key, Disable, nil)
 		if err != nil {
@@ -131,12 +112,7 @@ func (c *StateManager) CheckGroupCommandDisabled(groupCode int64, command string
 
 func (c *StateManager) CheckGroupCommandFunc(groupCode int64, command string, f func(val string, exist bool) bool) bool {
 	var result bool
-	db, err := localdb.GetClient()
-	if err != nil {
-		logger.Errorf("get db failed %v", err)
-		return false
-	}
-	err = db.View(func(tx *buntdb.Tx) error {
+	err := c.RTxCover(func(tx *buntdb.Tx) error {
 		key := c.GroupEnabledKey(groupCode, command)
 		val, err := tx.Get(key)
 		if err != nil && err != buntdb.ErrNotFound {
@@ -149,6 +125,7 @@ func (c *StateManager) CheckGroupCommandFunc(groupCode int64, command string, f 
 		logger.WithField("group_code", groupCode).
 			WithField("command", command).
 			Errorf("check group enable err %v", err)
+		result = false
 	}
 	return result
 }
@@ -176,15 +153,8 @@ func (c *StateManager) CheckGroupCommandPermission(groupCode int64, caller int64
 	if c.CheckRole(caller, Admin) {
 		return true
 	}
-	var (
-		result bool
-	)
-	db, err := localdb.GetClient()
-	if err != nil {
-		logger.Errorf("get db failed %v", err)
-		return false
-	}
-	err = db.View(func(tx *buntdb.Tx) error {
+	var result bool
+	err := c.RTxCover(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(groupCode, caller, command)
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -200,6 +170,7 @@ func (c *StateManager) CheckGroupCommandPermission(groupCode int64, caller int64
 			WithField("caller", caller).
 			WithField("command", command).
 			Errorf("check group command err %v", err)
+		result = false
 	}
 	return result
 }
@@ -208,11 +179,7 @@ func (c *StateManager) GrantRole(target int64, role RoleType) error {
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	err = db.Update(func(tx *buntdb.Tx) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(target, role.String())
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -224,18 +191,13 @@ func (c *StateManager) GrantRole(target int64, role RoleType) error {
 			return err
 		}
 	})
-	return err
 }
 
 func (c *StateManager) UngrantRole(target int64, role RoleType) error {
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	return db.Update(func(tx *buntdb.Tx) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(target, role.String())
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -253,11 +215,7 @@ func (c *StateManager) GrantGroupRole(groupCode int64, target int64, role RoleTy
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	return db.Update(func(tx *buntdb.Tx) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.GroupPermissionKey(groupCode, target, role.String())
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -275,11 +233,7 @@ func (c *StateManager) UngrantGroupRole(groupCode int64, target int64, role Role
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	return db.Update(func(tx *buntdb.Tx) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.GroupPermissionKey(groupCode, target, role.String())
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -294,11 +248,7 @@ func (c *StateManager) UngrantGroupRole(groupCode int64, target int64, role Role
 }
 
 func (c *StateManager) GrantPermission(groupCode int64, target int64, command string) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	return db.Update(func(tx *buntdb.Tx) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(groupCode, target, command)
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -313,11 +263,7 @@ func (c *StateManager) GrantPermission(groupCode int64, target int64, command st
 }
 
 func (c *StateManager) UngrantPermission(groupCode int64, target int64, command string) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
-	return db.Update(func(tx *buntdb.Tx) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(groupCode, target, command)
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -341,26 +287,24 @@ func (c *StateManager) RequireAny(option ...RequireOption) bool {
 }
 
 func (c *StateManager) RemoveAll(groupCode int64) error {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return err
-	}
 	var deleteKey []string
-	_ = db.View(func(tx *buntdb.Tx) error {
+	err := c.RTxCover(func(tx *buntdb.Tx) error {
 		tx.Ascend(c.GroupPermissionKey(groupCode), func(key, value string) bool {
 			deleteKey = append(deleteKey, key)
 			return true
 		})
 		return nil
 	})
-	db.Update(func(tx *buntdb.Tx) error {
+	if err != nil {
+		return err
+	}
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		for _, k := range deleteKey {
 			tx.Delete(k)
 		}
 		tx.DropIndex(c.GroupPermissionKey(groupCode))
 		return nil
 	})
-	return nil
 }
 
 func (c *StateManager) FreshIndex() {
