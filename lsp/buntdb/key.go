@@ -2,22 +2,25 @@ package buntdb
 
 import (
 	"errors"
+	"reflect"
 	"strconv"
 	"strings"
 )
 
 func Key(keys ...interface{}) string {
 	var _keys []string
-	for _, key := range keys {
-		switch key.(type) {
+	for _, ikey := range keys {
+		switch key := ikey.(type) {
 		case string:
-			_keys = append(_keys, key.(string))
-		case int:
-			_keys = append(_keys, strconv.FormatInt(int64(key.(int)), 10))
-		case int32:
-			_keys = append(_keys, strconv.FormatInt(int64(key.(int32)), 10))
-		case int64:
-			_keys = append(_keys, strconv.FormatInt(key.(int64), 10))
+			_keys = append(_keys, key)
+		case int, int8, int16, int32, int64:
+			_keys = append(_keys, strconv.FormatInt(reflect.ValueOf(key).Int(), 10))
+		case uint, uint8, uint16, uint32, uint64:
+			_keys = append(_keys, strconv.FormatUint(reflect.ValueOf(key).Uint(), 10))
+		case bool:
+			_keys = append(_keys, strconv.FormatBool(key))
+		default:
+			panic("unsupported key type " + reflect.ValueOf(ikey).Type().Name())
 		}
 	}
 	return strings.Join(_keys, ":")
