@@ -73,105 +73,103 @@ func (lgc *LspGroupCommand) Execute() {
 		return
 	}
 
-	logger.WithField("cmd", lgc.GetCmd()).WithField("args", lgc.GetArgs()).Debug("execute")
+	log := logger.WithField("group_code", lgc.groupCode()).WithField("cmd", lgc.GetCmd()).WithField("args", lgc.GetArgs())
+	log.Debug("execute")
 
-	args := lgc.GetArgs()
-
-	if args == nil {
+	if lgc.GetCmd() == "" && lgc.GetArgs() == nil {
 		if !lgc.groupEnabled(ImageContentCommand) {
-			logger.WithField("group_code", lgc.groupCode()).
-				WithField("command", ImageContentCommand).
-				Debug("not enabled")
+			logger.WithField("command", ImageContentCommand).Debug("not enabled")
 			return
 		}
 		if lgc.uin() != lgc.bot.Uin {
 			lgc.ImageContent()
 		}
 		return
-	} else {
-		switch lgc.GetCmd() {
-		case "/lsp":
-			if lgc.requireNotDisable(LspCommand) {
-				lgc.LspCommand()
-			}
-		case "/色图":
-			if lgc.requireEnable(SetuCommand) {
-				lgc.SetuCommand(false)
-			}
-		case "/黄图":
-			if lgc.requireEnable(HuangtuCommand) {
-				lgc.SetuCommand(true)
-			}
-		case "/watch":
-			if lgc.requireNotDisable(WatchCommand) {
-				if !lgc.requireAnyCommand(WatchCommand, UnwatchCommand) {
-					lgc.noPermissionReply()
-					return
-				}
-				lgc.WatchCommand(false)
-			}
-		case "/unwatch":
-			if lgc.requireNotDisable(UnwatchCommand) {
-				if !lgc.requireAnyCommand(WatchCommand, UnwatchCommand) {
-					lgc.noPermissionReply()
-					return
-				}
-				lgc.WatchCommand(true)
-			}
-		case "/list":
-			if lgc.requireNotDisable(ListCommand) {
-				lgc.ListCommand()
-			}
-		case "/签到":
-			if lgc.requireNotDisable(CheckinCommand) {
-				lgc.CheckinCommand()
-			}
-		case "/roll":
-			if lgc.requireNotDisable(RollCommand) {
-				lgc.RollCommand()
-			}
-		case "/grant":
-			if !lgc.l.PermissionStateManager.RequireAny(
-				permission.AdminRoleRequireOption(lgc.uin()),
-				permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
-				permission.QQAdminRequireOption(lgc.groupCode(), lgc.uin()),
-			) {
-				lgc.noPermissionReply()
-				return
-			}
-			lgc.GrantCommand()
-		case "/enable":
-			if !lgc.l.PermissionStateManager.RequireAny(
-				permission.AdminRoleRequireOption(lgc.uin()),
-				permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
-			) {
-				lgc.noPermissionReply()
-				return
-			}
-			lgc.EnableCommand(false)
-		case "/disable":
-			if !lgc.l.PermissionStateManager.RequireAny(
-				permission.AdminRoleRequireOption(lgc.uin()),
-				permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
-			) {
-				lgc.noPermissionReply()
-				return
-			}
-			lgc.EnableCommand(true)
-		case "/face":
-			if lgc.requireNotDisable(FaceCommand) {
-				lgc.FaceCommand()
-			}
-		case "/倒放":
-			if lgc.requireNotDisable(ReverseCommand) {
-				lgc.ReverseCommand()
-			}
-		case "/help":
-			lgc.HelpCommand()
-		default:
-		}
-		return
 	}
+
+	switch lgc.GetCmd() {
+	case "/lsp":
+		if lgc.requireNotDisable(LspCommand) {
+			lgc.LspCommand()
+		}
+	case "/色图":
+		if lgc.requireEnable(SetuCommand) {
+			lgc.SetuCommand(false)
+		}
+	case "/黄图":
+		if lgc.requireEnable(HuangtuCommand) {
+			lgc.SetuCommand(true)
+		}
+	case "/watch":
+		if lgc.requireNotDisable(WatchCommand) {
+			if !lgc.requireAnyCommand(WatchCommand, UnwatchCommand) {
+				lgc.noPermissionReply()
+				return
+			}
+			lgc.WatchCommand(false)
+		}
+	case "/unwatch":
+		if lgc.requireNotDisable(UnwatchCommand) {
+			if !lgc.requireAnyCommand(WatchCommand, UnwatchCommand) {
+				lgc.noPermissionReply()
+				return
+			}
+			lgc.WatchCommand(true)
+		}
+	case "/list":
+		if lgc.requireNotDisable(ListCommand) {
+			lgc.ListCommand()
+		}
+	case "/签到":
+		if lgc.requireNotDisable(CheckinCommand) {
+			lgc.CheckinCommand()
+		}
+	case "/roll":
+		if lgc.requireNotDisable(RollCommand) {
+			lgc.RollCommand()
+		}
+	case "/grant":
+		if !lgc.l.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(lgc.uin()),
+			permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
+			permission.QQAdminRequireOption(lgc.groupCode(), lgc.uin()),
+		) {
+			lgc.noPermissionReply()
+			return
+		}
+		lgc.GrantCommand()
+	case "/enable":
+		if !lgc.l.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(lgc.uin()),
+			permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
+		) {
+			lgc.noPermissionReply()
+			return
+		}
+		lgc.EnableCommand(false)
+	case "/disable":
+		if !lgc.l.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(lgc.uin()),
+			permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
+		) {
+			lgc.noPermissionReply()
+			return
+		}
+		lgc.EnableCommand(true)
+	case "/face":
+		if lgc.requireNotDisable(FaceCommand) {
+			lgc.FaceCommand()
+		}
+	case "/倒放":
+		if lgc.requireNotDisable(ReverseCommand) {
+			lgc.ReverseCommand()
+		}
+	case "/help":
+		lgc.HelpCommand()
+	default:
+		log.Debug("no command matched")
+	}
+	return
 }
 
 func (lgc *LspGroupCommand) LspCommand() {
