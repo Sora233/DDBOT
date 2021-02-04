@@ -1,4 +1,4 @@
-# Sora233-MiraiGo
+# DDBOT
 
 一个基于MiraiGO的多功能QQ群机器人。
 
@@ -55,7 +55,6 @@
     - 输出一些没什么帮助的信息
     - 命令
         - /help
-        - /about
     - 使用命令 -h可查看该命令的帮助信息，例如
         - /watch -h
         - /grant -h
@@ -167,6 +166,6 @@ logLevel: info # 日志等级
 
 ## 贡献
 
-发现问题或功能建议请到 [issues](https://github.com/Sora233/Sora233-MiraiGo/issues)
+发现问题或功能建议请到 [issues](https://github.com/Sora233/DDBOT/issues)
 
-其他用法问题请到 [discussions](https://github.com/Sora233/Sora233-MiraiGo/discussions)
+其他用法问题请到 [discussions](https://github.com/Sora233/DDBOT/discussions)
