@@ -1,0 +1,20 @@
+package lsp
+
+import (
+	"github.com/Logiase/MiraiGo-Template/config"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/backend/middleware/requestid"
+	"github.com/gin-gonic/gin"
+)
+
+func (*Lsp) StartBackend() {
+	r := gin.Default()
+	r.Use(requestid.RequestID())
+
+	auth := r.Group("/", gin.BasicAuth(config.GlobalConfig.GetStringMapString("backend.basicAuth")))
+
+	v1 := auth.Group("/v1")
+
+	v1.GET("/ping", PingHandler)
+
+	go r.Run(config.GlobalConfig.GetString("backend.addr"))
+}

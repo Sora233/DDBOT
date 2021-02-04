@@ -255,6 +255,10 @@ func (l *Lsp) Start(bot *bot.Bot) {
 	l.douyuConcern.Start()
 	l.youtubeConcern.Start()
 	go l.ConcernNotify(bot)
+
+	if config.GlobalConfig.GetBool("backend.enable") {
+		go l.StartBackend()
+	}
 }
 
 func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {

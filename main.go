@@ -22,9 +22,8 @@ func init() {
 
 func main() {
 	var cli struct {
-		Play  bool   `optional:"" help:"run the play function"`
-		Debug bool   `optional:"" help:"enable debug mode"`
-		Addr  string `optional:"" help:"the endpoint addr"`
+		Play  bool `optional:"" help:"run the play function"`
+		Debug bool `optional:"" help:"enable debug mode"`
 	}
 	kong.Parse(&cli)
 
@@ -36,11 +35,6 @@ func main() {
 	if cli.Play {
 		play()
 		return
-	}
-
-	// enable backend
-	if cli.Addr != "" {
-		// TODO impl backend api
 	}
 
 	// 快速初始化

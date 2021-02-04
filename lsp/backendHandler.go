@@ -1,0 +1,24 @@
+package lsp
+
+import (
+	"github.com/Sora233/Sora233-MiraiGo/lsp/backend/model"
+	"github.com/gin-gonic/gin"
+	"net/http"
+)
+
+func PingHandler(c *gin.Context) {
+	var (
+		response model.PingResponse
+		errCode  int
+		err      error
+	)
+	defer func() {
+		if e := recover(); e != nil {
+			errCode = model.ErrInternal
+		}
+		response.GenericHeader = model.NewGenericHeader(c, errCode, err)
+
+		c.JSON(http.StatusOK, response)
+	}()
+	response.Message = "pong"
+}
