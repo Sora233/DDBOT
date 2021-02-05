@@ -30,6 +30,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*bilibili.ConcernLiveNotify)
 				logger.WithField("site", bilibili.Site).
 					WithField("GroupCode", notify.GroupCode).
+					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
 					WithField("Name", notify.Name).
 					WithField("Title", notify.LiveTitle).
 					WithField("Status", notify.Status.String()).
@@ -46,6 +47,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*bilibili.ConcernNewsNotify)
 				logger.WithField("site", bilibili.Site).
 					WithField("GroupCode", notify.GroupCode).
+					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
 					WithField("Name", notify.Name).
 					WithField("NewsCount", len(notify.Cards)).
 					Info("notify")
@@ -59,6 +61,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*douyu.ConcernLiveNotify)
 				logger.WithField("site", douyu.Site).
 					WithField("GroupCode", notify.GroupCode).
+					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
 					WithField("Name", notify.Nickname).
 					WithField("Title", notify.RoomName).
 					WithField("Status", notify.ShowStatus.String()).
@@ -75,6 +78,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*youtube.ConcernNotify)
 				logger.WithField("site", youtube.Site).
 					WithField("GroupCode", notify.GroupCode).
+					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
 					WithField("ChannelName", notify.ChannelName).
 					WithField("ChannelID", notify.ChannelId).
 					WithField("VideoId", notify.VideoId).
