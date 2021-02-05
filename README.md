@@ -1,4 +1,4 @@
-# Sora233-MiraiGo
+# DDBOT
 
 一个基于MiraiGO的多功能QQ群机器人。
 
@@ -55,7 +55,6 @@
     - 输出一些没什么帮助的信息
     - 命令
         - /help
-        - /about
     - 使用命令 -h可查看该命令的帮助信息，例如
         - /watch -h
         - /grant -h
@@ -156,8 +155,26 @@ debug: # debug模式，只有以下群或qq号可以触发命令
     - 0
 
 logLevel: info # 日志等级
+
+backend: # backend配如果启用，可以部署前端来控制
+  enable: false
+  addr: "localhost:8085"
+  basicAuth: # basicAuth配置，建议使用复杂密码
+    test: test123
+    test1: test1234
+
 ```
+
+## 后端
+
+[WIP] [Doc](/BACKEND.md)
+
+## 前端
+
+TODO
+
 ## 注意事项
+
 - bot掉线无法重连时将自动退出，请自行实现保活机制
 
 ## 敬告
@@ -167,6 +184,6 @@ logLevel: info # 日志等级
 
 ## 贡献
 
-发现问题或功能建议请到 [issues](https://github.com/Sora233/Sora233-MiraiGo/issues)
+发现问题或功能建议请到 [issues](https://github.com/Sora233/DDBOT/issues)
 
-其他用法问题请到 [discussions](https://github.com/Sora233/Sora233-MiraiGo/discussions)
+其他用法问题请到 [discussions](https://github.com/Sora233/DDBOT/discussions)
