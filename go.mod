@@ -21,7 +21,7 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/sirupsen/logrus v1.7.0
 	github.com/spf13/afero v1.5.1 // indirect
-	github.com/tidwall/buntdb v1.1.8
+	github.com/tidwall/buntdb v1.2.0
 	gocv.io/x/gocv v0.26.0
 	golang.org/x/sys v0.0.0-20210123231150-1d476976d117 // indirect
 	golang.org/x/text v0.3.4 // indirect
