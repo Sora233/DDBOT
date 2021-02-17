@@ -44,7 +44,7 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernNotify, error
 	var result []*ConcernNotify
 
 	ids, _, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
-		return p.ContainAny(concern.Youtube)
+		return p.ContainAny(concern.YoutubeLive)
 	})
 	if err != nil {
 		return nil, err
@@ -72,7 +72,7 @@ func (c *Concern) Start() {
 
 	go c.notifyLoop()
 	go c.EmitFreshCore("youtube", func(ctype concern.Type, id interface{}) error {
-		if ctype.ContainAll(concern.Youtube) {
+		if ctype.ContainAny(concern.YoutubeLive | concern.YoutubeVideo) {
 			channelId, ok := id.(string)
 			if !ok {
 				return errors.New("canst fresh id to string failed")
@@ -85,25 +85,34 @@ func (c *Concern) Start() {
 
 func (c *Concern) notifyLoop() {
 	for ievent := range c.eventChan {
-		switch ievent.Type() {
-		case Video:
-			event := ievent.(*VideoInfo)
-			log := logger.WithField("channel_id", event.ChannelId).
-				WithField("video_id", event.VideoId).
-				WithField("video_type", event.VideoType.String()).
-				WithField("video_title", event.VideoTitle).
-				WithField("video_status", event.VideoStatus.String())
-			log.Debugf("debug event")
-			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-				return id.(string) == event.ChannelId && p.ContainAny(concern.Youtube)
-			})
-			if err != nil {
-				logger.Errorf("list id failed %v", err)
-				continue
-			}
-			for _, groupCode := range groups {
+		event := ievent.(*VideoInfo)
+		log := logger.WithField("channel_id", event.ChannelId).
+			WithField("video_id", event.VideoId).
+			WithField("video_type", event.VideoType.String()).
+			WithField("video_title", event.VideoTitle).
+			WithField("video_status", event.VideoStatus.String())
+		log.Debugf("debug event")
+		groups, _, idTypes, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+			return id.(string) == event.ChannelId && p.ContainAny(concern.YoutubeLive|concern.YoutubeVideo)
+		})
+		if err != nil {
+			logger.Errorf("list id failed %v", err)
+			continue
+		}
+		for index, groupCode := range groups {
+			var doNotify bool
+			ctype := idTypes[index]
+			if ctype.ContainAny(concern.YoutubeLive) && event.IsLive() {
 				notify := NewConcernNotify(groupCode, event)
 				c.notify <- notify
+				doNotify = true
+			}
+			if ctype.ContainAny(concern.YoutubeVideo) && event.IsVideo() {
+				notify := NewConcernNotify(groupCode, event)
+				c.notify <- notify
+				doNotify = true
+			}
+			if doNotify {
 				if event.IsVideo() {
 					log.Debugf("video notify")
 				} else if event.IsLive() {

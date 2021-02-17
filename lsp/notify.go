@@ -74,7 +74,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					}
 					l.sendGroupMessage(notify.GroupCode, sendingMsg)
 				}
-			case concern.Youtube:
+			case concern.YoutubeLive, concern.YoutubeVideo:
 				notify := (inotify).(*youtube.ConcernNotify)
 				logger.WithField("site", youtube.Site).
 					WithField("GroupCode", notify.GroupCode).
@@ -109,7 +109,7 @@ func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMes
 	case concern.DouyuLive:
 		notify := (inotify).(*douyu.ConcernLiveNotify)
 		result = append(result, l.notifyDouyuLive(bot, notify)...)
-	case concern.Youtube:
+	case concern.YoutubeLive, concern.YoutubeVideo:
 		notify := (inotify).(*youtube.ConcernNotify)
 		result = append(result, l.notifyYoutube(bot, notify)...)
 	}

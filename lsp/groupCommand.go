@@ -562,7 +562,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 		if len(listMsg.Elements) == 1 {
 			listMsg.Append(message.NewText("无人直播"))
 		}
-	case concern.Youtube:
+	case concern.YoutubeLive:
 		listMsg.Append(message.NewText("当前关注：\n"))
 		living, err := lgc.l.youtubeConcern.ListLiving(groupCode, all)
 		if err != nil {
@@ -580,6 +580,10 @@ func (lgc *LspGroupCommand) ListCommand() {
 			}
 			listMsg.Append(utils.MessageTextf("%v %v", info.ChannelName, info.ChannelId))
 		}
+	case concern.YoutubeVideo:
+		// TODO
+		log.Error("list youtube video not supported yet")
+		listMsg.Append(message.NewText("暂不支持"))
 	}
 
 	lgc.send(listMsg)
@@ -1185,8 +1189,8 @@ func (lgc *LspGroupCommand) parseRawSiteAndType(rawSite string, rawType string) 
 		watchType concern.Type
 		err       error
 	)
-	rawSite = strings.Trim(rawSite, "\"")
-	rawType = strings.Trim(rawType, "\"")
+	rawSite = strings.Trim(rawSite, `"`)
+	rawType = strings.Trim(rawType, `"`)
 	site, err = lgc.parseRawSite(rawSite)
 	if err != nil {
 		return "", concern.Empty, err
@@ -1203,13 +1207,15 @@ func (lgc *LspGroupCommand) parseRawSiteAndType(rawSite string, rawType string) 
 		} else if site == douyu.Site {
 			watchType = concern.DouyuLive
 		} else if site == youtube.Site {
-			watchType = concern.Youtube
+			watchType = concern.YoutubeLive
 		} else {
 			return "", concern.Empty, errors.New("unknown watch type")
 		}
 	case "news":
 		if site == bilibili.Site {
 			watchType = concern.BilibiliNews
+		} else if site == youtube.Site {
+			watchType = concern.YoutubeVideo
 		} else {
 			return "", concern.Empty, errors.New("unknown watch type")
 		}

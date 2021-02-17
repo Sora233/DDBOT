@@ -14,6 +14,7 @@ type EventType int64
 
 const (
 	Video EventType = iota
+	Live
 )
 
 type ConcernEvent interface {
@@ -32,7 +33,11 @@ type VideoInfo struct {
 }
 
 func (v *VideoInfo) Type() EventType {
-	return Video
+	if v.IsLive() {
+		return Live
+	} else {
+		return Video
+	}
 }
 
 func (v *VideoInfo) IsLive() bool {
@@ -92,7 +97,11 @@ type ConcernNotify struct {
 }
 
 func (c *ConcernNotify) Type() concern.Type {
-	return concern.Youtube
+	if c.IsLive() {
+		return concern.YoutubeLive
+	} else {
+		return concern.YoutubeVideo
+	}
 }
 
 func NewConcernNotify(groupCode int64, info *VideoInfo) *ConcernNotify {
