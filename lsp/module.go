@@ -23,6 +23,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/zhima"
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	"github.com/sirupsen/logrus"
+	"github.com/tidwall/buntdb"
 	"os"
 	"strings"
 	"sync"
@@ -170,21 +171,31 @@ func (l *Lsp) PostInit() {
 
 func (l *Lsp) Serve(bot *bot.Bot) {
 	bot.OnGroupInvited(func(qqClient *client.QQClient, request *client.GroupInvitedRequest) {
-		logger.WithField("group_code", request.GroupCode).
+		log := logger.WithField("group_code", request.GroupCode).
 			WithField("group_name", request.GroupName).
 			WithField("invitor_uin", request.InvitorUin).
-			WithField("invitor_nick", request.InvitorNick).
-			Info("new group invited")
+			WithField("invitor_nick", request.InvitorNick)
+
+		log.Info("new group invited")
 		fi := bot.FindFriend(request.InvitorUin)
 		if fi == nil {
 			request.Reject(false, "未找到阁下的好友信息，请添加好友进行操作")
+			log.Errorf("can not find friend info")
 			return
 		}
-		sendingMsg := message.NewSendingMessage()
-		sendingMsg.Append(message.NewText(fmt.Sprintf("阁下的群邀请已通过，基于对阁下的信任，阁下已获得本bot在群【%s】的控制权限，相信阁下不会滥用本bot。", request.GroupName)))
-		bot.SendPrivateMessage(request.InvitorUin, sendingMsg)
-		l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin)
-		request.Accept()
+		err := l.LspStateManager.SaveGroupInvitor(request.GroupCode, request.InvitorUin)
+		if err == localdb.ErrKeyExist {
+			request.Reject(false, "已有其他群友邀请加群，请通知管理员审核")
+		} else if err != nil {
+			request.Reject(false, "未知问题，加群失败")
+			log.Errorf("invited process failed %v", err)
+			return
+		} else {
+			request.Accept()
+			sendingMsg := message.NewSendingMessage()
+			sendingMsg.Append(message.NewText(fmt.Sprintf("已接受阁下的群邀请。在成功入群后，基于对阁下的信任，阁下将获得bot在群【%s】的控制权限。", request.GroupName)))
+			bot.SendPrivateMessage(request.InvitorUin, sendingMsg)
+		}
 	})
 
 	bot.OnNewFriendRequest(func(qqClient *client.QQClient, request *client.NewFriendRequest) {
@@ -200,13 +211,33 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
 		l.FreshIndex()
-		logger.WithField("group_code", info.Code).Info("join group")
+		log := logger.WithField("group_code", info.Code).
+			WithField("member_count", info.MemberCount).
+			WithField("group_name", info.Name)
+		log.Info("join group")
+
 		minfo := info.FindMember(bot.Uin)
 		minfo.EditCard("【bot】")
+		target, err := l.LspStateManager.GetGroupInvitor(info.Code)
+		if err == buntdb.ErrNotFound {
+			log.Debug("no invitor found, skip grant group admin role")
+		} else if err != nil {
+			log.Errorf("get invitor err %v", err)
+			return
+		} else {
+			log = log.WithField("invitor", target)
+			log.Debug("grant group admin role")
+			if err := l.PermissionStateManager.GrantGroupRole(info.Code, target, permission.GroupAdmin); err != nil {
+				log.Errorf("grant group admin role failed %v", err)
+			}
+		}
 	})
 
 	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
-		logger.WithField("group_code", event.Group.Code).Info("leave group")
+		logger.WithField("group_code", event.Group.Code).
+			WithField("group_name", event.Group.Name).
+			WithField("member_count", event.Group.MemberCount).
+			Info("leave group")
 		l.RemoveAll(event.Group.Code)
 	})
 

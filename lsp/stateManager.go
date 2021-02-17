@@ -5,6 +5,7 @@ import (
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/tidwall/buntdb"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -101,6 +102,38 @@ func (s *StateManager) IsMuted(groupCode int64, uin int64) bool {
 		result = false
 	}
 	return result
+}
+
+func (s *StateManager) SaveGroupInvitor(groupCode int64, uin int64) error {
+	return s.RWTxCover(func(tx *buntdb.Tx) error {
+		key := localdb.GroupInvitorKey(groupCode)
+		_, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			_, _, err := tx.Set(key, strconv.FormatInt(uin, 10), nil)
+			return err
+		} else if err != nil {
+			return err
+		} else {
+			return localdb.ErrKeyExist
+		}
+	})
+}
+
+func (s *StateManager) GetGroupInvitor(groupCode int64) (target int64, err error) {
+	err = s.RWTxCover(func(tx *buntdb.Tx) error {
+		key := localdb.GroupInvitorKey(groupCode)
+		invitor, err := tx.Delete(key)
+		if err != nil {
+			return err
+		} else {
+			target, err = strconv.ParseInt(invitor, 64, 10)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	})
+	return
 }
 
 func (s *StateManager) FreshIndex() {
