@@ -63,7 +63,8 @@ func (lgc *LspGroupCommand) Execute() {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.WithField("stack", string(debug.Stack())).
-				Errorf("panic recovered")
+				Errorf("panic recovered: %v", err)
+			lgc.textReply("エラー発生")
 		}
 	}()
 	if !lgc.DebugCheck() {
@@ -681,7 +682,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 	err = db.Update(func(tx *buntdb.Tx) error {
 		var score int64
 		key := localdb.Key("Score", groupCode, msg.Sender.Uin)
-		dateMarker := localdb.Key("ScoreDate", groupCode, msg.Sender.Uin, date, nil)
+		dateMarker := localdb.Key("ScoreDate", groupCode, msg.Sender.Uin, date)
 
 		val, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
