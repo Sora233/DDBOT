@@ -1064,7 +1064,7 @@ func (lgc *LspGroupCommand) reserveGif(url string) {
 	img, err := utils.ImageGet(url, proxy_pool.PreferNone)
 	if err != nil {
 		log.Errorf("get image err %v", err)
-		lgc.textReply(fmt.Sprintf("获取图片失败 - %v", err))
+		lgc.textReply("获取图片失败")
 		return
 	}
 	img, err = utils.ImageReserve(img)
