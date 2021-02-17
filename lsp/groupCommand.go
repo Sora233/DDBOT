@@ -47,10 +47,10 @@ func NewLspGroupCommand(bot *miraiBot.Bot, l *Lsp, msg *message.GroupMessage) *L
 func (lgc *LspGroupCommand) DebugCheck() bool {
 	var ok bool
 	if lgc.debug {
-		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.group"), lgc.groupCode()) {
+		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.group"), strconv.FormatInt(lgc.groupCode(), 10)) {
 			ok = true
 		}
-		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.uin"), lgc.msg.Sender) {
+		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.uin"), strconv.FormatInt(lgc.msg.Sender.Uin, 10)) {
 			ok = true
 		}
 	} else {
@@ -1022,7 +1022,7 @@ func (lgc *LspGroupCommand) ImageContent() {
 					return
 				}
 			} else {
-				log.Error("can not cast element to GroupImageElement")
+				log.Error("can not cast element to ImageElement")
 			}
 		}
 	}
