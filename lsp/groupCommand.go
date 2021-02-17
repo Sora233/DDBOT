@@ -67,15 +67,18 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.textReply("エラー発生")
 		}
 	}()
-	if !lgc.DebugCheck() {
-		return
-	}
+
 	if lgc.GetCmd() != "" && !strings.HasPrefix(lgc.GetCmd(), "/") {
 		return
 	}
 
 	log := logger.WithField("group_code", lgc.groupCode()).WithField("cmd", lgc.GetCmd()).WithField("args", lgc.GetArgs())
 	log.Debug("execute")
+
+	if !lgc.DebugCheck() {
+		log.Debugf("debug mode, skip execute.")
+		return
+	}
 
 	if lgc.GetCmd() == "" && lgc.GetArgs() == nil {
 		if !lgc.groupEnabled(ImageContentCommand) {
