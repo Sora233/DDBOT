@@ -80,7 +80,7 @@ func (lgc *LspGroupCommand) Execute() {
 		return
 	}
 
-	if lgc.GetCmd() == "" && lgc.GetArgs() == nil {
+	if lgc.GetCmd() == "" && len(lgc.GetArgs()) == 0 {
 		if !lgc.groupEnabled(ImageContentCommand) {
 			logger.WithField("command", ImageContentCommand).Debug("not enabled")
 			return
