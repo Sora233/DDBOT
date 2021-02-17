@@ -17,7 +17,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jupp0r/go-priority-queue v0.0.0-20160601094913-ab1073853bde
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
-	github.com/sirupsen/logrus v1.7.1
+	github.com/sirupsen/logrus v1.8.0
 	github.com/tidwall/buntdb v1.2.0
 	gocv.io/x/gocv v0.26.0
 )
