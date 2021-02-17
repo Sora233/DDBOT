@@ -54,7 +54,7 @@ func (s *StateManager) SaveMessageImageUrl(groupCode int64, messageID int32, msg
 	}
 	return s.RWTxCover(func(tx *buntdb.Tx) error {
 		key := s.GroupMessageImageKey(groupCode, messageID)
-		_, _, err := tx.Set(key, strings.Join(urls, " "), &buntdb.SetOptions{Expires: true, TTL: time.Hour * 8})
+		_, _, err := tx.Set(key, strings.Join(urls, " "), localdb.ExpireOption(time.Hour*8))
 		return err
 	})
 }
@@ -79,10 +79,7 @@ func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
 			_, err := tx.Delete(key)
 			return err
 		} else {
-			_, _, err := tx.Set(key, "", &buntdb.SetOptions{
-				Expires: true,
-				TTL:     time.Second * time.Duration(t),
-			})
+			_, _, err := tx.Set(key, "", localdb.ExpireOption(time.Second*time.Duration(t)))
 			return err
 		}
 	})

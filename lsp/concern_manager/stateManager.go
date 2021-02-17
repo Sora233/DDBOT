@@ -224,7 +224,7 @@ func (c *StateManager) FreshCheck(id interface{}, setTTL bool) (result bool, err
 		if err == buntdb.ErrNotFound {
 			result = true
 			if setTTL {
-				_, _, err = tx.Set(freshKey, "", &buntdb.SetOptions{Expires: true, TTL: time.Minute})
+				_, _, err = tx.Set(freshKey, "", localdb.ExpireOption(time.Minute))
 				if err != nil {
 					return err
 				}
