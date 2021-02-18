@@ -20,7 +20,7 @@ type Concern struct {
 func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Info, err error) {
 	log := logger.WithField("group_code", groupCode)
 
-	err = c.StateManager.CheckConcern(id, ctype)
+	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
 	if err != nil {
 		if err == concern_manager.ErrAlreadyExists {
 			return nil, errors.New("已经watch过了")
