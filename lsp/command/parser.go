@@ -20,7 +20,9 @@ func (p *Parser) Parse(e []message.IMessageElement) {
 			splitStr := strings.Split(text, " ")
 			if len(splitStr) >= 1 {
 				p.Command = strings.TrimSpace(splitStr[0])
-				p.Args = splitStr[1:]
+				for _, s := range splitStr[1:] {
+					p.Args = append(p.Args, strings.TrimSpace(s))
+				}
 			}
 			break
 		}

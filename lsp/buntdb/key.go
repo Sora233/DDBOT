@@ -94,6 +94,9 @@ func GroupMessageImageKey(keys ...interface{}) string {
 func GroupMuteKey(keys ...interface{}) string {
 	return NamedKey("GroupMute", keys)
 }
+func GroupInvitorKey(keys ...interface{}) string {
+	return NamedKey("GroupInventor", keys)
+}
 
 func ParseConcernStateKey(key string) (groupCode int64, id int64, err error) {
 	keys := strings.Split(key, ":")

@@ -16,10 +16,7 @@ type StateManager struct {
 func (s *StateManager) AddInfo(info *Info) error {
 	return s.RWTxCover(func(tx *buntdb.Tx) error {
 		infoKey := s.InfoKey(info.ChannelId)
-		_, _, err := tx.Set(infoKey, info.ToString(), &buntdb.SetOptions{
-			Expires: true,
-			TTL:     time.Hour * 24,
-		})
+		_, _, err := tx.Set(infoKey, info.ToString(), localdb.ExpireOption(time.Hour*24))
 		return err
 	})
 }

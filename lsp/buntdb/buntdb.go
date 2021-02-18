@@ -1,7 +1,6 @@
 package buntdb
 
 import (
-	"errors"
 	"github.com/tidwall/buntdb"
 )
 
@@ -23,9 +22,16 @@ func InitBuntDB() error {
 
 func GetClient() (*buntdb.DB, error) {
 	if db == nil {
-		return nil, errors.New("not initialized")
+		return nil, ErrNotInitialized
 	}
 	return db, nil
+}
+
+func MustGetClient() *buntdb.DB {
+	if db == nil {
+		panic(ErrNotInitialized)
+	}
+	return db
 }
 
 func Close() error {

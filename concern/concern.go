@@ -10,10 +10,11 @@ const (
 	BibiliLive Type = 1 << iota
 	BilibiliNews
 	DouyuLive
-	Youtube // video and streaming
+	YoutubeLive
+	YoutubeVideo
 )
 
-var all = [...]Type{BibiliLive, BilibiliNews, DouyuLive, Youtube}
+var all = [...]Type{BibiliLive, BilibiliNews, DouyuLive, YoutubeLive, YoutubeVideo}
 
 type Notify interface {
 	Type() Type

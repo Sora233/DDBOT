@@ -47,10 +47,10 @@ func NewLspGroupCommand(bot *miraiBot.Bot, l *Lsp, msg *message.GroupMessage) *L
 func (lgc *LspGroupCommand) DebugCheck() bool {
 	var ok bool
 	if lgc.debug {
-		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.group"), lgc.groupCode()) {
+		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.group"), strconv.FormatInt(lgc.groupCode(), 10)) {
 			ok = true
 		}
-		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.uin"), lgc.msg.Sender) {
+		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.uin"), strconv.FormatInt(lgc.msg.Sender.Uin, 10)) {
 			ok = true
 		}
 	} else {
@@ -63,115 +63,117 @@ func (lgc *LspGroupCommand) Execute() {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.WithField("stack", string(debug.Stack())).
-				Errorf("panic recovered")
+				Errorf("panic recovered: %v", err)
+			lgc.textReply("エラー発生")
 		}
 	}()
-	if !lgc.DebugCheck() {
-		return
-	}
+
 	if lgc.GetCmd() != "" && !strings.HasPrefix(lgc.GetCmd(), "/") {
 		return
 	}
 
-	logger.WithField("cmd", lgc.GetCmd()).WithField("args", lgc.GetArgs()).Debug("execute")
+	log := logger.WithField("group_code", lgc.groupCode()).WithField("cmd", lgc.GetCmd()).WithField("args", lgc.GetArgs())
+	log.Debug("execute")
 
-	args := lgc.GetArgs()
+	if !lgc.DebugCheck() {
+		log.Debugf("debug mode, skip execute.")
+		return
+	}
 
-	if args == nil {
+	if lgc.GetCmd() == "" && len(lgc.GetArgs()) == 0 {
 		if !lgc.groupEnabled(ImageContentCommand) {
-			logger.WithField("group_code", lgc.groupCode()).
-				WithField("command", ImageContentCommand).
-				Debug("not enabled")
+			logger.WithField("command", ImageContentCommand).Debug("not enabled")
 			return
 		}
 		if lgc.uin() != lgc.bot.Uin {
 			lgc.ImageContent()
 		}
 		return
-	} else {
-		switch lgc.GetCmd() {
-		case "/lsp":
-			if lgc.requireNotDisable(LspCommand) {
-				lgc.LspCommand()
-			}
-		case "/色图":
-			if lgc.requireEnable(SetuCommand) {
-				lgc.SetuCommand(false)
-			}
-		case "/黄图":
-			if lgc.requireEnable(HuangtuCommand) {
-				lgc.SetuCommand(true)
-			}
-		case "/watch":
-			if lgc.requireNotDisable(WatchCommand) {
-				if !lgc.requireAnyCommand(WatchCommand, UnwatchCommand) {
-					lgc.noPermissionReply()
-					return
-				}
-				lgc.WatchCommand(false)
-			}
-		case "/unwatch":
-			if lgc.requireNotDisable(UnwatchCommand) {
-				if !lgc.requireAnyCommand(WatchCommand, UnwatchCommand) {
-					lgc.noPermissionReply()
-					return
-				}
-				lgc.WatchCommand(true)
-			}
-		case "/list":
-			if lgc.requireNotDisable(ListCommand) {
-				lgc.ListCommand()
-			}
-		case "/签到":
-			if lgc.requireNotDisable(CheckinCommand) {
-				lgc.CheckinCommand()
-			}
-		case "/roll":
-			if lgc.requireNotDisable(RollCommand) {
-				lgc.RollCommand()
-			}
-		case "/grant":
-			if !lgc.l.PermissionStateManager.RequireAny(
-				permission.AdminRoleRequireOption(lgc.uin()),
-				permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
-				permission.QQAdminRequireOption(lgc.groupCode(), lgc.uin()),
-			) {
-				lgc.noPermissionReply()
-				return
-			}
-			lgc.GrantCommand()
-		case "/enable":
-			if !lgc.l.PermissionStateManager.RequireAny(
-				permission.AdminRoleRequireOption(lgc.uin()),
-				permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
-			) {
-				lgc.noPermissionReply()
-				return
-			}
-			lgc.EnableCommand(false)
-		case "/disable":
-			if !lgc.l.PermissionStateManager.RequireAny(
-				permission.AdminRoleRequireOption(lgc.uin()),
-				permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
-			) {
-				lgc.noPermissionReply()
-				return
-			}
-			lgc.EnableCommand(true)
-		case "/face":
-			if lgc.requireNotDisable(FaceCommand) {
-				lgc.FaceCommand()
-			}
-		case "/倒放":
-			if lgc.requireNotDisable(ReverseCommand) {
-				lgc.ReverseCommand()
-			}
-		case "/help":
-			lgc.HelpCommand()
-		default:
-		}
-		return
 	}
+
+	switch lgc.GetCmd() {
+	case "/lsp":
+		if lgc.requireNotDisable(LspCommand) {
+			lgc.LspCommand()
+		}
+	case "/色图":
+		if lgc.requireEnable(SetuCommand) {
+			lgc.SetuCommand(false)
+		}
+	case "/黄图":
+		if lgc.requireEnable(HuangtuCommand) {
+			lgc.SetuCommand(true)
+		}
+	case "/watch":
+		if lgc.requireNotDisable(WatchCommand) {
+			if !lgc.requireAnyCommand(WatchCommand, UnwatchCommand) {
+				lgc.noPermissionReply()
+				return
+			}
+			lgc.WatchCommand(false)
+		}
+	case "/unwatch":
+		if lgc.requireNotDisable(UnwatchCommand) {
+			if !lgc.requireAnyCommand(WatchCommand, UnwatchCommand) {
+				lgc.noPermissionReply()
+				return
+			}
+			lgc.WatchCommand(true)
+		}
+	case "/list":
+		if lgc.requireNotDisable(ListCommand) {
+			lgc.ListCommand()
+		}
+	case "/签到":
+		if lgc.requireNotDisable(CheckinCommand) {
+			lgc.CheckinCommand()
+		}
+	case "/roll":
+		if lgc.requireNotDisable(RollCommand) {
+			lgc.RollCommand()
+		}
+	case "/grant":
+		if !lgc.l.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(lgc.uin()),
+			permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
+			permission.QQAdminRequireOption(lgc.groupCode(), lgc.uin()),
+		) {
+			lgc.noPermissionReply()
+			return
+		}
+		lgc.GrantCommand()
+	case "/enable":
+		if !lgc.l.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(lgc.uin()),
+			permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
+		) {
+			lgc.noPermissionReply()
+			return
+		}
+		lgc.EnableCommand(false)
+	case "/disable":
+		if !lgc.l.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(lgc.uin()),
+			permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
+		) {
+			lgc.noPermissionReply()
+			return
+		}
+		lgc.EnableCommand(true)
+	case "/face":
+		if lgc.requireNotDisable(FaceCommand) {
+			lgc.FaceCommand()
+		}
+	case "/倒放":
+		if lgc.requireNotDisable(ReverseCommand) {
+			lgc.ReverseCommand()
+		}
+	case "/help":
+		lgc.HelpCommand()
+	default:
+		log.Debug("no command matched")
+	}
+	return
 }
 
 func (lgc *LspGroupCommand) LspCommand() {
@@ -564,7 +566,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 		if len(listMsg.Elements) == 1 {
 			listMsg.Append(message.NewText("无人直播"))
 		}
-	case concern.Youtube:
+	case concern.YoutubeLive:
 		listMsg.Append(message.NewText("当前关注：\n"))
 		living, err := lgc.l.youtubeConcern.ListLiving(groupCode, all)
 		if err != nil {
@@ -582,6 +584,10 @@ func (lgc *LspGroupCommand) ListCommand() {
 			}
 			listMsg.Append(utils.MessageTextf("%v %v", info.ChannelName, info.ChannelId))
 		}
+	case concern.YoutubeVideo:
+		// TODO
+		log.Error("list youtube video not supported yet")
+		listMsg.Append(message.NewText("暂不支持"))
 	}
 
 	lgc.send(listMsg)
@@ -679,7 +685,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 	err = db.Update(func(tx *buntdb.Tx) error {
 		var score int64
 		key := localdb.Key("Score", groupCode, msg.Sender.Uin)
-		dateMarker := localdb.Key("ScoreDate", groupCode, msg.Sender.Uin, date, nil)
+		dateMarker := localdb.Key("ScoreDate", groupCode, msg.Sender.Uin, date)
 
 		val, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -693,7 +699,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		}
 		_, err = tx.Get(dateMarker)
 		if err != buntdb.ErrNotFound {
-			replyText = fmt.Sprintf("明天再来吧，当前积分为%v\n", score)
+			replyText = fmt.Sprintf("明天再来吧，当前积分为%v", score)
 			return nil
 		}
 
@@ -986,11 +992,11 @@ func (lgc *LspGroupCommand) HelpCommand() {
 		return
 	}
 
-	text := "一个多功能看管人专用机器人，包括b站直播、动态推送，斗鱼直播推送，油管直播、视频推送\n" +
+	text := "一个多功能DD专用机器人，包括b站直播、动态推送，斗鱼直播推送，油管直播、视频推送\n" +
 		"只需添加bot好友，阁下也可为自己的群添加自动推送功能\n" +
 		"详细命令请添加好友后私聊发送/help\n" +
 		"by Sora233\n" +
-		"如果喜欢请点一个Star：https://github.com/Sora233/Sora233-MiraiGo"
+		"如果喜欢请点一个Star：https://github.com/Sora233/DDBOT"
 	lgc.textReply(text)
 }
 
@@ -1016,7 +1022,7 @@ func (lgc *LspGroupCommand) ImageContent() {
 					return
 				}
 			} else {
-				log.Error("can not cast element to GroupImageElement")
+				log.Error("can not cast element to ImageElement")
 			}
 		}
 	}
@@ -1058,7 +1064,7 @@ func (lgc *LspGroupCommand) reserveGif(url string) {
 	img, err := utils.ImageGet(url, proxy_pool.PreferNone)
 	if err != nil {
 		log.Errorf("get image err %v", err)
-		lgc.textReply(fmt.Sprintf("获取图片失败 - %v", err))
+		lgc.textReply("获取图片失败")
 		return
 	}
 	img, err = utils.ImageReserve(img)
@@ -1187,8 +1193,8 @@ func (lgc *LspGroupCommand) parseRawSiteAndType(rawSite string, rawType string) 
 		watchType concern.Type
 		err       error
 	)
-	rawSite = strings.Trim(rawSite, "\"")
-	rawType = strings.Trim(rawType, "\"")
+	rawSite = strings.Trim(rawSite, `"`)
+	rawType = strings.Trim(rawType, `"`)
 	site, err = lgc.parseRawSite(rawSite)
 	if err != nil {
 		return "", concern.Empty, err
@@ -1205,13 +1211,15 @@ func (lgc *LspGroupCommand) parseRawSiteAndType(rawSite string, rawType string) 
 		} else if site == douyu.Site {
 			watchType = concern.DouyuLive
 		} else if site == youtube.Site {
-			watchType = concern.Youtube
+			watchType = concern.YoutubeLive
 		} else {
 			return "", concern.Empty, errors.New("unknown watch type")
 		}
 	case "news":
 		if site == bilibili.Site {
 			watchType = concern.BilibiliNews
+		} else if site == youtube.Site {
+			watchType = concern.YoutubeVideo
 		} else {
 			return "", concern.Empty, errors.New("unknown watch type")
 		}

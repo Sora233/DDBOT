@@ -52,10 +52,7 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 		return errors.New("nil LiveInfo")
 	}
 	err := c.RWTxCover(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(c.CurrentLiveKey(liveInfo.Mid), liveInfo.ToString(), &buntdb.SetOptions{
-			Expires: true,
-			TTL:     time.Hour * 24,
-		})
+		_, _, err := tx.Set(c.CurrentLiveKey(liveInfo.Mid), liveInfo.ToString(), localdb.ExpireOption(time.Hour*24))
 		return err
 	})
 	return err
@@ -87,10 +84,7 @@ func (c *StateManager) AddNewsInfo(newsInfo *NewsInfo) error {
 		return errors.New("nil NewsInfo")
 	}
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(c.CurrentNewsKey(newsInfo.Mid), newsInfo.ToString(), &buntdb.SetOptions{
-			Expires: true,
-			TTL:     time.Hour * 24,
-		})
+		_, _, err := tx.Set(c.CurrentNewsKey(newsInfo.Mid), newsInfo.ToString(), localdb.ExpireOption(time.Hour*24))
 		return err
 	})
 }
@@ -128,14 +122,12 @@ func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 }
 
 func (c *StateManager) Start() error {
-	db, err := localdb.GetClient()
-	if err == nil {
-		db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.UserInfoKey(), c.UserInfoKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexBinary)
-	}
+	db := localdb.MustGetClient()
+	db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
+	db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
+	db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
+	db.CreateIndex(c.UserInfoKey(), c.UserInfoKey("*"), buntdb.IndexString)
+	db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexBinary)
 	return c.StateManager.Start()
 }
 

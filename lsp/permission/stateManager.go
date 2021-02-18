@@ -308,7 +308,7 @@ func (c *StateManager) RemoveAll(groupCode int64) error {
 }
 
 func (c *StateManager) FreshIndex() {
-	db, _ := localdb.GetClient()
+	db := localdb.MustGetClient()
 	db.CreateIndex(c.PermissionKey(), c.PermissionKey("*"), buntdb.IndexString)
 	for _, group := range bot.Instance.GroupList {
 		db.CreateIndex(c.GroupPermissionKey(group.Code), c.GroupPermissionKey(group.Code, "*"), buntdb.IndexString)

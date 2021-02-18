@@ -29,7 +29,8 @@ func (c *LspPrivateCommand) Execute() {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.WithField("stack", string(debug.Stack())).
-				Errorf("panic recovered")
+				Errorf("panic recovered: %v", err)
+			c.textSend("エラー発生")
 		}
 	}()
 	if !c.DebugCheck() {
@@ -53,12 +54,12 @@ func (c *LspPrivateCommand) PingCommand() {
 
 	output := c.parseCommandSyntax(&struct{}{}, PingCommand, kong.Description("reply a pong"), kong.UsageOnError())
 	if output != "" {
-		c.privateTextSend(output)
+		c.textSend(output)
 	}
 	if c.exit {
 		return
 	}
-	c.privateTextSend("pong")
+	c.textSend("pong")
 }
 
 func (c *LspPrivateCommand) HelpCommand() {
@@ -68,7 +69,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 
 	output := c.parseCommandSyntax(&struct{}{}, HelpCommand, kong.Description("print help message"))
 	if output != "" {
-		c.privateTextSend(output)
+		c.textSend(output)
 	}
 	if c.exit {
 		return
@@ -94,7 +95,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"/enable watch 将开启watch命令\n" +
 		"/disable watch 将禁用watch命令，调用watch命令将不再有任何反应\n" +
 		"其他使用问题请在此提出：https://github.com/Sora233/Sora233-MiraiGo/discussions"
-	c.privateTextSend(help)
+	c.textSend(help)
 }
 
 func (c *LspPrivateCommand) DebugCheck() bool {
@@ -109,7 +110,7 @@ func (c *LspPrivateCommand) DebugCheck() bool {
 	return ok
 }
 
-func (c *LspPrivateCommand) privateTextSend(text string) *message.PrivateMessage {
+func (c *LspPrivateCommand) textSend(text string) *message.PrivateMessage {
 	sendingMsg := message.NewSendingMessage()
 	sendingMsg.Append(message.NewText(text))
 	return c.send(sendingMsg)

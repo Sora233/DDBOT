@@ -189,6 +189,29 @@ func ImageReserve(imgBytes []byte) ([]byte, error) {
 	} else if format != "gif" {
 		return nil, errors.New("不是动图")
 	}
+	img, err := DecodeGifWithCompleteFrame(imgBytes)
+	if err != nil {
+		return nil, err
+	}
+	length := len(img.Image)
+	for idx := range img.Image {
+		oidx := length - 1 - idx
+		if idx >= oidx {
+			break
+		}
+		tmp := img.Image[idx]
+		img.Image[idx] = img.Image[oidx]
+		img.Image[oidx] = tmp
+	}
+	var result = bytes.NewBuffer(nil)
+	err = gif.EncodeAll(result, img)
+	if err != nil {
+		return nil, err
+	}
+	return result.Bytes(), nil
+}
+
+func DecodeGifWithCompleteFrame(imgBytes []byte) (*gif.GIF, error) {
 	img, err := gif.DecodeAll(bytes.NewReader(imgBytes))
 	if err != nil {
 		return nil, err
@@ -196,22 +219,12 @@ func ImageReserve(imgBytes []byte) ([]byte, error) {
 	if len(img.Image) == 0 {
 		return nil, errors.New("unknown image without frame")
 	}
-	imgLength := len(img.Image)
-	var newImg = make([]*image.Paletted, imgLength)
 	var baseImg = image.NewPaletted(img.Image[0].Bounds(), img.Image[0].Palette)
 	for index, src := range img.Image {
 		draw.Draw(baseImg, src.Bounds(), src, src.Rect.Min, draw.Over)
-		pos := imgLength - index - 1
-		newImg[pos] = image.NewPaletted(baseImg.Bounds(), baseImg.Palette)
-		draw.Draw(newImg[pos], newImg[pos].Rect, baseImg, baseImg.Rect.Min, draw.Over)
+		draw.Draw(img.Image[index], baseImg.Bounds(), baseImg, baseImg.Rect.Min, draw.Over)
 	}
-	img.Image = newImg
-	var result = bytes.NewBuffer(nil)
-	err = gif.EncodeAll(result, img)
-	if err != nil {
-		return nil, err
-	}
-	return result.Bytes(), nil
+	return img, nil
 }
 
 func PrefixMatch(opts []string, target string) (string, bool) {

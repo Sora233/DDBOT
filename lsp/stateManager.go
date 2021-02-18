@@ -5,6 +5,7 @@ import (
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/tidwall/buntdb"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -54,7 +55,7 @@ func (s *StateManager) SaveMessageImageUrl(groupCode int64, messageID int32, msg
 	}
 	return s.RWTxCover(func(tx *buntdb.Tx) error {
 		key := s.GroupMessageImageKey(groupCode, messageID)
-		_, _, err := tx.Set(key, strings.Join(urls, " "), &buntdb.SetOptions{Expires: true, TTL: time.Hour * 8})
+		_, _, err := tx.Set(key, strings.Join(urls, " "), localdb.ExpireOption(time.Hour*8))
 		return err
 	})
 }
@@ -79,10 +80,7 @@ func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
 			_, err := tx.Delete(key)
 			return err
 		} else {
-			_, _, err := tx.Set(key, "", &buntdb.SetOptions{
-				Expires: true,
-				TTL:     time.Second * time.Duration(t),
-			})
+			_, _, err := tx.Set(key, "", localdb.ExpireOption(time.Second*time.Duration(t)))
 			return err
 		}
 	})
@@ -106,8 +104,40 @@ func (s *StateManager) IsMuted(groupCode int64, uin int64) bool {
 	return result
 }
 
+func (s *StateManager) SaveGroupInvitor(groupCode int64, uin int64) error {
+	return s.RWTxCover(func(tx *buntdb.Tx) error {
+		key := localdb.GroupInvitorKey(groupCode)
+		_, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			_, _, err := tx.Set(key, strconv.FormatInt(uin, 10), nil)
+			return err
+		} else if err != nil {
+			return err
+		} else {
+			return localdb.ErrKeyExist
+		}
+	})
+}
+
+func (s *StateManager) GetGroupInvitor(groupCode int64) (target int64, err error) {
+	err = s.RWTxCover(func(tx *buntdb.Tx) error {
+		key := localdb.GroupInvitorKey(groupCode)
+		invitor, err := tx.Delete(key)
+		if err != nil {
+			return err
+		} else {
+			target, err = strconv.ParseInt(invitor, 64, 10)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+	})
+	return
+}
+
 func (s *StateManager) FreshIndex() {
-	db, _ := localdb.GetClient()
+	db := localdb.MustGetClient()
 	db.CreateIndex(s.GroupMessageImageKey(), s.GroupMessageImageKey("*"), buntdb.IndexString)
 	db.CreateIndex(s.GroupMuteKey(), s.GroupMuteKey("*"), buntdb.IndexString)
 }

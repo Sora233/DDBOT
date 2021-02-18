@@ -30,6 +30,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*bilibili.ConcernLiveNotify)
 				logger.WithField("site", bilibili.Site).
 					WithField("GroupCode", notify.GroupCode).
+					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
 					WithField("Name", notify.Name).
 					WithField("Title", notify.LiveTitle).
 					WithField("Status", notify.Status.String()).
@@ -46,6 +47,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*bilibili.ConcernNewsNotify)
 				logger.WithField("site", bilibili.Site).
 					WithField("GroupCode", notify.GroupCode).
+					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
 					WithField("Name", notify.Name).
 					WithField("NewsCount", len(notify.Cards)).
 					Info("notify")
@@ -59,6 +61,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*douyu.ConcernLiveNotify)
 				logger.WithField("site", douyu.Site).
 					WithField("GroupCode", notify.GroupCode).
+					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
 					WithField("Name", notify.Nickname).
 					WithField("Title", notify.RoomName).
 					WithField("Status", notify.ShowStatus.String()).
@@ -71,10 +74,11 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					}
 					l.sendGroupMessage(notify.GroupCode, sendingMsg)
 				}
-			case concern.Youtube:
+			case concern.YoutubeLive, concern.YoutubeVideo:
 				notify := (inotify).(*youtube.ConcernNotify)
 				logger.WithField("site", youtube.Site).
 					WithField("GroupCode", notify.GroupCode).
+					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
 					WithField("ChannelName", notify.ChannelName).
 					WithField("ChannelID", notify.ChannelId).
 					WithField("VideoId", notify.VideoId).
@@ -105,7 +109,7 @@ func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMes
 	case concern.DouyuLive:
 		notify := (inotify).(*douyu.ConcernLiveNotify)
 		result = append(result, l.notifyDouyuLive(bot, notify)...)
-	case concern.Youtube:
+	case concern.YoutubeLive, concern.YoutubeVideo:
 		notify := (inotify).(*youtube.ConcernNotify)
 		result = append(result, l.notifyYoutube(bot, notify)...)
 	}
