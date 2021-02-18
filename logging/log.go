@@ -75,6 +75,7 @@ func logGroupMessage(msg *message.GroupMessage) {
 		WithField("GroupCode", msg.GroupCode).
 		WithField("GroupName", msg.GroupName).
 		WithField("SenderID", msg.Sender.Uin).
+		WithField("SenderName", msg.Sender.DisplayName()).
 		Info(msgToString(msg))
 }
 
@@ -84,6 +85,7 @@ func logPrivateMessage(msg *message.PrivateMessage) {
 		WithField("MessageID", msg.Id).
 		WithField("MessageIID", msg.InternalId).
 		WithField("SenderID", msg.Sender.Uin).
+		WithField("SenderName", msg.Sender.DisplayName()).
 		WithField("Target", msg.Target).
 		Info(msg.ToString())
 }
