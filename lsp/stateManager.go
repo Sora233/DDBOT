@@ -137,7 +137,7 @@ func (s *StateManager) GetGroupInvitor(groupCode int64) (target int64, err error
 }
 
 func (s *StateManager) FreshIndex() {
-	db, _ := localdb.GetClient()
+	db := localdb.MustGetClient()
 	db.CreateIndex(s.GroupMessageImageKey(), s.GroupMessageImageKey("*"), buntdb.IndexString)
 	db.CreateIndex(s.GroupMuteKey(), s.GroupMuteKey("*"), buntdb.IndexString)
 }
