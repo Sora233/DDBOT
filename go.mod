@@ -12,7 +12,9 @@ require (
 	github.com/alecthomas/kong v0.2.15
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.920
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
+	github.com/gin-gonic/gin v1.6.3
 	github.com/golang/protobuf v1.4.3
+	github.com/google/uuid v1.2.0
 	github.com/imroc/req v0.3.0
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jupp0r/go-priority-queue v0.0.0-20160601094913-ab1073853bde
