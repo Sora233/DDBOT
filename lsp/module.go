@@ -51,7 +51,7 @@ type Lsp struct {
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
 	return bot.ModuleInfo{
 		ID:       ModuleName,
-		Instance: Instance,
+		Instance: LSP,
 	}
 }
 
@@ -431,13 +431,13 @@ func (l *Lsp) compactTextElements(elements []message.IMessageElement) []message.
 	return compactMsg
 }
 
-var Instance *Lsp
+var LSP *Lsp
 
 func init() {
-	Instance = &Lsp{
+	LSP = &Lsp{
 		concernNotify: make(chan concern.Notify, 500),
 		stop:          make(chan interface{}),
 		status:        NewStatus(),
 	}
-	bot.RegisterModule(Instance)
+	bot.RegisterModule(LSP)
 }

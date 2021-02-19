@@ -13,8 +13,13 @@ func (*Lsp) StartBackend() {
 	auth := r.Group("/", gin.BasicAuth(config.GlobalConfig.GetStringMapString("backend.basicAuth")))
 
 	v1 := auth.Group("/v1")
-
 	v1.GET("/ping", PingHandler)
+
+	{
+		v1Groups := v1.Group("/groups")
+		v1Groups.GET("", GroupsGetHandler)
+		v1Groups.DELETE("", GroupsDeleteHandler)
+	}
 
 	go r.Run(config.GlobalConfig.GetString("backend.addr"))
 }

@@ -21,3 +21,11 @@ func PingHandler(c *gin.Context) {
 	}()
 	response.Message = "pong"
 }
+
+func GroupsGetHandler(c *gin.Context) {
+
+}
+
+func GroupsDeleteHandler(c *gin.Context) {
+
+}
