@@ -2,6 +2,7 @@ package bilibili
 
 import (
 	"context"
+	"fmt"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
@@ -33,7 +34,10 @@ func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, err
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(ctx, url, params, 3, requests.ProxyOption(proxy_pool.PreferNone))
+	resp, err := requests.Get(ctx, url, params, 3,
+		requests.ProxyOption(proxy_pool.PreferNone),
+		requests.HeaderOption("Referer", fmt.Sprintf("https://space.bilibili.com/%v/", hostUid)),
+	)
 	if err != nil {
 		return nil, err
 	}
