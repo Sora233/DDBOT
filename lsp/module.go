@@ -21,6 +21,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/local_proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/py"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/zhima"
+	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
@@ -218,19 +219,30 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 
 		minfo := info.FindMember(bot.Uin)
 		minfo.EditCard("【bot】")
-		target, err := l.LspStateManager.GetGroupInvitor(info.Code)
-		if err == buntdb.ErrNotFound {
-			log.Debug("no invitor found, skip grant group admin role")
-		} else if err != nil {
-			log.Errorf("get invitor err %v", err)
-			return
-		} else {
-			log = log.WithField("invitor", target)
-			log.Debug("grant group admin role")
-			if err := l.PermissionStateManager.GrantGroupRole(info.Code, target, permission.GroupAdmin); err != nil {
-				log.Errorf("grant group admin role failed %v", err)
+		go func() {
+			// sbtx
+			// 有一些sb的时候邀请加群会自动同意，这时可能join callback在invited callback之前触发
+			var (
+				target int64
+				err    error
+			)
+			localutils.Retry(10, time.Second*3, func() bool {
+				target, err = l.LspStateManager.GetGroupInvitor(info.Code)
+				return err == nil
+			})
+			if err == buntdb.ErrNotFound {
+				log.Debug("no invitor found finally, skip grant group admin role")
+			} else if err != nil {
+				log.Errorf("get invitor err %v", err)
+				return
+			} else {
+				log = log.WithField("invitor", target)
+				log.Debug("grant group admin role")
+				if err := l.PermissionStateManager.GrantGroupRole(info.Code, target, permission.GroupAdmin); err != nil {
+					log.Errorf("grant group admin role failed %v", err)
+				}
 			}
-		}
+		}()
 	})
 
 	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {

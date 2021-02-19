@@ -269,3 +269,13 @@ func TimestampFormat(ts int64) string {
 	t := time.Unix(ts, 0)
 	return t.Format("2006-01-02 15:04:05")
 }
+
+func Retry(count int, interval time.Duration, f func() bool) bool {
+	for retry := 0; retry < count; retry++ {
+		if f() {
+			return true
+		}
+		time.Sleep(interval)
+	}
+	return false
+}
