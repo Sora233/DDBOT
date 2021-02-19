@@ -996,7 +996,8 @@ func (lgc *LspGroupCommand) HelpCommand() {
 		"只需添加bot好友，阁下也可为自己的群添加自动推送功能\n" +
 		"详细命令请添加好友后私聊发送/help\n" +
 		"by Sora233\n" +
-		"如果喜欢请点一个Star：https://github.com/Sora233/DDBOT"
+		"如果遇到任何用法问题，请到https://github.com/Sora233/DDBOT/discussions提问\n" +
+		"本项目为开源项目，如果喜欢请点一个Star：https://github.com/Sora233/DDBOT"
 	lgc.textReply(text)
 }
 

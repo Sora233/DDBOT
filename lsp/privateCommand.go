@@ -94,6 +94,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"/enable和/disable 用于开启与禁用命令，例如：\n" +
 		"/enable watch 将开启watch命令\n" +
 		"/disable watch 将禁用watch命令，调用watch命令将不再有任何反应\n" +
+		"注意，bot只会在群聊内工作，私聊无法生效\n" +
 		"其他使用问题请在此提出：https://github.com/Sora233/Sora233-MiraiGo/discussions"
 	c.textSend(help)
 }
