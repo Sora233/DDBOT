@@ -14,6 +14,7 @@ import (
 	"image/gif"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -189,7 +190,7 @@ func ImageReserve(imgBytes []byte) ([]byte, error) {
 	} else if format != "gif" {
 		return nil, errors.New("不是动图")
 	}
-	img, err := DecodeGifWithCompleteFrame(imgBytes)
+	img, err := DecodeGifWithCompleteFrame(bytes.NewReader(imgBytes))
 	if err != nil {
 		return nil, err
 	}
@@ -211,20 +212,62 @@ func ImageReserve(imgBytes []byte) ([]byte, error) {
 	return result.Bytes(), nil
 }
 
-func DecodeGifWithCompleteFrame(imgBytes []byte) (*gif.GIF, error) {
-	img, err := gif.DecodeAll(bytes.NewReader(imgBytes))
+func DecodeGifWithCompleteFrame(r io.Reader) (g *gif.GIF, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("Error while decoding: %s", r)
+		}
+	}()
+	g, err = gif.DecodeAll(r)
 	if err != nil {
 		return nil, err
 	}
-	if len(img.Image) == 0 {
-		return nil, errors.New("unknown image without frame")
+
+	imgWidth, imgHeight := GetGifDimensions(g)
+
+	overpaintImage := image.NewRGBA(image.Rect(0, 0, imgWidth, imgHeight))
+
+	for index, srcImg := range g.Image {
+		switch g.Disposal[index] {
+		case gif.DisposalNone:
+			draw.Draw(overpaintImage, overpaintImage.Bounds(), srcImg, image.Point{}, draw.Over)
+			draw.Draw(srcImg, overpaintImage.Bounds(), overpaintImage, image.Point{}, draw.Src)
+		case gif.DisposalBackground:
+			// TODO is it correct?
+			//draw.Draw(overpaintImage, overpaintImage.Bounds(), srcImg, image.Point{}, draw.Src)
+		case gif.DisposalPrevious:
+			// TODO how?
+			draw.Draw(overpaintImage, overpaintImage.Bounds(), srcImg, image.Point{}, draw.Over)
+			draw.Draw(srcImg, overpaintImage.Bounds(), overpaintImage, image.Point{}, draw.Src)
+		}
+
 	}
-	var baseImg = image.NewPaletted(img.Image[0].Bounds(), img.Image[0].Palette)
-	for index, src := range img.Image {
-		draw.Draw(baseImg, src.Bounds(), src, src.Rect.Min, draw.Over)
-		draw.Draw(img.Image[index], baseImg.Bounds(), baseImg, baseImg.Rect.Min, draw.Over)
+
+	return g, nil
+}
+
+func GetGifDimensions(gif *gif.GIF) (x, y int) {
+	var lowestX int
+	var lowestY int
+	var highestX int
+	var highestY int
+
+	for _, img := range gif.Image {
+		if img.Rect.Min.X < lowestX {
+			lowestX = img.Rect.Min.X
+		}
+		if img.Rect.Min.Y < lowestY {
+			lowestY = img.Rect.Min.Y
+		}
+		if img.Rect.Max.X > highestX {
+			highestX = img.Rect.Max.X
+		}
+		if img.Rect.Max.Y > highestY {
+			highestY = img.Rect.Max.Y
+		}
 	}
-	return img, nil
+
+	return highestX - lowestX, highestY - lowestY
 }
 
 func PrefixMatch(opts []string, target string) (string, bool) {

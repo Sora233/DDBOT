@@ -22,7 +22,7 @@ func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
 
 	format, err := ImageFormat(imgBytes)
 	if err == nil && format == "gif" {
-		g, err := DecodeGifWithCompleteFrame(imgBytes)
+		g, err := DecodeGifWithCompleteFrame(bytes.NewReader(imgBytes))
 		if err != nil {
 			return nil, err
 		}
