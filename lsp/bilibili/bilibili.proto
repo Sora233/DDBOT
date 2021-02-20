@@ -33,6 +33,7 @@ enum DynamicDescType {
     WithPost = 64;
     WithMusic = 256;
     WithSketch = 2048;
+    WithLive = 4200;
 }
 
 message RoomInitResponse {
@@ -226,4 +227,15 @@ message CardWithSketch {
         string desc_text = 2;
     }
     Sketch sketch = 2;
+}
+
+message CardWithLive {
+    int64 roomid = 1;
+    int64 uid = 2;
+    int64 uname = 3;
+    string cover = 4;
+    string title = 5;
+    string area_v2_name = 6;
+    LiveStatus live_status = 7;
+    RoomStatus round_status = 8;
 }
