@@ -74,7 +74,13 @@
 
 </details>
 
-阁下可添加Demo机器人体验 1561991863
+### 用法示例
+
+详细介绍及示例请查看：[示例](/EXAMPLE.md)
+
+阁下可添加Demo机器人体验，QQ：1561991863
+
+<img src="https://user-images.githubusercontent.com/11474360/108590360-150afa00-739e-11eb-86f7-77f68d845505.jpeg" width="300" height="450">
 
 ## 使用
 
@@ -156,7 +162,9 @@ debug: # debug模式，只有以下群或qq号可以触发命令
 
 logLevel: info # 日志等级
 ```
+
 ## 注意事项
+
 - bot掉线无法重连时将自动退出，请自行实现保活机制
 - bot使用 [buntdb](https://github.com/tidwall/buntdb) 作为embed database，会在当前目录生成文件`.lsp.db`
   ，删除该文件将导致bot恢复出厂设置，可以使用 [buntdb-cli](https://github.com/Sora233/buntdb-cli) 作为运维工具，但注意不要在bot运行的时候使用（buntdb不支持多写）。
@@ -167,6 +175,8 @@ logLevel: info # 日志等级
 - 禁止商用
 
 ## 贡献
+
+*Feel free to make your first pull request.*
 
 发现问题或功能建议请到 [issues](https://github.com/Sora233/DDBOT/issues)
 
