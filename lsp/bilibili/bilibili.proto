@@ -32,6 +32,7 @@ enum DynamicDescType {
     WithVideo = 8;
     WithPost = 64;
     WithMusic = 256;
+    WithSketch = 2048;
 }
 
 message RoomInitResponse {
@@ -212,4 +213,17 @@ message CardWithPost {
     repeated string image_urls = 3;
     string banner_url = 4;
     int64 publish_time = 5;
+}
+
+message CardWithSketch {
+    message Vest {
+        int64 uid = 1;
+        string content = 2;
+    }
+    Vest vest = 1;
+    message Sketch {
+        string title = 1;
+        string desc_text = 2;
+    }
+    Sketch sketch = 2;
 }

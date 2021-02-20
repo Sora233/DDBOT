@@ -310,7 +310,16 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 		case bilibili.DynamicDescType_WithMusic:
 			// TODO
 			log.Debugf("not supported")
-			result = append(result, localutils.MessageTextf("%v发布了新动态音乐：\n", notify.Name))
+			result = append(result, localutils.MessageTextf("%v发布了新动态音乐：\n%v\n", notify.Name, date))
+		case bilibili.DynamicDescType_WithSketch:
+			cardSketch, err := notify.GetCardWithSketch(index)
+			if err != nil {
+				log.WithField("name", notify.Name).
+					WithField("card", card).
+					Errorf("cast failed %v", err)
+				continue
+			}
+			result = append(result, localutils.MessageTextf("%v更新了%v：\n%v\n%v\n", notify.Name, cardSketch.GetSketch().GetDescText(), date, cardSketch.GetVest().GetContent()))
 		}
 		log.WithField("dynamicUrl", dynamicUrl).Debug("append")
 		result = append(result, message.NewText(dynamicUrl+"\n"))
