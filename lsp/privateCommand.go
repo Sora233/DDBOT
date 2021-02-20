@@ -88,12 +88,12 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"/list 用于查看当前订阅，例如：\n" +
 		"查看当前b站订阅列表中正在直播的：/list -s bilibili -t live\n" +
 		"/grant 用于管理员给其他成员设置权限，例如：\n" +
-		"/grant -c watch 1234567 给qq号为1234567的用户使用watch命令的权限\n" +
+		"给qq号为1234567的用户使用watch命令的权限：/grant -c watch 1234567\n" +
 		"设置的权限可以使用-d参数取消：\n" +
-		"/grant -d -c watch 1234567 取消qq号为1234567的用户的watch命令权限\n" +
+		"取消qq号为1234567的用户的watch命令权限：/grant -d -c watch 1234567\n" +
 		"/enable和/disable 用于开启与禁用命令，例如：\n" +
-		"/enable watch 将开启watch命令\n" +
-		"/disable watch 将禁用watch命令，调用watch命令将不再有任何反应\n" +
+		"开启watch命令：/enable watch\n" +
+		"禁用watch命令，调用watch命令将不再有任何反应：/disable watch\n" +
 		"注意，bot只会在群聊内工作，私聊无法生效\n" +
 		"其他使用问题请在此提出：https://github.com/Sora233/Sora233-MiraiGo/discussions"
 	c.textSend(help)

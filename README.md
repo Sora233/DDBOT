@@ -62,7 +62,7 @@
 <details>
   <summary>里命令</summary>
 
-以下命令默认禁用
+以下命令默认禁用，使用enable命令后才能使用
 
 - **随机图片**
     - 由 [api.olicon.app](https://api.lolicon.app/#/) 提供
