@@ -134,7 +134,9 @@ pyProxyPool: # 代理池配置，py代理池 https://github.com/jhao104/proxy_po
   host: http://127.0.0.1:5010
 
 localProxyPool: # 代理池配置，固定代理
-  proxy:
+  oversea: # 可翻墙的代理，用于访问YTB或pixiv
+    - 127.0.0.1:8888
+  mainland: # 不可翻墙的代理，用于直连国内网站
     - 127.0.0.1:8888
 
 concern:
