@@ -605,7 +605,7 @@ func (lgc *LspGroupCommand) RollCommand() {
 	defer log.Info("roll command end")
 
 	var rollCmd struct {
-		RangeArg string `arg:"" optional:"" help:"roll range, eg. 100 / 50-100"`
+		RangeArg []string `arg:"" optional:"" help:"roll range, eg. 100 / 50-100 / opt1 opt2 opt3"`
 	}
 	output := lgc.parseCommandSyntax(&rollCmd, RollCommand)
 	if output != "" {
@@ -621,39 +621,48 @@ func (lgc *LspGroupCommand) RollCommand() {
 		err error
 	)
 
-	rollarg := rollCmd.RangeArg
-	if rollarg != "" {
-		if strings.Contains(rollarg, "-") {
-			rolls := strings.Split(rollarg, "-")
-			if len(rolls) != 2 {
-				lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
-				return
-			}
-			min, err = strconv.ParseInt(rolls[0], 10, 64)
-			if err != nil {
-				lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
-				return
-			}
-			max, err = strconv.ParseInt(rolls[1], 10, 64)
-			if err != nil {
-				lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
-				return
-			}
-		} else {
-			max, err = strconv.ParseInt(rollarg, 10, 64)
-			if err != nil {
-				lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
-				return
+	if len(rollCmd.RangeArg) <= 1 {
+		var rollarg string
+		if len(rollCmd.RangeArg) == 1 {
+			rollarg = rollCmd.RangeArg[0]
+		}
+		if rollarg != "" {
+			if strings.Contains(rollarg, "-") {
+				rolls := strings.Split(rollarg, "-")
+				if len(rolls) != 2 {
+					lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+					return
+				}
+				min, err = strconv.ParseInt(rolls[0], 10, 64)
+				if err != nil {
+					lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+					return
+				}
+				max, err = strconv.ParseInt(rolls[1], 10, 64)
+				if err != nil {
+					lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+					return
+				}
+			} else {
+				max, err = strconv.ParseInt(rollarg, 10, 64)
+				if err != nil {
+					lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+					return
+				}
 			}
 		}
+		if min > max {
+			lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+			return
+		}
+		result := rand.Int63n(max-min+1) + min
+		log = log.WithField("roll", result)
+		lgc.textReply(strconv.FormatInt(result, 10))
+	} else {
+		result := rollCmd.RangeArg[rand.Intn(len(rollCmd.RangeArg))]
+		log = log.WithField("choice", result)
+		lgc.textReply(result)
 	}
-	if min > max {
-		lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
-		return
-	}
-	result := rand.Int63n(max-min+1) + min
-	log = log.WithField("roll", result)
-	lgc.textReply(strconv.FormatInt(result, 10))
 }
 
 func (lgc *LspGroupCommand) CheckinCommand() {
