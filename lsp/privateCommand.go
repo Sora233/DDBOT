@@ -81,7 +81,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"订阅b站uid为2的用户的动态信息：/watch -s bilibili -t news 2\n" +
 		"uid即b站用户空间末尾的数字\n" +
 		"订阅斗鱼6655号直播间（https://www.douyu.com/6655）：/watch -s douyu -t live 6655\n" +
-		"订阅油管karory（https://www.youtube.com/channel/UCGXspjV3G7ZSunbikIdp3EA）直播和视频：/watch -s youtube -t live UCGXspjV3G7ZSunbikIdp3EA\n" +
+		"订阅油管karory（https://www.youtube.com/channel/UCGXspjV3G7ZSunbikIdp3EA）直播和预约直播：/watch -s youtube -t live UCGXspjV3G7ZSunbikIdp3EA\n" +
 		"可以用相应的/unwatch命令取消订阅\n" +
 		"取消订阅斗鱼6655直播间：/unwatch -s douyu -t live 6655\n" +
 		"该系列命令默认情况下仅管理员可用\n" +
