@@ -62,11 +62,12 @@ func Get(ctx context.Context, url string, params requests.Params, maxRetry int, 
 		resp  *requests.Response
 		retry = 0
 	)
+LOOP:
 	for {
 		select {
 		case <-ctx.Done():
 			err = ctx.Err()
-			break
+			break LOOP
 		default:
 		}
 		resp, err = req.Get(url, params)
