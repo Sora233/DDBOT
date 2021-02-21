@@ -17,7 +17,7 @@ type SpaceAccInfoRequest struct {
 }
 
 func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 	st := time.Now()
 	defer func() {
@@ -31,7 +31,10 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(ctx, url, params, 3, requests.ProxyOption(proxy_pool.PreferNone))
+	resp, err := requests.Get(ctx, url, params, 3,
+		requests.ProxyOption(proxy_pool.PreferNone),
+		requests.TimeoutOption(time.Second*5),
+	)
 	if err != nil {
 		return nil, err
 	}

@@ -36,7 +36,7 @@ type GetRoomInfoOldRequest struct {
 }
 
 func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 	st := time.Now()
 	defer func() {
@@ -53,7 +53,9 @@ func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
 	resp, err := requests.Get(ctx, url, params, 3,
 		requests.ProxyOption(proxy_pool.PreferNone),
 		requests.CookieOption(&http.Cookie{Name: "DedeUserID", Value: "2"}),
-		requests.CookieOption(&http.Cookie{Name: "LIVE_BUVID", Value: genBUVID()}))
+		requests.CookieOption(&http.Cookie{Name: "LIVE_BUVID", Value: genBUVID()}),
+		requests.TimeoutOption(time.Second*5),
+	)
 	if err != nil {
 		return nil, err
 	}
