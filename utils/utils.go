@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/requests"
 	"github.com/ericpauley/go-quantize/quantize"
@@ -288,20 +287,6 @@ func PrefixMatch(opts []string, target string) (string, bool) {
 		}
 	}
 	return result, found
-}
-
-func MessageFilter(msg []message.IMessageElement, filter func(message.IMessageElement) bool) []message.IMessageElement {
-	var result []message.IMessageElement
-	for _, e := range msg {
-		if filter(e) {
-			result = append(result, e)
-		}
-	}
-	return result
-}
-
-func MessageTextf(format string, args ...interface{}) *message.TextElement {
-	return message.NewText(fmt.Sprintf(format, args...))
 }
 
 func UnquoteString(s string) (string, error) {
