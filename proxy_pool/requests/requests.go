@@ -76,7 +76,7 @@ LOOP:
 		} else {
 			break
 		}
-		logger.WithField("retry", retry).WithField("maxRetry", maxRetry).Debugf("request failed %v, retry", err)
+		logger.WithField("proxy", req.GetProxy()).WithField("retry", retry).WithField("maxRetry", maxRetry).Debugf("request failed %v, retry", err)
 		time.Sleep(time.Second)
 		if retry == maxRetry {
 			break
