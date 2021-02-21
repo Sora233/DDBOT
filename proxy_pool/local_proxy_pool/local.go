@@ -32,6 +32,8 @@ func (p *Pool) Get(prefer proxy_pool.Prefer) (proxy_pool.IProxy, error) {
 		for k := range p.proxies {
 			if index == cnt {
 				prefer = k
+			} else {
+				index++
 			}
 		}
 	}
