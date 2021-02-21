@@ -27,11 +27,12 @@ type Pool struct {
 
 func (p *Pool) Get(prefer proxy_pool.Prefer) (proxy_pool.IProxy, error) {
 	if prefer == proxy_pool.PreferNone {
-		cnt := atomic.AddInt64(&p.preferCnt, 1)
-		if cnt%2 == 0 {
-			prefer = proxy_pool.PreferOversea
-		} else {
-			prefer = proxy_pool.PreferMainland
+		cnt := atomic.AddInt64(&p.preferCnt, 1) % int64(len(p.proxies))
+		var index int64 = 0
+		for k := range p.proxies {
+			if index == cnt {
+				prefer = k
+			}
 		}
 	}
 
