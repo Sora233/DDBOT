@@ -28,6 +28,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*bilibili.ConcernLiveNotify)
 				logger.WithField("site", bilibili.Site).
 					WithField("GroupCode", notify.GroupCode).
+					WithField("Uid", notify.Mid).
 					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
 					WithField("Name", notify.Name).
 					WithField("Title", notify.LiveTitle).
@@ -45,6 +46,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*bilibili.ConcernNewsNotify)
 				logger.WithField("site", bilibili.Site).
 					WithField("GroupCode", notify.GroupCode).
+					WithField("Uid", notify.Mid).
 					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
 					WithField("Name", notify.Name).
 					WithField("NewsCount", len(notify.Cards)).
@@ -318,7 +320,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			}
 			result = append(result, cover)
 		}
-		log.WithField("dynamicUrl", dynamicUrl).Debug("append")
+		log.WithField("uid", notify.Mid).WithField("name", notify.Name).WithField("dynamicUrl", dynamicUrl).Debug("append")
 		result = append(result, message.NewText(dynamicUrl+"\n"))
 	}
 	return result
