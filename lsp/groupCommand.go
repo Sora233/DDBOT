@@ -243,9 +243,9 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 
 	var options []image_pool.OptionFunc
 	if r18 {
-		options = append(options, lolicon_pool.R18Option(lolicon_pool.R18_ON))
+		options = append(options, lolicon_pool.R18Option(lolicon_pool.R18On))
 	} else {
-		options = append(options, lolicon_pool.R18Option(lolicon_pool.R18_OFF))
+		options = append(options, lolicon_pool.R18Option(lolicon_pool.R18Off))
 	}
 	if setuCmd.Tag != "" {
 		options = append(options, lolicon_pool.KeywordOption(setuCmd.Tag))

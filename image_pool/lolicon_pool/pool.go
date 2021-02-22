@@ -1,17 +1,20 @@
 package lolicon_pool
 
 import (
+	"container/list"
+	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/image_pool"
+	"sync"
+	"time"
 )
 
 var logger = utils.GetModuleLogger("lolicon_pool")
 
 type LoliconPool struct {
 	apiKey string
-}
-
-type Image struct {
+	cache  map[R18Type]*list.List
+	cond   *sync.Cond
 }
 
 func KeywordOption(keyword string) image_pool.OptionFunc {
@@ -65,25 +68,114 @@ func (pool *LoliconPool) Get(options ...image_pool.OptionFunc) ([]image_pool.Ima
 			}
 		}
 	}
-	logger.Debugf("request remote image")
-	resp, err := LoliconAppSetu(pool.apiKey, r18, keyword, num)
+	if keyword != "" {
+		logger.Debugf("request remote image")
+		resp, err := LoliconAppSetu(pool.apiKey, r18, keyword, num)
+		if err != nil {
+			return nil, err
+		}
+		logger.WithField("image num", len(resp.Data)).
+			WithField("quota", resp.Quota).
+			WithField("quota_min_ttl", resp.QuotaMinTTL).
+			Debugf("request done")
+		if resp.Code != 0 {
+			return nil, fmt.Errorf("response code %v: %v", resp.Code, resp.Msg)
+		}
+		var result []image_pool.Image
+		for _, img := range resp.Data {
+			result = append(result, img)
+		}
+		return result, nil
+	}
+	return pool.getCache(r18, num)
+}
+
+func (pool *LoliconPool) getCache(r18 R18Type, num int) (result []image_pool.Image, err error) {
+	pool.cond.L.Lock()
+	defer pool.cond.L.Unlock()
+	for i := 0; i < num; i++ {
+		if pool.cache[r18].Len() == 0 {
+			err = pool.fillCacheFromRemote(r18)
+			if err != nil {
+				logger.WithField("from", "getCache").Errorf("fill cache from remote failed %v", err)
+				break
+			}
+		}
+		result = append(result, pool.cache[r18].Remove(pool.cache[r18].Front()).(*Setu))
+	}
+	pool.cond.Signal()
+	return
+}
+
+// caller must hold the lock
+func (pool *LoliconPool) fillCacheFromRemote(r18 R18Type) error {
+	logger.WithField("r18", r18.String()).Debug("fetch from remote")
+	resp, err := LoliconAppSetu(pool.apiKey, r18, "", 10)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	logger.WithField("image num", len(resp.Data)).
-		WithField("quota", resp.Quota).
-		WithField("quota_min_ttl", resp.QuotaMinTTL).
-		Debugf("request done")
-	var result []image_pool.Image
-	for _, img := range resp.Data {
-		result = append(result, img)
+	logger.WithField("Quota", resp.Quota).
+		WithField("QuotaMinTTL", resp.QuotaMinTTL).
+		WithField("Msg", resp.Msg).
+		WithField("Code", resp.Code).
+		Debug("LoliconPool response")
+	if resp.Code != 0 {
+		return fmt.Errorf("response code %v: %v", resp.Code, resp.Msg)
 	}
-	return result, nil
+	for _, s := range resp.Data {
+		pool.cache[r18].PushFront(s)
+	}
+	return nil
+}
+
+func (pool *LoliconPool) background() {
+	go func() {
+		for range time.Tick(time.Second * 30) {
+			pool.store()
+		}
+	}()
+	for {
+		var result = true
+		pool.cond.L.Lock()
+		for {
+			var checkResult = false
+			for _, v := range pool.cache {
+				if v.Len() < 20 {
+					checkResult = true
+				}
+			}
+			if checkResult {
+				break
+			}
+			pool.cond.Wait()
+		}
+		for r18, l := range pool.cache {
+			if l.Len() < 20 {
+				for l.Len() < 50 {
+					if err := pool.fillCacheFromRemote(r18); err != nil {
+						logger.WithField("from", "background").Errorf("fill cache from remote failed %v", err)
+						result = false
+						break
+					}
+				}
+			}
+		}
+		pool.cond.L.Unlock()
+		if !result {
+			time.Sleep(time.Minute)
+		}
+	}
 }
 
 func NewLoliconPool(apikey string) (*LoliconPool, error) {
 	pool := &LoliconPool{
 		apiKey: apikey,
+		cache:  make(map[R18Type]*list.List),
+		cond:   sync.NewCond(&sync.Mutex{}),
 	}
+	pool.cache[R18Off] = list.New()
+	pool.cache[R18On] = list.New()
+	pool.load()
+	go pool.background()
 	return pool, nil
 }

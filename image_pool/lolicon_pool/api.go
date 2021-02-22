@@ -2,7 +2,6 @@ package lolicon_pool
 
 import (
 	"context"
-	"errors"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
@@ -14,10 +13,23 @@ const Host = "https://api.lolicon.app/setu"
 type R18Type int
 
 const (
-	R18_OFF R18Type = iota
-	R18_ON
-	R18_MIX
+	R18Off R18Type = iota
+	R18On
+	R18Mix
 )
+
+func (r R18Type) String() string {
+	switch r {
+	case R18Off:
+		return "R18Off"
+	case R18On:
+		return "R18On"
+	case R18Mix:
+		return "R18Mix"
+	default:
+		return "Unknown"
+	}
+}
 
 type Request struct {
 	Apikey   string `json:"apikey"`
@@ -42,7 +54,7 @@ type Setu struct {
 }
 
 func (s *Setu) Content() ([]byte, error) {
-	return utils.ImageGet(s.Url, proxy_pool.PreferNone)
+	return utils.ImageGet(s.Url, proxy_pool.PreferOversea)
 }
 
 type Response struct {
@@ -66,9 +78,9 @@ func LoliconAppSetu(apikey string, R18 R18Type, keyword string, num int) (*Respo
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
-	resp, err := requests.Get(ctx, Host, params, 3, requests.ProxyOption(proxy_pool.PreferMainland))
+	resp, err := requests.Get(ctx, Host, params, 3, requests.ProxyOption(proxy_pool.PreferOversea))
 	if err != nil {
 		return nil, err
 	}
@@ -76,9 +88,6 @@ func LoliconAppSetu(apikey string, R18 R18Type, keyword string, num int) (*Respo
 	err = resp.Json(apiResp)
 	if err != nil {
 		return nil, err
-	}
-	if apiResp.Code != 0 {
-		return nil, errors.New(apiResp.Msg)
 	}
 	return apiResp, nil
 }
