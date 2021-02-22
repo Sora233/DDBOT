@@ -92,8 +92,11 @@ func (l *Lsp) Init() {
 
 	switch imagePoolType {
 	case "loliconPool":
-		apikey := config.GlobalConfig.GetString("loliconPool.apikey")
-		pool, err := lolicon_pool.NewLoliconPool(apikey)
+		pool, err := lolicon_pool.NewLoliconPool(&lolicon_pool.Config{
+			ApiKey:   config.GlobalConfig.GetString("loliconPool.apikey"),
+			CacheMin: config.GlobalConfig.GetInt("loliconPool.cacheMin"),
+			CacheMax: config.GlobalConfig.GetInt("loliconPool.cacheMax"),
+		})
 		if err != nil {
 			log.Errorf("can not init pool %v", err)
 		} else {

@@ -15,7 +15,7 @@ type R18Type int
 const (
 	R18Off R18Type = iota
 	R18On
-	R18Mix
+	//R18Mix
 )
 
 func (r R18Type) String() string {
@@ -24,8 +24,8 @@ func (r R18Type) String() string {
 		return "R18Off"
 	case R18On:
 		return "R18On"
-	case R18Mix:
-		return "R18Mix"
+	//case R18Mix:
+	//	return "R18Mix"
 	default:
 		return "Unknown"
 	}

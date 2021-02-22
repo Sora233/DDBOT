@@ -2,6 +2,7 @@ package lolicon_pool
 
 import (
 	"container/list"
+	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/image_pool"
@@ -11,8 +12,14 @@ import (
 
 var logger = utils.GetModuleLogger("lolicon_pool")
 
+type Config struct {
+	ApiKey   string
+	CacheMin int
+	CacheMax int
+}
+
 type LoliconPool struct {
-	apiKey string
+	config *Config
 	cache  map[R18Type]*list.List
 	cond   *sync.Cond
 }
@@ -70,7 +77,7 @@ func (pool *LoliconPool) Get(options ...image_pool.OptionFunc) ([]image_pool.Ima
 	}
 	if keyword != "" {
 		logger.Debugf("request remote image")
-		resp, err := LoliconAppSetu(pool.apiKey, r18, keyword, num)
+		resp, err := LoliconAppSetu(pool.config.ApiKey, r18, keyword, num)
 		if err != nil {
 			return nil, err
 		}
@@ -110,7 +117,7 @@ func (pool *LoliconPool) getCache(r18 R18Type, num int) (result []image_pool.Ima
 // caller must hold the lock
 func (pool *LoliconPool) fillCacheFromRemote(r18 R18Type) error {
 	logger.WithField("r18", r18.String()).Debug("fetch from remote")
-	resp, err := LoliconAppSetu(pool.apiKey, r18, "", 10)
+	resp, err := LoliconAppSetu(pool.config.ApiKey, r18, "", 10)
 	if err != nil {
 		return err
 	}
@@ -140,7 +147,7 @@ func (pool *LoliconPool) background() {
 		for {
 			var checkResult = false
 			for _, v := range pool.cache {
-				if v.Len() < 20 {
+				if v.Len() < pool.config.CacheMin {
 					checkResult = true
 				}
 			}
@@ -150,8 +157,8 @@ func (pool *LoliconPool) background() {
 			pool.cond.Wait()
 		}
 		for r18, l := range pool.cache {
-			if l.Len() < 20 {
-				for l.Len() < 50 {
+			if l.Len() < pool.config.CacheMin {
+				for l.Len() < pool.config.CacheMax {
 					if err := pool.fillCacheFromRemote(r18); err != nil {
 						logger.WithField("from", "background").Errorf("fill cache from remote failed %v", err)
 						result = false
@@ -167,9 +174,21 @@ func (pool *LoliconPool) background() {
 	}
 }
 
-func NewLoliconPool(apikey string) (*LoliconPool, error) {
+func NewLoliconPool(config *Config) (*LoliconPool, error) {
+	if config.ApiKey == "" {
+		return nil, errors.New("empty api key")
+	}
+	if config.CacheMin == 0 {
+		config.CacheMin = 20
+	}
+	if config.CacheMax == 0 {
+		config.CacheMax = 50
+	}
+	if config.CacheMin > config.CacheMax {
+		config.CacheMin = config.CacheMax
+	}
 	pool := &LoliconPool{
-		apiKey: apikey,
+		config: config,
 		cache:  make(map[R18Type]*list.List),
 		cond:   sync.NewCond(&sync.Mutex{}),
 	}
