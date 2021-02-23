@@ -114,6 +114,7 @@ func (l *Lsp) Init() {
 			l.status.ImagePoolEnable = true
 		}
 	case "off":
+		log.Debug("image pool turn off")
 	default:
 		log.Errorf("unknown pool")
 	}
@@ -165,6 +166,7 @@ func (l *Lsp) Init() {
 		log.WithField("local_proxy_num", len(proxies)).Debug("debug")
 		l.status.ProxyPoolEnable = true
 	case "off":
+		log.Debug("proxy pool turn off")
 	default:
 		log.Errorf("unknown proxy type")
 	}

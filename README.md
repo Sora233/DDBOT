@@ -34,6 +34,7 @@
     - 由 [api.olicon.app](https://api.lolicon.app/#/) 提供
 - **色图判定**
     - 由阿里云提供
+
 </details>
 
 ### 用法示例
@@ -71,7 +72,7 @@ go build -tags nocv
 
 ## 配置
 
-模板为application.yaml.example，配置完成后将文件改名为application.yaml
+配置完成后将文件改名为application.yaml
 
 ```yaml
 bot:
@@ -113,10 +114,10 @@ zhimaProxyPool: # 代理池配置，芝麻http代理 http://h.zhimaruanjian.com/
   TimeLimit: 175
 
 imagePool:
-  type: off # localPool / loliconPool
+  type: "off" # localPool / loliconPool
 
 proxy:
-  type: off # pyProxyPool / zhimaProxyPool
+  type: "off" # pyProxyPool / zhimaProxyPool
 
 debug: # debug模式，只有以下群或qq号可以触发命令
   group:
