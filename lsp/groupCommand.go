@@ -285,13 +285,15 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 				errs[index] = fmt.Errorf("get image bytes failed %v", err)
 				return
 			}
-			resizedImage, err := utils.ImageNormSize(imgBytes)
-			if err != nil {
-				logger.WithField("content_length", len(imgBytes)).Errorf("resize failed: %v, use raw image", err)
-				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(imgBytes))
-			} else {
-				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(resizedImage))
-			}
+			groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(imgBytes))
+
+			//resizedImage, err := utils.ImageNormSize(imgBytes)
+			//if err != nil {
+			//	logger.WithField("content_length", len(imgBytes)).Errorf("resize failed: %v, use raw image", err)
+			//	groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(imgBytes))
+			//} else {
+			//	groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(resizedImage))
+			//}
 		}(index)
 	}
 	wg.Wait()
