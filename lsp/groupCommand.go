@@ -287,7 +287,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 			}
 			resizedImage, err := utils.ImageNormSize(imgBytes)
 			if err != nil {
-				logger.Errorf("resize failed, use raw image")
+				logger.WithField("content_length", len(imgBytes)).Errorf("resize failed: %v, use raw image", err)
 				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(imgBytes))
 			} else {
 				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(resizedImage))
@@ -308,6 +308,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 
 		for index, groupImage := range groupPart {
 			if errs[i+index] != nil {
+				log.Errorf("upload failed %v", errs[i+index])
 				continue
 			}
 			ok = true
@@ -1040,7 +1041,7 @@ func (lgc *LspGroupCommand) ImageContent() {
 func (lgc *LspGroupCommand) faceDetect(url string) {
 	log := logger.WithField("GroupCode", lgc.groupCode())
 	log.WithField("detect_url", url).Debug("face detect")
-	img, err := utils.ImageGet(url, proxy_pool.PreferNone)
+	img, err := utils.ImageGet(url, proxy_pool.PreferMainland)
 	if err != nil {
 		log.Errorf("get image err %v", err)
 		lgc.textReply(fmt.Sprintf("获取图片失败 - %v", err))
@@ -1070,7 +1071,7 @@ func (lgc *LspGroupCommand) faceDetect(url string) {
 func (lgc *LspGroupCommand) reserveGif(url string) {
 	log := logger.WithField("GroupCode", lgc.groupCode())
 	log.WithField("reserve_url", url).Debug("reserve image")
-	img, err := utils.ImageGet(url, proxy_pool.PreferNone)
+	img, err := utils.ImageGet(url, proxy_pool.PreferMainland)
 	if err != nil {
 		log.Errorf("get image err %v", err)
 		lgc.textReply("获取图片失败")
