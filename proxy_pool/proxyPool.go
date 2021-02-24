@@ -7,9 +7,10 @@ var ErrNil = errors.New("<nil>")
 type Prefer int64
 
 const (
-	PreferNone Prefer = 1 << iota
+	PreferAny Prefer = 1 << iota
 	PreferMainland
 	PreferOversea
+	PreferNone
 )
 
 type IProxyPool interface {
