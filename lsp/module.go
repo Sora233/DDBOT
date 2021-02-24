@@ -192,6 +192,8 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		err := l.LspStateManager.SaveGroupInvitor(request.GroupCode, request.InvitorUin)
 		if err == localdb.ErrKeyExist {
 			request.Reject(false, "已有其他群友邀请加群，请通知管理员审核")
+			log.Errorf("invited duplicate")
+			return
 		} else if err != nil {
 			request.Reject(false, "未知问题，加群失败")
 			log.Errorf("invited process failed %v", err)

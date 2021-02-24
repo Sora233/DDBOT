@@ -23,9 +23,9 @@ func ImageGet(url string, prefer proxy_pool.Prefer) ([]byte, error) {
 	if url == "" {
 		return nil, errors.New("empty url")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	resp, err := requests.Get(ctx, url, nil, 1, requests.ProxyOption(prefer), requests.TimeoutOption(time.Second*30))
+	resp, err := requests.Get(ctx, url, nil, 1, requests.ProxyOption(prefer), requests.TimeoutOption(time.Minute))
 	if err != nil {
 		return nil, err
 	}

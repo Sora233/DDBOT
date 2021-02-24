@@ -26,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -239,8 +240,6 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		return
 	}
 
-	sendingMsg := message.NewSendingMessage()
-
 	var options []image_pool.OptionFunc
 	if r18 {
 		options = append(options, lolicon_pool.R18Option(lolicon_pool.R18On))
@@ -276,71 +275,84 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	}
 	wg.Wait()
 
+	log.Debug("all image requested")
+
 	for index := range imgs {
 		wg.Add(1)
 		go func(index int) {
 			defer wg.Done()
 			imgBytes, err := imgsBytes[index], errs[index]
-			if err != nil {
+			if err != nil || len(imgBytes) == 0 {
 				errs[index] = fmt.Errorf("get image bytes failed %v", err)
 				return
 			}
-			groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(imgBytes))
-
-			//resizedImage, err := utils.ImageNormSize(imgBytes)
-			//if err != nil {
-			//	logger.WithField("content_length", len(imgBytes)).Errorf("resize failed: %v, use raw image", err)
-			//	groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(imgBytes))
-			//} else {
-			//	groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(resizedImage))
-			//}
+			//groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(imgBytes))
+			resizedImage, err := utils.ImageNormSize(imgBytes)
+			if err != nil {
+				logger.WithField("content_length", len(imgBytes)).Errorf("resize failed: %v, use raw image", err)
+				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(imgBytes))
+			} else {
+				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(resizedImage))
+			}
 		}(index)
 	}
 	wg.Wait()
 
+	log.Debug("all image uploaded")
+
 	imgBatch := 2
-	ok := false
+	var ok int32 = 0
 
 	for i := 0; i < len(groupImages); i += imgBatch {
 		last := i + imgBatch
 		if last > len(groupImages) {
 			last = len(groupImages)
 		}
-		groupPart := groupImages[i:last]
-
-		for index, groupImage := range groupPart {
-			if errs[i+index] != nil {
-				log.Errorf("upload failed %v", errs[i+index])
-				continue
-			}
-			ok = true
-			img := imgs[i+index]
-			sendingMsg.Append(groupImage)
-			if loliconImage, ok := img.(*lolicon_pool.Setu); ok {
-				log.WithField("author", loliconImage.Author).
-					WithField("r18", loliconImage.R18).
-					WithField("pid", loliconImage.Pid).
-					WithField("tags", loliconImage.Tags).
-					WithField("title", loliconImage.Title).
-					WithField("upload_url", groupImage.Url).
-					Debug("debug image")
-				sendingMsg.Append(utils.MessageTextf("标题：%v\n", loliconImage.Title))
-				sendingMsg.Append(utils.MessageTextf("作者：%v\n", loliconImage.Author))
-				sendingMsg.Append(utils.MessageTextf("PID：%v\n", loliconImage.Pid))
-				tagCount := len(loliconImage.Tags)
-				if tagCount >= 2 {
-					tagCount = 2
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			sendingMsg := message.NewSendingMessage()
+			for index, groupImage := range groupImages[i:last] {
+				if errs[i+index] != nil {
+					log.Errorf("upload failed %v", errs[i+index])
+					continue
 				}
-				sendingMsg.Append(utils.MessageTextf("TAG：%v\n", strings.Join(loliconImage.Tags[:tagCount], " ")))
-				sendingMsg.Append(utils.MessageTextf("R18：%v", loliconImage.R18))
+				atomic.CompareAndSwapInt32(&ok, 0, 1)
+				img := imgs[i+index]
+				sendingMsg.Append(groupImage)
+				if loliconImage, ok := img.(*lolicon_pool.Setu); ok {
+					log.WithField("author", loliconImage.Author).
+						WithField("r18", loliconImage.R18).
+						WithField("pid", loliconImage.Pid).
+						WithField("tags", loliconImage.Tags).
+						WithField("title", loliconImage.Title).
+						WithField("upload_url", groupImage.Url).
+						Debug("debug image")
+					sendingMsg.Append(utils.MessageTextf("标题：%v\n", loliconImage.Title))
+					sendingMsg.Append(utils.MessageTextf("作者：%v\n", loliconImage.Author))
+					sendingMsg.Append(utils.MessageTextf("PID：%v\n", loliconImage.Pid))
+					tagCount := len(loliconImage.Tags)
+					if tagCount >= 2 {
+						tagCount = 2
+					}
+					sendingMsg.Append(utils.MessageTextf("TAG：%v\n", strings.Join(loliconImage.Tags[:tagCount], " ")))
+					sendingMsg.Append(utils.MessageTextf("R18：%v", loliconImage.R18))
+				}
 			}
-		}
-		lgc.reply(sendingMsg)
-		sendingMsg = message.NewSendingMessage()
+			if lgc.reply(sendingMsg).Id == -1 {
+				atomic.CompareAndSwapInt32(&ok, 1, 2)
+			} else {
+				atomic.StoreInt32(&ok, 3)
+			}
+		}(i)
 	}
 
-	if !ok {
+	wg.Wait()
+
+	if ok == 0 {
 		lgc.textReply("获取失败")
+	} else if ok == 2 {
+		lgc.textReply("发送失败")
 	}
 	return
 }
