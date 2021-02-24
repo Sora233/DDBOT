@@ -23,21 +23,24 @@ func MessageTextf(format string, args ...interface{}) *message.TextElement {
 }
 
 func UploadGroupImageByUrl(groupCode int64, url string, isNorm bool, prefer proxy_pool.Prefer) (*message.GroupImageElement, error) {
-	var (
-		img []byte
-		err error
-	)
-	if isNorm {
-		img, err = ImageGetAndNorm(url, prefer)
-	} else {
-		img, err = ImageGet(url, prefer)
-	}
+	img, err := ImageGet(url, prefer)
 	if err != nil {
 		return nil, err
 	}
-	image, err := bot.Instance.UploadGroupImage(groupCode, bytes.NewReader(img))
+	return UploadGroupImage(groupCode, img, isNorm)
+}
+
+func UploadGroupImage(groupCode int64, img []byte, isNorm bool) (image *message.GroupImageElement, err error) {
+	if isNorm {
+		img, err = ImageNormSize(img)
+		if err != nil {
+			return nil, err
+		}
+	}
+	image, err = bot.Instance.UploadGroupImage(groupCode, bytes.NewReader(img))
 	if err != nil {
 		return nil, err
 	}
 	return image, nil
+
 }

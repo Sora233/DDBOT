@@ -198,11 +198,7 @@ func (lgc *LspGroupCommand) LspCommand() {
 }
 
 func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
-	msg := lgc.msg
-	bot := lgc.bot
-	groupCode := msg.GroupCode
-
-	log := logger.WithField("GroupCode", groupCode)
+	log := logger.WithField("GroupCode", lgc.groupCode())
 	log.Info("run setu command")
 	defer log.Info("setu command end")
 
@@ -264,7 +260,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	var imgsBytes = make([][]byte, len(imgs))
 	var errs = make([]error, len(imgs))
 	var groupImages = make([]*message.GroupImageElement, len(imgs))
-	var wg sync.WaitGroup
+	var wg = new(sync.WaitGroup)
 
 	for index := range imgs {
 		wg.Add(1)
@@ -286,14 +282,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 				errs[index] = fmt.Errorf("get image bytes failed %v", err)
 				return
 			}
-			//groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(imgBytes))
-			resizedImage, err := utils.ImageNormSize(imgBytes)
-			if err != nil {
-				logger.WithField("content_length", len(imgBytes)).Errorf("resize failed: %v, use raw image", err)
-				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(imgBytes))
-			} else {
-				groupImages[index], errs[index] = bot.UploadGroupImage(groupCode, bytes.NewReader(resizedImage))
-			}
+			groupImages[index], errs[index] = utils.UploadGroupImage(lgc.groupCode(), imgBytes, true)
 		}(index)
 	}
 	wg.Wait()
