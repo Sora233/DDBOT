@@ -19,9 +19,10 @@ type Config struct {
 }
 
 type LoliconPool struct {
-	config *Config
-	cache  map[R18Type]*list.List
-	cond   *sync.Cond
+	config  *Config
+	cache   map[R18Type]*list.List
+	cond    *sync.Cond
+	changed bool
 }
 
 func KeywordOption(keyword string) image_pool.OptionFunc {
@@ -109,6 +110,7 @@ func (pool *LoliconPool) getCache(r18 R18Type, num int) (result []image_pool.Ima
 			}
 		}
 		result = append(result, pool.cache[r18].Remove(pool.cache[r18].Front()).(*Setu))
+		pool.changed = true
 	}
 	pool.cond.Signal()
 	return
@@ -132,6 +134,7 @@ func (pool *LoliconPool) fillCacheFromRemote(r18 R18Type) error {
 	for _, s := range resp.Data {
 		pool.cache[r18].PushFront(s)
 	}
+	pool.changed = true
 	return nil
 }
 
@@ -159,6 +162,7 @@ func (pool *LoliconPool) background() {
 		for r18, l := range pool.cache {
 			if l.Len() < pool.config.CacheMin {
 				for l.Len() < pool.config.CacheMax {
+					pool.changed = true
 					if err := pool.fillCacheFromRemote(r18); err != nil {
 						logger.WithField("from", "background").Errorf("fill cache from remote failed %v", err)
 						result = false
@@ -188,9 +192,10 @@ func NewLoliconPool(config *Config) (*LoliconPool, error) {
 		config.CacheMin = config.CacheMax
 	}
 	pool := &LoliconPool{
-		config: config,
-		cache:  make(map[R18Type]*list.List),
-		cond:   sync.NewCond(&sync.Mutex{}),
+		config:  config,
+		cache:   make(map[R18Type]*list.List),
+		cond:    sync.NewCond(&sync.Mutex{}),
+		changed: false,
 	}
 	pool.cache[R18Off] = list.New()
 	pool.cache[R18On] = list.New()

@@ -42,6 +42,14 @@ func (pool *LoliconPool) store() {
 	pool.cond.L.Lock()
 	defer pool.cond.L.Unlock()
 
+	if !pool.changed {
+		return
+	}
+
+	defer func() {
+		pool.changed = false
+	}()
+
 	logger.Debug("image pool store cache start")
 
 	for k, v := range pool.cache {
