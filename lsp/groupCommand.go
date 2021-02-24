@@ -328,6 +328,9 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 					sendingMsg.Append(utils.MessageTextf("R18：%v", loliconImage.R18))
 				}
 			}
+			if len(sendingMsg.Elements) == 0 {
+				return
+			}
 			if lgc.reply(sendingMsg).Id == -1 {
 				atomic.CompareAndSwapInt32(&ok, 1, 2)
 			} else {
