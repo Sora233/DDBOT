@@ -16,6 +16,7 @@ const (
 	DisableCommand      = "disable"
 	FaceCommand         = "face"
 	ReverseCommand      = "reverse"
+	PxCommand           = "px"
 	ImageContentCommand = "ic"
 	HelpCommand         = "help"
 	AboutCommand        = "about"
@@ -31,7 +32,7 @@ var allGroupCommand = [...]string{
 	LspCommand, WatchCommand, UnwatchCommand,
 	ListCommand, SetuCommand, HuangtuCommand,
 	EnableCommand, DisableCommand, ImageContentCommand,
-	FaceCommand,
+	FaceCommand, PxCommand,
 }
 
 var allPrivateOperate = [...]string{

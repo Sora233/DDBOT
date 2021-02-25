@@ -18,6 +18,8 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/youtube"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/utils"
+	"github.com/Sora233/Sora233-MiraiGo/utils/mahjong"
+	"github.com/Sora233/Sora233-MiraiGo/utils/mahjong/model"
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
 	"github.com/tidwall/buntdb"
@@ -168,6 +170,10 @@ func (lgc *LspGroupCommand) Execute() {
 	case "/倒放":
 		if lgc.requireNotDisable(ReverseCommand) {
 			lgc.ReverseCommand()
+		}
+	case "/px":
+		if lgc.requireNotDisable(PxCommand) {
+			lgc.PxCommand()
 		}
 	case "/help":
 		lgc.HelpCommand()
@@ -993,6 +999,49 @@ func (lgc *LspGroupCommand) ReverseCommand() {
 	}
 	log.Debug("no image found")
 	lgc.textReply("参数错误 - 未找到图片")
+}
+
+func (lgc *LspGroupCommand) PxCommand() {
+	log := logger.WithField("group_code", lgc.groupCode())
+	log.Info("run px command")
+	defer log.Info("px command end")
+
+	var pxCommand struct {
+		Tile []string `arg:"" sep:" "`
+	}
+
+	output := lgc.parseCommandSyntax(&pxCommand, PxCommand)
+	if output != "" {
+		lgc.textReply(output)
+	}
+	if lgc.exit {
+		return
+	}
+
+	sendingMsg := message.NewSendingMessage()
+
+	log = log.WithField("tile", pxCommand.Tile)
+	tiles34, _, err := mahjong.StrToTiles34(strings.Join(pxCommand.Tile, " "))
+	if err != nil {
+		lgc.textReply("这牌有点怪")
+		return
+	}
+	if c := mahjong.CountOfTiles34(tiles34); c%3 == 1 {
+		playerInfo := model.NewSimplePlayerInfo(tiles34, nil)
+		r := mahjong.CalculateShantenWithImproves13(playerInfo)
+		sendingMsg.Append(message.NewText(mahjong.NumberToChineseShanten(mahjong.CalculateShanten(tiles34)) + "\n"))
+		sendingMsg.Append(message.NewText(r.String()))
+	} else if c%3 == 2 {
+		playerInfo := model.NewSimplePlayerInfo(tiles34, nil)
+		shanten, results, _ := mahjong.CalculateShantenWithImproves14(playerInfo)
+		sendingMsg.Append(message.NewText(mahjong.NumberToChineseShanten(shanten)))
+		for _, r := range results {
+			sendingMsg.Append(utils.MessageTextf("\n%v", r.String()))
+		}
+	} else {
+		sendingMsg.Append(message.NewText("这牌有点怪"))
+	}
+	lgc.send(sendingMsg)
 }
 
 func (lgc *LspGroupCommand) HelpCommand() {
