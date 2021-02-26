@@ -290,6 +290,15 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 	})
 
+	bot.OnSelfGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {
+		if len(msg.Elements) <= 0 {
+			return
+		}
+		if err := l.LspStateManager.SaveMessageImageUrl(msg.GroupCode, msg.Id, msg.Elements); err != nil {
+			logger.Errorf("SaveMessageImageUrl failed %v", err)
+		}
+	})
+
 	bot.OnGroupMuted(func(qqClient *client.QQClient, event *client.GroupMuteEvent) {
 		if err := l.LspStateManager.Muted(event.GroupCode, event.TargetUin, event.Time); err != nil {
 			logger.Errorf("Muted failed %v", err)
@@ -297,6 +306,11 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnPrivateMessage(func(qqClient *client.QQClient, msg *message.PrivateMessage) {
+		if msg.Time < int32(time.Now().Add(time.Minute*-5).Unix()) {
+			logger.Debug("past private message got, skip.")
+			// 有时候消息会再触发一次，应该是tx的问题
+			return
+		}
 		if len(msg.Elements) == 0 {
 			return
 		}
@@ -389,10 +403,6 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 	res := bot.Instance.SendGroupMessage(groupCode, msg)
 	if res.Id == -1 {
 		logger.WithField("group_code", groupCode).Errorf("send group message failed")
-	} else {
-		if err := l.LspStateManager.SaveMessageImageUrl(groupCode, res.Id, msg.Elements); err != nil {
-			logger.WithField("group_code", groupCode).Error("save message image url failed %v", err)
-		}
 	}
 	return res
 }
