@@ -152,7 +152,11 @@ logLevel: info # 日志等级
 
 *Feel free to make your first pull request.*
 
-想要为开源做一点微小的贡献但不会Go语言? [点我入门！](https://github.com/justjavac/free-programming-books-zh_CN#go)
+想要为开源做一点微小的贡献？
+
+[Golang点我入门！](https://github.com/justjavac/free-programming-books-zh_CN#go)
+
+您也可以选择点一下右上角的⭐星⭐
 
 发现问题或功能建议请到 [issues](https://github.com/Sora233/DDBOT/issues)
 
