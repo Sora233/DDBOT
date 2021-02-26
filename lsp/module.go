@@ -218,14 +218,17 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		logger.WithField("uin", request.RequesterUin).
 			WithField("nickname", request.RequesterNick).
 			WithField("message", request.Message).
-			Info("new friend")
+			Info("friend request")
 		request.Accept()
-		time.AfterFunc(time.Second*10, func() {
-			bot.ReloadFriendList()
-			sendingMsg := message.NewSendingMessage()
-			sendingMsg.Append(message.NewText("阁下的好友请求已通过，请使用/help查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。"))
-			bot.SendPrivateMessage(request.RequesterUin, sendingMsg)
-		})
+	})
+
+	bot.OnNewFriendAdded(func(qqClient *client.QQClient, event *client.NewFriendEvent) {
+		logger.WithField("uin", event.Friend.Uin).
+			WithField("nickname", event.Friend.Nickname).
+			Info("new friend")
+		sendingMsg := message.NewSendingMessage()
+		sendingMsg.Append(message.NewText("阁下的好友请求已通过，请使用/help查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。"))
+		bot.SendPrivateMessage(event.Friend.Uin, sendingMsg)
 	})
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
