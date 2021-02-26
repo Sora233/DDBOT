@@ -220,9 +220,12 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			WithField("message", request.Message).
 			Info("new friend")
 		request.Accept()
-		sendingMsg := message.NewSendingMessage()
-		sendingMsg.Append(message.NewText("阁下的好友请求已通过，请使用/help查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。"))
-		bot.SendPrivateMessage(request.RequesterUin, sendingMsg)
+		time.AfterFunc(time.Second*10, func() {
+			bot.ReloadFriendList()
+			sendingMsg := message.NewSendingMessage()
+			sendingMsg.Append(message.NewText("阁下的好友请求已通过，请使用/help查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。"))
+			bot.SendPrivateMessage(request.RequesterUin, sendingMsg)
+		})
 	})
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
