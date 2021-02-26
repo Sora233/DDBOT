@@ -136,6 +136,8 @@ logLevel: info # 日志等级
 
 ## 注意事项
 
+- **bot只在群聊内工作，私聊命令无效**
+- **建议bot秘密码设置足够强，同时不建议把bot设置为QQ群管理员，因为存在密码被恶意爆破的可能（包括但不限于盗号、广告等）**
 - bot掉线无法重连时将自动退出，请自行实现保活机制
 - bot使用 [buntdb](https://github.com/tidwall/buntdb) 作为embed database，会在当前目录生成文件`.lsp.db`
   ，删除该文件将导致bot恢复出厂设置，可以使用 [buntdb-cli](https://github.com/Sora233/buntdb-cli) 作为运维工具，但注意不要在bot运行的时候使用（buntdb不支持多写）。
