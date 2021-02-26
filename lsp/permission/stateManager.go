@@ -219,8 +219,8 @@ func (c *StateManager) GrantGroupRole(groupCode int64, target int64, role RoleTy
 		key := c.GroupPermissionKey(groupCode, target, role.String())
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
-			tx.Set(key, "", nil)
-			return nil
+			_, _, err := tx.Set(key, "", nil)
+			return err
 		} else if err == nil {
 			return ErrPermissionExist
 		} else {
@@ -239,8 +239,8 @@ func (c *StateManager) UngrantGroupRole(groupCode int64, target int64, role Role
 		if err == buntdb.ErrNotFound {
 			return ErrPermissionNotExist
 		} else if err == nil {
-			tx.Delete(key)
-			return nil
+			_, err := tx.Delete(key)
+			return err
 		} else {
 			return err
 		}
