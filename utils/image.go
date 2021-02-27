@@ -137,12 +137,6 @@ func DecodeGifWithCompleteFrame(r io.Reader) (g *gif.GIF, err error) {
 	return g, nil
 }
 
-func GuessImageFormat(img []byte) (format string, err error) {
-	r := bytes.NewReader(img)
-	_, format, err = image.DecodeConfig(r)
-	return format, err
-}
-
 func GetGifDimensions(gif *gif.GIF) (x, y int) {
 	var lowestX int
 	var lowestY int
@@ -168,7 +162,7 @@ func GetGifDimensions(gif *gif.GIF) (x, y int) {
 }
 
 func ImageSuffix(name string) bool {
-	for _, suf := range []string{"jpg", "png"} {
+	for _, suf := range []string{"jpg", "png", "jpeg"} {
 		if strings.HasSuffix(name, suf) {
 			return true
 		}
