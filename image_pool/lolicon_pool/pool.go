@@ -53,9 +53,9 @@ func (pool *LoliconPool) Get(options ...image_pool.OptionFunc) ([]image_pool.Ima
 	}
 
 	var (
-		r18     R18Type
+		r18     R18Type = R18Off
 		keyword string
-		num     int
+		num     int = 1
 	)
 	for k, v := range option {
 		switch k {
