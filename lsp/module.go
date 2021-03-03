@@ -326,11 +326,11 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			os.Exit(1)
 		}()
 	})
-	//if Debug {
-	bot.OnLog(func(qqClient *client.QQClient, event *client.LogEvent) {
-		logger.WithField("type", event.Type).Debug(event.Message)
-	})
-	//}
+	if Debug {
+		bot.OnLog(func(qqClient *client.QQClient, event *client.LogEvent) {
+			logger.WithField("type", event.Type).Debug(event.Message)
+		})
+	}
 }
 
 func (l *Lsp) Start(bot *bot.Bot) {
