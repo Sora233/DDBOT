@@ -1,0 +1,15 @@
+syntax = "proto3";
+package model;
+
+option go_package = "model";
+
+message GenericHeader {
+  string request_id = 1;
+  int32  error_code = 2;
+  string error_message = 3;
+}
+
+message PingResponse {
+  GenericHeader header = 1;
+  string message = 2;
+}

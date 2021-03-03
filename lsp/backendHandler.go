@@ -16,8 +16,7 @@ func PingHandler(c *gin.Context) {
 		if e := recover(); e != nil {
 			errCode = model.ErrInternal
 		}
-		response.GenericHeader = model.NewGenericHeader(c, errCode, err)
-
+		response.Header = model.NewGenericHeader(c, errCode, err)
 		c.JSON(http.StatusOK, response)
 	}()
 	response.Message = "pong"
