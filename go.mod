@@ -4,13 +4,13 @@ go 1.15
 
 require (
 	github.com/Jeffail/gabs/v2 v2.6.0
-	github.com/Logiase/MiraiGo-Template v0.0.0-20210217121711-7a8013f2351d
-	github.com/Mrs4s/MiraiGo v0.0.0-20210217093128-52b80fdf142a
+	github.com/Logiase/MiraiGo-Template v0.0.0-20210220054322-e87bdaf1f8ae
+	github.com/Mrs4s/MiraiGo v0.0.0-20210220103625-420583e1c56a
 	github.com/Sora233/requests v0.0.0-20210124044507-771a1ecd2e93
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/Sora233/zhima-proxy-pool v0.0.0-20210124065344-04d96243cadd
 	github.com/alecthomas/kong v0.2.15
-	github.com/aliyun/alibaba-cloud-sdk-go v1.61.920
+	github.com/aliyun/alibaba-cloud-sdk-go v1.61.954
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
 	github.com/gin-gonic/gin v1.6.3
 	github.com/golang/protobuf v1.4.3
@@ -22,4 +22,5 @@ require (
 	github.com/sirupsen/logrus v1.8.0
 	github.com/tidwall/buntdb v1.2.0
 	gocv.io/x/gocv v0.26.0
+	golang.org/x/sys v0.0.0-20210223212115-eede4237b368 // indirect
 )

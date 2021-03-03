@@ -126,7 +126,7 @@ func (s *StateManager) GetGroupInvitor(groupCode int64) (target int64, err error
 		if err != nil {
 			return err
 		} else {
-			target, err = strconv.ParseInt(invitor, 64, 10)
+			target, err = strconv.ParseInt(invitor, 10, 64)
 			if err != nil {
 				return err
 			}

@@ -23,7 +23,6 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/zhima"
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	"github.com/sirupsen/logrus"
-	"github.com/tidwall/buntdb"
 	"os"
 	"strings"
 	"sync"
@@ -91,8 +90,11 @@ func (l *Lsp) Init() {
 
 	switch imagePoolType {
 	case "loliconPool":
-		apikey := config.GlobalConfig.GetString("loliconPool.apikey")
-		pool, err := lolicon_pool.NewLoliconPool(apikey)
+		pool, err := lolicon_pool.NewLoliconPool(&lolicon_pool.Config{
+			ApiKey:   config.GlobalConfig.GetString("loliconPool.apikey"),
+			CacheMin: config.GlobalConfig.GetInt("loliconPool.cacheMin"),
+			CacheMax: config.GlobalConfig.GetInt("loliconPool.cacheMax"),
+		})
 		if err != nil {
 			log.Errorf("can not init pool %v", err)
 		} else {
@@ -110,6 +112,7 @@ func (l *Lsp) Init() {
 			l.status.ImagePoolEnable = true
 		}
 	case "off":
+		log.Debug("image pool turn off")
 	default:
 		log.Errorf("unknown pool")
 	}
@@ -161,6 +164,7 @@ func (l *Lsp) Init() {
 		log.WithField("local_proxy_num", len(proxies)).Debug("debug")
 		l.status.ProxyPoolEnable = true
 	case "off":
+		log.Debug("proxy pool turn off")
 	default:
 		log.Errorf("unknown proxy type")
 	}
@@ -183,30 +187,48 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			log.Errorf("can not find friend info")
 			return
 		}
-		err := l.LspStateManager.SaveGroupInvitor(request.GroupCode, request.InvitorUin)
-		if err == localdb.ErrKeyExist {
-			request.Reject(false, "已有其他群友邀请加群，请通知管理员审核")
-		} else if err != nil {
-			request.Reject(false, "未知问题，加群失败")
-			log.Errorf("invited process failed %v", err)
-			return
-		} else {
-			request.Accept()
-			sendingMsg := message.NewSendingMessage()
-			sendingMsg.Append(message.NewText(fmt.Sprintf("已接受阁下的群邀请。在成功入群后，基于对阁下的信任，阁下将获得bot在群【%s】的控制权限。", request.GroupName)))
-			bot.SendPrivateMessage(request.InvitorUin, sendingMsg)
+		sendingMsg := message.NewSendingMessage()
+		sendingMsg.Append(message.NewText(fmt.Sprintf("阁下的群邀请已通过，基于对阁下的信任，阁下已获得本bot在群【%s】的控制权限，相信阁下不会滥用本bot。", request.GroupName)))
+		bot.SendPrivateMessage(request.InvitorUin, sendingMsg)
+		if err := l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
+			log.WithField("target", request.InvitorUin).
+				WithField("group_code", request.GroupCode).
+				Errorf("grant group admin failed %v", err)
 		}
+		request.Accept()
+
+		//err := l.LspStateManager.SaveGroupInvitor(request.GroupCode, request.InvitorUin)
+		//if err == localdb.ErrKeyExist {
+		//	request.Reject(false, "已有其他群友邀请加群，请通知管理员审核")
+		//	log.Errorf("invited duplicate")
+		//	return
+		//} else if err != nil {
+		//	request.Reject(false, "未知问题，加群失败")
+		//	log.Errorf("invited process failed %v", err)
+		//	return
+		//} else {
+		//	request.Accept()
+		//	sendingMsg := message.NewSendingMessage()
+		//	sendingMsg.Append(message.NewText(fmt.Sprintf("已接受阁下的群邀请。在成功入群后，基于对阁下的信任，阁下将获得bot在群【%s】的控制权限。", request.GroupName)))
+		//	bot.SendPrivateMessage(request.InvitorUin, sendingMsg)
+		//}
 	})
 
 	bot.OnNewFriendRequest(func(qqClient *client.QQClient, request *client.NewFriendRequest) {
 		logger.WithField("uin", request.RequesterUin).
 			WithField("nickname", request.RequesterNick).
 			WithField("message", request.Message).
-			Info("new friend")
+			Info("friend request")
 		request.Accept()
+	})
+
+	bot.OnNewFriendAdded(func(qqClient *client.QQClient, event *client.NewFriendEvent) {
+		logger.WithField("uin", event.Friend.Uin).
+			WithField("nickname", event.Friend.Nickname).
+			Info("new friend")
 		sendingMsg := message.NewSendingMessage()
 		sendingMsg.Append(message.NewText("阁下的好友请求已通过，请使用/help查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。"))
-		bot.SendPrivateMessage(request.RequesterUin, sendingMsg)
+		bot.SendPrivateMessage(event.Friend.Uin, sendingMsg)
 	})
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
@@ -218,19 +240,30 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 
 		minfo := info.FindMember(bot.Uin)
 		minfo.EditCard("【bot】")
-		target, err := l.LspStateManager.GetGroupInvitor(info.Code)
-		if err == buntdb.ErrNotFound {
-			log.Debug("no invitor found, skip grant group admin role")
-		} else if err != nil {
-			log.Errorf("get invitor err %v", err)
-			return
-		} else {
-			log = log.WithField("invitor", target)
-			log.Debug("grant group admin role")
-			if err := l.PermissionStateManager.GrantGroupRole(info.Code, target, permission.GroupAdmin); err != nil {
-				log.Errorf("grant group admin role failed %v", err)
-			}
-		}
+		//go func() {
+		//	// sbtx
+		//	// 有一些sb的时候邀请加群会自动同意，这时可能join callback在invited callback之前触发
+		//	var (
+		//		target int64
+		//		err    error
+		//	)
+		//	localutils.Retry(10, time.Second*3, func() bool {
+		//		target, err = l.LspStateManager.GetGroupInvitor(info.Code)
+		//		return err == nil
+		//	})
+		//	if err == buntdb.ErrNotFound {
+		//		log.Debug("no invitor found finally, skip grant group admin role")
+		//	} else if err != nil {
+		//		log.Errorf("get invitor err %v", err)
+		//		return
+		//	} else {
+		//		log = log.WithField("invitor", target)
+		//		log.Debug("grant group admin role")
+		//		if err := l.PermissionStateManager.GrantGroupRole(info.Code, target, permission.GroupAdmin); err != nil {
+		//			log.Errorf("grant group admin role failed %v", err)
+		//		}
+		//	}
+		//}()
 	})
 
 	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
@@ -257,6 +290,15 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 	})
 
+	bot.OnSelfGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {
+		if len(msg.Elements) <= 0 {
+			return
+		}
+		if err := l.LspStateManager.SaveMessageImageUrl(msg.GroupCode, msg.Id, msg.Elements); err != nil {
+			logger.Errorf("SaveMessageImageUrl failed %v", err)
+		}
+	})
+
 	bot.OnGroupMuted(func(qqClient *client.QQClient, event *client.GroupMuteEvent) {
 		if err := l.LspStateManager.Muted(event.GroupCode, event.TargetUin, event.Time); err != nil {
 			logger.Errorf("Muted failed %v", err)
@@ -264,6 +306,11 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnPrivateMessage(func(qqClient *client.QQClient, msg *message.PrivateMessage) {
+		if msg.Time < int32(time.Now().Add(time.Minute*-5).Unix()) {
+			logger.Debug("past private message got, skip.")
+			// 有时候消息会再触发一次，应该是tx的问题
+			return
+		}
 		if len(msg.Elements) == 0 {
 			return
 		}
@@ -279,6 +326,11 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			os.Exit(1)
 		}()
 	})
+	if Debug {
+		bot.OnLog(func(qqClient *client.QQClient, event *client.LogEvent) {
+			logger.WithField("type", event.Type).Debug(event.Message)
+		})
+	}
 }
 
 func (l *Lsp) Start(bot *bot.Bot) {
@@ -355,10 +407,6 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 	res := bot.Instance.SendGroupMessage(groupCode, msg)
 	if res.Id == -1 {
 		logger.WithField("group_code", groupCode).Errorf("send group message failed")
-	} else {
-		if err := l.LspStateManager.SaveMessageImageUrl(groupCode, res.Id, msg.Elements); err != nil {
-			logger.WithField("group_code", groupCode).Error("save message image url failed %v", err)
-		}
 	}
 	return res
 }

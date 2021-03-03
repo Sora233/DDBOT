@@ -25,7 +25,7 @@ func Betard(id int64) (*BetardResponse, error) {
 		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
 	url := DouyuPath(PathBetard) + fmt.Sprintf("/%v", id)
-	resp, err := requests.Get(ctx, url, nil, 3, requests.ProxyOption(proxy_pool.PreferNone))
+	resp, err := requests.Get(ctx, url, nil, 3, requests.ProxyOption(proxy_pool.PreferAny))
 	if err != nil {
 		return nil, err
 	}

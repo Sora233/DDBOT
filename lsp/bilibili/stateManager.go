@@ -84,7 +84,7 @@ func (c *StateManager) AddNewsInfo(newsInfo *NewsInfo) error {
 		return errors.New("nil NewsInfo")
 	}
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(c.CurrentNewsKey(newsInfo.Mid), newsInfo.ToString(), localdb.ExpireOption(time.Hour*24))
+		_, _, err := tx.Set(c.CurrentNewsKey(newsInfo.Mid), newsInfo.ToString(), nil)
 		return err
 	})
 }

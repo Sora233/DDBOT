@@ -27,6 +27,9 @@ func main() {
 	}
 	kong.Parse(&cli)
 
+	// 快速初始化
+	bot.Init()
+
 	if cli.Debug {
 		lsp.Debug = true
 		go http.ListenAndServe("localhost:6060", nil)
@@ -36,9 +39,6 @@ func main() {
 		play()
 		return
 	}
-
-	// 快速初始化
-	bot.Init()
 
 	// 初始化 Modules
 	bot.StartService()

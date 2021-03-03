@@ -62,11 +62,12 @@ func Get(ctx context.Context, url string, params requests.Params, maxRetry int, 
 		resp  *requests.Response
 		retry = 0
 	)
+LOOP:
 	for {
 		select {
 		case <-ctx.Done():
 			err = ctx.Err()
-			break
+			break LOOP
 		default:
 		}
 		resp, err = req.Get(url, params)
@@ -75,11 +76,11 @@ func Get(ctx context.Context, url string, params requests.Params, maxRetry int, 
 		} else {
 			break
 		}
-		logger.WithField("retry", retry).WithField("maxRetry", maxRetry).Debugf("request failed %v, retry", err)
-		time.Sleep(time.Second)
 		if retry == maxRetry {
 			break
 		}
+		logger.WithField("proxy", req.GetProxy()).WithField("retry", retry).WithField("maxRetry", maxRetry).Debugf("request failed %v, retry", err)
+		time.Sleep(time.Second)
 	}
 	proxy := req.GetProxy()
 	if err != nil && proxy != "" {

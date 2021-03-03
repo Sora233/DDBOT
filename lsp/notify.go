@@ -1,7 +1,6 @@
 package lsp
 
 import (
-	"bytes"
 	"encoding/json"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
@@ -11,7 +10,6 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/youtube"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
-	"github.com/Sora233/requests"
 	"runtime/debug"
 )
 
@@ -30,6 +28,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*bilibili.ConcernLiveNotify)
 				logger.WithField("site", bilibili.Site).
 					WithField("GroupCode", notify.GroupCode).
+					WithField("Uid", notify.Mid).
 					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
 					WithField("Name", notify.Name).
 					WithField("Title", notify.LiveTitle).
@@ -47,6 +46,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*bilibili.ConcernNewsNotify)
 				logger.WithField("site", bilibili.Site).
 					WithField("GroupCode", notify.GroupCode).
+					WithField("Uid", notify.Mid).
 					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
 					WithField("Name", notify.Name).
 					WithField("NewsCount", len(notify.Cards)).
@@ -122,11 +122,13 @@ func (l *Lsp) notifyBilibiliLive(bot *bot.Bot, notify *bilibili.ConcernLiveNotif
 	case bilibili.LiveStatus_Living:
 		result = append(result, localutils.MessageTextf("%s正在直播【%v】\n", notify.Name, notify.LiveTitle))
 		result = append(result, message.NewText(notify.RoomUrl))
-		coverResp, err := requests.Get(notify.Cover)
-		if err == nil {
-			if cover, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(coverResp.Content())); err == nil {
-				result = append(result, cover)
-			}
+		cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Cover, false, proxy_pool.PreferAny)
+		if err != nil {
+			logger.WithField("group_code", notify.GroupCode).
+				WithField("cover", notify.Cover).
+				Errorf("add cover failed %v", err)
+		} else {
+			result = append(result, cover)
 		}
 	case bilibili.LiveStatus_NoLiving:
 		result = append(result, localutils.MessageTextf("%s暂未直播\n", notify.Name))
@@ -161,12 +163,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				}
 				result = append(result, localutils.MessageTextf("%v\n", origin.GetItem().GetDescription()))
 				for _, pic := range origin.GetItem().GetPictures() {
-					img, err := localutils.ImageGet(pic.GetImgSrc(), proxy_pool.PreferNone)
-					if err != nil {
-						log.WithField("pic", pic).Errorf("get image failed %v", err)
-						continue
-					}
-					groupImage, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(img))
+					groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), false, proxy_pool.PreferAny)
 					if err != nil {
 						log.WithField("pic", pic).Errorf("upload group image %v", err)
 						continue
@@ -191,14 +188,9 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					continue
 				}
 				result = append(result, localutils.MessageTextf("%v\n%v\n", origin.GetTitle(), origin.GetDesc()))
-				img, err := localutils.ImageGetAndNorm(origin.GetPic(), proxy_pool.PreferNone)
+				cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetPic(), true, proxy_pool.PreferAny)
 				if err != nil {
-					log.WithField("pic", origin.GetPic()).Errorf("get image failed %v", err)
-					continue
-				}
-				cover, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(img))
-				if err != nil {
-					log.WithField("pic", origin.GetPic()).Errorf("upload group image failed %v", err)
+					log.Errorf("upload video cover failed %v", err)
 					continue
 				}
 				result = append(result, cover)
@@ -211,29 +203,38 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					continue
 				}
 				result = append(result, localutils.MessageTextf("%v\n%v\n", origin.GetTitle(), origin.GetSummary()))
-				var img []byte
+				var cover *message.GroupImageElement
 				if len(origin.GetImageUrls()) >= 1 {
-					img, err = localutils.ImageGet(origin.GetImageUrls()[0], proxy_pool.PreferNone)
+					cover, err = localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetImageUrls()[0], false, proxy_pool.PreferAny)
 				} else {
-					img, err = localutils.ImageGet(origin.GetBannerUrl(), proxy_pool.PreferNone)
+					cover, err = localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetBannerUrl(), false, proxy_pool.PreferAny)
 				}
 				if err != nil {
-					log.WithField("image_url", origin.GetImageUrls()).
-						WithField("banner_url", origin.GetBannerUrl()).
-						Errorf("get image failed %v", err)
-					continue
-				}
-				cover, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(img))
-				if err != nil {
-					log.WithField("image_url", origin.GetImageUrls()).
-						WithField("banner_url", origin.GetBannerUrl()).
-						Errorf("upload group image failed %v", err)
+					log.Errorf("upload post cover failed %v", err)
 					continue
 				}
 				result = append(result, cover)
 			case bilibili.DynamicDescType_WithMusic:
 				// TODO
 				result = append(result, localutils.MessageTextf("%v转发了%v的动态音乐：\n%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+			case bilibili.DynamicDescType_WithSketch:
+				// TODO
+				result = append(result, localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+			case bilibili.DynamicDescType_WithLive:
+				result = append(result, localutils.MessageTextf("%v分享了%v的直播：\n%v\n%v\n\n原直播间：\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+				origin := new(bilibili.CardWithLive)
+				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
+				if err != nil {
+					log.Errorf("Unmarshal origin cardWithPost failed %v", err)
+					continue
+				}
+				result = append(result, localutils.MessageTextf("%v\n", origin.GetTitle()))
+				groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetCover(), false, proxy_pool.PreferAny)
+				if err != nil {
+					log.Errorf("upload live cover failed %v", err)
+					continue
+				}
+				result = append(result, groupImage)
 			}
 		case bilibili.DynamicDescType_WithImage:
 			cardImage, err := notify.GetCardWithImage(index)
@@ -243,14 +244,9 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			}
 			result = append(result, localutils.MessageTextf("%v发布了新态：\n%v\n%v\n", notify.Name, date, cardImage.GetItem().GetDescription()))
 			for _, pic := range cardImage.GetItem().GetPictures() {
-				img, err := localutils.ImageGet(pic.GetImgSrc(), proxy_pool.PreferNone)
+				groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), false, proxy_pool.PreferAny)
 				if err != nil {
-					log.WithField("pic", pic).Errorf("get image failed %v", err)
-					continue
-				}
-				groupImage, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(img))
-				if err != nil {
-					log.WithField("pic", pic).Errorf("upload group image %v", err)
+					log.WithField("pic", pic.GetImgSrc()).Errorf("upload image failed %v", err)
 					continue
 				}
 				result = append(result, groupImage)
@@ -269,14 +265,9 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				continue
 			}
 			result = append(result, localutils.MessageTextf("%v发布了新视频：\n%v\n%v\n%v\n", notify.Name, date, cardVideo.GetTitle(), cardVideo.GetDynamic()))
-			img, err := localutils.ImageGetAndNorm(cardVideo.GetPic(), proxy_pool.PreferNone)
+			cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, cardVideo.GetPic(), true, proxy_pool.PreferAny)
 			if err != nil {
-				log.WithField("pic", cardVideo.GetPic()).Errorf("get image failed %v", err)
-				continue
-			}
-			cover, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(img))
-			if err != nil {
-				log.WithField("pic", cardVideo.GetPic()).Errorf("upload group image failed %v", err)
+				log.WithField("pic", cardVideo.GetPic()).Errorf("upload video cover failed %v", err)
 				continue
 			}
 			result = append(result, cover)
@@ -287,32 +278,49 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				continue
 			}
 			result = append(result, localutils.MessageTextf("%v发布了新专栏：\n%v\n%v\n%v...\n", notify.Name, date, cardPost.Title, cardPost.Summary))
-			var img []byte
+			var cover *message.GroupImageElement
 			if len(cardPost.GetImageUrls()) >= 1 {
-				img, err = localutils.ImageGet(cardPost.GetImageUrls()[0], proxy_pool.PreferNone)
+				cover, err = localutils.UploadGroupImageByUrl(notify.GroupCode, cardPost.GetImageUrls()[0], false, proxy_pool.PreferAny)
 			} else {
-				img, err = localutils.ImageGet(cardPost.GetBannerUrl(), proxy_pool.PreferNone)
+				cover, err = localutils.UploadGroupImageByUrl(notify.GroupCode, cardPost.GetBannerUrl(), false, proxy_pool.PreferAny)
 			}
 			if err != nil {
 				log.WithField("image_url", cardPost.GetImageUrls()).
 					WithField("banner_url", cardPost.GetBannerUrl()).
-					Errorf("get image failed %v", err)
-				continue
-			}
-			cover, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(img))
-			if err != nil {
-				log.WithField("image_url", cardPost.GetImageUrls()).
-					WithField("banner_url", cardPost.GetBannerUrl()).
-					Errorf("upload group image failed %v", err)
+					Errorf("upload image failed %v", err)
 				continue
 			}
 			result = append(result, cover)
 		case bilibili.DynamicDescType_WithMusic:
 			// TODO
 			log.Debugf("not supported")
-			result = append(result, localutils.MessageTextf("%v发布了新动态音乐：\n", notify.Name))
+			result = append(result, localutils.MessageTextf("%v发布了新动态音乐：\n%v\n", notify.Name, date))
+		case bilibili.DynamicDescType_WithSketch:
+			cardSketch, err := notify.GetCardWithSketch(index)
+			if err != nil {
+				log.WithField("name", notify.Name).
+					WithField("card", card).
+					Errorf("cast failed %v", err)
+				continue
+			}
+			result = append(result, localutils.MessageTextf("%v更新了%v：\n%v\n%v\n", notify.Name, cardSketch.GetSketch().GetDescText(), date, cardSketch.GetVest().GetContent()))
+		case bilibili.DynamicDescType_WithLive:
+			cardLive, err := notify.GetCardWithLive(index)
+			if err != nil {
+				log.WithField("name", notify.Name).
+					WithField("card", card).
+					Errorf("cast failed %v", err)
+				continue
+			}
+			result = append(result, localutils.MessageTextf("%v发布了直播信息：\n%v\n%v\n", notify.Name, date, cardLive.GetTitle()))
+			cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, cardLive.GetCover(), true, proxy_pool.PreferAny)
+			if err != nil {
+				log.WithField("pic", cardLive.GetCover()).Errorf("upload live cover failed %v", err)
+				continue
+			}
+			result = append(result, cover)
 		}
-		log.WithField("dynamicUrl", dynamicUrl).Debug("append")
+		log.WithField("uid", notify.Mid).WithField("name", notify.Name).WithField("dynamicUrl", dynamicUrl).Debug("append")
 		result = append(result, message.NewText(dynamicUrl+"\n"))
 	}
 	return result
@@ -324,11 +332,11 @@ func (l *Lsp) notifyDouyuLive(bot *bot.Bot, notify *douyu.ConcernLiveNotify) []m
 	case douyu.ShowStatus_Living:
 		result = append(result, localutils.MessageTextf("斗鱼-%s正在直播【%v】\n", notify.Nickname, notify.RoomName))
 		result = append(result, message.NewText(notify.RoomUrl))
-		coverResp, err := requests.Get(notify.GetAvatar().GetBig())
-		if err == nil {
-			if cover, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(coverResp.Content())); err == nil {
-				result = append(result, cover)
-			}
+		cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.GetAvatar().GetBig(), false, proxy_pool.PreferAny)
+		if err != nil {
+			logger.WithField("avatar", notify.GetAvatar().GetBig()).Errorf("upload avatar failed %v", err)
+		} else {
+			result = append(result, cover)
 		}
 	case douyu.ShowStatus_NoLiving:
 		result = append(result, localutils.MessageTextf("斗鱼-%s暂未直播\n", notify.Nickname))
@@ -348,17 +356,15 @@ func (l *Lsp) notifyYoutube(bot *bot.Bot, notify *youtube.ConcernNotify) []messa
 	} else if notify.IsVideo() {
 		result = append(result, localutils.MessageTextf("YTB-%s发布了新视频：\n%v\n", notify.ChannelName, notify.VideoTitle))
 	}
-	img, err := localutils.ImageGet(notify.Cover, proxy_pool.PreferOversea)
+	groupImg, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Cover, false, proxy_pool.PreferOversea)
 	if err != nil {
-		logger.WithField("group_code", notify.GroupCode).Errorf("get cover failed %v", err)
+		logger.WithField("channel_name", notify.ChannelName).
+			WithField("video_id", notify.VideoId).
+			WithField("group_code", notify.GroupCode).
+			Errorf("upload cover failed %v", err)
 	} else {
-		groupImg, err := bot.UploadGroupImage(notify.GroupCode, bytes.NewReader(img))
-		if err != nil {
-			logger.WithField("group_code", notify.GroupCode).Errorf("upload group image failed %v", err)
-		} else {
-			result = append(result, groupImg)
-		}
+		result = append(result, groupImg)
 	}
-	result = append(result, message.NewText(youtube.VideoView+notify.VideoId+"\n"))
+	result = append(result, message.NewText(youtube.VideoViewUrl(notify.VideoId)+"\n"))
 	return result
 }

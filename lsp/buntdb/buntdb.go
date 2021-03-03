@@ -13,7 +13,7 @@ func InitBuntDB() error {
 	}
 	buntDB.SetConfig(buntdb.Config{
 		SyncPolicy:           buntdb.Always,
-		AutoShrinkPercentage: 100,
+		AutoShrinkPercentage: 10,
 		AutoShrinkMinSize:    1 * 1024 * 1024,
 	})
 	db = buntDB
