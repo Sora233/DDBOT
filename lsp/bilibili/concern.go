@@ -222,6 +222,7 @@ func (c *Concern) notifyLoop() {
 				continue
 			}
 			for _, groupCode := range groups {
+				log.WithField("group_code", groupCode).Debug("news notify")
 				notify := NewConcernNewsNotify(groupCode, event)
 				c.notify <- notify
 			}
