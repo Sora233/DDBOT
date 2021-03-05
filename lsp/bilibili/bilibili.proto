@@ -32,6 +32,7 @@ enum DynamicDescType {
     WithVideo = 8;
     WithPost = 64;
     WithMusic = 256;
+    WithMiss = 1024;
     WithSketch = 2048;
     WithLive = 4200;
     WithLiveV2 = 4308;
@@ -172,6 +173,9 @@ message CardWithOrig {
         string content = 1;
         int64 timestamp = 2;
         DynamicDescType orig_type = 3;
+        int64 reply = 4;
+        int64 miss = 5;
+        string tips = 6;
     }
     Item item = 1;
     string origin = 2;

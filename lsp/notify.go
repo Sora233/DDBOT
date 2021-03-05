@@ -251,6 +251,8 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					continue
 				}
 				result = append(result, groupImage)
+			case bilibili.DynamicDescType_WithMiss:
+				result = append(result, localutils.MessageTextf("%v分享了动态：\n%v\n%v\n\n%v\n", notify.Name, date, cardOrigin.GetItem().GetContent(), cardOrigin.GetItem().GetTips()))
 			default:
 				log.WithField("content", card.GetCard()).Info("found new type with origin")
 				result = append(result, localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
@@ -353,6 +355,15 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				continue
 			}
 			result = append(result, cover)
+		case bilibili.DynamicDescType_WithMiss:
+			cardWithMiss, err := notify.GetCardWithOrig(index)
+			if err != nil {
+				log.WithField("name", notify.Name).
+					WithField("card", card).
+					Errorf("case failed %v", err)
+				continue
+			}
+			result = append(result, localutils.MessageTextf("%v发布了新动态：\n%v\n%v\n\n%v\n", notify.Name, date, cardWithMiss.GetItem().GetContent(), cardWithMiss.GetItem().GetTips()))
 		default:
 			log.WithField("content", card.GetCard()).Info("found new type")
 			result = append(result, localutils.MessageTextf("%v发布了新动态：\n%v\n", notify.Name, date))
