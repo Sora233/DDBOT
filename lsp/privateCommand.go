@@ -100,16 +100,20 @@ func (c *LspPrivateCommand) LogCommand() {
 		logCmd.N = len(lines)
 	}
 	lines = lines[len(lines)-logCmd.N:]
+	var filteredLines []string
 	if len(logCmd.Keyword) != 0 {
-		var filteredLines []string
 		for _, line := range lines {
 			if strings.Contains(line, logCmd.Keyword) {
 				filteredLines = append(filteredLines, line)
 			}
 		}
-		c.textSend(strings.Join(filteredLines, "\n"))
 	} else {
-		c.textSend(strings.Join(lines, "\n"))
+		filteredLines = lines[:]
+	}
+	if len(filteredLines) == 0 {
+		c.textSend("无结果")
+	} else {
+		c.textSend(strings.Join(filteredLines, "\n"))
 	}
 }
 
