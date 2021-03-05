@@ -138,8 +138,9 @@ func (l *Lsp) notifyBilibiliLive(bot *bot.Bot, notify *bilibili.ConcernLiveNotif
 }
 
 func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotify) []message.IMessageElement {
-	var result []message.IMessageElement
+	var results []message.IMessageElement
 	for index, card := range notify.Cards {
+		var result []message.IMessageElement
 		log := logger.WithField("DescType", card.GetDesc().GetType().String())
 		dynamicUrl := bilibili.DynamicUrl(card.GetDesc().GetDynamicIdStr())
 		date := localutils.TimestampFormat(int64(card.GetDesc().GetTimestamp()))
@@ -358,8 +359,9 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 		}
 		log.WithField("uid", notify.Mid).WithField("name", notify.Name).WithField("dynamicUrl", dynamicUrl).Debug("append")
 		result = append(result, message.NewText(dynamicUrl+"\n"))
+		results = append(results, result...)
 	}
-	return result
+	return results
 }
 
 func (l *Lsp) notifyDouyuLive(bot *bot.Bot, notify *douyu.ConcernLiveNotify) []message.IMessageElement {
