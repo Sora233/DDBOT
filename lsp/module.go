@@ -306,6 +306,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnPrivateMessage(func(qqClient *client.QQClient, msg *message.PrivateMessage) {
+		// TODO 这个问题已经过已经修复了，再观察一段时间
 		if msg.Time < int32(time.Now().Add(time.Minute*-1).Unix()) {
 			logger.WithField("Sender", msg.Sender.DisplayName()).
 				WithField("time", time.Unix(int64(msg.Time), 0)).

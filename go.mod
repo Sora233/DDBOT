@@ -4,8 +4,8 @@ go 1.15
 
 require (
 	github.com/Jeffail/gabs/v2 v2.6.0
-	github.com/Logiase/MiraiGo-Template v0.0.0-20210220054322-e87bdaf1f8ae
-	github.com/Mrs4s/MiraiGo v0.0.0-20210220103625-420583e1c56a
+	github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486
+	github.com/Mrs4s/MiraiGo v0.0.0-20210304103008-effa2b84fe7a
 	github.com/Sora233/requests v0.0.0-20210124044507-771a1ecd2e93
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/Sora233/zhima-proxy-pool v0.0.0-20210124065344-04d96243cadd
@@ -22,3 +22,5 @@ require (
 	gocv.io/x/gocv v0.26.0
 	golang.org/x/sys v0.0.0-20210223212115-eede4237b368 // indirect
 )
+
+replace github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486 => github.com/Sora233/MiraiGo-Template v0.0.0-20210305053737-fced683d2ba9
