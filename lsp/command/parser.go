@@ -2,6 +2,7 @@ package command
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"strings"
 )
 
@@ -17,7 +18,7 @@ func (p *Parser) Parse(e []message.IMessageElement) {
 			if text == "" {
 				continue
 			}
-			splitStr := strings.Split(text, " ")
+			splitStr := utils.ArgSplit(text)
 			if len(splitStr) >= 1 {
 				p.Command = strings.TrimSpace(splitStr[0])
 				for _, s := range splitStr[1:] {

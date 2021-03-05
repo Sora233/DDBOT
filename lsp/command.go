@@ -24,6 +24,7 @@ const (
 // private command
 const (
 	PingCommand = "ping"
+	LogCommand  = "log"
 )
 
 var allGroupCommand = [...]string{
@@ -35,7 +36,7 @@ var allGroupCommand = [...]string{
 }
 
 var allPrivateOperate = [...]string{
-	PingCommand, HelpCommand,
+	PingCommand, HelpCommand, LogCommand,
 }
 
 var nonOprateable = [...]string{

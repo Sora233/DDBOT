@@ -1,13 +1,19 @@
 package lsp
 
 import (
+	"bufio"
+	"bytes"
+	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/Sora233-MiraiGo/lsp/permission"
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
+	"io/ioutil"
 	"runtime/debug"
 	"strings"
+	"time"
 )
 
 type LspPrivateCommand struct {
@@ -44,6 +50,66 @@ func (c *LspPrivateCommand) Execute() {
 		c.PingCommand()
 	case "/help":
 		c.HelpCommand()
+	case "/log":
+		if !c.l.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(c.uin()),
+		) {
+			c.noPermission()
+			return
+		}
+		c.LogCommand()
+	}
+}
+
+func (c *LspPrivateCommand) LogCommand() {
+	log := logger.WithField("uin", c.uin())
+	log.Info("run log command")
+	defer log.Info("log command end")
+
+	var logCmd struct {
+		N       int       `arg:"" optional:"" help:"the number of lines from tail"`
+		Date    time.Time `optional:"" short:"d" format:"2006-01-02"`
+		Keyword string    `optional:"" short:"k" help:"the lines contains at lease one keyword"`
+	}
+
+	output := c.parseCommandSyntax(&logCmd, LogCommand)
+	if output != "" {
+		c.textSend(output)
+	}
+	if c.exit {
+		return
+	}
+	if logCmd.N == 0 {
+		logCmd.N = 10
+	}
+	if logCmd.Date.IsZero() {
+		logCmd.Date = time.Now()
+	}
+	logName := fmt.Sprintf("%v.log", logCmd.Date.Format("2006-01-02"))
+	b, err := ioutil.ReadFile("logs/" + logName)
+	if err != nil {
+		c.textSend(fmt.Sprintf("失败 - %v", err))
+		return
+	}
+	var lines []string
+	sc := bufio.NewScanner(bytes.NewReader(b))
+	for sc.Scan() {
+		lines = append(lines, sc.Text())
+	}
+	if logCmd.N > len(lines) {
+		logCmd.N = len(lines)
+	}
+	lines = lines[len(lines)-logCmd.N:]
+	if len(logCmd.Keyword) != 0 {
+		var filteredLines []string
+		for _, line := range lines {
+			if strings.Contains(line, logCmd.Keyword) {
+				filteredLines = append(filteredLines, line)
+			}
+		}
+		c.textSend(strings.Join(filteredLines, "\n"))
+	} else {
+		c.textSend(strings.Join(lines, "\n"))
 	}
 }
 
@@ -110,6 +176,10 @@ func (c *LspPrivateCommand) DebugCheck() bool {
 		ok = true
 	}
 	return ok
+}
+
+func (c *LspPrivateCommand) noPermission() *message.PrivateMessage {
+	return c.textSend("权限不够")
 }
 
 func (c *LspPrivateCommand) textSend(text string) *message.PrivateMessage {
