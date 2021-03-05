@@ -36,6 +36,7 @@ github.com/aliyun/alibaba-cloud-sdk-go v1.61.948 h1:bOJmb16gFjMxdvUdwISk5PSc9zVT
 github.com/aliyun/alibaba-cloud-sdk-go v1.61.948/go.mod h1:pUKYbK5JQ+1Dfxk80P0qxGqe5dkxDoabbZS7zOcouyA=
 github.com/aliyun/alibaba-cloud-sdk-go v1.61.954 h1:L8L5J/VxwKJ2aR+KNizxkqtI6Rs2SLQqmQt3/W6el+U=
 github.com/aliyun/alibaba-cloud-sdk-go v1.61.954/go.mod h1:pUKYbK5JQ+1Dfxk80P0qxGqe5dkxDoabbZS7zOcouyA=
+github.com/aliyun/alibaba-cloud-sdk-go v1.61.973/go.mod h1:pUKYbK5JQ+1Dfxk80P0qxGqe5dkxDoabbZS7zOcouyA=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
