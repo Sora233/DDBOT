@@ -34,6 +34,7 @@ enum DynamicDescType {
     WithMusic = 256;
     WithSketch = 2048;
     WithLive = 4200;
+    WithLiveV2 = 4308;
 }
 
 message RoomInitResponse {
@@ -238,4 +239,25 @@ message CardWithLive {
     string area_v2_name = 6;
     LiveStatus live_status = 7;
     RoomStatus round_status = 8;
+}
+
+// 可能是新版直播间
+message CardWithLiveV2 {
+    message LivePlayInfo {
+        string cover = 1;
+        string title = 2;
+        int64 room_id = 3;
+        LiveStatus live_status = 4;
+        string link = 5;
+        int64 uid = 6;
+        int64 live_id = 7;
+        int64 area_id = 8;
+        string area_name = 9;
+        int64 parent_area_id = 10;
+        string parent_area_name= 11;
+        int64 room_type = 12;
+    }
+    LivePlayInfo live_play_info = 1;
+    int64 style = 2;
+    int64 type = 3;
 }

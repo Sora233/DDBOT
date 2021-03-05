@@ -101,6 +101,18 @@ func (n *NewsInfo) GetCardWithLive(index int) (*CardWithLive, error) {
 	return nil, errors.New("type mismatch")
 }
 
+func (n *NewsInfo) GetCardWithLiveV2(index int) (*CardWithLiveV2, error) {
+	if len(n.Cards) <= index || n.Cards[index].GetCard() == "" {
+		return nil, errors.New("card not found or empty")
+	}
+	if n.Cards[index].GetDesc().GetType() == DynamicDescType_WithLiveV2 {
+		var card = new(CardWithLiveV2)
+		err := json.Unmarshal([]byte(n.Cards[index].GetCard()), card)
+		return card, err
+	}
+	return nil, errors.New("type mismatch")
+}
+
 func (n *NewsInfo) ToString() string {
 	if n == nil {
 		return ""

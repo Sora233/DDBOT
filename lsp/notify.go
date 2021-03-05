@@ -225,7 +225,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				origin := new(bilibili.CardWithLive)
 				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
 				if err != nil {
-					log.Errorf("Unmarshal origin cardWithPost failed %v", err)
+					log.Errorf("Unmarshal origin CardWithLive failed %v", err)
 					continue
 				}
 				result = append(result, localutils.MessageTextf("%v\n", origin.GetTitle()))
@@ -235,6 +235,24 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					continue
 				}
 				result = append(result, groupImage)
+			case bilibili.DynamicDescType_WithLiveV2:
+				result = append(result, localutils.MessageTextf("%v分享了%v的直播：\n%v\n%v\n\n原直播间：\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+				origin := new(bilibili.CardWithLiveV2)
+				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
+				if err != nil {
+					log.Errorf("Unmarshal origin CardWithLiveV2 failed %v", err)
+					continue
+				}
+				result = append(result, localutils.MessageTextf("%v\n", origin.GetLivePlayInfo().GetTitle()))
+				groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetLivePlayInfo().GetCover(), false, proxy_pool.PreferAny)
+				if err != nil {
+					log.Errorf("upload liveV2 cover failed %v", err)
+					continue
+				}
+				result = append(result, groupImage)
+			default:
+				log.WithField("content", card.GetCard()).Info("found new type with origin")
+				result = append(result, localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
 			}
 		case bilibili.DynamicDescType_WithImage:
 			cardImage, err := notify.GetCardWithImage(index)
@@ -319,6 +337,24 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				continue
 			}
 			result = append(result, cover)
+		case bilibili.DynamicDescType_WithLiveV2:
+			cardLiveV2, err := notify.GetCardWithLiveV2(index)
+			if err != nil {
+				log.WithField("name", notify.Name).
+					WithField("card", card).
+					Errorf("case failed %v", err)
+				continue
+			}
+			result = append(result, localutils.MessageTextf("%v发布了直播信息：\n%v\n%v\n", notify.Name, date, cardLiveV2.GetLivePlayInfo().GetTitle()))
+			cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, cardLiveV2.GetLivePlayInfo().GetCover(), true, proxy_pool.PreferAny)
+			if err != nil {
+				log.WithField("pic", cardLiveV2.GetLivePlayInfo().GetCover()).Errorf("upload live cover failed %v", err)
+				continue
+			}
+			result = append(result, cover)
+		default:
+			log.WithField("content", card.GetCard()).Info("found new type")
+			result = append(result, localutils.MessageTextf("%v发布了新动态：\n%v\n", notify.Name, date))
 		}
 		log.WithField("uid", notify.Mid).WithField("name", notify.Name).WithField("dynamicUrl", dynamicUrl).Debug("append")
 		result = append(result, message.NewText(dynamicUrl+"\n"))
