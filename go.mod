@@ -16,6 +16,7 @@ require (
 	github.com/imroc/req v0.3.0
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jupp0r/go-priority-queue v0.0.0-20160601094913-ab1073853bde
+	github.com/lestrrat-go/strftime v1.0.4 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/sirupsen/logrus v1.8.0
 	github.com/tidwall/buntdb v1.2.0
@@ -23,4 +24,4 @@ require (
 	golang.org/x/sys v0.0.0-20210223212115-eede4237b368 // indirect
 )
 
-replace github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486 => github.com/Sora233/MiraiGo-Template v0.0.0-20210305053737-fced683d2ba9
+replace github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486 => github.com/Sora233/MiraiGo-Template v0.0.0-20210307130812-17f4708de813
