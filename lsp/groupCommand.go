@@ -74,7 +74,6 @@ func (lgc *LspGroupCommand) Execute() {
 	}
 
 	log := logger.WithField("group_code", lgc.groupCode()).WithField("cmd", lgc.GetCmd()).WithField("args", lgc.GetArgs())
-	log.Debug("execute")
 
 	if !lgc.DebugCheck() {
 		log.Debugf("debug mode, skip execute.")
@@ -91,6 +90,8 @@ func (lgc *LspGroupCommand) Execute() {
 		}
 		return
 	}
+
+	log.Debug("execute")
 
 	switch lgc.GetCmd() {
 	case "/lsp":
