@@ -159,7 +159,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				origin := new(bilibili.CardWithImage)
 				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
 				if err != nil {
-					log.Errorf("Unmarshal origin cardWithImage failed %v", err)
+					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin cardWithImage failed %v", err)
 					continue
 				}
 				result = append(result, localutils.MessageTextf("%v\n", origin.GetItem().GetDescription()))
@@ -176,7 +176,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				origin := new(bilibili.CardTextOnly)
 				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
 				if err != nil {
-					log.Errorf("Unmarshal origin cardWithText failed %v", err)
+					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin cardWithText failed %v", err)
 					continue
 				}
 				result = append(result, localutils.MessageTextf("%v\n", origin.GetItem().GetContent()))
@@ -185,7 +185,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				origin := new(bilibili.CardWithVideo)
 				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
 				if err != nil {
-					log.Errorf("Unmarshal origin cardWithVideo failed %v", err)
+					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin cardWithVideo failed %v", err)
 					continue
 				}
 				result = append(result, localutils.MessageTextf("%v\n%v\n", origin.GetTitle(), origin.GetDesc()))
@@ -200,7 +200,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				origin := new(bilibili.CardWithPost)
 				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
 				if err != nil {
-					log.Errorf("Unmarshal origin cardWithPost failed %v", err)
+					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin cardWithPost failed %v", err)
 					continue
 				}
 				result = append(result, localutils.MessageTextf("%v\n%v\n", origin.GetTitle(), origin.GetSummary()))
@@ -218,6 +218,14 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			case bilibili.DynamicDescType_WithMusic:
 				// TODO
 				result = append(result, localutils.MessageTextf("%v转发了%v的动态音乐：\n%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+			case bilibili.DynamicDescType_WithAnime:
+				origin := new(bilibili.CardWithAnime)
+				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
+				if err != nil {
+					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithAnime failed %v", err)
+					continue
+				}
+				result = append(result, localutils.MessageTextf("%v转发了%v【%v】：\n%v\n%v\n", notify.Name, origin.GetApiSeasonInfo().GetTypeName(), origin.GetApiSeasonInfo().GetTitle(), date, cardOrigin.GetItem().GetContent()))
 			case bilibili.DynamicDescType_WithSketch:
 				// TODO
 				result = append(result, localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
@@ -226,7 +234,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				origin := new(bilibili.CardWithLive)
 				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
 				if err != nil {
-					log.Errorf("Unmarshal origin CardWithLive failed %v", err)
+					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithLive failed %v", err)
 					continue
 				}
 				result = append(result, localutils.MessageTextf("%v\n", origin.GetTitle()))
@@ -241,13 +249,13 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				origin := new(bilibili.CardWithLiveV2)
 				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
 				if err != nil {
-					log.Errorf("Unmarshal origin CardWithLiveV2 failed %v", err)
+					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithLiveV2 failed %v", err)
 					continue
 				}
 				result = append(result, localutils.MessageTextf("%v\n", origin.GetLivePlayInfo().GetTitle()))
 				groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetLivePlayInfo().GetCover(), false, proxy_pool.PreferAny)
 				if err != nil {
-					log.Errorf("upload liveV2 cover failed %v", err)
+					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("upload liveV2 cover failed %v", err)
 					continue
 				}
 				result = append(result, groupImage)

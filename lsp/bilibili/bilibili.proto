@@ -32,6 +32,7 @@ enum DynamicDescType {
     WithVideo = 8;
     WithPost = 64;
     WithMusic = 256;
+    WithAnime = 512;
     WithMiss = 1024;
     WithSketch = 2048;
     WithLive = 4200;
@@ -219,6 +220,33 @@ message CardWithPost {
     repeated string image_urls = 3;
     string banner_url = 4;
     int64 publish_time = 5;
+}
+
+// TODO
+message CardWithMusic {}
+
+message CardWithAnime {
+    message ApiSeasonInfo {
+        int64 bgm_type = 1;
+        string cover = 2;
+        int64 is_finish = 3;
+        int64 season_id = 4;
+        string title = 5;
+        string total_count = 6;
+        int64 ts = 7;
+        string type_name = 8;
+    }
+    ApiSeasonInfo apiSeasonInfo = 1;
+    int64 bullet_count = 2;
+    string cover = 3;
+    string episode_id = 4;
+    string index = 5;
+    string index_title = 6;
+    string new_desc = 7;
+//    int64 online_finish = 8;
+    int64 play_count = 9;
+    int64 reply_count = 10;
+    string url = 11;
 }
 
 message CardWithSketch {
