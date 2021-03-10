@@ -134,7 +134,9 @@ const (
 	DynamicDescType_WithPost   DynamicDescType = 64
 	DynamicDescType_WithMusic  DynamicDescType = 256
 	DynamicDescType_WithAnime  DynamicDescType = 512
-	DynamicDescType_WithMiss   DynamicDescType = 1024
+	// 该内容已经不见了哦
+	DynamicDescType_WithMiss DynamicDescType = 1024
+	// 评分、头像挂件，这种动态下面有一个小卡片的
 	DynamicDescType_WithSketch DynamicDescType = 2048
 	DynamicDescType_WithLive   DynamicDescType = 4200
 	DynamicDescType_WithLiveV2 DynamicDescType = 4308

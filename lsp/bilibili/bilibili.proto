@@ -33,7 +33,9 @@ enum DynamicDescType {
     WithPost = 64;
     WithMusic = 256;
     WithAnime = 512;
+    // 该内容已经不见了哦
     WithMiss = 1024;
+    // 评分、头像挂件，这种动态下面有一个小卡片的
     WithSketch = 2048;
     WithLive = 4200;
     WithLiveV2 = 4308;

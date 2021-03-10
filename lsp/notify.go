@@ -332,7 +332,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					Errorf("cast failed %v", err)
 				continue
 			}
-			result = append(result, localutils.MessageTextf("%v更新了%v：\n%v\n%v\n", notify.Name, cardSketch.GetSketch().GetDescText(), date, cardSketch.GetVest().GetContent()))
+			result = append(result, localutils.MessageTextf("%v发表了新动态：\n%v\n%v\n内容：%v - %v", notify.Name, date, cardSketch.GetVest().GetContent(), cardSketch.GetSketch().GetTitle(), cardSketch.GetSketch().GetDescText()))
 		case bilibili.DynamicDescType_WithLive:
 			cardLive, err := notify.GetCardWithLive(index)
 			if err != nil {
