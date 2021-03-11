@@ -91,7 +91,16 @@ func (c *Concern) notifyLoop() {
 			WithField("video_type", event.VideoType.String()).
 			WithField("video_title", event.VideoTitle).
 			WithField("video_status", event.VideoStatus.String())
+		if prev, err := c.StateManager.GetVideo(event.ChannelId, event.VideoId); err == nil {
+			if prev.VideoStatus == event.VideoStatus && prev.VideoType == event.VideoType {
+				log.Debugf("duplicate event")
+				continue
+			}
+		}
 		log.Debugf("debug event")
+		if err := c.StateManager.AddVideo(event); err != nil {
+			log.Errorf("add video err %v", err)
+		}
 		groups, _, idTypes, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
 			return id.(string) == event.ChannelId && p.ContainAny(concern.YoutubeLive|concern.YoutubeVideo)
 		})

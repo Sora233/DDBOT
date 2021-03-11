@@ -10,15 +10,19 @@ import (
 func Key(keys ...interface{}) string {
 	var _keys []string
 	for _, ikey := range keys {
-		switch key := ikey.(type) {
-		case string:
-			_keys = append(_keys, key)
-		case int, int8, int16, int32, int64:
-			_keys = append(_keys, strconv.FormatInt(reflect.ValueOf(key).Int(), 10))
-		case uint, uint8, uint16, uint32, uint64:
-			_keys = append(_keys, strconv.FormatUint(reflect.ValueOf(key).Uint(), 10))
-		case bool:
-			_keys = append(_keys, strconv.FormatBool(key))
+		rk := reflect.ValueOf(ikey)
+		if rk.Kind() == reflect.Ptr || rk.Kind() == reflect.Interface {
+			rk = rk.Elem()
+		}
+		switch rk.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			_keys = append(_keys, strconv.FormatInt(rk.Int(), 10))
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			_keys = append(_keys, strconv.FormatUint(rk.Uint(), 10))
+		case reflect.String:
+			_keys = append(_keys, rk.String())
+		case reflect.Bool:
+			_keys = append(_keys, strconv.FormatBool(rk.Bool()))
 		default:
 			panic("unsupported key type " + reflect.ValueOf(ikey).Type().Name())
 		}
@@ -78,6 +82,9 @@ func YoutubeUserInfoKey(keys ...interface{}) string {
 }
 func YoutubeInfoKey(keys ...interface{}) string {
 	return NamedKey("YoutubeInfo", keys)
+}
+func YoutubeVideoKey(keys ...interface{}) string {
+	return NamedKey("YoutubeVideo", keys)
 }
 func PermissionKey(keys ...interface{}) string {
 	return NamedKey("Permission", keys)

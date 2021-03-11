@@ -36,6 +36,36 @@ func (s *StateManager) GetInfo(channelId string) (info *Info, err error) {
 	}
 	return
 }
+
+func (s *StateManager) GetVideo(channelId string, videoId string) (*VideoInfo, error) {
+	var v = new(VideoInfo)
+	err := s.RTxCover(func(tx *buntdb.Tx) error {
+		key := s.VideoKey(channelId, videoId)
+		val, err := tx.Get(key)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal([]byte(val), v)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+func (s *StateManager) AddVideo(v *VideoInfo) error {
+	return s.RWTxCover(func(tx *buntdb.Tx) error {
+		key := s.VideoKey(v.ChannelId, v.VideoId)
+		b, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		_, _, err = tx.Set(key, string(b), localdb.ExpireOption(time.Hour*24))
+		return err
+	})
+}
+
 func (s *StateManager) Start() error {
 	db, err := localdb.GetClient()
 	if err == nil {
