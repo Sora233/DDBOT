@@ -485,7 +485,6 @@ func (lgc *LspGroupCommand) ListCommand() {
 	var listLivingCmd struct {
 		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
 		Type string `optional:"" short:"t" default:"live" help:"news / live"`
-		All  bool   `optional:"" short:"a" default:"false" help:"show all"`
 	}
 	output := lgc.parseCommandSyntax(&listLivingCmd, ListCommand)
 	if output != "" {
@@ -503,14 +502,12 @@ func (lgc *LspGroupCommand) ListCommand() {
 	}
 	log = log.WithField("site", site).WithField("type", ctype)
 
-	all := listLivingCmd.All
-
 	listMsg := message.NewSendingMessage()
 
 	switch ctype {
 	case concern.BibiliLive:
-		listMsg.Append(message.NewText("当前直播：\n"))
-		living, err := lgc.l.bilibiliConcern.ListLiving(groupCode, all)
+		listMsg.Append(message.NewText("当前关注：\n"))
+		living, err := lgc.l.bilibiliConcern.ListLiving(groupCode, true)
 		if err != nil {
 			log.Debugf("list living failed %v", err)
 			lgc.textReply(fmt.Sprintf("list living 失败 - %v", err))
@@ -524,17 +521,11 @@ func (lgc *LspGroupCommand) ListCommand() {
 			if idx != 0 {
 				listMsg.Append(message.NewText("\n"))
 			}
-			notifyMsg := lgc.l.NotifyMessage(lgc.bot, liveInfo)
-			for _, msg := range notifyMsg {
-				listMsg.Append(msg)
-			}
-		}
-		if len(listMsg.Elements) == 1 {
-			listMsg.Append(message.NewText("无人直播"))
+			listMsg.Append(utils.MessageTextf("%v %v", liveInfo.Name, liveInfo.Mid))
 		}
 	case concern.BilibiliNews:
 		listMsg.Append(message.NewText("当前关注：\n"))
-		news, err := lgc.l.bilibiliConcern.ListNews(groupCode, all)
+		news, err := lgc.l.bilibiliConcern.ListNews(groupCode, true)
 		if err != nil {
 			log.Debugf("list news failed %v", err)
 			lgc.textReply(fmt.Sprintf("list news 失败 - %v", err))
@@ -551,8 +542,8 @@ func (lgc *LspGroupCommand) ListCommand() {
 			listMsg.Append(utils.MessageTextf("%v %v", newsInfo.Name, newsInfo.Mid))
 		}
 	case concern.DouyuLive:
-		listMsg.Append(message.NewText("当前直播：\n"))
-		living, err := lgc.l.douyuConcern.ListLiving(groupCode, all)
+		listMsg.Append(message.NewText("当前关注：\n"))
+		living, err := lgc.l.douyuConcern.ListLiving(groupCode, true)
 		if err != nil {
 			log.Debugf("list living failed %v", err)
 			lgc.textReply(fmt.Sprintf("失败 - %v", err))
@@ -566,17 +557,11 @@ func (lgc *LspGroupCommand) ListCommand() {
 			if idx != 0 {
 				listMsg.Append(message.NewText("\n"))
 			}
-			notifyMsg := lgc.l.NotifyMessage(lgc.bot, liveInfo)
-			for _, msg := range notifyMsg {
-				listMsg.Append(msg)
-			}
-		}
-		if len(listMsg.Elements) == 1 {
-			listMsg.Append(message.NewText("无人直播"))
+			listMsg.Append(utils.MessageTextf("%v %v", liveInfo.Nickname, liveInfo.RoomId))
 		}
 	case concern.YoutubeLive:
 		listMsg.Append(message.NewText("当前关注：\n"))
-		living, err := lgc.l.youtubeConcern.ListLiving(groupCode, all)
+		living, err := lgc.l.youtubeConcern.ListLiving(groupCode, true)
 		if err != nil {
 			log.Debugf("list living failed %v", err)
 			lgc.textReply(fmt.Sprintf("失败 - %v", err))
