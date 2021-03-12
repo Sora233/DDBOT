@@ -400,7 +400,7 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *message.GroupMessage {
 	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
 		logger.WithField("groupCode", groupCode).Debug("skip muted group")
-		return nil
+		return &message.GroupMessage{Id: -1}
 	}
 	// don't know why
 	// msg.Elements = l.compactTextElements(msg.Elements)
