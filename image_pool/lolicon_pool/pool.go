@@ -86,6 +86,14 @@ func (pool *LoliconPool) Get(options ...image_pool.OptionFunc) ([]image_pool.Ima
 			WithField("quota", resp.Quota).
 			WithField("quota_min_ttl", resp.QuotaMinTTL).
 			Debugf("request done")
+		switch resp.Code {
+		case 404:
+			return nil, ErrNotFound
+		case 401:
+			return nil, ErrAPIKeyError
+		case 429:
+			return nil, ErrQuotaExceed
+		}
 		if resp.Code != 0 {
 			return nil, fmt.Errorf("response code %v: %v", resp.Code, resp.Msg)
 		}

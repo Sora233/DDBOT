@@ -249,8 +249,14 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	options = append(options, lolicon_pool.NumOption(num))
 	imgs, err := lgc.l.GetImageFromPool(options...)
 	if err != nil {
+		if err == lolicon_pool.ErrNotFound {
+			lgc.textReply(err.Error())
+		} else if err == lolicon_pool.ErrQuotaExceed {
+			lgc.textReply("达到调用限制")
+		} else {
+			lgc.textReply("获取失败")
+		}
 		log.Errorf("get from image pool failed %v", err)
-		lgc.textReply("获取失败")
 		return
 	}
 	if len(imgs) == 0 {
