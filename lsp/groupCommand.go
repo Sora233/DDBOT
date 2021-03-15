@@ -26,7 +26,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -264,10 +263,13 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		lgc.textReply("获取失败")
 		return
 	}
-	var imgsBytes = make([][]byte, len(imgs))
-	var errs = make([]error, len(imgs))
-	var groupImages = make([]*message.GroupImageElement, len(imgs))
-	var wg = new(sync.WaitGroup)
+	searchNum := len(imgs)
+	var (
+		imgsBytes   = make([][]byte, len(imgs))
+		errs        = make([]error, len(imgs))
+		groupImages = make([]*message.GroupImageElement, len(imgs))
+		wg          = new(sync.WaitGroup)
+	)
 
 	for index := range imgs {
 		wg.Add(1)
@@ -297,7 +299,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	log.Debug("all image uploaded")
 
 	imgBatch := 2
-	var ok int32 = 0
+	missCount := 0
 
 	for i := 0; i < len(groupImages); i += imgBatch {
 		last := i + imgBatch
@@ -313,7 +315,6 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 					log.Errorf("upload failed %v", errs[i+index])
 					continue
 				}
-				atomic.CompareAndSwapInt32(&ok, 0, 1)
 				img := imgs[i+index]
 				sendingMsg.Append(groupImage)
 				if loliconImage, ok := img.(*lolicon_pool.Setu); ok {
@@ -339,20 +340,15 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 				return
 			}
 			if lgc.reply(sendingMsg).Id == -1 {
-				atomic.CompareAndSwapInt32(&ok, 1, 2)
-			} else {
-				atomic.StoreInt32(&ok, 3)
+				missCount += 2
 			}
 		}(i)
 	}
 
 	wg.Wait()
 
-	if ok == 0 {
-		lgc.textReply("获取失败")
-	} else if ok == 2 {
-		lgc.textReply("发送失败")
-	}
+	lgc.textReplyF("本次共查询到%v张图片，有%v张图片被吞了哦", searchNum, missCount)
+
 	return
 }
 
@@ -1156,9 +1152,21 @@ func (lgc *LspGroupCommand) textReply(text string) *message.GroupMessage {
 	return lgc.reply(sendingMsg)
 }
 
+func (lgc *LspGroupCommand) textReplyF(format string, args ...interface{}) *message.GroupMessage {
+	sendingMsg := message.NewSendingMessage()
+	sendingMsg.Append(utils.MessageTextf(format, args...))
+	return lgc.reply(sendingMsg)
+}
+
 func (lgc *LspGroupCommand) textSend(text string) *message.GroupMessage {
 	sendingMsg := message.NewSendingMessage()
 	sendingMsg.Append(message.NewText(text))
+	return lgc.send(sendingMsg)
+}
+
+func (lgc *LspGroupCommand) textSendF(format string, args ...interface{}) *message.GroupMessage {
+	sendingMsg := message.NewSendingMessage()
+	sendingMsg.Append(utils.MessageTextf(format, args...))
 	return lgc.send(sendingMsg)
 }
 
