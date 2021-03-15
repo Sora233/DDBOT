@@ -1,7 +1,6 @@
 package logging
 
 import (
-	"fmt"
 	"strconv"
 	"sync"
 
@@ -76,7 +75,7 @@ func logGroupMessage(msg *message.GroupMessage) {
 		WithField("GroupName", msg.GroupName).
 		WithField("SenderID", msg.Sender.Uin).
 		WithField("SenderName", msg.Sender.DisplayName()).
-		Info(msgToString(msg))
+		Info(msgToString(msg.Elements))
 }
 
 func logPrivateMessage(msg *message.PrivateMessage) {
@@ -87,7 +86,7 @@ func logPrivateMessage(msg *message.PrivateMessage) {
 		WithField("SenderID", msg.Sender.Uin).
 		WithField("SenderName", msg.Sender.DisplayName()).
 		WithField("Target", msg.Target).
-		Info(msg.ToString())
+		Info(msgToString(msg.Elements))
 }
 
 func logFriendMessageRecallEvent(event *client.FriendMessageRecalledEvent) {
@@ -151,24 +150,19 @@ func registerLog(b *bot.Bot) {
 	})
 }
 
-func msgToString(groupMsg *message.GroupMessage) (res string) {
-	for _, elem := range groupMsg.Elements {
+func msgToString(elements []message.IMessageElement) (res string) {
+	for _, elem := range elements {
 		switch e := elem.(type) {
 		case *message.TextElement:
 			res += e.Content
 		case *message.ImageElement:
-			res += "[Image:" + e.Filename + " " + e.Url + "]"
+			res += "[Image]"
 		case *message.FaceElement:
 			res += "[" + e.Name + "]"
 		case *message.GroupImageElement:
-			res += "[Image: " + e.ImageId + " " + e.Url + "]"
+			res += "[Image]"
 		case *message.GroupFlashImgElement:
-			// NOTE: ignore other components
-			img, err := bot.Instance.QueryGroupImage(groupMsg.GroupCode, e.Md5, e.Size)
-			if err != nil {
-				return "[Image (flash img):" + e.Filename + fmt.Sprintf(" {ERROR_URL:%v} ]", err)
-			}
-			return "[Image (flash img):" + e.Filename + " " + img.Url + "]"
+			res += "[Flash Image]"
 		case *message.AtElement:
 			res += e.Display
 		case *message.RedBagElement:
