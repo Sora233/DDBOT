@@ -183,7 +183,7 @@ func (lgc *LspGroupCommand) LspCommand() {
 
 	log := logger.WithField("GroupCode", groupCode)
 	log.Infof("run lsp command")
-	defer log.Info("lsp command end")
+	defer func() { log.Info("lsp command end") }()
 
 	var lspCmd struct{}
 	output := lgc.parseCommandSyntax(&lspCmd, LspCommand)
@@ -200,7 +200,7 @@ func (lgc *LspGroupCommand) LspCommand() {
 func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	log := logger.WithField("GroupCode", lgc.groupCode())
 	log.Info("run setu command")
-	defer log.Info("setu command end")
+	defer func() { log.Info("setu command end") }()
 
 	if !lgc.l.status.ImagePoolEnable {
 		log.Debug("image pool not setup")
@@ -363,7 +363,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 
 	log := logger.WithField("GroupCode", groupCode)
 	log.Info("run watch command")
-	defer log.Info("watch command end")
+	defer func() { log.Info("watch command end") }()
 
 	var watchCmd struct {
 		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
@@ -482,7 +482,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 
 	log := logger.WithField("GroupCode", groupCode)
 	log.Info("run list living command")
-	defer log.Info("list living command end")
+	defer func() { log.Info("list living command end") }()
 
 	var listLivingCmd struct {
 		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
@@ -597,7 +597,7 @@ func (lgc *LspGroupCommand) RollCommand() {
 
 	log := logger.WithField("GroupCode", groupCode)
 	log.Info("run roll command")
-	defer log.Info("roll command end")
+	defer func() { log.Info("roll command end") }()
 
 	var rollCmd struct {
 		RangeArg []string `arg:"" optional:"" help:"roll range, eg. 100 / 50-100 / opt1 opt2 opt3"`
@@ -666,7 +666,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 
 	log := logger.WithField("GroupCode", groupCode)
 	log.Infof("run checkin command")
-	defer log.Info("checkin command end")
+	defer func() { log.Info("checkin command end") }()
 
 	var checkinCmd struct{}
 	output := lgc.parseCommandSyntax(&checkinCmd, CheckinCommand)
@@ -734,7 +734,7 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 
 	log := logger.WithField("GroupCode", groupCode)
 	log.Infof("run enable command")
-	defer log.Info("enable command end")
+	defer func() { log.Info("enable command end") }()
 
 	var enableCmd struct {
 		Command string `arg:"" help:"command name"`
@@ -785,7 +785,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 
 	log := logger.WithField("GroupCode", groupCode)
 	log.Infof("run grant command")
-	defer log.Info("grant command end")
+	defer func() { log.Info("grant command end") }()
 
 	var grantCmd struct {
 		Command string `optional:"" short:"c" xor:"1" help:"command name"`
@@ -904,7 +904,7 @@ func (lgc *LspGroupCommand) FaceCommand() {
 
 	log := logger.WithField("GroupCode", groupCode)
 	log.Infof("run face command")
-	defer log.Info("face command end")
+	defer func() { log.Info("face command end") }()
 
 	output := lgc.parseCommandSyntax(&struct{}{}, FaceCommand, kong.Description("电脑使用/face [图片] 或者 回复图片消息+/face触发"))
 	if output != "" {
@@ -945,7 +945,7 @@ func (lgc *LspGroupCommand) FaceCommand() {
 func (lgc *LspGroupCommand) ReverseCommand() {
 	log := logger.WithField("GroupCode", lgc.groupCode())
 	log.Info("run reverse command")
-	defer log.Info("reverse command end")
+	defer func() { log.Info("reverse command end") }()
 
 	output := lgc.parseCommandSyntax(&struct{}{}, ReverseCommand, kong.Description("电脑使用/倒放 [图片] 或者 回复图片消息+/倒放触发"))
 	if output != "" {
@@ -986,7 +986,7 @@ func (lgc *LspGroupCommand) ReverseCommand() {
 func (lgc *LspGroupCommand) HelpCommand() {
 	log := logger.WithField("group_code", lgc.groupCode())
 	log.Info("run help command")
-	defer log.Info("help command end")
+	defer func() { log.Info("help command end") }()
 
 	output := lgc.parseCommandSyntax(&struct{}{}, HelpCommand, kong.Description("print help message"))
 	if output != "" {
