@@ -20,6 +20,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
+	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"math/rand"
 	"runtime/debug"
@@ -72,7 +73,7 @@ func (lgc *LspGroupCommand) Execute() {
 		return
 	}
 
-	log := logger.WithField("group_code", lgc.groupCode()).WithField("cmd", lgc.GetCmd()).WithField("args", lgc.GetArgs())
+	log := lgc.DefaultLogger().WithField("cmd", lgc.GetCmd()).WithField("args", lgc.GetArgs())
 
 	if !lgc.DebugCheck() {
 		log.Debugf("debug mode, skip execute.")
@@ -178,10 +179,7 @@ func (lgc *LspGroupCommand) Execute() {
 }
 
 func (lgc *LspGroupCommand) LspCommand() {
-	msg := lgc.msg
-	groupCode := msg.GroupCode
-
-	log := logger.WithField("GroupCode", groupCode)
+	log := lgc.DefaultLogger()
 	log.Infof("run lsp command")
 	defer func() { log.Info("lsp command end") }()
 
@@ -198,7 +196,7 @@ func (lgc *LspGroupCommand) LspCommand() {
 }
 
 func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
-	log := logger.WithField("GroupCode", lgc.groupCode())
+	log := lgc.DefaultLogger()
 	log.Info("run setu command")
 	defer func() { log.Info("setu command end") }()
 
@@ -354,14 +352,13 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 
 func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	var (
-		msg       = lgc.msg
-		groupCode = msg.GroupCode
+		groupCode = lgc.groupCode()
 		site      = bilibili.Site
 		watchType = concern.BibiliLive
 		err       error
 	)
 
-	log := logger.WithField("GroupCode", groupCode)
+	log := lgc.DefaultLogger()
 	log.Info("run watch command")
 	defer func() { log.Info("watch command end") }()
 
@@ -386,7 +383,8 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 
 	site, watchType, err = lgc.parseRawSiteAndType(watchCmd.Site, watchCmd.Type)
 	if err != nil {
-		log.WithField("args", lgc.GetArgs()).Errorf("parse raw concern failed %v", err)
+		log = log.WithField("args", lgc.GetArgs())
+		log.Errorf("parse raw concern failed %v", err)
 		lgc.textReply(fmt.Sprintf("参数错误 - %v", err))
 		return
 	}
@@ -402,12 +400,13 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 			lgc.textReply("失败 - bilibili mid格式错误")
 			return
 		}
+		log = log.WithField("mid", mid)
 		if remove {
 			// unwatch
 			if err := lgc.l.bilibiliConcern.Remove(groupCode, mid, watchType); err != nil {
 				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
-				log.WithField("mid", mid).Debugf("unwatch success")
+				log.Debugf("unwatch success")
 				lgc.textReply("unwatch成功")
 			}
 			return
@@ -415,11 +414,12 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		// watch
 		userInfo, err := lgc.l.bilibiliConcern.Add(groupCode, mid, watchType)
 		if err != nil {
-			log.WithField("mid", mid).Errorf("watch error %v", err)
+			log.Errorf("watch error %v", err)
 			lgc.textReply(fmt.Sprintf("watch失败 - %v", err))
 			return
 		}
-		log.WithField("mid", mid).Debugf("watch success")
+		log = log.WithField("name", userInfo.Name)
+		log.Debugf("watch success")
 		lgc.textReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", userInfo.Name))
 	case douyu.Site:
 		mid, err := strconv.ParseInt(id, 10, 64)
@@ -428,12 +428,13 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 			lgc.textReply("失败 - douyu id格式错误")
 			return
 		}
+		log = log.WithField("mid", mid)
 		if remove {
 			// unwatch
 			if err := lgc.l.douyuConcern.Remove(groupCode, mid, watchType); err != nil {
 				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
-				log.WithField("mid", mid).Debugf("unwatch success")
+				log.Debugf("unwatch success")
 				lgc.textReply("unwatch成功")
 			}
 			return
@@ -441,13 +442,15 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		// watch
 		userInfo, err := lgc.l.douyuConcern.Add(groupCode, mid, watchType)
 		if err != nil {
-			log.WithField("mid", mid).Errorf("watch error %v", err)
+			log.Errorf("watch error %v", err)
 			lgc.textReply(fmt.Sprintf("watch失败 - %v", err))
 			break
 		}
-		log.WithField("mid", mid).Debugf("watch success")
+		log = log.WithField("name", userInfo.Nickname)
+		log.Debugf("watch success")
 		lgc.textReply(fmt.Sprintf("watch成功 - 斗鱼用户 %v", userInfo.Nickname))
 	case youtube.Site:
+		log = log.WithField("id", id)
 		if remove {
 			// unwatch
 			if err := lgc.l.youtubeConcern.Remove(groupCode, id, watchType); err != nil {
@@ -460,11 +463,12 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		}
 		info, err := lgc.l.youtubeConcern.Add(groupCode, id, watchType)
 		if err != nil {
-			log.WithField("id", id).Errorf("watch error %v", err)
+			log.Errorf("watch error %v", err)
 			lgc.textReply(fmt.Sprintf("watch失败 - %v", err))
 			break
 		}
-		log.WithField("id", id).Debugf("watch success")
+		log = log.WithField("name", info.ChannelName)
+		log.Debugf("watch success")
 		if info.ChannelName == "" {
 			lgc.textReply(fmt.Sprintf("watch成功 - YTB用户，该用户未发任何布直播/视频，无法获取名字"))
 		} else {
@@ -477,10 +481,9 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 }
 
 func (lgc *LspGroupCommand) ListCommand() {
-	msg := lgc.msg
-	groupCode := msg.GroupCode
+	groupCode := lgc.groupCode()
 
-	log := logger.WithField("GroupCode", groupCode)
+	log := lgc.DefaultLogger()
 	log.Info("run list living command")
 	defer func() { log.Info("list living command end") }()
 
@@ -498,7 +501,8 @@ func (lgc *LspGroupCommand) ListCommand() {
 
 	site, ctype, err := lgc.parseRawSiteAndType(listLivingCmd.Site, listLivingCmd.Type)
 	if err != nil {
-		log.WithField("args", lgc.GetArgs()).Errorf("parse raw site failed %v", err)
+		log = log.WithField("args", lgc.GetArgs())
+		log.Errorf("parse raw site failed %v", err)
 		lgc.textReply(fmt.Sprintf("失败 - %v", err))
 		return
 	}
@@ -592,10 +596,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 }
 
 func (lgc *LspGroupCommand) RollCommand() {
-	msg := lgc.msg
-	groupCode := msg.GroupCode
-
-	log := logger.WithField("GroupCode", groupCode)
+	log := lgc.DefaultLogger()
 	log.Info("run roll command")
 	defer func() { log.Info("roll command end") }()
 
@@ -661,10 +662,7 @@ func (lgc *LspGroupCommand) RollCommand() {
 }
 
 func (lgc *LspGroupCommand) CheckinCommand() {
-	msg := lgc.msg
-	groupCode := msg.GroupCode
-
-	log := logger.WithField("GroupCode", groupCode)
+	log := lgc.DefaultLogger()
 	log.Infof("run checkin command")
 	defer func() { log.Info("checkin command end") }()
 
@@ -688,8 +686,8 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 
 	err = db.Update(func(tx *buntdb.Tx) error {
 		var score int64
-		key := localdb.Key("Score", groupCode, msg.Sender.Uin)
-		dateMarker := localdb.Key("ScoreDate", groupCode, msg.Sender.Uin, date)
+		key := localdb.Key("Score", lgc.groupCode(), lgc.uin())
+		dateMarker := localdb.Key("ScoreDate", lgc.groupCode(), lgc.uin(), date)
 
 		val, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -710,15 +708,16 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		score += 1
 		_, _, err = tx.Set(key, strconv.FormatInt(score, 10), nil)
 		if err != nil {
-			log.WithField("sender", msg.Sender.Uin).Errorf("update score failed %v", err)
+			log.WithField("sender", lgc.uin()).Errorf("update score failed %v", err)
 			return err
 		}
 
 		_, _, err = tx.Set(dateMarker, "1", nil)
 		if err != nil {
-			log.WithField("sender", msg.Sender.Uin).Errorf("update score marker failed %v", err)
+			log.WithField("sender", lgc.uin()).Errorf("update score marker failed %v", err)
 			return err
 		}
+		log = log.WithField("new score", score)
 		replyText = fmt.Sprintf("签到成功！获得1积分，当前积分为%v", score)
 		return nil
 	})
@@ -729,10 +728,8 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 }
 
 func (lgc *LspGroupCommand) EnableCommand(disable bool) {
-	msg := lgc.msg
-	groupCode := msg.GroupCode
-
-	log := logger.WithField("GroupCode", groupCode)
+	groupCode := lgc.groupCode()
+	log := lgc.DefaultLogger()
 	log.Infof("run enable command")
 	defer func() { log.Info("enable command end") }()
 
@@ -780,10 +777,8 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 }
 
 func (lgc *LspGroupCommand) GrantCommand() {
-	msg := lgc.msg
-	groupCode := msg.GroupCode
-
-	log := logger.WithField("GroupCode", groupCode)
+	groupCode := lgc.groupCode()
+	log := lgc.DefaultLogger()
 	log.Infof("run grant command")
 	defer func() { log.Info("grant command end") }()
 
@@ -801,7 +796,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 		return
 	}
 
-	grantFrom := msg.Sender.Uin
+	grantFrom := lgc.uin()
 	grantTo := grantCmd.Target
 	if grantCmd.Command == "" && grantCmd.Role == "" {
 		log.Errorf("command and role both empty")
@@ -899,10 +894,9 @@ func (lgc *LspGroupCommand) GrantCommand() {
 }
 
 func (lgc *LspGroupCommand) FaceCommand() {
-	msg := lgc.msg
-	groupCode := msg.GroupCode
+	groupCode := lgc.groupCode()
 
-	log := logger.WithField("GroupCode", groupCode)
+	log := lgc.DefaultLogger()
 	log.Infof("run face command")
 	defer func() { log.Info("face command end") }()
 
@@ -914,7 +908,7 @@ func (lgc *LspGroupCommand) FaceCommand() {
 		return
 	}
 
-	for _, e := range msg.Elements {
+	for _, e := range lgc.msg.Elements {
 		if e.Type() == message.Image {
 			if ie, ok := e.(*message.ImageElement); ok {
 				lgc.faceDetect(ie.Url)
@@ -1032,6 +1026,12 @@ func (lgc *LspGroupCommand) ImageContent() {
 	}
 }
 
+func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {
+	return logger.WithField("GroupCode", lgc.groupCode()).
+		WithField("Name", lgc.displayName()).
+		WithField("Uin", lgc.uin())
+}
+
 func (lgc *LspGroupCommand) faceDetect(url string) {
 	log := logger.WithField("GroupCode", lgc.groupCode())
 	log.WithField("detect_url", url).Debug("face detect")
@@ -1090,6 +1090,10 @@ func (lgc *LspGroupCommand) reserveGif(url string) {
 
 func (lgc *LspGroupCommand) uin() int64 {
 	return lgc.msg.Sender.Uin
+}
+
+func (lgc *LspGroupCommand) displayName() string {
+	return lgc.msg.Sender.DisplayName()
 }
 
 func (lgc *LspGroupCommand) groupCode() int64 {
