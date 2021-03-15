@@ -8,6 +8,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"github.com/ericpauley/go-quantize/quantize"
+	"github.com/fogleman/gg"
 	"github.com/nfnt/resize"
 	"image"
 	"image/draw"
@@ -15,6 +16,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io"
+	"math"
 	"strings"
 	"time"
 )
@@ -168,4 +170,32 @@ func ImageSuffix(name string) bool {
 		}
 	}
 	return false
+}
+
+func Text2Png(out io.Writer, rawText ...string) error {
+	if len(rawText) == 0 {
+		return nil
+	}
+	dc := gg.NewContext(0, 0)
+	if err := dc.LoadFontFace("SIMYOU.TTF", 18); err != nil {
+		panic(err)
+	}
+	lines := strings.Split(strings.Join(rawText, "\n"), "\n")
+	width, height := dc.MeasureMultilineString(strings.Join(rawText, "\n"), 1.1)
+	dc = gg.NewContext(int(math.Ceil(width))+10, int(math.Ceil(height))+10)
+	if err := dc.LoadFontFace("SIMYOU.TTF", 18); err != nil {
+		panic(err)
+	}
+	dc.SetRGB(1, 1, 1)
+	dc.Clear()
+	dc.SetRGB(0, 0, 0)
+	var (
+		lastX = 5.0
+		lastY = 5.0
+	)
+	for _, line := range lines {
+		dc.DrawStringAnchored(line, lastX, lastY, 0, 1)
+		lastY += 1.1 * dc.FontHeight()
+	}
+	return dc.EncodePNG(out)
 }

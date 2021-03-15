@@ -8,6 +8,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/permission"
+	"github.com/Sora233/Sora233-MiraiGo/utils"
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
 	"io/ioutil"
@@ -113,7 +114,19 @@ func (c *LspPrivateCommand) LogCommand() {
 	if len(filteredLines) == 0 {
 		c.textSend("无结果")
 	} else {
-		c.textSend(strings.Join(filteredLines, "\n"))
+		sendingMsg := message.NewSendingMessage()
+		b := bytes.NewBuffer(nil)
+		if err := utils.Text2Png(b, filteredLines...); err != nil {
+			c.textSend("发送失败")
+			return
+		}
+		if img, err := c.bot.UploadPrivateImage(c.uin(), bytes.NewReader(b.Bytes())); err != nil {
+			c.textSend("发送失败")
+			return
+		} else {
+			sendingMsg.Append(img)
+			c.send(sendingMsg)
+		}
 	}
 }
 

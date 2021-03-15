@@ -12,6 +12,8 @@ require (
 	github.com/alecthomas/kong v0.2.15
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.975
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
+	github.com/fogleman/gg v1.3.0
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/protobuf v1.4.3
 	github.com/imroc/req v0.3.0
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
@@ -21,6 +23,7 @@ require (
 	github.com/sirupsen/logrus v1.8.0
 	github.com/tidwall/buntdb v1.2.0
 	gocv.io/x/gocv v0.26.0
+	golang.org/x/image v0.0.0-20210220032944-ac19c3e999fb // indirect
 	golang.org/x/sys v0.0.0-20210223212115-eede4237b368 // indirect
 )
 
