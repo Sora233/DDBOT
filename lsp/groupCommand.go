@@ -1206,6 +1206,7 @@ func (lgc *LspGroupCommand) privateTextSend(text string) {
 }
 
 func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {
+	lgc.DefaultLogger().Info("no permission")
 	return lgc.textReply("权限不够")
 }
 
