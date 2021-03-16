@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -297,7 +298,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	log.Debug("all image uploaded")
 
 	imgBatch := 2
-	missCount := 0
+	var missCount int32 = 0
 
 	for i := 0; i < len(groupImages); i += imgBatch {
 		last := i + imgBatch
@@ -308,11 +309,14 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		go func(i int) {
 			defer wg.Done()
 			sendingMsg := message.NewSendingMessage()
+			var imgSubCount int32 = 0
 			for index, groupImage := range groupImages[i:last] {
 				if errs[i+index] != nil {
 					log.Errorf("upload failed %v", errs[i+index])
+					atomic.AddInt32(&missCount, 1)
 					continue
 				}
+				imgSubCount += 1
 				img := imgs[i+index]
 				sendingMsg.Append(groupImage)
 				if loliconImage, ok := img.(*lolicon_pool.Setu); ok {
@@ -338,7 +342,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 				return
 			}
 			if lgc.reply(sendingMsg).Id == -1 {
-				missCount += 2
+				atomic.AddInt32(&missCount, imgSubCount)
 			}
 		}(i)
 	}
