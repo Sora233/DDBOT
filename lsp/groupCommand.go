@@ -83,7 +83,7 @@ func (lgc *LspGroupCommand) Execute() {
 
 	if lgc.GetCmd() == "" && len(lgc.GetArgs()) == 0 {
 		if !lgc.groupEnabled(ImageContentCommand) {
-			logger.WithField("command", ImageContentCommand).Trace("not enabled")
+			log.WithField("command", ImageContentCommand).Trace("not enabled")
 			return
 		}
 		if lgc.uin() != lgc.bot.Uin {
@@ -941,7 +941,7 @@ func (lgc *LspGroupCommand) FaceCommand() {
 }
 
 func (lgc *LspGroupCommand) ReverseCommand() {
-	log := logger.WithField("GroupCode", lgc.groupCode())
+	log := lgc.DefaultLogger()
 	log.Info("run reverse command")
 	defer func() { log.Info("reverse command end") }()
 
@@ -982,7 +982,7 @@ func (lgc *LspGroupCommand) ReverseCommand() {
 }
 
 func (lgc *LspGroupCommand) HelpCommand() {
-	log := logger.WithField("group_code", lgc.groupCode())
+	log := lgc.DefaultLogger()
 	log.Info("run help command")
 	defer func() { log.Info("help command end") }()
 
@@ -1003,16 +1003,14 @@ func (lgc *LspGroupCommand) HelpCommand() {
 }
 
 func (lgc *LspGroupCommand) ImageContent() {
-	msg := lgc.msg
-	groupCode := msg.GroupCode
-	log := logger.WithField("group_code", groupCode)
+	log := lgc.DefaultLogger()
 
 	if !lgc.l.status.AliyunEnable {
 		logger.Debug("aliyun not setup")
 		return
 	}
 
-	for _, e := range msg.Elements {
+	for _, e := range lgc.msg.Elements {
 		if e.Type() == message.Image {
 			if img, ok := e.(*message.ImageElement); ok {
 				rating := lgc.l.checkImage(img)
@@ -1038,7 +1036,7 @@ func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {
 }
 
 func (lgc *LspGroupCommand) faceDetect(url string) {
-	log := logger.WithField("GroupCode", lgc.groupCode())
+	log := lgc.DefaultLogger()
 	log.WithField("detect_url", url).Debug("face detect")
 	img, err := utils.ImageGet(url, proxy_pool.PreferMainland)
 	if err != nil {
@@ -1068,7 +1066,7 @@ func (lgc *LspGroupCommand) faceDetect(url string) {
 }
 
 func (lgc *LspGroupCommand) reserveGif(url string) {
-	log := logger.WithField("GroupCode", lgc.groupCode())
+	log := lgc.DefaultLogger()
 	log.WithField("reserve_url", url).Debug("reserve image")
 	img, err := utils.ImageGet(url, proxy_pool.PreferMainland)
 	if err != nil {
@@ -1129,7 +1127,7 @@ func (lgc *LspGroupCommand) requireAnyCommand(commands ...string) bool {
 
 func (lgc *LspGroupCommand) requireEnable(command string) bool {
 	if !lgc.groupEnabled(command) {
-		logger.WithField("group_code", lgc.groupCode()).
+		lgc.DefaultLogger().
 			WithField("command", command).
 			Debug("not enable")
 		return false
@@ -1139,7 +1137,7 @@ func (lgc *LspGroupCommand) requireEnable(command string) bool {
 
 func (lgc *LspGroupCommand) requireNotDisable(command string) bool {
 	if lgc.groupDisabled(command) {
-		logger.WithField("group_code", lgc.groupCode()).
+		lgc.DefaultLogger().
 			WithField("command", command).
 			Debug("disabled")
 		return false
