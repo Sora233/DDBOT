@@ -1032,6 +1032,7 @@ func (lgc *LspGroupCommand) ImageContent() {
 
 func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {
 	return logger.WithField("GroupCode", lgc.groupCode()).
+		WithField("GroupName", lgc.groupName()).
 		WithField("Name", lgc.displayName()).
 		WithField("Uin", lgc.uin())
 }
@@ -1102,6 +1103,10 @@ func (lgc *LspGroupCommand) displayName() string {
 
 func (lgc *LspGroupCommand) groupCode() int64 {
 	return lgc.msg.GroupCode
+}
+
+func (lgc *LspGroupCommand) groupName() string {
+	return lgc.msg.GroupName
 }
 
 func (lgc *LspGroupCommand) requireAnyCommand(commands ...string) bool {
@@ -1206,7 +1211,6 @@ func (lgc *LspGroupCommand) privateTextSend(text string) {
 }
 
 func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {
-	lgc.DefaultLogger().Info("no permission")
 	return lgc.textReply("权限不够")
 }
 
