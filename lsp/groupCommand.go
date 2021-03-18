@@ -92,7 +92,7 @@ func (lgc *LspGroupCommand) Execute() {
 		return
 	}
 
-	log.Debug("execute")
+	log.Debug("execute command")
 
 	switch lgc.GetCmd() {
 	case "/lsp":
@@ -297,7 +297,12 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 
 	log.Debug("all image uploaded")
 
-	imgBatch := 2
+	imgBatch := 10
+
+	if r18 {
+		imgBatch = 5
+	}
+
 	var missCount int32 = 0
 
 	for i := 0; i < len(groupImages); i += imgBatch {
