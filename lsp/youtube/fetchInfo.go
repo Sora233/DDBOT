@@ -21,6 +21,7 @@ type Searcher struct {
 }
 
 func (r *Searcher) search(key string, j *gabs.Container) {
+	// TODO gabs: bad performance
 	if len(j.ChildrenMap()) != 0 {
 		for k, v := range j.ChildrenMap() {
 			if k == key {
