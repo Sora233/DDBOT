@@ -37,6 +37,11 @@
 
 </details>
 
+
+### 推送效果
+
+<img src="https://user-images.githubusercontent.com/11474360/111737379-78fbe200-88ba-11eb-9e7e-ecc9f2440dd8.jpg" width="300">
+
 ### 用法示例
 
 详细介绍及示例请查看：[详细示例](/EXAMPLE.md)
