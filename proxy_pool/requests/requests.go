@@ -71,7 +71,7 @@ LOOP:
 		default:
 		}
 		resp, err = req.Get(url, params)
-		if err != nil {
+		if err != nil || resp.R.StatusCode != http.StatusOK {
 			retry += 1
 		} else {
 			break
