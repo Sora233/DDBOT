@@ -234,14 +234,14 @@ message CardWithAnime {
         int64 is_finish = 3;
         int64 season_id = 4;
         string title = 5;
-        string total_count = 6;
+        int64 total_count = 6;
         int64 ts = 7;
         string type_name = 8;
     }
     ApiSeasonInfo apiSeasonInfo = 1;
     int64 bullet_count = 2;
     string cover = 3;
-    string episode_id = 4;
+    int64 episode_id = 4;
     string index = 5;
     string index_title = 6;
     string new_desc = 7;
