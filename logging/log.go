@@ -169,6 +169,16 @@ func msgToString(elements []message.IMessageElement) (res string) {
 			res += "[RedBag:" + e.Title + "]"
 		case *message.ReplyElement:
 			res += "[Reply:" + strconv.FormatInt(int64(e.ReplySeq), 10) + "]"
+		case *message.GroupFileElement:
+			res += "[File]"
+		case *message.GroupVoiceElement:
+			res += "[Voice]"
+		case *message.ShortVideoElement:
+			res += "[Video]"
+		case *message.ForwardElement:
+			res += "[Forward]"
+		case *message.MusicShareElement:
+			res += "[Music]"
 		}
 	}
 	return
