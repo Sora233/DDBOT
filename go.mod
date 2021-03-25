@@ -16,6 +16,7 @@ require (
 	github.com/imroc/req v0.3.0
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jupp0r/go-priority-queue v0.0.0-20160601094913-ab1073853bde
+	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lestrrat-go/strftime v1.0.4 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/sirupsen/logrus v1.8.0
