@@ -180,6 +180,12 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			WithField("invitor_uin", request.InvitorUin).
 			WithField("invitor_nick", request.InvitorNick)
 
+		if l.PermissionStateManager.CheckBlockList(request.InvitorUin) {
+			log.Debug("blocked invited")
+			request.Reject(false, "")
+			return
+		}
+
 		log.Info("new group invited")
 		fi := bot.FindFriend(request.InvitorUin)
 		if fi == nil {
@@ -215,10 +221,15 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnNewFriendRequest(func(qqClient *client.QQClient, request *client.NewFriendRequest) {
-		logger.WithField("uin", request.RequesterUin).
+		log := logger.WithField("uin", request.RequesterUin).
 			WithField("nickname", request.RequesterNick).
-			WithField("message", request.Message).
-			Info("friend request")
+			WithField("message", request.Message)
+		if l.PermissionStateManager.CheckBlockList(request.RequesterUin) {
+			log.Debug("blocked new friend")
+			request.Reject()
+			return
+		}
+		log.Info("friend request")
 		request.Accept()
 	})
 

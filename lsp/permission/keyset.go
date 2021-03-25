@@ -16,6 +16,10 @@ func (k *KeySet) GroupEnabledKey(keys ...interface{}) string {
 	return buntdb.GroupEnabledKey(keys...)
 }
 
+func (k *KeySet) BlockListKey(keys ...interface{}) string {
+	return buntdb.BlockListKey(keys...)
+}
+
 func NewKeySet() *KeySet {
 	return &KeySet{}
 }

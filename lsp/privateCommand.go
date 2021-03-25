@@ -10,6 +10,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/lsp/permission"
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"runtime/debug"
 	"strings"
@@ -50,6 +51,14 @@ func (c *LspPrivateCommand) Execute() {
 		c.PingCommand()
 	case "/help":
 		c.HelpCommand()
+	case "/block":
+		if !c.l.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(c.uin()),
+		) {
+			c.noPermission()
+			return
+		}
+		c.BlockCommand()
 	case "/log":
 		if !c.l.PermissionStateManager.RequireAny(
 			permission.AdminRoleRequireOption(c.uin()),
@@ -61,10 +70,50 @@ func (c *LspPrivateCommand) Execute() {
 	}
 }
 
+func (c *LspPrivateCommand) BlockCommand() {
+	log := c.DefaultLogger()
+	log.Info("run block command")
+	defer func() { log.Info("block command end") }()
+
+	var blockCmd struct {
+		Uin    int64 `arg:"" required:"" help:"the uin to block"`
+		Days   int   `optional:""`
+		Delete bool  `optional:"" short:"d"`
+	}
+
+	output := c.parseCommandSyntax(&blockCmd, BlockCommand)
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	if blockCmd.Uin == c.uin() {
+		log.Errorf("can not block yourself")
+		c.textReply("失败 - 不能block自己")
+		return
+	}
+
+	if blockCmd.Days == 0 {
+		blockCmd.Days = 7
+	}
+
+	log = log.WithField("target", blockCmd.Uin).WithField("days", blockCmd.Days)
+
+	if err := c.l.PermissionStateManager.AddBlockList(blockCmd.Uin, time.Duration(blockCmd.Days)*time.Hour*24); err == nil {
+		log.Info("blocked")
+		c.textReply("成功")
+	} else {
+		log.Errorf("block failed err %v", err)
+		c.textReply("失败")
+	}
+}
+
 func (c *LspPrivateCommand) LogCommand() {
-	log := logger.WithField("uin", c.uin())
+	log := c.DefaultLogger()
 	log.Info("run log command")
-	defer log.Info("log command end")
+	defer func() { log.Info("log command end") }()
 
 	var logCmd struct {
 		N       int       `arg:"" optional:"" help:"the number of lines from tail"`
@@ -118,28 +167,28 @@ func (c *LspPrivateCommand) LogCommand() {
 }
 
 func (c *LspPrivateCommand) PingCommand() {
-	log := logger.WithField("uin", c.uin())
+	log := c.DefaultLogger()
 	log.Info("run ping command")
-	defer log.Info("ping command end")
+	defer func() { log.Info("ping command end") }()
 
 	output := c.parseCommandSyntax(&struct{}{}, PingCommand, kong.Description("reply a pong"), kong.UsageOnError())
 	if output != "" {
-		c.textSend(output)
+		c.textReply(output)
 	}
 	if c.exit {
 		return
 	}
-	c.textSend("pong")
+	c.textReply("pong")
 }
 
 func (c *LspPrivateCommand) HelpCommand() {
-	log := logger.WithField("uin", c.uin())
+	log := c.DefaultLogger()
 	log.Info("run help command")
-	defer log.Info("help command end")
+	defer func() { log.Info("help command end") }()
 
 	output := c.parseCommandSyntax(&struct{}{}, HelpCommand, kong.Description("print help message"))
 	if output != "" {
-		c.textSend(output)
+		c.textReply(output)
 	}
 	if c.exit {
 		return
@@ -182,8 +231,12 @@ func (c *LspPrivateCommand) DebugCheck() bool {
 	return ok
 }
 
+func (c *LspPrivateCommand) DefaultLogger() *logrus.Entry {
+	return logger.WithField("Uin", c.uin()).WithField("Name", c.name())
+}
+
 func (c *LspPrivateCommand) noPermission() *message.PrivateMessage {
-	return c.textSend("权限不够")
+	return c.textReply("权限不够")
 }
 
 func (c *LspPrivateCommand) textSend(text string) *message.PrivateMessage {
@@ -191,6 +244,19 @@ func (c *LspPrivateCommand) textSend(text string) *message.PrivateMessage {
 	sendingMsg.Append(message.NewText(text))
 	return c.send(sendingMsg)
 }
+
+func (c *LspPrivateCommand) textReply(text string) *message.PrivateMessage {
+	sendingMsg := message.NewSendingMessage()
+	sendingMsg.Append(&message.ReplyElement{
+		ReplySeq: c.msg.Id,
+		Sender:   c.uin(),
+		Time:     c.msg.Time,
+		Elements: c.msg.Elements,
+	})
+	sendingMsg.Append(message.NewText(text))
+	return c.send(sendingMsg)
+}
+
 func (c *LspPrivateCommand) send(msg *message.SendingMessage) *message.PrivateMessage {
 	return c.bot.SendPrivateMessage(c.uin(), msg)
 }
@@ -199,4 +265,8 @@ func (c *LspPrivateCommand) sender() *message.Sender {
 }
 func (c *LspPrivateCommand) uin() int64 {
 	return c.sender().Uin
+}
+
+func (c *LspPrivateCommand) name() string {
+	return c.sender().DisplayName()
 }

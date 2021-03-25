@@ -7,6 +7,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/client"
 	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/tidwall/buntdb"
+	"time"
 )
 
 var logger = utils.GetModuleLogger("permission")
@@ -14,6 +15,44 @@ var logger = utils.GetModuleLogger("permission")
 type StateManager struct {
 	*localdb.ShortCut
 	*KeySet
+}
+
+// true if blocked
+func (c *StateManager) CheckBlockList(caller int64) bool {
+	var result bool
+	err := c.RTxCover(func(tx *buntdb.Tx) error {
+		key := c.BlockListKey(caller)
+		_, err := tx.Get(key)
+		if err == nil {
+			result = true
+			return nil
+		} else if err == buntdb.ErrNotFound {
+			return nil
+		} else {
+			return err
+		}
+	})
+	if err != nil {
+		logger.WithField("caller", caller).Errorf("check block list err %v", err)
+		result = false
+	}
+	return result
+}
+
+func (c *StateManager) AddBlockList(caller int64, d time.Duration) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
+		key := c.BlockListKey(caller)
+		_, _, err := tx.Set(key, "", localdb.ExpireOption(d))
+		return err
+	})
+}
+
+func (c *StateManager) DeleteBlockList(caller int64) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
+		key := c.BlockListKey(caller)
+		_, err := tx.Delete(key)
+		return err
+	})
 }
 
 func (c *StateManager) CheckRole(caller int64, role RoleType) bool {

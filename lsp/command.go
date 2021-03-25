@@ -18,13 +18,13 @@ const (
 	ReverseCommand      = "reverse"
 	ImageContentCommand = "ic"
 	HelpCommand         = "help"
-	AboutCommand        = "about"
 )
 
 // private command
 const (
-	PingCommand = "ping"
-	LogCommand  = "log"
+	PingCommand  = "ping"
+	LogCommand   = "log"
+	BlockCommand = "block"
 )
 
 var allGroupCommand = [...]string{
@@ -36,11 +36,12 @@ var allGroupCommand = [...]string{
 }
 
 var allPrivateOperate = [...]string{
-	PingCommand, HelpCommand, LogCommand,
+	PingCommand, HelpCommand, LogCommand, BlockCommand,
 }
 
 var nonOprateable = [...]string{
-	EnableCommand, DisableCommand, GrantCommand, HelpCommand, AboutCommand,
+	EnableCommand, DisableCommand, GrantCommand, HelpCommand,
+	BlockCommand, LogCommand, PingCommand,
 }
 
 func CheckValidCommand(command string) bool {

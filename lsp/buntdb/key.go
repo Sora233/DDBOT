@@ -89,6 +89,9 @@ func YoutubeVideoKey(keys ...interface{}) string {
 func PermissionKey(keys ...interface{}) string {
 	return NamedKey("Permission", keys)
 }
+func BlockListKey(keys ...interface{}) string {
+	return NamedKey("BlockList", keys)
+}
 func GroupPermissionKey(keys ...interface{}) string {
 	return NamedKey("GroupPermission", keys)
 }
