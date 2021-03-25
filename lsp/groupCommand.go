@@ -354,6 +354,8 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 
 	wg.Wait()
 
+	log = log.WithField("search_num", searchNum).WithField("miss", missCount)
+
 	lgc.textReplyF("本次共查询到%v张图片，有%v张图片被吞了哦", searchNum, missCount)
 
 	return
