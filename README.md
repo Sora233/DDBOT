@@ -166,3 +166,11 @@ logLevel: info # 日志等级
 发现问题或功能建议请到 [issues](https://github.com/Sora233/DDBOT/issues)
 
 其他用法问题请到 [discussions](https://github.com/Sora233/DDBOT/discussions)
+
+## 鸣谢
+
+> [Goland](https://www.jetbrains.com/go/) 是一个非常适合Gopher的智能IDE，它极大地提高了开发人员的效率。
+
+特别感谢 [JetBrains](https://jb.gg/OpenSource) 为本项目提供免费的 [Goland](https://www.jetbrains.com/go/) 等一系列IDE的授权  
+
+[<img src="https://user-images.githubusercontent.com/11474360/112592917-baa00600-8e41-11eb-9da4-ecb53bb3c2fa.png" width="200"/>](https://jb.gg/OpenSource)
