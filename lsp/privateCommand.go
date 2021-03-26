@@ -99,14 +99,24 @@ func (c *LspPrivateCommand) BlockCommand() {
 		blockCmd.Days = 7
 	}
 
-	log = log.WithField("target", blockCmd.Uin).WithField("days", blockCmd.Days)
+	log = log.WithField("target", blockCmd.Uin).WithField("days", blockCmd.Days).WithField("delete", blockCmd.Delete)
 
-	if err := c.l.PermissionStateManager.AddBlockList(blockCmd.Uin, time.Duration(blockCmd.Days)*time.Hour*24); err == nil {
-		log.Info("blocked")
-		c.textReply("成功")
+	if !blockCmd.Delete {
+		if err := c.l.PermissionStateManager.AddBlockList(blockCmd.Uin, time.Duration(blockCmd.Days)*time.Hour*24); err == nil {
+			log.Info("blocked")
+			c.textReply("成功")
+		} else {
+			log.Errorf("block failed err %v", err)
+			c.textReply("失败")
+		}
 	} else {
-		log.Errorf("block failed err %v", err)
-		c.textReply("失败")
+		if err := c.l.PermissionStateManager.DeleteBlockList(blockCmd.Uin); err == nil {
+			log.Info("blocked")
+			c.textReply("成功")
+		} else {
+			log.Errorf("unblock failed err %v", err)
+			c.textReply("失败")
+		}
 	}
 }
 
