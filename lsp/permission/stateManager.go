@@ -42,7 +42,13 @@ func (c *StateManager) CheckBlockList(caller int64) bool {
 func (c *StateManager) AddBlockList(caller int64, d time.Duration) error {
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.BlockListKey(caller)
-		_, _, err := tx.Set(key, "", localdb.ExpireOption(d))
+		_, err := tx.Get(key)
+		if err == nil {
+			return localdb.ErrKeyExist
+		} else if err != buntdb.ErrNotFound {
+			return err
+		}
+		_, _, err = tx.Set(key, "", localdb.ExpireOption(d))
 		return err
 	})
 }
@@ -50,7 +56,11 @@ func (c *StateManager) AddBlockList(caller int64, d time.Duration) error {
 func (c *StateManager) DeleteBlockList(caller int64) error {
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.BlockListKey(caller)
-		_, err := tx.Delete(key)
+		_, err := tx.Get(key)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Delete(key)
 		return err
 	})
 }

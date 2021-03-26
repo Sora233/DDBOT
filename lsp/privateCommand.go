@@ -7,10 +7,12 @@ import (
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
+	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/permission"
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
 	"github.com/sirupsen/logrus"
+	"github.com/tidwall/buntdb"
 	"io/ioutil"
 	"runtime/debug"
 	"strings"
@@ -105,14 +107,20 @@ func (c *LspPrivateCommand) BlockCommand() {
 		if err := c.l.PermissionStateManager.AddBlockList(blockCmd.Uin, time.Duration(blockCmd.Days)*time.Hour*24); err == nil {
 			log.Info("blocked")
 			c.textReply("成功")
+		} else if err == localdb.ErrKeyExist {
+			log.Errorf("block failed - duplicate")
+			c.textReply("失败 - 已经block过了")
 		} else {
 			log.Errorf("block failed err %v", err)
 			c.textReply("失败")
 		}
 	} else {
 		if err := c.l.PermissionStateManager.DeleteBlockList(blockCmd.Uin); err == nil {
-			log.Info("blocked")
+			log.Info("unblocked")
 			c.textReply("成功")
+		} else if err == buntdb.ErrNotFound {
+			log.Errorf("unblock failed - not exist")
+			c.textReply("失败 - 该id未被block")
 		} else {
 			log.Errorf("unblock failed err %v", err)
 			c.textReply("失败")
