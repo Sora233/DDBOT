@@ -41,13 +41,6 @@ func (q *EmitQueue) Add(e *EmitE, t time.Time) {
 }
 
 func (q *EmitQueue) core() {
-	go func() {
-		for range time.Tick(time.Second * 10) {
-			q.L.Lock()
-			logger.Debugf("now EmitSize %v", q.pq.Len())
-			q.L.Unlock()
-		}
-	}()
 	for {
 		q.L.Lock()
 		for q.pq.Len() == 0 {
