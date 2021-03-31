@@ -23,6 +23,7 @@ var BasePath = map[string]string{
 	PathGetRoomInfoOld:         BaseLiveHost,
 	PathDynamicSrvDynamicNew:   BaseVCHost,
 	PathRelationModify:         BaseHost,
+	PathRelationFeed:           BaseLiveHost,
 }
 
 var (
