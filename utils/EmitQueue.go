@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/Logiase/MiraiGo-Template/utils"
+	"github.com/Sora233/Sora233-MiraiGo/concern"
 	pq "github.com/jupp0r/go-priority-queue"
 	"sync"
 	"time"
@@ -9,16 +10,28 @@ import (
 
 var logger = utils.GetModuleLogger("utils")
 
+type EmitE struct {
+	Id   interface{}
+	Type concern.Type
+}
+
+func NewEmitE(id interface{}, t concern.Type) *EmitE {
+	return &EmitE{
+		Id:   id,
+		Type: t,
+	}
+}
+
 type EmitQueue struct {
 	*sync.Cond
 
 	TimeInterval time.Duration
 	pq           pq.PriorityQueue
-	emitChan     chan<- interface{}
+	emitChan     chan<- *EmitE
 	waitTimer    *time.Timer
 }
 
-func (q *EmitQueue) Add(e interface{}, t time.Time) {
+func (q *EmitQueue) Add(e *EmitE, t time.Time) {
 	q.L.Lock()
 	defer q.L.Unlock()
 	q.pq.Insert(e, float64(t.Unix()))
@@ -28,6 +41,13 @@ func (q *EmitQueue) Add(e interface{}, t time.Time) {
 }
 
 func (q *EmitQueue) core() {
+	go func() {
+		for range time.Tick(time.Second * 10) {
+			q.L.Lock()
+			logger.Debugf("now EmitSize %v", q.pq.Len())
+			q.L.Unlock()
+		}
+	}()
 	for {
 		q.L.Lock()
 		for q.pq.Len() == 0 {
@@ -43,12 +63,16 @@ func (q *EmitQueue) core() {
 			logger.Errorf("pop from pq failed %v", err)
 			q.L.Unlock()
 		} else {
-			select {
-			case q.emitChan <- e:
-			default:
-				q.L.Unlock()
-				q.emitChan <- e
-				q.L.Lock()
+			if ee, ok := e.(*EmitE); ok {
+				select {
+				case q.emitChan <- ee:
+				default:
+					q.L.Unlock()
+					q.emitChan <- ee
+					q.L.Lock()
+				}
+			} else {
+				logger.Errorf("can not cast type %T", ee)
 			}
 
 			q.pq.Insert(e, float64(time.Now().Unix()))
@@ -62,7 +86,7 @@ func (q *EmitQueue) Stop() {
 	// TODO
 }
 
-func NewEmitQueue(c chan<- interface{}, interval time.Duration) *EmitQueue {
+func NewEmitQueue(c chan<- *EmitE, interval time.Duration) *EmitQueue {
 	q := &EmitQueue{
 		pq:           pq.New(),
 		Cond:         sync.NewCond(new(sync.Mutex)),

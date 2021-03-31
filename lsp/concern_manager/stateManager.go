@@ -18,7 +18,7 @@ var logger = utils.GetModuleLogger("concern_manager")
 type StateManager struct {
 	*localdb.ShortCut
 	KeySet
-	emitChan  chan interface{}
+	emitChan  chan *localutils.EmitE
 	emitQueue *localutils.EmitQueue
 }
 
@@ -54,7 +54,9 @@ func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype co
 		return err
 	}
 	if c.CheckConcern(id, concern.Empty) == nil {
-		c.emitQueue.Add(id, time.Time{})
+		for _, t := range ctype.Split() {
+			c.emitQueue.Add(localutils.NewEmitE(id, t), time.Time{})
+		}
 	}
 	err = c.upsertConcernType(stateKey, ctype)
 	return err
@@ -313,18 +315,21 @@ func (c *StateManager) Start() error {
 	if err != nil {
 		return err
 	}
-	_, ids, _, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+	_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
 		return true
 	})
 	if err != nil {
 		return err
 	}
-	idSet := make(map[interface{}]bool)
-	for _, id := range ids {
-		idSet[id] = true
+	ids, types, err = c.GroupTypeById(ids, types)
+	if err != nil {
+		return err
 	}
-	for id := range idSet {
-		c.emitQueue.Add(id, time.Now())
+
+	for index := range ids {
+		for _, t := range types[index].Split() {
+			c.emitQueue.Add(localutils.NewEmitE(ids[index], t), time.Now())
+		}
 	}
 	return nil
 }
@@ -372,18 +377,14 @@ func (c *StateManager) freshConcern() error {
 }
 
 func (c *StateManager) EmitFreshCore(name string, fresher func(ctype concern.Type, id interface{}) error) {
-	for id := range c.emitChan {
+	for e := range c.emitChan {
+		id := e.Id
 		if ok, _ := c.FreshCheck(id, true); !ok {
 			logger.WithField("id", id).WithField("result", ok).Trace("fresh check failed")
 			continue
 		}
 		logger.WithField("id", id).Trace("fresh")
-		ctype, err := c.GetConcern(id)
-		if err != nil {
-			logger.WithField("id", id).Errorf("get concern failed %v", err)
-			continue
-		}
-		if err := fresher(ctype, id); err != nil {
+		if err := fresher(e.Type, id); err != nil {
 			logger.WithField("id", id).WithField("name", name).Errorf("fresher error %v", err)
 		}
 	}
@@ -391,7 +392,7 @@ func (c *StateManager) EmitFreshCore(name string, fresher func(ctype concern.Typ
 
 func NewStateManager(keySet KeySet) *StateManager {
 	sm := &StateManager{
-		emitChan: make(chan interface{}),
+		emitChan: make(chan *localutils.EmitE),
 		KeySet:   keySet,
 	}
 	sm.emitQueue = localutils.NewEmitQueue(sm.emitChan, config.GlobalConfig.GetDuration("concern.emitInterval"))

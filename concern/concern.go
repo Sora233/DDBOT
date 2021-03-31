@@ -43,6 +43,17 @@ func (t Type) ContainAny(o Type) bool {
 	return false
 }
 
+// Split return a Type unit slice from a given Type
+func (t Type) Split() []Type {
+	var result []Type
+	for _, a := range all {
+		if t.ContainAny(a) {
+			result = append(result, a)
+		}
+	}
+	return result
+}
+
 func (t Type) Remove(o Type) Type {
 	newT := t
 	for _, c := range all {
