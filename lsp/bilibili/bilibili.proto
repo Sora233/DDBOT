@@ -99,55 +99,72 @@ message GetRoomInfoOldResponse {
     Data data = 3;
 }
 
+message Card {
+    message Desc {
+        int64 dynamic_id = 1;
+        int64 orig_dy_id = 2;
+        DynamicDescType orig_type = 3;
+        int64 pre_dy_id = 4;
+        int32 comment = 5;
+        int32 like = 6;
+        int32 view = 7;
+        int32 repost = 8;
+        int32 timestamp = 9;
+        DynamicDescType type = 10;
+        string bvid = 11;
+        string dynamic_id_str = 12;
+    }
+    message Extra {
+        int32 is_space_top = 1;
+    }
+    message Display {
+        message EmojiInfo {
+            message EmojiDetail {
+                string emoji_name = 1;
+                int32 id = 2;
+                int32 package_id = 3;
+                int32 state = 4;
+                int32 type = 5;
+                string text = 6;
+                string url = 7;
+            }
+            repeated EmojiDetail emoji_details = 1;
+        }
+        message Origin {
+            EmojiInfo emoji_info = 1;
+        }
+        EmojiInfo emoji_info = 1;
+        Origin origin = 2;
+    }
+    string card = 1;
+    Desc desc = 2;
+    Extra extra = 5;
+    Display display = 6;
+}
+
+
 message DynamicSvrSpaceHistoryResponse {
     int32 code = 1;
     string message = 2;
     message Data {
-        message Card {
-            message Desc {
-                int64 dynamic_id = 1;
-                int64 orig_dy_id = 2;
-                DynamicDescType orig_type = 3;
-                int64 pre_dy_id = 4;
-                int32 comment = 5;
-                int32 like = 6;
-                int32 view = 7;
-                int32 repost = 8;
-                int32 timestamp = 9;
-                DynamicDescType type = 10;
-                string bvid = 11;
-                string dynamic_id_str = 12;
-            }
-            message Extra {
-                int32 is_space_top = 1;
-            }
-            message Display {
-                message EmojiInfo {
-                    message EmojiDetail {
-                        string emoji_name = 1;
-                        int32 id = 2;
-                        int32 package_id = 3;
-                        int32 state = 4;
-                        int32 type = 5;
-                        string text = 6;
-                        string url = 7;
-                    }
-                    repeated EmojiDetail emoji_details = 1;
-                }
-                message Origin {
-                    EmojiInfo emoji_info = 1;
-                }
-                EmojiInfo emoji_info = 1;
-                Origin origin = 2;
-            }
-            string card = 1;
-            Desc desc = 2;
-            Extra extra = 5;
-            Display display = 6;
-        }
         repeated Card cards = 1;
         int32 has_more = 2;
         int64 next_offset = 3;
+    }
+    Data data = 3;
+}
+
+message DynamicSvrDynamicNewResponse {
+    int32 code = 1;
+    string message = 2;
+    message Data {
+        int32 new_num = 1;
+        int32 exist_gap = 2;
+        int32 update_num = 3;
+        int32 open_rcmd = 4;
+        repeated Card cards = 5;
+        int64 max_dynamic_id = 6;
+        int64 history_offset = 7;
     }
     Data data = 3;
 }

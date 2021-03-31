@@ -6,19 +6,20 @@ import (
 )
 
 const (
-	Site            = "bilibili"
-	BaseHost        = "https://api.bilibili.com"
-	BaseLiveHost    = "https://api.live.bilibili.com"
-	BaseDynamicHost = "https://api.vc.bilibili.com"
-	VideoView       = "https://www.bilibili.com/video"
-	DynamicView     = "https://t.bilibili.com"
+	Site         = "bilibili"
+	BaseHost     = "https://api.bilibili.com"
+	BaseLiveHost = "https://api.live.bilibili.com"
+	BaseVCHost   = "https://api.vc.bilibili.com"
+	VideoView    = "https://www.bilibili.com/video"
+	DynamicView  = "https://t.bilibili.com"
 )
 
 var BasePath = map[string]string{
 	PathRoomInit:               BaseLiveHost,
 	PathSpaceAccInfo:           BaseHost,
-	PathDynamicSrvSpaceHistory: BaseDynamicHost,
+	PathDynamicSrvSpaceHistory: BaseVCHost,
 	PathGetRoomInfoOld:         BaseLiveHost,
+	PathDynamicSrvDynamicNew:   BaseVCHost,
 }
 
 func BPath(path string) string {
