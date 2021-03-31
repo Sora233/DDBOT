@@ -19,7 +19,10 @@ type DynamicSrvDynamicNewRequest struct {
 	TypeList string `json:"type_list"`
 }
 
-func DynamicSrvDynamicNew(SESSDATA string, biliJct string) (*DynamicSvrDynamicNewResponse, error) {
+func DynamicSrvDynamicNew() (*DynamicSvrDynamicNewResponse, error) {
+	if !IsVerifyGiven() {
+		return nil, ErrVerifyRequired
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 	st := time.Now()
@@ -36,13 +39,16 @@ func DynamicSrvDynamicNew(SESSDATA string, biliJct string) (*DynamicSvrDynamicNe
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(ctx, url, params, 1,
+	var opts []requests.Option
+	opts = append(opts,
 		requests.ProxyOption(proxy_pool.PreferAny),
 		requests.HeaderOption("origin", fmt.Sprintf("https://t.bilibili.com")),
 		requests.HeaderOption("referer", fmt.Sprintf("https://t.bilibili.com")),
 		requests.HeaderOption("user-agent", fmt.Sprintf("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'")),
 		requests.TimeoutOption(time.Second*5),
 	)
+	opts = append(opts, AddCookiesOption()...)
+	resp, err := requests.Get(ctx, url, params, 1, opts...)
 	if err != nil {
 		return nil, err
 	}

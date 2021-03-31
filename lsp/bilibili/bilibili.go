@@ -1,7 +1,9 @@
 package bilibili
 
 import (
+	"errors"
 	"fmt"
+	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
 	"strings"
 )
 
@@ -20,7 +22,14 @@ var BasePath = map[string]string{
 	PathDynamicSrvSpaceHistory: BaseVCHost,
 	PathGetRoomInfoOld:         BaseLiveHost,
 	PathDynamicSrvDynamicNew:   BaseVCHost,
+	PathRelationModify:         BaseHost,
 }
+
+var (
+	ErrVerifyRequired = errors.New("verify required")
+	SESSDATA          string
+	biliJct           string
+)
 
 func BPath(path string) string {
 	if strings.HasPrefix(path, "/") {
@@ -36,4 +45,20 @@ func BVIDUrl(bvid string) string {
 
 func DynamicUrl(dynamicIdStr string) string {
 	return fmt.Sprintf("%v/%v", DynamicView, dynamicIdStr)
+}
+
+func SetVerify(_SESSDATA string, _biliJct string) {
+	SESSDATA = _SESSDATA
+	biliJct = _biliJct
+}
+
+func AddCookiesOption() []requests.Option {
+	return []requests.Option{requests.CookieOption("SESSDATA", SESSDATA), requests.CookieOption("bili_jct", biliJct)}
+}
+
+func IsVerifyGiven() bool {
+	if SESSDATA == "" || biliJct == "" {
+		return false
+	}
+	return true
 }

@@ -169,6 +169,12 @@ message DynamicSvrDynamicNewResponse {
     Data data = 3;
 }
 
+message RelationModifyResponse {
+    int32 code = 1;
+    string message = 2;
+    int64 ttl = 3;
+}
+
 message CardWithImage {
     message Item {
         int64 id = 1;

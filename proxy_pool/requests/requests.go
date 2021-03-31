@@ -2,6 +2,7 @@ package requests
 
 import (
 	"context"
+	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/requests"
@@ -11,26 +12,31 @@ import (
 
 var logger = utils.GetModuleLogger("request")
 
-type GetOption func(*requests.Request)
+type Option func(*requests.Request)
 
-func CookieOption(cookie *http.Cookie) GetOption {
+func HttpCookieOption(cookie *http.Cookie) Option {
 	return func(request *requests.Request) {
 		request.SetCookie(cookie)
 	}
 }
-func TimeoutOption(d time.Duration) GetOption {
+
+func CookieOption(name string, value string) Option {
+	return HttpCookieOption(&http.Cookie{Name: name, Value: value})
+}
+
+func TimeoutOption(d time.Duration) Option {
 	return func(request *requests.Request) {
 		request.SetTimeout(d)
 	}
 }
 
-func HeaderOption(key, value string) GetOption {
+func HeaderOption(key, value string) Option {
 	return func(request *requests.Request) {
 		request.Header.Set(key, value)
 	}
 }
 
-func ProxyOption(prefer proxy_pool.Prefer) GetOption {
+func ProxyOption(prefer proxy_pool.Prefer) Option {
 	return func(request *requests.Request) {
 		proxy, err := proxy_pool.Get(prefer)
 		if err != nil {
@@ -50,7 +56,19 @@ type ResponseWithProxy struct {
 	Proxy string
 }
 
-func Get(ctx context.Context, url string, params requests.Params, maxRetry int, options ...GetOption) (*ResponseWithProxy, error) {
+func Get(ctx context.Context, url string, params requests.Params, maxRetry int, options ...Option) (*ResponseWithProxy, error) {
+	return anyHttp(ctx, maxRetry, func(request *requests.Request) (*requests.Response, error) {
+		return request.Get(url, params)
+	}, options...)
+}
+
+func PostJson(ctx context.Context, url string, params interface{}, maxRetry int, options ...Option) (*ResponseWithProxy, error) {
+	return anyHttp(ctx, maxRetry, func(request *requests.Request) (*requests.Response, error) {
+		return request.PostJson(url, params)
+	}, options...)
+}
+
+func anyHttp(ctx context.Context, maxRetry int, do func(request *requests.Request) (*requests.Response, error), options ...Option) (*ResponseWithProxy, error) {
 	var err error
 	req := requests.RequestsWithContext(ctx)
 	DefaultTimeoutOption(req)
@@ -70,8 +88,11 @@ LOOP:
 			break LOOP
 		default:
 		}
-		resp, err = req.Get(url, params)
-		if err != nil || resp.R.StatusCode != http.StatusOK {
+		resp, err = do(req)
+		if err != nil {
+			retry += 1
+		} else if resp.R.StatusCode != http.StatusOK {
+			err = fmt.Errorf("status code %v", resp.R.StatusCode)
 			retry += 1
 		} else {
 			break
