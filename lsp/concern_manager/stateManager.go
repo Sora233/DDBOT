@@ -351,23 +351,20 @@ func (c *StateManager) freshConcern() error {
 	})
 
 	c.RWTxCover(func(tx *buntdb.Tx) error {
-		for index := range ids {
-			id := ids[index]
-			ctype := types[index]
-			key := c.ConcernStateKey(id)
-			if ctype == concern.Empty {
-				tx.Delete(key)
-			} else {
-				tx.Set(key, ctype.String(), nil)
-			}
-			delete(all, key)
+		for key := range all {
+			tx.Delete(key)
 		}
 		return nil
 	})
 
 	c.RWTxCover(func(tx *buntdb.Tx) error {
-		for key := range all {
-			tx.Delete(key)
+		for index := range ids {
+			id := ids[index]
+			ctype := types[index]
+			key := c.ConcernStateKey(id)
+			if !ctype.Empty() {
+				tx.Set(key, ctype.String(), nil)
+			}
 		}
 		return nil
 	})
