@@ -447,7 +447,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		log = log.WithField("mid", mid)
 		if remove {
 			// unwatch
-			if err := lgc.l.douyuConcern.Remove(groupCode, mid, watchType); err != nil {
+			if err := lgc.l.douyuConcern.RemoveGroupConcern(groupCode, mid, watchType); err != nil {
 				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
 				log.Debugf("unwatch success")
@@ -469,7 +469,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		log = log.WithField("id", id)
 		if remove {
 			// unwatch
-			if err := lgc.l.youtubeConcern.Remove(groupCode, id, watchType); err != nil {
+			if err := lgc.l.youtubeConcern.RemoveGroupConcern(groupCode, id, watchType); err != nil {
 				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
 				log.WithField("id", id).Debugf("unwatch success")

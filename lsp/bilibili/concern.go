@@ -7,6 +7,7 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
 	"github.com/Sora233/sliceutil"
+	"time"
 )
 
 var logger = utils.GetModuleLogger("bilibili-concern")
@@ -26,7 +27,6 @@ type Concern struct {
 	*StateManager
 
 	eventChan chan ConcernEvent
-	emitChan  chan interface{}
 	notify    chan<- concern.Notify
 	stopped   bool
 	stop      chan interface{}
@@ -49,19 +49,7 @@ func (c *Concern) Start() {
 	}
 
 	go c.notifyLoop()
-	go c.EmitFreshCore("bilibili", func(ctype concern.Type, id interface{}) error {
-		mid, ok := id.(int64)
-		if !ok {
-			return errors.New("cast fresh id to int64 failed")
-		}
-		if ctype.ContainAll(concern.BibiliLive) {
-			c.freshLive(mid)
-		}
-		if ctype.ContainAll(concern.BilibiliNews) {
-			c.freshNews(mid)
-		}
-		return nil
-	})
+	go c.watchCore()
 }
 
 func (c *Concern) Stop() {
@@ -73,7 +61,7 @@ func (c *Concern) Stop() {
 
 func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo, error) {
 	var err error
-	log := logger.WithField("GroupCode", groupCode)
+	log := logger.WithField("GroupCode", groupCode).WithField("mid", mid)
 
 	err = c.StateManager.CheckGroupConcern(groupCode, mid, ctype)
 	if err != nil {
@@ -85,11 +73,11 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 
 	infoResp, err := XSpaceAccInfo(mid)
 	if err != nil {
-		log.WithField("mid", mid).Error(err)
+		log.Error(err)
 		return nil, fmt.Errorf("查询用户信息失败 %v - %v", mid, err)
 	}
 	if infoResp.Code != 0 {
-		log.WithField("mid", mid).WithField("code", infoResp.Code).Errorf(infoResp.Message)
+		log.WithField("code", infoResp.Code).Errorf(infoResp.Message)
 		return nil, fmt.Errorf("查询用户信息失败 %v - %v %v", mid, infoResp.Code, infoResp.Message)
 	}
 
@@ -98,10 +86,10 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 	if sliceutil.Contains([]int64{491474049}, mid) {
 		return nil, fmt.Errorf("用户 %v 禁止watch", name)
 	}
-	if ctype.ContainAll(concern.BibiliLive) {
-		if RoomStatus(infoResp.GetData().GetLiveRoom().GetRoomStatus()) == RoomStatus_NonExist {
-			return nil, fmt.Errorf("用户 %v 暂未开通直播间", name)
-		}
+
+	err = c.modifyUserRelation(mid, ActSub)
+	if err != nil {
+		return nil, fmt.Errorf("关注用户失败 - 内部错误")
 	}
 
 	err = c.StateManager.AddGroupConcern(groupCode, mid, ctype)
@@ -118,6 +106,12 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 
 	_ = c.StateManager.AddUserInfo(userInfo)
 	return userInfo, nil
+}
+
+func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) error {
+	_ = c.modifyUserRelation(mid, ActUnsub)
+	return c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
+
 }
 
 func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, error) {
@@ -231,57 +225,56 @@ func (c *Concern) notifyLoop() {
 	}
 }
 
-func (c *Concern) freshLive(mid int64) {
-	oldLiveInfo, _ := c.findUserLiving(mid, false)
-	newLiveInfo, err := c.findUserLiving(mid, true)
-	if err != nil {
-		logger.WithField("mid", mid).Errorf("load liveinfo failed %v", err)
-		return
-	}
-	if oldLiveInfo == nil || oldLiveInfo.Status != newLiveInfo.Status || oldLiveInfo.LiveTitle != newLiveInfo.LiveTitle {
-		c.eventChan <- newLiveInfo
+func (c *Concern) watchCore() {
+	for range time.Tick(time.Second * 30) {
+		if c.stopped {
+			return
+		}
+		newsList, err := c.freshDynamicNew()
+		if err != nil {
+			logger.Errorf("freshDynamicNew failed %v", err)
+		} else {
+			for _, news := range newsList {
+				c.eventChan <- news
+			}
+		}
 	}
 }
 
-func (c *Concern) freshNews(mid int64) {
-	oldNewsInfo, _ := c.findUserNews(mid, false)
-	newNewsInfo, err := c.findUserNews(mid, true)
+func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
+	resp, err := DynamicSrvDynamicNew()
 	if err != nil {
-		logger.WithField("mid", mid).Errorf("load newsinfo failed %v", err)
-		return
+		return nil, err
 	}
-	if oldNewsInfo == nil {
-		logger.WithField("mid", mid).Debugf("oldNewsInfo nil, skip notify")
-		return
+	var newsMap = make(map[int64][]*Card)
+	if resp.GetCode() != 0 {
+		logger.WithField("code", resp.GetCode()).
+			WithField("msg", resp.GetMessage()).
+			Errorf("fresh dynamic new failed")
+		return nil, errors.New(resp.Message)
 	}
-	if oldNewsInfo.Timestamp > newNewsInfo.Timestamp {
-		logger.WithField("mid", mid).
-			WithField("old_timestamp", oldNewsInfo.Timestamp).
-			WithField("new_timestamp", newNewsInfo.Timestamp).
-			Debugf("newNewsInfo timestamp is less than oldNewsInfo timestamp, " +
-				"maybe some dynamic is deleted, clear newsInfo.")
-		err := c.clearUserNews(mid)
+	for _, card := range resp.GetData().GetCards() {
+		uid := card.GetDesc().GetUid()
+		t := time.Unix(int64(card.GetDesc().GetTimestamp()), 0)
+		replaced, err := c.MarkDynamicId(card.GetDesc().GetDynamicId())
+		if err != nil || replaced {
+			continue
+		}
+		if t.Add(time.Second * 90).Before(time.Now()) {
+			continue
+		}
+		newsMap[uid] = append(newsMap[uid], card)
+	}
+	var result []*NewsInfo
+	for uid, cards := range newsMap {
+		userInfo, err := c.findOrLoadUser(uid)
 		if err != nil {
-			logger.WithField("mid", err).Errorf("clear user NewsInfo err %v", err)
+			logger.WithField("mid", uid).Debugf("find or load user info error %v", err)
+			continue
 		}
-		return
+		result = append(result, NewNewsInfoWithDetail(userInfo, cards))
 	}
-	if newNewsInfo.LastDynamicId == 0 || len(newNewsInfo.Cards) == 0 {
-		logger.WithField("mid", mid).Debugf("newNewsInfo is empty")
-		return
-	}
-	if oldNewsInfo.LastDynamicId != newNewsInfo.LastDynamicId {
-		var newIndex = 1 // if too many news, just notify latest one
-		for index := range newNewsInfo.Cards {
-			if oldNewsInfo.LastDynamicId == newNewsInfo.Cards[index].GetDesc().GetDynamicId() {
-				newIndex = index
-			}
-		}
-		newNewsInfo.Cards = newNewsInfo.Cards[:newIndex]
-		if len(newNewsInfo.Cards) > 0 {
-			c.eventChan <- newNewsInfo
-		}
-	}
+	return result, nil
 }
 
 func (c *Concern) findUser(mid int64, load bool) (*UserInfo, error) {
@@ -304,6 +297,30 @@ func (c *Concern) findUser(mid int64, load bool) (*UserInfo, error) {
 		}
 	}
 	return c.StateManager.GetUserInfo(mid)
+}
+
+func (c *Concern) modifyUserRelation(mid int64, act int) error {
+	resp, err := RelationModify(mid, act)
+	if err != nil {
+		return err
+	}
+	if resp.GetCode() != 0 {
+		logger.WithField("code", resp.GetCode()).
+			WithField("message", resp.GetMessage()).
+			WithField("act", act).
+			WithField("mid", mid).
+			Errorf("modifyUserRelation error")
+		return fmt.Errorf("%v %v", resp.GetCode(), resp.GetMessage())
+	}
+	return nil
+}
+
+func (c *Concern) findOrLoadUser(mid int64) (*UserInfo, error) {
+	info, err := c.findUser(mid, false)
+	if err != nil || info == nil {
+		info, err = c.findUser(mid, true)
+	}
+	return info, err
 }
 
 func (c *Concern) findUserLiving(mid int64, load bool) (*LiveInfo, error) {

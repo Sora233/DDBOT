@@ -137,6 +137,7 @@ message Card {
         DynamicDescType type = 10;
         string bvid = 11;
         string dynamic_id_str = 12;
+        int64 uid = 13;
     }
     message Extra {
         int32 is_space_top = 1;

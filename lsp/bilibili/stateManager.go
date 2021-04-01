@@ -36,7 +36,7 @@ func (c *StateManager) GetUserInfo(mid int64) (*UserInfo, error) {
 		}
 		err = json.Unmarshal([]byte(val), userInfo)
 		if err != nil {
-			fmt.Println(val)
+			logger.WithField("val", val).Errorf("user info json unmarshal failed")
 			return err
 		}
 		return nil
@@ -121,6 +121,32 @@ func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 	return newsInfo, nil
 }
 
+func (c *StateManager) CheckDynamicId(dynamic int64) bool {
+	var result bool
+	c.RTxCover(func(tx *buntdb.Tx) error {
+		key := c.DynamicIdKey(dynamic)
+		_, err := tx.Get(key)
+		if err == nil {
+			result = false
+		} else if err == buntdb.ErrNotFound {
+			result = true
+		} else {
+			result = false
+		}
+		return nil
+	})
+	return result
+}
+
+func (c *StateManager) MarkDynamicId(dynamic int64) (replaced bool, err error) {
+	c.RWTxCover(func(tx *buntdb.Tx) error {
+		key := c.DynamicIdKey(dynamic)
+		_, replaced, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*48))
+		return err
+	})
+	return
+}
+
 func (c *StateManager) Start() error {
 	db := localdb.MustGetClient()
 	db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
@@ -128,6 +154,7 @@ func (c *StateManager) Start() error {
 	db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
 	db.CreateIndex(c.UserInfoKey(), c.UserInfoKey("*"), buntdb.IndexString)
 	db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexBinary)
+	db.CreateIndex(c.DynamicIdKey(), c.DynamicIdKey("*"), buntdb.IndexString)
 	return c.StateManager.Start()
 }
 

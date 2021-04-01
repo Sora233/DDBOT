@@ -35,6 +35,10 @@ func (k *extraKey) CurrentNewsKey(keys ...interface{}) string {
 	return buntdb.BilibiliCurrentNewsKey(keys...)
 }
 
+func (k *extraKey) DynamicIdKey(keys ...interface{}) string {
+	return buntdb.BilibiliDynamicIdKey(keys...)
+}
+
 func NewKeySet() *keySet {
 	return &keySet{}
 }

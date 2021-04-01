@@ -2,10 +2,12 @@ package requests
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
 	"github.com/Sora233/requests"
+	"net"
 	"net/http"
 	"time"
 )
@@ -49,6 +51,42 @@ func ProxyOption(prefer proxy_pool.Prefer) Option {
 	}
 }
 
+func DisableTlsOption() Option {
+	return func(request *requests.Request) {
+		if request.Client.Transport == nil {
+			request.Client.Transport = &http.Transport{
+				DialContext: (&net.Dialer{
+					Timeout:   30 * time.Second,
+					KeepAlive: 30 * time.Second,
+					DualStack: true,
+				}).DialContext,
+				ForceAttemptHTTP2:     true,
+				MaxIdleConns:          100,
+				IdleConnTimeout:       90 * time.Second,
+				TLSHandshakeTimeout:   10 * time.Second,
+				ExpectContinueTimeout: 1 * time.Second,
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			}
+		} else {
+			if tp, ok := request.Client.Transport.(*http.Transport); ok {
+				if tp.TLSClientConfig != nil {
+					tp.TLSClientConfig.InsecureSkipVerify = true
+				} else {
+					tp.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+				}
+			}
+		}
+	}
+}
+
+func DebugOption() Option {
+	return func(request *requests.Request) {
+		request.Debug = 1
+	}
+}
+
 var DefaultTimeoutOption = TimeoutOption(time.Second * 5)
 
 type ResponseWithProxy struct {
@@ -65,6 +103,12 @@ func Get(ctx context.Context, url string, params requests.Params, maxRetry int, 
 func PostJson(ctx context.Context, url string, params interface{}, maxRetry int, options ...Option) (*ResponseWithProxy, error) {
 	return anyHttp(ctx, maxRetry, func(request *requests.Request) (*requests.Response, error) {
 		return request.PostJson(url, params)
+	}, options...)
+}
+
+func Post(ctx context.Context, url string, form requests.Datas, maxRetry int, options ...Option) (*ResponseWithProxy, error) {
+	return anyHttp(ctx, maxRetry, func(request *requests.Request) (*requests.Response, error) {
+		return request.Post(url, form)
 	}, options...)
 }
 

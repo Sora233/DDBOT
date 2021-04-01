@@ -13,21 +13,22 @@ const (
 )
 
 const (
-	ActSub            = "1"
-	ActUnsub          = "2"
-	ActHiddenSub      = "3"
-	ActBlock          = "5"
-	ActUnblock        = "6"
-	ActRemoveFollower = "7"
+	ActSub            = 1
+	ActUnsub          = 2
+	ActHiddenSub      = 3
+	ActBlock          = 5
+	ActUnblock        = 6
+	ActRemoveFollower = 7
 )
 
 type RelationModifyRequest struct {
-	Fid   string `json:"fid"`
-	Act   string `json:"act"`
+	Fid   int64  `json:"fid"`
+	Act   int    `json:"act"`
 	ReSrc int    `json:"re_src"`
+	Csrf  string `json:"csrf"`
 }
 
-func RelationModify(fid string, act string) (*RelationModifyResponse, error) {
+func RelationModify(fid int64, act int) (*RelationModifyResponse, error) {
 	if !IsVerifyGiven() {
 		return nil, ErrVerifyRequired
 	}
@@ -40,15 +41,20 @@ func RelationModify(fid string, act string) (*RelationModifyResponse, error) {
 	}()
 	var err error
 	url := BPath(PathRelationModify)
-	params := &RelationModifyRequest{
+	formRequest := &RelationModifyRequest{
 		Fid:   fid,
 		Act:   act,
 		ReSrc: 11,
+		Csrf:  biliJct,
+	}
+	form, err := utils.ToDatas(formRequest)
+	if err != nil {
+		return nil, err
 	}
 	var opts []requests.Option
 	opts = append(opts, requests.ProxyOption(proxy_pool.PreferAny), requests.TimeoutOption(time.Second*5))
 	opts = append(opts, AddCookiesOption()...)
-	resp, err := requests.PostJson(ctx, url, params, 1,
+	resp, err := requests.Post(ctx, url, form, 1,
 		opts...,
 	)
 	if err != nil {

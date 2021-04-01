@@ -62,7 +62,7 @@ func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype co
 	return err
 }
 
-func (c *StateManager) Remove(groupCode int64, id interface{}, ctype concern.Type) error {
+func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype concern.Type) error {
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		groupStateKey := c.GroupConcernStateKey(groupCode, id)
 		val, err := tx.Get(groupStateKey)
