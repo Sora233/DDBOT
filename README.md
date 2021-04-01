@@ -34,6 +34,7 @@
     - 由 [api.olicon.app](https://api.lolicon.app/#/) 提供
 - **色图判定**
     - 由阿里云提供
+    - **注意：阿里云该服务2021年3月25日开始收费**
 
 </details>
 
@@ -89,7 +90,7 @@ moderatecontent:
 
 # https://api.aliyun.com/#/?product=imageaudit
 aliyun: # 阿里云鉴权，用于图片识别，如果为空则图片识别功能无法工作
-  accessKeyID: # 鉴权的账号应该开通内容审核功能（目前免费）
+  accessKeyID: # 鉴权的账号应该开通内容审核功能（该服务2021年3月25日开始收费）
   accessKeySecret:
 
 localPool: # 图片功能，使用本地图库
