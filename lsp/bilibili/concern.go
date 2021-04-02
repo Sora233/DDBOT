@@ -7,6 +7,9 @@ import (
 	"github.com/Sora233/Sora233-MiraiGo/concern"
 	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
 	"github.com/Sora233/sliceutil"
+	"github.com/tidwall/buntdb"
+	"strconv"
+	"sync"
 	"time"
 )
 
@@ -244,18 +247,89 @@ func (c *Concern) notifyLoop() {
 }
 
 func (c *Concern) watchCore() {
-	for range time.Tick(time.Second * 30) {
+	t := time.NewTimer(time.Second * 30)
+	var wg sync.WaitGroup
+	for {
+		<-t.C
 		if c.stopped {
 			return
 		}
-		newsList, err := c.freshDynamicNew()
-		if err != nil {
-			logger.Errorf("freshDynamicNew failed %v", err)
-		} else {
-			for _, news := range newsList {
-				c.eventChan <- news
+		start := time.Now()
+
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			defer logger.Debug("watchCore dynamic fresh done")
+			newsList, err := c.freshDynamicNew()
+			if err != nil {
+				logger.Errorf("freshDynamicNew failed %v", err)
+				return
+			} else {
+				for _, news := range newsList {
+					c.eventChan <- news
+				}
 			}
-		}
+		}()
+
+		go func() {
+			defer wg.Done()
+			defer logger.Debug("watchCore live fresh done")
+			liveInfo, err := c.freshLive()
+			if err != nil {
+				logger.Errorf("freshLive error %v", err)
+				return
+			}
+			var liveInfoMap = make(map[int64]*LiveInfo)
+			for _, info := range liveInfo {
+				liveInfoMap[info.Mid] = info
+			}
+
+			_, ids, _, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+				return p.ContainAny(concern.BibiliLive)
+			})
+
+			if err != nil {
+				logger.Errorf("List error %v", err)
+				return
+			}
+
+			for _, id := range ids {
+				mid := id.(int64)
+				oldInfo, err := c.GetLiveInfo(mid)
+				if err == buntdb.ErrNotFound || oldInfo == nil {
+					// first live info
+					if newInfo, found := liveInfoMap[mid]; found {
+						c.eventChan <- newInfo
+						c.AddLiveInfo(newInfo)
+					}
+					continue
+				}
+				if oldInfo.Status == LiveStatus_NoLiving {
+					if newInfo, found := liveInfoMap[mid]; found {
+						// notliving -> living
+						c.eventChan <- newInfo
+						c.AddLiveInfo(newInfo)
+					}
+				} else if oldInfo.Status == LiveStatus_Living {
+					if newInfo, found := liveInfoMap[mid]; !found {
+						// living -> notliving
+						newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle, oldInfo.Cover, LiveStatus_NoLiving)
+						c.eventChan <- newInfo
+						c.AddLiveInfo(newInfo)
+					} else {
+						if newInfo.LiveTitle != oldInfo.LiveTitle {
+							// live title change
+							c.eventChan <- newInfo
+							c.AddLiveInfo(newInfo)
+						}
+					}
+				}
+			}
+		}()
+		wg.Wait()
+		t.Reset(time.Second * 30)
+		end := time.Now()
+		logger.WithField("cost", end.Sub(start)).Debug("watchCore loop done")
 	}
 }
 
@@ -285,18 +359,47 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 	}
 	var result []*NewsInfo
 	for uid, cards := range newsMap {
-		userInfo, err := c.findOrLoadUser(uid)
-		if err != nil {
-			logger.WithField("mid", uid).Debugf("find or load user info error %v", err)
+		userInfo, err := c.StateManager.GetUserInfo(uid)
+		if err == buntdb.ErrNotFound {
+			continue
+		} else if err != nil {
+			logger.WithField("mid", uid).Debugf("find user info error %v", err)
 			continue
 		}
 		result = append(result, NewNewsInfoWithDetail(userInfo, cards))
 	}
+	logger.WithField("NewsInfo Size", len(result)).Debug("freshDynamicNew done")
 	return result, nil
 }
 
-func (c *Concern) freshLive() {
-	FeedList()
+// return all LiveInfo in LiveStatus_Living
+func (c *Concern) freshLive() ([]*LiveInfo, error) {
+	var liveInfo []*LiveInfo
+	for {
+		resp, err := FeedList()
+		if err != nil {
+			logger.Errorf("freshLive FeedList error %v", err)
+			return nil, err
+		} else if resp.GetCode() != 0 {
+			logger.Errorf("freshLive FeedList code %v msg %v", resp.GetCode(), resp.GetMessage())
+			return nil, err
+		}
+		pageSize, _ := strconv.ParseInt(resp.GetData().GetPagesize(), 10, 64)
+		for _, l := range resp.GetData().GetList() {
+			liveInfo = append(liveInfo, NewLiveInfo(
+				NewUserInfo(l.Uid, l.Roomid, l.Uname, l.Link),
+				l.Title,
+				l.Cover,
+				LiveStatus_Living,
+			))
+		}
+		if (int(pageSize) != 0 && len(resp.GetData().GetList()) != int(pageSize)) || len(resp.GetData().GetList()) == 0 {
+			break
+		}
+		time.Sleep(time.Millisecond * 500)
+	}
+	logger.WithField("LiveInfo Size", len(liveInfo)).Debug("freshLive done")
+	return liveInfo, nil
 }
 
 func (c *Concern) findUser(mid int64, load bool) (*UserInfo, error) {
