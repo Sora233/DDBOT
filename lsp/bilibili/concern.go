@@ -53,6 +53,7 @@ func (c *Concern) Start() {
 
 	go c.notifyLoop()
 	go c.watchCore()
+	go c.syncSub()
 }
 
 func (c *Concern) Stop() {
@@ -442,6 +443,40 @@ func (c *Concern) modifyUserRelation(mid int64, act int) error {
 		return fmt.Errorf("%v %v", resp.GetCode(), resp.GetMessage())
 	}
 	return nil
+}
+
+func (c *Concern) syncSub() {
+	defer logger.Debug("syncSub done")
+	resp, err := GetAttentionList()
+	if err != nil {
+		logger.Errorf("syncSub error %v", err)
+		return
+	}
+	if resp.GetCode() != 0 {
+		logger.WithField("code", resp.GetCode()).
+			WithField("msg", resp.GetMessage()).
+			Errorf("syncSub GetAttentionList error")
+		return
+	}
+	var midSet = make(map[int64]bool)
+	var attentionMidSet = make(map[int64]bool)
+	_, _, _, err = c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+		midSet[id.(int64)] = true
+		return true
+	})
+	if err != nil {
+		logger.Errorf("syncSub List all error %v", err)
+		return
+	}
+	for _, attentionMid := range resp.GetData().GetList() {
+		attentionMidSet[attentionMid] = true
+	}
+	for mid := range midSet {
+		if _, found := attentionMidSet[mid]; !found {
+			c.modifyUserRelation(mid, ActSub)
+			time.Sleep(time.Second * 3)
+		}
+	}
 }
 
 func (c *Concern) findOrLoadUser(mid int64) (*UserInfo, error) {
