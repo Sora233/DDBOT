@@ -284,12 +284,16 @@ func (c *Concern) watchCore() {
 				liveInfoMap[info.Mid] = info
 			}
 
-			_, ids, _, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+			_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
 				return p.ContainAny(concern.BibiliLive)
 			})
-
 			if err != nil {
 				logger.Errorf("List error %v", err)
+				return
+			}
+			ids, types, err = c.GroupTypeById(ids, types)
+			if err != nil {
+				logger.Errorf("GroupTypeById error %v", err)
 				return
 			}
 
