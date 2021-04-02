@@ -35,52 +35,50 @@ func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype 
 }
 
 func (c *StateManager) CheckConcern(id interface{}, ctype concern.Type) error {
-	return c.RTxCover(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.ConcernStateKey(id))
-		if err == nil {
-			if concern.FromString(val).ContainAny(ctype) {
-				return ErrAlreadyExists
-			}
-		}
-		return nil
-	})
-}
-
-func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype concern.Type) (err error) {
-	groupStateKey := c.GroupConcernStateKey(groupCode, id)
-	stateKey := c.ConcernStateKey(id)
-	err = c.upsertConcernType(groupStateKey, ctype)
+	state, err := c.GetConcern(id)
 	if err != nil {
 		return err
+	}
+	if state.ContainAll(ctype) {
+		return ErrAlreadyExists
+	}
+	return nil
+}
+
+func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype concern.Type) (newCtype concern.Type, err error) {
+	groupStateKey := c.GroupConcernStateKey(groupCode, id)
+	newCtype, err = c.upsertConcernType(groupStateKey, ctype)
+	if err != nil {
+		return concern.Empty, err
 	}
 	if c.CheckConcern(id, concern.Empty) == nil {
 		for _, t := range ctype.Split() {
 			c.emitQueue.Add(localutils.NewEmitE(id, t), time.Time{})
 		}
 	}
-	err = c.upsertConcernType(stateKey, ctype)
-	return err
+	return
 }
 
-func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype concern.Type) error {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype concern.Type) (newCtype concern.Type, err error) {
+	err = c.RWTxCover(func(tx *buntdb.Tx) error {
 		groupStateKey := c.GroupConcernStateKey(groupCode, id)
 		val, err := tx.Get(groupStateKey)
 		if err != nil {
 			return err
 		}
 		oldState := concern.FromString(val)
-		newState := oldState.Remove(ctype)
-		if newState == concern.Empty {
+		newCtype = oldState.Remove(ctype)
+		if newCtype == concern.Empty {
 			_, err = tx.Delete(groupStateKey)
 		} else {
-			_, _, err = tx.Set(groupStateKey, newState.String(), nil)
+			_, _, err = tx.Set(groupStateKey, newCtype.String(), nil)
 		}
 		if err != nil {
 			return err
 		}
 		return nil
 	})
+	return
 }
 
 func (c *StateManager) RemoveAll(groupCode int64) (err error) {
@@ -117,15 +115,13 @@ func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result 
 
 // GetConcern return the concern.Type combined from all group for a id
 func (c *StateManager) GetConcern(id interface{}) (result concern.Type, err error) {
-	err = c.RTxCover(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.ConcernStateKey(id))
-		if err != nil {
-			return err
+	_, _, _, err = c.List(func(groupCode int64, _id interface{}, p concern.Type) bool {
+		if id == _id {
+			result.Add(p)
 		}
-		result = concern.FromString(val)
-		return nil
+		return true
 	})
-	return result, err
+	return
 }
 
 func (c *StateManager) List(filter func(groupCode int64, id interface{}, p concern.Type) bool) (idGroups []int64, ids []interface{}, idTypes []concern.Type, err error) {
@@ -294,27 +290,24 @@ func (c *StateManager) FreshAll() {
 	})
 }
 
-func (c *StateManager) upsertConcernType(key string, ctype concern.Type) error {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+func (c *StateManager) upsertConcernType(key string, ctype concern.Type) (newCtype concern.Type, err error) {
+	err = c.RWTxCover(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
+			newCtype = ctype
 			tx.Set(key, ctype.String(), nil)
 		} else if err == nil {
-			newVal := concern.FromString(val).Add(ctype)
-			tx.Set(key, newVal.String(), nil)
+			newCtype = concern.FromString(val).Add(ctype)
+			tx.Set(key, newCtype.String(), nil)
 		} else {
 			return err
 		}
 		return nil
-
 	})
+	return
 }
 
 func (c *StateManager) Start() error {
-	err := c.freshConcern()
-	if err != nil {
-		return err
-	}
 	_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
 		return true
 	})
@@ -331,48 +324,6 @@ func (c *StateManager) Start() error {
 			c.emitQueue.Add(localutils.NewEmitE(ids[index], t), time.Now())
 		}
 	}
-	return nil
-}
-
-func (c *StateManager) freshConcern() error {
-	_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-		return true
-	})
-	if err != nil {
-		return err
-	}
-	ids, types, err = c.GroupTypeById(ids, types)
-	if err != nil {
-		return err
-	}
-
-	all := make(map[string]bool)
-
-	c.RTxCover(func(tx *buntdb.Tx) error {
-		return tx.Ascend(c.ConcernStateKey(), func(key, value string) bool {
-			all[key] = true
-			return true
-		})
-	})
-
-	c.RWTxCover(func(tx *buntdb.Tx) error {
-		for key := range all {
-			tx.Delete(key)
-		}
-		return nil
-	})
-
-	c.RWTxCover(func(tx *buntdb.Tx) error {
-		for index := range ids {
-			id := ids[index]
-			ctype := types[index]
-			key := c.ConcernStateKey(id)
-			if !ctype.Empty() {
-				tx.Set(key, ctype.String(), nil)
-			}
-		}
-		return nil
-	})
 	return nil
 }
 

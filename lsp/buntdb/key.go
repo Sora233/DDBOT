@@ -41,9 +41,6 @@ func NamedKey(name string, keys []interface{}) string {
 func BilibiliGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("ConcernState", keys)
 }
-func BilibiliAllConcernStateKey(keys ...interface{}) string {
-	return NamedKey("BilibiliAllConcernState", keys)
-}
 func BilibliFreshKey(keys ...interface{}) string {
 	return NamedKey("fresh", keys)
 }
@@ -62,9 +59,6 @@ func BilibiliUserInfoKey(keys ...interface{}) string {
 func DouyuGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("DouyuConcernState", keys)
 }
-func DouyuAllConcernStateKey(keys ...interface{}) string {
-	return NamedKey("DouyuAllConcernState", keys)
-}
 func DouyuFreshKey(keys ...interface{}) string {
 	return NamedKey("douyuFresh", keys)
 }
@@ -73,9 +67,6 @@ func DouyuCurrentLiveKey(keys ...interface{}) string {
 }
 func YoutubeGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("YoutubeConcernState", keys)
-}
-func YoutubeAllConcernStateKey(keys ...interface{}) string {
-	return NamedKey("YoutubeAllConcernState", keys)
 }
 func YoutubeFreshKey(keys ...interface{}) string {
 	return NamedKey("youtubeFresh", keys)

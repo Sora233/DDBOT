@@ -55,7 +55,6 @@ func (c *StateManager) Start() error {
 		db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
 		db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
 		db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexBinary)
 	}
 	return c.StateManager.Start()
 }

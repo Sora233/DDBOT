@@ -9,10 +9,6 @@ func (l *keySet) GroupConcernStateKey(keys ...interface{}) string {
 	return buntdb.DouyuGroupConcernStateKey(keys...)
 }
 
-func (l *keySet) ConcernStateKey(keys ...interface{}) string {
-	return buntdb.DouyuAllConcernStateKey(keys...)
-}
-
 func (l *keySet) FreshKey(keys ...interface{}) string {
 	return buntdb.DouyuFreshKey(keys...)
 }

@@ -32,7 +32,7 @@ func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Inf
 		log.WithField("id", id).Errorf("XFetchInfo failed %v", err)
 		return nil, fmt.Errorf("查询channel信息失败 %v - %v", id, err)
 	}
-	err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
+	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
 	if err != nil {
 		return nil, err
 	}

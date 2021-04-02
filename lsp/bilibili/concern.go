@@ -87,14 +87,20 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 		return nil, fmt.Errorf("用户 %v 禁止watch", name)
 	}
 
-	err = c.modifyUserRelation(mid, ActSub)
+	oldCtype, err := c.StateManager.GetConcern(mid)
 	if err != nil {
-		return nil, fmt.Errorf("关注用户失败 - 内部错误")
+		log.Errorf("get concern error %v", err)
+	} else if oldCtype.Empty() {
+		err = c.modifyUserRelation(mid, ActSub)
+		if err != nil {
+			return nil, fmt.Errorf("关注用户失败 - 内部错误")
+		}
 	}
 
-	err = c.StateManager.AddGroupConcern(groupCode, mid, ctype)
+	_, err = c.StateManager.AddGroupConcern(groupCode, mid, ctype)
 	if err != nil {
-		return nil, err
+		log.Errorf("AddGroupConcern error %v", err)
+		return nil, fmt.Errorf("关注用户失败 - 内部错误")
 	}
 
 	userInfo := NewUserInfo(
@@ -108,10 +114,22 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 	return userInfo, nil
 }
 
-func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) error {
-	_ = c.modifyUserRelation(mid, ActUnsub)
-	return c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
+func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concern.Type, error) {
+	newCtype, err := c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
+	if err != nil {
+		return concern.Empty, err
+	}
 
+	{
+		// inner err is not outer err
+		state, err := c.GetConcern(mid)
+		if err != nil {
+			logger.WithField("mid", mid).Errorf("GetConcern error %v", err)
+		} else if state.Empty() {
+			c.modifyUserRelation(mid, ActUnsub)
+		}
+	}
+	return newCtype, err
 }
 
 func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, error) {

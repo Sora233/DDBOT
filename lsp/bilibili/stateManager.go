@@ -153,7 +153,6 @@ func (c *StateManager) Start() error {
 	db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
 	db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
 	db.CreateIndex(c.UserInfoKey(), c.UserInfoKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexBinary)
 	db.CreateIndex(c.DynamicIdKey(), c.DynamicIdKey("*"), buntdb.IndexString)
 	return c.StateManager.Start()
 }
