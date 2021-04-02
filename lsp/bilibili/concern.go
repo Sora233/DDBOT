@@ -331,6 +331,7 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 			continue
 		}
 		if t.Add(time.Second * 90).Before(now) {
+			// TODO 观察一下有审核的情况
 			continue
 		}
 		newsMap[uid] = append(newsMap[uid], card)
