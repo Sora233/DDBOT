@@ -419,7 +419,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		log = log.WithField("mid", mid)
 		if remove {
 			// unwatch
-			if err := lgc.l.bilibiliConcern.Remove(groupCode, mid, watchType); err != nil {
+			if _, err := lgc.l.bilibiliConcern.Remove(groupCode, mid, watchType); err != nil {
 				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
 				log.Debugf("unwatch success")
@@ -447,7 +447,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		log = log.WithField("mid", mid)
 		if remove {
 			// unwatch
-			if err := lgc.l.douyuConcern.Remove(groupCode, mid, watchType); err != nil {
+			if _, err := lgc.l.douyuConcern.RemoveGroupConcern(groupCode, mid, watchType); err != nil {
 				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
 				log.Debugf("unwatch success")
@@ -469,7 +469,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		log = log.WithField("id", id)
 		if remove {
 			// unwatch
-			if err := lgc.l.youtubeConcern.Remove(groupCode, id, watchType); err != nil {
+			if _, err := lgc.l.youtubeConcern.RemoveGroupConcern(groupCode, id, watchType); err != nil {
 				lgc.textReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
 				log.WithField("id", id).Debugf("unwatch success")
@@ -527,41 +527,23 @@ func (lgc *LspGroupCommand) ListCommand() {
 	listMsg := message.NewSendingMessage()
 
 	switch ctype {
-	case concern.BibiliLive:
+	case concern.BibiliLive, concern.BilibiliNews:
 		listMsg.Append(message.NewText("当前关注：\n"))
-		living, err := lgc.l.bilibiliConcern.ListLiving(groupCode, true)
+		userInfos, err := lgc.l.bilibiliConcern.ListWatching(groupCode, ctype)
 		if err != nil {
 			log.Debugf("list living failed %v", err)
 			lgc.textReply(fmt.Sprintf("list living 失败 - %v", err))
 			return
 		}
-		if living == nil {
+		if len(userInfos) == 0 {
 			lgc.textReply("关注列表为空，可以使用/watch命令关注")
 			return
 		}
-		for idx, liveInfo := range living {
+		for idx, userInfo := range userInfos {
 			if idx != 0 {
 				listMsg.Append(message.NewText("\n"))
 			}
-			listMsg.Append(utils.MessageTextf("%v %v", liveInfo.Name, liveInfo.Mid))
-		}
-	case concern.BilibiliNews:
-		listMsg.Append(message.NewText("当前关注：\n"))
-		news, err := lgc.l.bilibiliConcern.ListNews(groupCode, true)
-		if err != nil {
-			log.Debugf("list news failed %v", err)
-			lgc.textReply(fmt.Sprintf("list news 失败 - %v", err))
-			return
-		}
-		if news == nil {
-			lgc.textReply("关注列表为空，可以使用/watch命令关注")
-			return
-		}
-		for idx, newsInfo := range news {
-			if idx != 0 {
-				listMsg.Append(message.NewText("\n"))
-			}
-			listMsg.Append(utils.MessageTextf("%v %v", newsInfo.Name, newsInfo.Mid))
+			listMsg.Append(utils.MessageTextf("%v %v", userInfo.Name, userInfo.Mid))
 		}
 	case concern.DouyuLive:
 		listMsg.Append(message.NewText("当前关注：\n"))

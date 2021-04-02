@@ -34,6 +34,7 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	resp, err := requests.Get(ctx, url, params, 1,
 		requests.ProxyOption(proxy_pool.PreferAny),
 		requests.TimeoutOption(time.Second*5),
+		AddUAOption(),
 	)
 	if err != nil {
 		return nil, err

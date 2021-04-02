@@ -6,7 +6,7 @@ require (
 	github.com/Jeffail/gabs/v2 v2.6.0
 	github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486
 	github.com/Mrs4s/MiraiGo v0.0.0-20210304103008-effa2b84fe7a
-	github.com/Sora233/requests v0.0.0-20210124044507-771a1ecd2e93
+	github.com/Sora233/requests v0.0.0-20210401175516-19c6bf059a71
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/Sora233/zhima-proxy-pool v0.0.0-20210124065344-04d96243cadd
 	github.com/alecthomas/kong v0.2.15

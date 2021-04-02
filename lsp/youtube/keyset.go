@@ -9,10 +9,6 @@ func (k *KeySet) GroupConcernStateKey(keys ...interface{}) string {
 	return buntdb.YoutubeGroupConcernStateKey(keys...)
 }
 
-func (k *KeySet) ConcernStateKey(keys ...interface{}) string {
-	return buntdb.YoutubeAllConcernStateKey(keys...)
-}
-
 func (k *KeySet) FreshKey(keys ...interface{}) string {
 	return buntdb.YoutubeFreshKey(keys...)
 }

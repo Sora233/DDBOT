@@ -71,6 +71,8 @@ func (l *Lsp) Init() {
 		panic(err)
 	}
 
+	bilibili.SetVerify(config.GlobalConfig.GetString("bilibili.SESSDATA"), config.GlobalConfig.GetString("bilibili.bili_jct"))
+
 	keyId := config.GlobalConfig.GetString("aliyun.accessKeyID")
 	keySecret := config.GlobalConfig.GetString("aliyun.accessKeySecret")
 	if keyId != "" && keySecret != "" {

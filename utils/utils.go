@@ -37,10 +37,10 @@ func FilePathWalkDir(root string) ([]string, error) {
 	return files, err
 }
 
-func ToParams(get interface{}) (requests.Params, error) {
-	params := make(requests.Params)
+func toMap(data interface{}) (map[string]string, error) {
+	params := make(map[string]string)
 
-	rg := reflect.ValueOf(get)
+	rg := reflect.ValueOf(data)
 	if rg.Type().Kind() == reflect.Ptr {
 		rg = rg.Elem()
 	}
@@ -73,6 +73,14 @@ func ToParams(get interface{}) (requests.Params, error) {
 
 	}
 	return params, nil
+}
+
+func ToParams(get interface{}) (requests.Params, error) {
+	return toMap(get)
+}
+
+func ToDatas(data interface{}) (requests.Datas, error) {
+	return toMap(data)
 }
 
 func toCamel(name string) string {

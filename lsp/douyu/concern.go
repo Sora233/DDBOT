@@ -113,7 +113,7 @@ func (c *Concern) Add(groupCode int64, id interface{}, ctype concern.Type) (*Liv
 		log.WithField("id", id).Error(err)
 		return nil, fmt.Errorf("查询房间信息失败 %v - %v", id, err)
 	}
-	err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
+	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
 	if err != nil {
 		return nil, err
 	}

@@ -8,9 +8,9 @@ import (
 
 type NewsInfo struct {
 	UserInfo
-	LastDynamicId int64                                       `json:"last_dynamic_id"`
-	Timestamp     int32                                       `json:"timestamp"`
-	Cards         []*DynamicSvrSpaceHistoryResponse_Data_Card `json:"-"`
+	LastDynamicId int64   `json:"last_dynamic_id"`
+	Timestamp     int32   `json:"timestamp"`
+	Cards         []*Card `json:"-"`
 }
 
 func (n *NewsInfo) Type() EventType {
@@ -205,7 +205,7 @@ func NewNewsInfo(userInfo *UserInfo, dynamicId int64, timestamp int32) *NewsInfo
 	}
 }
 
-func NewNewsInfoWithDetail(userInfo *UserInfo, cards []*DynamicSvrSpaceHistoryResponse_Data_Card) *NewsInfo {
+func NewNewsInfoWithDetail(userInfo *UserInfo, cards []*Card) *NewsInfo {
 	var dynamicId int64
 	var timestamp int32
 	if len(cards) > 0 {

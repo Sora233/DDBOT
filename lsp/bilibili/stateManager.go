@@ -36,7 +36,7 @@ func (c *StateManager) GetUserInfo(mid int64) (*UserInfo, error) {
 		}
 		err = json.Unmarshal([]byte(val), userInfo)
 		if err != nil {
-			fmt.Println(val)
+			logger.WithField("val", val).Errorf("user info json unmarshal failed")
 			return err
 		}
 		return nil
@@ -52,7 +52,11 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 		return errors.New("nil LiveInfo")
 	}
 	err := c.RWTxCover(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(c.CurrentLiveKey(liveInfo.Mid), liveInfo.ToString(), localdb.ExpireOption(time.Hour*24))
+		_, _, err := tx.Set(c.UserInfoKey(liveInfo.Mid), liveInfo.UserInfo.ToString(), nil)
+		if err != nil {
+			return err
+		}
+		_, _, err = tx.Set(c.CurrentLiveKey(liveInfo.Mid), liveInfo.ToString(), localdb.ExpireOption(time.Hour*24))
 		return err
 	})
 	return err
@@ -68,7 +72,7 @@ func (c *StateManager) GetLiveInfo(mid int64) (*LiveInfo, error) {
 		}
 		err = json.Unmarshal([]byte(val), liveInfo)
 		if err != nil {
-			fmt.Println(val)
+			logger.WithField("val", val).Errorf("json Unmarshal live info error %v", err)
 			return err
 		}
 		return nil
@@ -84,7 +88,11 @@ func (c *StateManager) AddNewsInfo(newsInfo *NewsInfo) error {
 		return errors.New("nil NewsInfo")
 	}
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(c.CurrentNewsKey(newsInfo.Mid), newsInfo.ToString(), nil)
+		_, _, err := tx.Set(c.UserInfoKey(newsInfo.Mid), newsInfo.UserInfo.ToString(), nil)
+		if err != nil {
+			return err
+		}
+		_, _, err = tx.Set(c.CurrentNewsKey(newsInfo.Mid), newsInfo.ToString(), nil)
 		return err
 	})
 }
@@ -121,19 +129,45 @@ func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 	return newsInfo, nil
 }
 
+func (c *StateManager) CheckDynamicId(dynamic int64) bool {
+	var result bool
+	c.RTxCover(func(tx *buntdb.Tx) error {
+		key := c.DynamicIdKey(dynamic)
+		_, err := tx.Get(key)
+		if err == nil {
+			result = false
+		} else if err == buntdb.ErrNotFound {
+			result = true
+		} else {
+			result = false
+		}
+		return nil
+	})
+	return result
+}
+
+func (c *StateManager) MarkDynamicId(dynamic int64) (replaced bool, err error) {
+	c.RWTxCover(func(tx *buntdb.Tx) error {
+		key := c.DynamicIdKey(dynamic)
+		_, replaced, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*48))
+		return err
+	})
+	return
+}
+
 func (c *StateManager) Start() error {
 	db := localdb.MustGetClient()
 	db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
 	db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
 	db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
 	db.CreateIndex(c.UserInfoKey(), c.UserInfoKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.ConcernStateKey(), c.ConcernStateKey("*"), buntdb.IndexBinary)
+	db.CreateIndex(c.DynamicIdKey(), c.DynamicIdKey("*"), buntdb.IndexString)
 	return c.StateManager.Start()
 }
 
 func NewStateManager() *StateManager {
 	sm := &StateManager{}
 	sm.extraKey = NewExtraKey()
-	sm.StateManager = concern_manager.NewStateManager(NewKeySet())
+	sm.StateManager = concern_manager.NewStateManager(NewKeySet(), false)
 	return sm
 }

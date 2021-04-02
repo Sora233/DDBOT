@@ -9,10 +9,6 @@ func (k *keySet) GroupConcernStateKey(keys ...interface{}) string {
 	return buntdb.BilibiliGroupConcernStateKey(keys...)
 }
 
-func (k *keySet) ConcernStateKey(keys ...interface{}) string {
-	return buntdb.BilibiliAllConcernStateKey(keys...)
-}
-
 func (k *keySet) FreshKey(keys ...interface{}) string {
 	return buntdb.BilibliFreshKey(keys...)
 }
@@ -33,6 +29,10 @@ func (k *extraKey) UserInfoKey(keys ...interface{}) string {
 }
 func (k *extraKey) CurrentNewsKey(keys ...interface{}) string {
 	return buntdb.BilibiliCurrentNewsKey(keys...)
+}
+
+func (k *extraKey) DynamicIdKey(keys ...interface{}) string {
+	return buntdb.BilibiliDynamicIdKey(keys...)
 }
 
 func NewKeySet() *keySet {

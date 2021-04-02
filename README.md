@@ -51,6 +51,10 @@
 
 <img src="https://user-images.githubusercontent.com/11474360/108590360-150afa00-739e-11eb-86f7-77f68d845505.jpeg" width="300" height="450">
 
+## **最近更新**
+
+- 更换船新b站监控方案，预计单帐号可支持1000订阅，最大延迟30秒。
+
 ## 使用
 
 自行编译

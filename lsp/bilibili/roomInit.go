@@ -31,7 +31,7 @@ func RoomInit(roomId int64) (*RoomInitResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(ctx, url, params, 1, requests.ProxyOption(proxy_pool.PreferAny))
+	resp, err := requests.Get(ctx, url, params, 1, requests.ProxyOption(proxy_pool.PreferAny), AddUAOption())
 	if err != nil {
 		return nil, err
 	}
