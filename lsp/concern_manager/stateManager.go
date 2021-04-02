@@ -125,7 +125,7 @@ func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result 
 func (c *StateManager) GetConcern(id interface{}) (result concern.Type, err error) {
 	_, _, _, err = c.List(func(groupCode int64, _id interface{}, p concern.Type) bool {
 		if id == _id {
-			result.Add(p)
+			result = result.Add(p)
 		}
 		return true
 	})

@@ -130,6 +130,7 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 		if err != nil {
 			logger.WithField("mid", mid).Errorf("GetConcern error %v", err)
 		} else if state.Empty() {
+			logger.WithField("mid", mid).Debug("empty state, unsub")
 			c.modifyUserRelation(mid, ActUnsub)
 		}
 	}
@@ -419,6 +420,7 @@ func (c *Concern) modifyUserRelation(mid int64, act int) error {
 			Errorf("modifyUserRelation error")
 		return fmt.Errorf("%v %v", resp.GetCode(), resp.GetMessage())
 	}
+	logger.WithField("mid", mid).WithField("act", act).Debug("modify relation")
 	return nil
 }
 
