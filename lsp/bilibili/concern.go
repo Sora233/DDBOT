@@ -380,6 +380,7 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 // return all LiveInfo in LiveStatus_Living
 func (c *Concern) freshLive() ([]*LiveInfo, error) {
 	var liveInfo []*LiveInfo
+	var infoSet = make(map[int64]bool)
 	for {
 		resp, err := FeedList()
 		if err != nil {
@@ -391,6 +392,10 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 		}
 		pageSize, _ := strconv.ParseInt(resp.GetData().GetPagesize(), 10, 64)
 		for _, l := range resp.GetData().GetList() {
+			if infoSet[l.GetUid()] {
+				continue
+			}
+			infoSet[l.GetUid()] = true
 			liveInfo = append(liveInfo, NewLiveInfo(
 				NewUserInfo(l.GetUid(), l.GetRoomid(), l.GetUname(), l.GetLink()),
 				l.GetTitle(),
