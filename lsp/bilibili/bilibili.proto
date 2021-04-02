@@ -4,342 +4,343 @@ package bilibili;
 option go_package = "bilibili";
 
 enum LiveStatus {
-    NoLiving = 0;
-    Living = 1;
+  NoLiving = 0;
+  Living = 1;
 }
 
 enum RoundStatus {
-    Off = 0;
-    On = 1;
+  Off = 0;
+  On = 1;
 }
 
 enum RoomStatus {
-    NonExist = 0;
-    Exist = 1;
+  NonExist = 0;
+  Exist = 1;
 }
 
 enum SpecialType {
-    Normal = 0;
-    Pay = 1;
-    YearFestival = 2;
+  Normal = 0;
+  Pay = 1;
+  YearFestival = 2;
 }
 
 enum DynamicDescType {
-    Unknown = 0;
-    WithOrigin = 1;
-    WithImage = 2;
-    TextOnly = 4;
-    WithVideo = 8;
-    WithPost = 64;
-    WithMusic = 256;
-    WithAnime = 512;
-    // 该内容已经不见了哦
-    WithMiss = 1024;
-    // 评分、头像挂件，这种动态下面有一个小卡片的
-    WithSketch = 2048;
-    WithLive = 4200;
-    WithLiveV2 = 4308;
+  Unknown = 0;
+  WithOrigin = 1;
+  WithImage = 2;
+  TextOnly = 4;
+  WithVideo = 8;
+  WithPost = 64;
+  WithMusic = 256;
+  WithAnime = 512;
+  // 该内容已经不见了哦
+  WithMiss = 1024;
+  // 评分、头像挂件，这种动态下面有一个小卡片的
+  WithSketch = 2048;
+  WithLive = 4200;
+  WithLiveV2 = 4308;
 }
 
 message RoomInitResponse {
-    int32 code = 1;
-    string message = 2;
-    message Data {
-        int64 room_id = 1;
-        int64 short_id = 2;
-        int64 uid = 3;
-        bool is_hidden = 5;
-        bool is_locked = 6;
+  int32 code = 1;
+  string message = 2;
+  message Data {
+    int64 room_id = 1;
+    int64 short_id = 2;
+    int64 uid = 3;
+    bool is_hidden = 5;
+    bool is_locked = 6;
 
-        LiveStatus live_status = 8;
+    LiveStatus live_status = 8;
 
-        int32 is_sp = 15;
-        int32 special_type = 16;
-    }
-    Data data = 3;
+    int32 is_sp = 15;
+    int32 special_type = 16;
+  }
+  Data data = 3;
 }
 
 message XSpaceAccInfoResponse {
-    int32 code = 1;
-    string message = 2;
+  int32 code = 1;
+  string message = 2;
 
-    message Data {
-        int64 mid = 1;
-        string name = 2;
-        int32 level = 7;
-        message LiveRoom {
-            int32 roomStatus = 1;
-            int32 liveStatus = 2;
-            string url = 3;
-            string title = 4;
-            string cover = 5;
-            int64 roomid = 6;
-            int32 roundStatus = 7;
-        }
-        LiveRoom live_room = 17;
+  message Data {
+    int64 mid = 1;
+    string name = 2;
+    int32 level = 7;
+    message LiveRoom {
+      int32 roomStatus = 1;
+      int32 liveStatus = 2;
+      string url = 3;
+      string title = 4;
+      string cover = 5;
+      int64 roomid = 6;
+      int32 roundStatus = 7;
     }
-    Data data = 3;
+    LiveRoom live_room = 17;
+  }
+  Data data = 3;
 }
 
 message GetRoomInfoOldResponse {
-    int32 code = 1;
-    string message = 2;
-    message Data {
-        RoomStatus roomStatus = 1;
-        RoundStatus roundStatus = 2;
-        LiveStatus liveStatus = 3;
-        string url = 4;
-        string title = 5;
-        string cover = 6;
-        int64 online = 7;
-        int64 roomid = 8;
-        int32 broadcast_type = 9;
-        int32 online_hidden = 10;
-    }
-    Data data = 3;
+  int32 code = 1;
+  string message = 2;
+  message Data {
+    RoomStatus roomStatus = 1;
+    RoundStatus roundStatus = 2;
+    LiveStatus liveStatus = 3;
+    string url = 4;
+    string title = 5;
+    string cover = 6;
+    int64 online = 7;
+    int64 roomid = 8;
+    int32 broadcast_type = 9;
+    int32 online_hidden = 10;
+  }
+  Data data = 3;
 }
 
 message FeedListResponse {
-    int32 code = 1;
-    string message = 2;
-    message Data {
-        int32 result = 1;
-        string page = 2;
-        string pagesize = 3;
-        message ListInfo {
-            string cover = 1;
-            string face = 2;
-            string uname = 3;
-            string title = 4;
-            int64 roomid = 5;
-            string pic = 6;
-            int64 online = 7;
-            string link = 8;
-            int64 uid = 9;
-            int64 parent_area_id = 10;
-            int64 area_id = 11;
-        }
-        repeated ListInfo list = 4;
+  int32 code = 1;
+  string message = 2;
+  message Data {
+    int32 result = 1;
+    string page = 2;
+    string pagesize = 3;
+    message ListInfo {
+      string cover = 1;
+      string face = 2;
+      string uname = 3;
+      string title = 4;
+      int64 roomid = 5;
+      string pic = 6;
+      int64 online = 7;
+      string link = 8;
+      int64 uid = 9;
+      int64 parent_area_id = 10;
+      int64 area_id = 11;
     }
+    repeated ListInfo list = 4;
+  }
+  Data data = 3;
 }
 
 message Card {
-    message Desc {
-        int64 dynamic_id = 1;
-        int64 orig_dy_id = 2;
-        DynamicDescType orig_type = 3;
-        int64 pre_dy_id = 4;
-        int32 comment = 5;
-        int32 like = 6;
-        int32 view = 7;
-        int32 repost = 8;
-        int32 timestamp = 9;
-        DynamicDescType type = 10;
-        string bvid = 11;
-        string dynamic_id_str = 12;
-        int64 uid = 13;
+  message Desc {
+    int64 dynamic_id = 1;
+    int64 orig_dy_id = 2;
+    DynamicDescType orig_type = 3;
+    int64 pre_dy_id = 4;
+    int32 comment = 5;
+    int32 like = 6;
+    int32 view = 7;
+    int32 repost = 8;
+    int32 timestamp = 9;
+    DynamicDescType type = 10;
+    string bvid = 11;
+    string dynamic_id_str = 12;
+    int64 uid = 13;
+  }
+  message Extra {
+    int32 is_space_top = 1;
+  }
+  message Display {
+    message EmojiInfo {
+      message EmojiDetail {
+        string emoji_name = 1;
+        int32 id = 2;
+        int32 package_id = 3;
+        int32 state = 4;
+        int32 type = 5;
+        string text = 6;
+        string url = 7;
+      }
+      repeated EmojiDetail emoji_details = 1;
     }
-    message Extra {
-        int32 is_space_top = 1;
+    message Origin {
+      EmojiInfo emoji_info = 1;
     }
-    message Display {
-        message EmojiInfo {
-            message EmojiDetail {
-                string emoji_name = 1;
-                int32 id = 2;
-                int32 package_id = 3;
-                int32 state = 4;
-                int32 type = 5;
-                string text = 6;
-                string url = 7;
-            }
-            repeated EmojiDetail emoji_details = 1;
-        }
-        message Origin {
-            EmojiInfo emoji_info = 1;
-        }
-        EmojiInfo emoji_info = 1;
-        Origin origin = 2;
-    }
-    string card = 1;
-    Desc desc = 2;
-    Extra extra = 5;
-    Display display = 6;
+    EmojiInfo emoji_info = 1;
+    Origin origin = 2;
+  }
+  string card = 1;
+  Desc desc = 2;
+  Extra extra = 5;
+  Display display = 6;
 }
 
 
 message DynamicSvrSpaceHistoryResponse {
-    int32 code = 1;
-    string message = 2;
-    message Data {
-        repeated Card cards = 1;
-        int32 has_more = 2;
-        int64 next_offset = 3;
-    }
-    Data data = 3;
+  int32 code = 1;
+  string message = 2;
+  message Data {
+    repeated Card cards = 1;
+    int32 has_more = 2;
+    int64 next_offset = 3;
+  }
+  Data data = 3;
 }
 
 message DynamicSvrDynamicNewResponse {
-    int32 code = 1;
-    string message = 2;
-    message Data {
-        int32 new_num = 1;
-        int32 exist_gap = 2;
-        int32 update_num = 3;
-        int32 open_rcmd = 4;
-        repeated Card cards = 5;
-        int64 max_dynamic_id = 6;
-        int64 history_offset = 7;
-    }
-    Data data = 3;
+  int32 code = 1;
+  string message = 2;
+  message Data {
+    int32 new_num = 1;
+    int32 exist_gap = 2;
+    int32 update_num = 3;
+    int32 open_rcmd = 4;
+    repeated Card cards = 5;
+    int64 max_dynamic_id = 6;
+    int64 history_offset = 7;
+  }
+  Data data = 3;
 }
 
 message RelationModifyResponse {
-    int32 code = 1;
-    string message = 2;
-    int64 ttl = 3;
+  int32 code = 1;
+  string message = 2;
+  int64 ttl = 3;
 }
 
 message CardWithImage {
-    message Item {
-        int64 id = 1;
-        string title = 2;
-        string description = 3;
-        string category = 4;
-        message Picture {
-            string img_src = 1;
-            int32 img_width = 2;
-            int32 img_height = 3;
-            float img_size = 4;
-        }
-        repeated Picture pictures = 5;
-        int32 pictures_count = 6;
-        int64 upload_time = 7;
+  message Item {
+    int64 id = 1;
+    string title = 2;
+    string description = 3;
+    string category = 4;
+    message Picture {
+      string img_src = 1;
+      int32 img_width = 2;
+      int32 img_height = 3;
+      float img_size = 4;
     }
-    Item item = 1;
+    repeated Picture pictures = 5;
+    int32 pictures_count = 6;
+    int64 upload_time = 7;
+  }
+  Item item = 1;
 }
 
 message CardWithOrig {
-    message Item {
-        string content = 1;
-        int64 timestamp = 2;
-        DynamicDescType orig_type = 3;
-        int64 reply = 4;
-        int64 miss = 5;
-        string tips = 6;
+  message Item {
+    string content = 1;
+    int64 timestamp = 2;
+    DynamicDescType orig_type = 3;
+    int64 reply = 4;
+    int64 miss = 5;
+    string tips = 6;
+  }
+  Item item = 1;
+  string origin = 2;
+  message OriginUser {
+    message Info {
+      int64 uid = 1;
+      string uname = 2;
     }
-    Item item = 1;
-    string origin = 2;
-    message OriginUser {
-        message Info {
-            int64 uid = 1;
-            string uname = 2;
-        }
-        Info info = 1;
-    }
+    Info info = 1;
+  }
 
-    OriginUser origin_user = 3;
+  OriginUser origin_user = 3;
 }
 
 message CardWithVideo {
-    string desc = 1;
-    int32 duration = 2;
-    string dynamic = 3;
-    int64 pubdate = 4;
-    string title = 5;
-    string tname = 6;
-    int32 videos = 7;
-    string pic = 8;
+  string desc = 1;
+  int32 duration = 2;
+  string dynamic = 3;
+  int64 pubdate = 4;
+  string title = 5;
+  string tname = 6;
+  int32 videos = 7;
+  string pic = 8;
 }
 
 message CardTextOnly {
-    message Item {
-        int64 rp_id = 1;
-        int64 uid = 2;
-        string content = 3;
-        string ctrl = 4;
-        int64 timestamp = 7;
-        int32 reply = 8;
-    }
-    Item item = 1;
+  message Item {
+    int64 rp_id = 1;
+    int64 uid = 2;
+    string content = 3;
+    string ctrl = 4;
+    int64 timestamp = 7;
+    int32 reply = 8;
+  }
+  Item item = 1;
 }
 
 message CardWithPost {
-    string title = 1;
-    string summary = 2;
-    repeated string image_urls = 3;
-    string banner_url = 4;
-    int64 publish_time = 5;
+  string title = 1;
+  string summary = 2;
+  repeated string image_urls = 3;
+  string banner_url = 4;
+  int64 publish_time = 5;
 }
 
 // TODO
 message CardWithMusic {}
 
 message CardWithAnime {
-    message ApiSeasonInfo {
-        int64 bgm_type = 1;
-        string cover = 2;
-        int64 is_finish = 3;
-        int64 season_id = 4;
-        string title = 5;
-        int64 total_count = 6;
-        int64 ts = 7;
-        string type_name = 8;
-    }
-    ApiSeasonInfo apiSeasonInfo = 1;
-    int64 bullet_count = 2;
-    string cover = 3;
-    int64 episode_id = 4;
-    string index = 5;
-    string index_title = 6;
-    string new_desc = 7;
-//    int64 online_finish = 8;
-    int64 play_count = 9;
-    int64 reply_count = 10;
-    string url = 11;
+  message ApiSeasonInfo {
+    int64 bgm_type = 1;
+    string cover = 2;
+    int64 is_finish = 3;
+    int64 season_id = 4;
+    string title = 5;
+    int64 total_count = 6;
+    int64 ts = 7;
+    string type_name = 8;
+  }
+  ApiSeasonInfo apiSeasonInfo = 1;
+  int64 bullet_count = 2;
+  string cover = 3;
+  int64 episode_id = 4;
+  string index = 5;
+  string index_title = 6;
+  string new_desc = 7;
+  //    int64 online_finish = 8;
+  int64 play_count = 9;
+  int64 reply_count = 10;
+  string url = 11;
 }
 
 message CardWithSketch {
-    message Vest {
-        int64 uid = 1;
-        string content = 2;
-    }
-    Vest vest = 1;
-    message Sketch {
-        string title = 1;
-        string desc_text = 2;
-    }
-    Sketch sketch = 2;
+  message Vest {
+    int64 uid = 1;
+    string content = 2;
+  }
+  Vest vest = 1;
+  message Sketch {
+    string title = 1;
+    string desc_text = 2;
+  }
+  Sketch sketch = 2;
 }
 
 message CardWithLive {
-    int64 roomid = 1;
-    int64 uid = 2;
-    string uname = 3;
-    string cover = 4;
-    string title = 5;
-    string area_v2_name = 6;
-    LiveStatus live_status = 7;
-    RoomStatus round_status = 8;
+  int64 roomid = 1;
+  int64 uid = 2;
+  string uname = 3;
+  string cover = 4;
+  string title = 5;
+  string area_v2_name = 6;
+  LiveStatus live_status = 7;
+  RoomStatus round_status = 8;
 }
 
 // 可能是新版直播间
 message CardWithLiveV2 {
-    message LivePlayInfo {
-        string cover = 1;
-        string title = 2;
-        int64 room_id = 3;
-        LiveStatus live_status = 4;
-        string link = 5;
-        int64 uid = 6;
-        int64 live_id = 7;
-        int64 area_id = 8;
-        string area_name = 9;
-        int64 parent_area_id = 10;
-        string parent_area_name = 11;
-        int64 room_type = 12;
-    }
-    LivePlayInfo live_play_info = 1;
-    int64 style = 2;
-    int64 type = 3;
+  message LivePlayInfo {
+    string cover = 1;
+    string title = 2;
+    int64 room_id = 3;
+    LiveStatus live_status = 4;
+    string link = 5;
+    int64 uid = 6;
+    int64 live_id = 7;
+    int64 area_id = 8;
+    string area_name = 9;
+    int64 parent_area_id = 10;
+    string parent_area_name = 11;
+    int64 room_type = 12;
+  }
+  LivePlayInfo live_play_info = 1;
+  int64 style = 2;
+  int64 type = 3;
 }

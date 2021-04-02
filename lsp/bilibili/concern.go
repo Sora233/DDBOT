@@ -295,6 +295,10 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 	return result, nil
 }
 
+func (c *Concern) freshLive() {
+	FeedList()
+}
+
 func (c *Concern) findUser(mid int64, load bool) (*UserInfo, error) {
 	if load {
 		resp, err := XSpaceAccInfo(mid)
