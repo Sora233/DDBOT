@@ -392,9 +392,9 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 		pageSize, _ := strconv.ParseInt(resp.GetData().GetPagesize(), 10, 64)
 		for _, l := range resp.GetData().GetList() {
 			liveInfo = append(liveInfo, NewLiveInfo(
-				NewUserInfo(l.Uid, l.Roomid, l.Uname, l.Link),
-				l.Title,
-				l.Cover,
+				NewUserInfo(l.GetUid(), l.GetRoomid(), l.GetUname(), l.GetLink()),
+				l.GetTitle(),
+				l.GetPic(),
 				LiveStatus_Living,
 			))
 		}
