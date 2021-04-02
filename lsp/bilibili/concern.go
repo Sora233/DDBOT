@@ -321,6 +321,7 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 			Errorf("fresh dynamic new failed")
 		return nil, errors.New(resp.Message)
 	}
+	now := time.Now()
 	for _, card := range resp.GetData().GetCards() {
 		uid := card.GetDesc().GetUid()
 		t := time.Unix(int64(card.GetDesc().GetTimestamp()), 0)
@@ -328,7 +329,7 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 		if err != nil || replaced {
 			continue
 		}
-		if t.Add(time.Second * 90).Before(time.Now()) {
+		if t.Add(time.Second * 90).Before(now) {
 			continue
 		}
 		newsMap[uid] = append(newsMap[uid], card)
