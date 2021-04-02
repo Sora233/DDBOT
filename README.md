@@ -38,7 +38,6 @@
 
 </details>
 
-
 ### 推送效果
 
 <img src="https://user-images.githubusercontent.com/11474360/111737379-78fbe200-88ba-11eb-9e7e-ecc9f2440dd8.jpg" width="300">
@@ -90,6 +89,13 @@ bot:
   password: # bot密码
 
 # b站登陆后的cookie字段，从cookie中找到这两个填进去
+# 请注意，bot将使用您b站帐号的以下功能，建议使用新注册的小号：
+# 关注用户 / 取消关注用户 / 查看关注列表
+#
+# 警告：
+# SESSDATA和bili_jct等价于您的帐号凭证
+# 请绝对不要透露给他人，更不能上传至Github等公开平台
+# 否则将导致您的帐号被盗
 bilibili:
   SESSDATA: ""
   bili_jct: ""
@@ -182,6 +188,6 @@ logLevel: info # 日志等级
 
 > [Goland](https://www.jetbrains.com/go/) 是一个非常适合Gopher的智能IDE，它极大地提高了开发人员的效率。
 
-特别感谢 [JetBrains](https://jb.gg/OpenSource) 为本项目提供免费的 [Goland](https://www.jetbrains.com/go/) 等一系列IDE的授权  
+特别感谢 [JetBrains](https://jb.gg/OpenSource) 为本项目提供免费的 [Goland](https://www.jetbrains.com/go/) 等一系列IDE的授权
 
 [<img src="https://user-images.githubusercontent.com/11474360/112592917-baa00600-8e41-11eb-9da4-ecb53bb3c2fa.png" width="200"/>](https://jb.gg/OpenSource)
