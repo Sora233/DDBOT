@@ -136,52 +136,23 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 	return newCtype, err
 }
 
-func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, error) {
-	log := logger.WithField("group_code", groupCode).WithField("all", all)
-	var result []*ConcernLiveNotify
+func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo, error) {
+	log := logger.WithField("group_code", groupCode)
 
 	mids, _, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
-		return p.ContainAny(concern.BibiliLive)
+		return p.ContainAny(ctype)
 	})
 	if err != nil {
 		return nil, err
 	}
-	if len(mids) != 0 {
-		result = make([]*ConcernLiveNotify, 0)
-	}
+	var result = make([]*UserInfo, 0)
 	for _, mid := range mids {
-		liveInfo, err := c.StateManager.GetLiveInfo(mid.(int64))
+		userInfo, err := c.StateManager.GetUserInfo(mid.(int64))
 		if err != nil {
-			log.WithField("mid", mid).Errorf("get LiveInfo err %v", err)
+			log.WithField("mid", mid).Errorf("GetUserInfo error %v", err)
 			continue
 		}
-		if all || liveInfo.Status == LiveStatus_Living {
-			result = append(result, NewConcernLiveNotify(groupCode, liveInfo))
-		}
-	}
-	return result, nil
-}
-
-func (c *Concern) ListNews(groupCode int64, all bool) ([]*ConcernNewsNotify, error) {
-	log := logger.WithField("group_code", groupCode).WithField("all", all)
-	var result []*ConcernNewsNotify
-
-	mids, _, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
-		return p.ContainAny(concern.BilibiliNews)
-	})
-	if err != nil {
-		return nil, err
-	}
-	if len(mids) != 0 {
-		result = make([]*ConcernNewsNotify, 0)
-	}
-	for _, mid := range mids {
-		newsInfo, err := c.StateManager.GetNewsInfo(mid.(int64))
-		if err != nil {
-			log.WithField("mid", mid).Errorf("get newsInfo err %v", err)
-			continue
-		}
-		result = append(result, NewConcernNewsNotify(groupCode, newsInfo))
+		result = append(result, userInfo)
 	}
 	return result, nil
 }
