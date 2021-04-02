@@ -1,6 +1,7 @@
 package concern_manager
 
 import (
+	"errors"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
@@ -14,12 +15,14 @@ import (
 )
 
 var logger = utils.GetModuleLogger("concern_manager")
+var ErrEmitQNotInit = errors.New("emit queue not enabled")
 
 type StateManager struct {
 	*localdb.ShortCut
 	KeySet
 	emitChan  chan *localutils.EmitE
 	emitQueue *localutils.EmitQueue
+	useEmit   bool
 }
 
 func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype concern.Type) error {
@@ -47,11 +50,16 @@ func (c *StateManager) CheckConcern(id interface{}, ctype concern.Type) error {
 
 func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype concern.Type) (newCtype concern.Type, err error) {
 	groupStateKey := c.GroupConcernStateKey(groupCode, id)
+	oldCtype, err := c.GetConcern(id)
+	if err != nil {
+		return concern.Empty, err
+	}
 	newCtype, err = c.upsertConcernType(groupStateKey, ctype)
 	if err != nil {
 		return concern.Empty, err
 	}
-	if c.CheckConcern(id, concern.Empty) == nil {
+
+	if c.useEmit && oldCtype.Empty() {
 		for _, t := range ctype.Split() {
 			c.emitQueue.Add(localutils.NewEmitE(id, t), time.Time{})
 		}
@@ -318,16 +326,20 @@ func (c *StateManager) Start() error {
 	if err != nil {
 		return err
 	}
-
-	for index := range ids {
-		for _, t := range types[index].Split() {
-			c.emitQueue.Add(localutils.NewEmitE(ids[index], t), time.Now())
+	if c.useEmit {
+		for index := range ids {
+			for _, t := range types[index].Split() {
+				c.emitQueue.Add(localutils.NewEmitE(ids[index], t), time.Now())
+			}
 		}
 	}
 	return nil
 }
 
 func (c *StateManager) EmitFreshCore(name string, fresher func(ctype concern.Type, id interface{}) error) {
+	if !c.useEmit {
+		return
+	}
 	for e := range c.emitChan {
 		id := e.Id
 		if ok, _ := c.FreshCheck(id, true); !ok {
@@ -341,11 +353,14 @@ func (c *StateManager) EmitFreshCore(name string, fresher func(ctype concern.Typ
 	}
 }
 
-func NewStateManager(keySet KeySet) *StateManager {
+func NewStateManager(keySet KeySet, useEmit bool) *StateManager {
 	sm := &StateManager{
 		emitChan: make(chan *localutils.EmitE),
 		KeySet:   keySet,
+		useEmit:  useEmit,
 	}
-	sm.emitQueue = localutils.NewEmitQueue(sm.emitChan, config.GlobalConfig.GetDuration("concern.emitInterval"))
+	if useEmit {
+		sm.emitQueue = localutils.NewEmitQueue(sm.emitChan, config.GlobalConfig.GetDuration("concern.emitInterval"))
+	}
 	return sm
 }

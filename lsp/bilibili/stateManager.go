@@ -68,7 +68,7 @@ func (c *StateManager) GetLiveInfo(mid int64) (*LiveInfo, error) {
 		}
 		err = json.Unmarshal([]byte(val), liveInfo)
 		if err != nil {
-			fmt.Println(val)
+			logger.WithField("val", val).Errorf("json Unmarshal live info error %v", err)
 			return err
 		}
 		return nil
@@ -160,6 +160,6 @@ func (c *StateManager) Start() error {
 func NewStateManager() *StateManager {
 	sm := &StateManager{}
 	sm.extraKey = NewExtraKey()
-	sm.StateManager = concern_manager.NewStateManager(NewKeySet())
+	sm.StateManager = concern_manager.NewStateManager(NewKeySet(), false)
 	return sm
 }

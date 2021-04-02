@@ -79,6 +79,6 @@ func (s *StateManager) Start() error {
 func NewStateManager() *StateManager {
 	sm := new(StateManager)
 	sm.extraKey = NewExtraKey()
-	sm.StateManager = concern_manager.NewStateManager(NewKeySet())
+	sm.StateManager = concern_manager.NewStateManager(NewKeySet(), false)
 	return sm
 }
