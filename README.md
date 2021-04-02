@@ -89,6 +89,12 @@ bot:
   account: # bot账号
   password: # bot密码
 
+# b站登陆后的cookie字段，从cookie中找到这两个填进去
+bilibili:
+  SESSDATA: ""
+  bili_jct: ""
+
+
 moderatecontent:
   apikey: # 已弃用
 
