@@ -23,7 +23,8 @@ var BasePath = map[string]string{
 	PathGetRoomInfoOld:         BaseLiveHost,
 	PathDynamicSrvDynamicNew:   BaseVCHost,
 	PathRelationModify:         BaseHost,
-	PathRelationFeed:           BaseLiveHost,
+	PathRelationFeedList:       BaseLiveHost,
+	PathGetAttentionList:       BaseVCHost,
 }
 
 var (
@@ -55,6 +56,10 @@ func SetVerify(_SESSDATA string, _biliJct string) {
 
 func AddCookiesOption() []requests.Option {
 	return []requests.Option{requests.CookieOption("SESSDATA", SESSDATA), requests.CookieOption("bili_jct", biliJct)}
+}
+
+func AddUAOption() requests.Option {
+	return requests.HeaderOption("user-agent", fmt.Sprintf("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'"))
 }
 
 func IsVerifyGiven() bool {

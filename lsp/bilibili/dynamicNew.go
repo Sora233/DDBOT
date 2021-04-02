@@ -44,7 +44,7 @@ func DynamicSrvDynamicNew() (*DynamicSvrDynamicNewResponse, error) {
 		requests.ProxyOption(proxy_pool.PreferAny),
 		requests.HeaderOption("origin", fmt.Sprintf("https://t.bilibili.com")),
 		requests.HeaderOption("referer", fmt.Sprintf("https://t.bilibili.com")),
-		requests.HeaderOption("user-agent", fmt.Sprintf("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'")),
+		AddUAOption(),
 		requests.TimeoutOption(time.Second*5),
 	)
 	opts = append(opts, AddCookiesOption()...)

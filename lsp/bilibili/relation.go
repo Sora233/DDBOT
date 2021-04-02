@@ -52,7 +52,11 @@ func RelationModify(fid int64, act int) (*RelationModifyResponse, error) {
 		return nil, err
 	}
 	var opts []requests.Option
-	opts = append(opts, requests.ProxyOption(proxy_pool.PreferAny), requests.TimeoutOption(time.Second*5))
+	opts = append(opts,
+		requests.ProxyOption(proxy_pool.PreferAny),
+		requests.TimeoutOption(time.Second*5),
+		AddUAOption(),
+	)
 	opts = append(opts, AddCookiesOption()...)
 	resp, err := requests.Post(ctx, url, form, 1,
 		opts...,

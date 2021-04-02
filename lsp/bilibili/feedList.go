@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	PathRelationFeed = "/relation/v1/feed/feed_list"
+	PathRelationFeedList = "/relation/v1/feed/feed_list"
 )
 
 type RelationFeedRequest struct {
@@ -32,6 +32,9 @@ func FeedPageSizeOpt(pageSize int) FeedOpt {
 }
 
 func FeedList(opt ...FeedOpt) (*FeedListResponse, error) {
+	if !IsVerifyGiven() {
+		return nil, ErrVerifyRequired
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	st := time.Now()
@@ -47,7 +50,7 @@ func FeedList(opt ...FeedOpt) (*FeedListResponse, error) {
 		o(p)
 	}
 
-	url := BPath(PathRoomInit)
+	url := BPath(PathRelationFeedList)
 	params, err := utils.ToParams(&RelationFeedRequest{
 		Page:     p["page"],
 		PageSize: p["pageSize"],
@@ -55,17 +58,24 @@ func FeedList(opt ...FeedOpt) (*FeedListResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(ctx, url, params, 1, requests.ProxyOption(proxy_pool.PreferAny))
+	var opts []requests.Option
+	opts = append(opts,
+		requests.ProxyOption(proxy_pool.PreferAny),
+		AddUAOption(),
+		requests.TimeoutOption(time.Second*5),
+	)
+	opts = append(opts, AddCookiesOption()...)
+	resp, err := requests.Get(ctx, url, params, 1, opts...)
 	if err != nil {
 		return nil, err
 	}
-	rir := new(FeedListResponse)
-	err = resp.Json(rir)
+	flr := new(FeedListResponse)
+	err = resp.Json(flr)
 	if err != nil {
 		return nil, err
 	}
-	if rir.Code == -412 && resp.Proxy != "" {
+	if flr.Code == -412 && resp.Proxy != "" {
 		proxy_pool.Delete(resp.Proxy)
 	}
-	return rir, nil
+	return flr, nil
 }

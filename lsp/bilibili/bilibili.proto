@@ -201,6 +201,15 @@ message RelationModifyResponse {
   int64 ttl = 3;
 }
 
+message GetAttentionListResponse {
+  int32 code = 1;
+  string message = 2;
+  message Data {
+    repeated int64 list = 1;
+  }
+  Data data = 3;
+}
+
 message CardWithImage {
   message Item {
     int64 id = 1;

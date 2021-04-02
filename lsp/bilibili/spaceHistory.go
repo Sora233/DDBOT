@@ -37,6 +37,7 @@ func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, err
 	resp, err := requests.Get(ctx, url, params, 1,
 		requests.ProxyOption(proxy_pool.PreferAny),
 		requests.HeaderOption("Referer", fmt.Sprintf("https://space.bilibili.com/%v/", hostUid)),
+		AddUAOption(),
 		requests.TimeoutOption(time.Second*5),
 	)
 	if err != nil {
