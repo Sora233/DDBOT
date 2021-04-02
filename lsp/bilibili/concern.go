@@ -232,7 +232,7 @@ func (c *Concern) watchCore() {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
-			defer logger.Debug("watchCore dynamic fresh done")
+			defer logger.Tracef("watchCore dynamic fresh done")
 			newsList, err := c.freshDynamicNew()
 			if err != nil {
 				logger.Errorf("freshDynamicNew failed %v", err)
@@ -246,7 +246,7 @@ func (c *Concern) watchCore() {
 
 		go func() {
 			defer wg.Done()
-			defer logger.Debug("watchCore live fresh done")
+			defer logger.Tracef("watchCore live fresh done")
 			liveInfo, err := c.freshLive()
 			if err != nil {
 				logger.Errorf("freshLive error %v", err)
@@ -346,7 +346,7 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 		}
 		result = append(result, NewNewsInfoWithDetail(userInfo, cards))
 	}
-	logger.WithField("NewsInfo Size", len(result)).Debug("freshDynamicNew done")
+	logger.WithField("NewsInfo Size", len(result)).Tracef("freshDynamicNew done")
 	return result, nil
 }
 
@@ -381,7 +381,7 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 		}
 		time.Sleep(time.Millisecond * 500)
 	}
-	logger.WithField("LiveInfo Size", len(liveInfo)).Debug("freshLive done")
+	logger.WithField("LiveInfo Size", len(liveInfo)).Tracef("freshLive done")
 	return liveInfo, nil
 }
 
