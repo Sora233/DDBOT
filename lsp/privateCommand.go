@@ -69,6 +69,8 @@ func (c *LspPrivateCommand) Execute() {
 			return
 		}
 		c.LogCommand()
+	default:
+		c.textReply("阁下似乎输入了一个无法识别的命令，请注意BOT的大多数命令只能在群聊内生效。")
 	}
 }
 
