@@ -16,7 +16,7 @@ func GetAttentionList() (*GetAttentionListResponse, error) {
 	if !IsVerifyGiven() {
 		return nil, ErrVerifyRequired
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	st := time.Now()
 	defer func() {
@@ -28,10 +28,10 @@ func GetAttentionList() (*GetAttentionListResponse, error) {
 	opts = append(opts,
 		requests.ProxyOption(proxy_pool.PreferAny),
 		AddUAOption(),
-		requests.TimeoutOption(time.Second*5),
+		requests.TimeoutOption(time.Second*3),
 	)
 	opts = append(opts, AddCookiesOption()...)
-	resp, err := requests.Get(ctx, url, nil, 1, opts...)
+	resp, err := requests.Get(ctx, url, nil, 3, opts...)
 	if err != nil {
 		return nil, err
 	}

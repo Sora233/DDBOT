@@ -23,7 +23,7 @@ func DynamicSrvDynamicNew() (*DynamicSvrDynamicNewResponse, error) {
 	if !IsVerifyGiven() {
 		return nil, ErrVerifyRequired
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	st := time.Now()
 	defer func() {
@@ -45,10 +45,10 @@ func DynamicSrvDynamicNew() (*DynamicSvrDynamicNewResponse, error) {
 		requests.HeaderOption("origin", fmt.Sprintf("https://t.bilibili.com")),
 		requests.HeaderOption("referer", fmt.Sprintf("https://t.bilibili.com")),
 		AddUAOption(),
-		requests.TimeoutOption(time.Second*5),
+		requests.TimeoutOption(time.Second*3),
 	)
 	opts = append(opts, AddCookiesOption()...)
-	resp, err := requests.Get(ctx, url, params, 1, opts...)
+	resp, err := requests.Get(ctx, url, params, 3, opts...)
 	if err != nil {
 		return nil, err
 	}

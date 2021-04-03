@@ -62,10 +62,10 @@ func FeedList(opt ...FeedOpt) (*FeedListResponse, error) {
 	opts = append(opts,
 		requests.ProxyOption(proxy_pool.PreferAny),
 		AddUAOption(),
-		requests.TimeoutOption(time.Second*5),
+		requests.TimeoutOption(time.Second*3),
 	)
 	opts = append(opts, AddCookiesOption()...)
-	resp, err := requests.Get(ctx, url, params, 1, opts...)
+	resp, err := requests.Get(ctx, url, params, 3, opts...)
 	if err != nil {
 		return nil, err
 	}
