@@ -53,7 +53,12 @@ func (c *Concern) Start() {
 
 	go c.notifyLoop()
 	go c.watchCore()
-	go c.syncSub()
+	go func() {
+		c.syncSub()
+		for range time.Tick(time.Hour) {
+			c.syncSub()
+		}
+	}()
 }
 
 func (c *Concern) Stop() {
