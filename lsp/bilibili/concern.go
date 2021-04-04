@@ -370,12 +370,19 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 				continue
 			}
 			infoSet[l.GetUid()] = true
-			liveInfo = append(liveInfo, NewLiveInfo(
+			info := NewLiveInfo(
 				NewUserInfo(l.GetUid(), l.GetRoomid(), l.GetUname(), l.GetLink()),
 				l.GetTitle(),
 				l.GetPic(),
 				LiveStatus_Living,
-			))
+			)
+			if info.Cover == "" {
+				info.Cover = l.GetCover()
+			}
+			if info.Cover == "" {
+				info.Cover = l.GetFace()
+			}
+			liveInfo = append(liveInfo, info)
 		}
 		if (int(pageSize) != 0 && len(resp.GetData().GetList()) != int(pageSize)) || len(resp.GetData().GetList()) == 0 {
 			break
