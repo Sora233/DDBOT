@@ -673,16 +673,11 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		return
 	}
 
-	db, err := localdb.GetClient()
-	if err != nil {
-		logger.Errorf("get db failed %v", err)
-		return
-	}
 	date := time.Now().Format("20060102")
 
 	var replyText string
 
-	err = db.Update(func(tx *buntdb.Tx) error {
+	err := localdb.RWTxCover(func(tx *buntdb.Tx) error {
 		var score int64
 		key := localdb.Key("Score", lgc.groupCode(), lgc.uin())
 		dateMarker := localdb.Key("ScoreDate", lgc.groupCode(), lgc.uin(), date)
@@ -710,7 +705,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 			return err
 		}
 
-		_, _, err = tx.Set(dateMarker, "1", nil)
+		_, _, err = tx.Set(dateMarker, "1", localdb.ExpireOption(time.Hour*24*3))
 		if err != nil {
 			log.WithField("sender", lgc.uin()).Errorf("update score marker failed %v", err)
 			return err
@@ -721,7 +716,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 	})
 	lgc.textReply(replyText)
 	if err != nil {
-		log.Errorf("签到失败")
+		log.Errorf("checkin error %v", err)
 	}
 }
 
