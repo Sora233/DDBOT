@@ -752,6 +752,12 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 		err = lgc.l.PermissionStateManager.DisableGroupCommand(groupCode, enableCmd.Command)
 	} else {
 		err = lgc.l.PermissionStateManager.EnableGroupCommand(groupCode, enableCmd.Command)
+		if enableCmd.Command == ImageContentCommand {
+			// 要收钱了，不能白嫖了
+			time.AfterFunc(time.Hour*24, func() {
+				lgc.l.PermissionStateManager.DisableGroupCommand(groupCode, EnableCommand)
+			})
+		}
 	}
 	if err != nil {
 		log.Errorf("err %v", err)
