@@ -54,7 +54,7 @@ type Setu struct {
 }
 
 func (s *Setu) Content() ([]byte, error) {
-	return utils.ImageGet(s.Url, proxy_pool.PreferOversea)
+	return utils.ImageGet(s.Url, proxy_pool.PreferMainland)
 }
 
 type Response struct {
