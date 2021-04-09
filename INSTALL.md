@@ -60,8 +60,8 @@ localPool: # 图片功能，使用本地图库
 
 loliconPool: # 图片功能，使用api.lolicon.app图库
   apikey: # 看api.lolicon.app网站内说明
-  cacheMin： 10
-  cacheMax： 50
+  cacheMin: 10
+  cacheMax: 50
 
 pyProxyPool: # 代理池配置，py代理池 https://github.com/jhao104/proxy_pool
   host: http://127.0.0.1:5010
