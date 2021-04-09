@@ -25,4 +25,4 @@ require (
 	golang.org/x/sys v0.0.0-20210223212115-eede4237b368 // indirect
 )
 
-replace github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486 => github.com/Sora233/MiraiGo-Template v0.0.0-20210307130812-17f4708de813
+replace github.com/Logiase/MiraiGo-Template => github.com/Sora233/MiraiGo-Template v0.0.0-20210409132741-611440d4c59b

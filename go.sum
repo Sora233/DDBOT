@@ -19,8 +19,8 @@ github.com/Jeffail/gabs/v2 v2.6.0/go.mod h1:xCn81vdHKxFUuWWAaD5jCTQDNPBMh5pPs9IJ
 github.com/Mrs4s/MiraiGo v0.0.0-20210304103008-effa2b84fe7a h1:7mc+NYNEQsHsodQR4XxODpHhV5/u3Hxb4W2OWsPiM6o=
 github.com/Mrs4s/MiraiGo v0.0.0-20210304103008-effa2b84fe7a/go.mod h1:drSlh4LlYtjOMJxirScUCSnylBKi1NIRxUz7TKdSsNs=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
-github.com/Sora233/MiraiGo-Template v0.0.0-20210307130812-17f4708de813 h1:9tl7EbM9ZPE9jDMrz29byVlUJIl8juJjkOBEd41Rqqc=
-github.com/Sora233/MiraiGo-Template v0.0.0-20210307130812-17f4708de813/go.mod h1:IQInSadjbJKl326+hZsWrguPSVBQZ6Otw73hydQpNe4=
+github.com/Sora233/MiraiGo-Template v0.0.0-20210409132741-611440d4c59b h1:3adZUZlAW1rZnh73Hw4jA7ErTgtCcv/f/1KiAyL5Ok4=
+github.com/Sora233/MiraiGo-Template v0.0.0-20210409132741-611440d4c59b/go.mod h1:WedSdSuH/3cciTlsZBALaRzEwS5lgh68CwVmqaTAbz8=
 github.com/Sora233/requests v0.0.0-20210401175516-19c6bf059a71 h1:Hosz61e2ylJXFT5NQe8Qfh+Cjxh74fQTKZU3ffa7u8M=
 github.com/Sora233/requests v0.0.0-20210401175516-19c6bf059a71/go.mod h1:k/QNjrV73zXkn1r3iG0rwZLc1naFS55Q67I/Wyo/UkI=
 github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882 h1:WXXRCSYXZsFd3ETkh+imU6Gz/Xdm0lXgAQILgBau0XY=

@@ -22,10 +22,16 @@ func init() {
 
 func main() {
 	var cli struct {
-		Play  bool `optional:"" help:"run the play function"`
-		Debug bool `optional:"" help:"enable debug mode"`
+		Play           bool `optional:"" help:"run the play function"`
+		Debug          bool `optional:"" help:"enable debug mode"`
+		GenerateDevice bool `optional:"" help:"generate device.json"`
 	}
 	kong.Parse(&cli)
+
+	if cli.GenerateDevice {
+		bot.GenRandomDevice()
+		os.Exit(0)
+	}
 
 	// 快速初始化
 	bot.Init()
