@@ -45,6 +45,7 @@ enum AddOnCardShowType {
   AddOnCardShowTypeUnknown = 0;
   reserve = 6;
 }
+
 message RoomInitResponse {
   int32 code = 1;
   string message = 2;
