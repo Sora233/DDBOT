@@ -25,7 +25,7 @@ enum SpecialType {
 }
 
 enum DynamicDescType {
-  Unknown = 0;
+  DynamicDescTypeUnknown = 0;
   WithOrigin = 1;
   WithImage = 2;
   TextOnly = 4;
@@ -41,6 +41,10 @@ enum DynamicDescType {
   WithLiveV2 = 4308;
 }
 
+enum AddOnCardShowType {
+  AddOnCardShowTypeUnknown = 0;
+  reserve = 6;
+}
 message RoomInitResponse {
   int32 code = 1;
   string message = 2;
@@ -156,11 +160,37 @@ message Card {
       }
       repeated EmojiDetail emoji_details = 1;
     }
+    // 动态下面附加一个信息
+    message AddOnCardInfo {
+      // 附加预约信息
+      message ReserveAttachCard {
+        // 预约种类 reserve
+        string type = 1;
+        // 预约标题
+        string title = 2;
+        int64 state = 3;
+        // 已经有多少人预约了
+        int64 reserve_total = 4;
+        message DescFirst {
+          string text = 1;
+          int64 style = 2;
+        }
+        // 显示在上面的部分
+        DescFirst desc_first = 5;
+        // 显示在下面的部分
+        string desc_second = 6;
+        string oid_str = 7;
+        int64 origin_state = 8;
+      }
+      AddOnCardShowType add_on_card_show_type = 1;
+      ReserveAttachCard reserve_attach_card = 2;
+    }
     message Origin {
       EmojiInfo emoji_info = 1;
     }
     EmojiInfo emoji_info = 1;
     Origin origin = 2;
+    repeated AddOnCardInfo add_on_card_info = 3; // 可能是新增的预约功能
   }
   string card = 1;
   Desc desc = 2;

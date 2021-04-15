@@ -373,8 +373,22 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			}
 			result = append(result, localutils.MessageTextf("%v发布了新动态：\n%v\n%v\n\n%v\n", notify.Name, date, cardWithMiss.GetItem().GetContent(), cardWithMiss.GetItem().GetTips()))
 		default:
-			log.WithField("content", card.GetCard()).Info("found new type")
+			log.WithField("content", card.GetCard()).Info("found new DynamicDescType")
 			result = append(result, localutils.MessageTextf("%v发布了新动态：\n%v\n", notify.Name, date))
+		}
+
+		// 2021/04/16发现了有新增一个预约卡片
+		for _, addon := range card.GetDisplay().GetAddOnCardInfo() {
+			switch addon.AddOnCardShowType {
+			case bilibili.AddOnCardShowType_reserve:
+				// TODO
+			default:
+				if b, err := json.Marshal(card.GetDisplay()); err != nil {
+					log.WithField("content", card).Errorf("found new AddOnCardShowType but marshal failed %v", err)
+				} else {
+					log.WithField("content", string(b)).Info("found new AddOnCardShowType")
+				}
+			}
 		}
 		log.WithField("uid", notify.Mid).WithField("name", notify.Name).WithField("dynamicUrl", dynamicUrl).Debug("append")
 		result = append(result, message.NewText(dynamicUrl+"\n"))
