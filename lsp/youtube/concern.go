@@ -53,7 +53,7 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernNotify, error
 		result = make([]*ConcernNotify, 0)
 	}
 	for _, id := range ids {
-		info, err := c.findInfo(id.(string), false)
+		info, err := c.findOrLoad(id.(string))
 		if err != nil {
 			log.WithField("id", id.(string)).Errorf("findInfo failed %v", err)
 			continue
@@ -201,6 +201,15 @@ func (c *Concern) findInfo(channelId string, load bool) (*Info, error) {
 		return info, nil
 	}
 	return c.GetInfo(channelId)
+}
+
+func (c *Concern) findOrLoad(channelId string) (*Info, error) {
+	info, _ := c.findInfo(channelId, false)
+	if info == nil {
+		return c.findInfo(channelId, true)
+	} else {
+		return info, nil
+	}
 }
 
 func NewConcern(notify chan<- concern.Notify) *Concern {

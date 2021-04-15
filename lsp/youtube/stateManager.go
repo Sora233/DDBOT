@@ -16,7 +16,7 @@ type StateManager struct {
 func (s *StateManager) AddInfo(info *Info) error {
 	return s.RWTxCover(func(tx *buntdb.Tx) error {
 		infoKey := s.InfoKey(info.ChannelId)
-		_, _, err := tx.Set(infoKey, info.ToString(), localdb.ExpireOption(time.Hour*24))
+		_, _, err := tx.Set(infoKey, info.ToString(), nil)
 		return err
 	})
 }
@@ -79,6 +79,6 @@ func (s *StateManager) Start() error {
 func NewStateManager() *StateManager {
 	sm := new(StateManager)
 	sm.extraKey = NewExtraKey()
-	sm.StateManager = concern_manager.NewStateManager(NewKeySet(), false)
+	sm.StateManager = concern_manager.NewStateManager(NewKeySet(), true)
 	return sm
 }
