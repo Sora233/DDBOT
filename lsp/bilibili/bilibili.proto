@@ -44,6 +44,7 @@ enum DynamicDescType {
 enum AddOnCardShowType {
   AddOnCardShowTypeUnknown = 0;
   reserve = 6;
+  game = 2;
 }
 
 message RoomInitResponse {
@@ -183,8 +184,20 @@ message Card {
         string oid_str = 7;
         int64 origin_state = 8;
       }
+      message AttachCard {
+        string type = 1;
+        string head_text = 2;
+        string cover_url = 3;
+        int32 cover_type = 4;
+        string title = 5;
+        string desc_first = 6;
+        string desc_second = 7;
+        string jump_url = 8;
+        string oid_str = 9;
+      }
       AddOnCardShowType add_on_card_show_type = 1;
       ReserveAttachCard reserve_attach_card = 2;
+      AttachCard attach_card = 3;
     }
     message Origin {
       EmojiInfo emoji_info = 1;

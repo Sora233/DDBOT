@@ -380,8 +380,9 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 		// 2021/04/16发现了有新增一个预约卡片
 		for _, addon := range card.GetDisplay().GetAddOnCardInfo() {
 			switch addon.AddOnCardShowType {
+			// TODO
 			case bilibili.AddOnCardShowType_reserve:
-				// TODO
+			case bilibili.AddOnCardShowType_game:
 			default:
 				if b, err := json.Marshal(card.GetDisplay()); err != nil {
 					log.WithField("content", card).Errorf("found new AddOnCardShowType but marshal failed %v", err)
