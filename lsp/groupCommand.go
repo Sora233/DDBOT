@@ -185,7 +185,7 @@ func (lgc *LspGroupCommand) Execute() {
 }
 
 func (lgc *LspGroupCommand) LspCommand() {
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(LspCommand)
 	log.Infof("run lsp command")
 	defer func() { log.Info("lsp command end") }()
 
@@ -202,7 +202,7 @@ func (lgc *LspGroupCommand) LspCommand() {
 }
 
 func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(SetuCommand)
 	log.Info("run setu command")
 	defer func() { log.Info("setu command end") }()
 
@@ -374,7 +374,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		err       error
 	)
 
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(WatchCommand)
 	log.Info("run watch command")
 	defer func() { log.Info("watch command end") }()
 
@@ -499,7 +499,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 func (lgc *LspGroupCommand) ListCommand() {
 	groupCode := lgc.groupCode()
 
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(ListCommand)
 	log.Info("run list living command")
 	defer func() { log.Info("list living command end") }()
 
@@ -594,7 +594,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 }
 
 func (lgc *LspGroupCommand) RollCommand() {
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(RollCommand)
 	log.Info("run roll command")
 	defer func() { log.Info("roll command end") }()
 
@@ -660,7 +660,7 @@ func (lgc *LspGroupCommand) RollCommand() {
 }
 
 func (lgc *LspGroupCommand) CheckinCommand() {
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(CheckinCommand)
 	log.Infof("run checkin command")
 	defer func() { log.Info("checkin command end") }()
 
@@ -722,7 +722,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 
 func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 	groupCode := lgc.groupCode()
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(EnableCommand)
 	log.Infof("run enable command")
 	defer func() { log.Info("enable command end") }()
 
@@ -777,7 +777,7 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 
 func (lgc *LspGroupCommand) GrantCommand() {
 	groupCode := lgc.groupCode()
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(GrantCommand)
 	log.Infof("run grant command")
 	defer func() { log.Info("grant command end") }()
 
@@ -895,7 +895,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 func (lgc *LspGroupCommand) FaceCommand() {
 	groupCode := lgc.groupCode()
 
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(FaceCommand)
 	log.Infof("run face command")
 	defer func() { log.Info("face command end") }()
 
@@ -936,7 +936,7 @@ func (lgc *LspGroupCommand) FaceCommand() {
 }
 
 func (lgc *LspGroupCommand) ReverseCommand() {
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(ReverseCommand)
 	log.Info("run reverse command")
 	defer func() { log.Info("reverse command end") }()
 
@@ -977,7 +977,7 @@ func (lgc *LspGroupCommand) ReverseCommand() {
 }
 
 func (lgc *LspGroupCommand) HelpCommand() {
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(HelpCommand)
 	log.Info("run help command")
 	defer func() { log.Info("help command end") }()
 
@@ -998,7 +998,7 @@ func (lgc *LspGroupCommand) HelpCommand() {
 }
 
 func (lgc *LspGroupCommand) ImageContent() {
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(ImageContentCommand)
 
 	if !lgc.l.status.AliyunEnable {
 		logger.Debug("aliyun not setup")
@@ -1030,8 +1030,12 @@ func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {
 		WithField("Uin", lgc.uin())
 }
 
+func (lgc *LspGroupCommand) DefaultLoggerWithCommand(command string) *logrus.Entry {
+	return lgc.DefaultLogger().WithField("command", command)
+}
+
 func (lgc *LspGroupCommand) faceDetect(url string) {
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(FaceCommand)
 	log.WithField("detect_url", url).Debug("face detect")
 	img, err := utils.ImageGet(url, proxy_pool.PreferMainland)
 	if err != nil {
@@ -1061,7 +1065,7 @@ func (lgc *LspGroupCommand) faceDetect(url string) {
 }
 
 func (lgc *LspGroupCommand) reserveGif(url string) {
-	log := lgc.DefaultLogger()
+	log := lgc.DefaultLoggerWithCommand(ReverseCommand)
 	log.WithField("reserve_url", url).Debug("reserve image")
 	img, err := utils.ImageGet(url, proxy_pool.PreferMainland)
 	if err != nil {
@@ -1122,9 +1126,7 @@ func (lgc *LspGroupCommand) requireAnyCommand(commands ...string) bool {
 
 func (lgc *LspGroupCommand) requireEnable(command string) bool {
 	if !lgc.groupEnabled(command) {
-		lgc.DefaultLogger().
-			WithField("command", command).
-			Debug("not enable")
+		lgc.DefaultLoggerWithCommand(command).Debug("not enable")
 		return false
 	}
 	return true
@@ -1132,9 +1134,7 @@ func (lgc *LspGroupCommand) requireEnable(command string) bool {
 
 func (lgc *LspGroupCommand) requireNotDisable(command string) bool {
 	if lgc.groupDisabled(command) {
-		lgc.DefaultLogger().
-			WithField("command", command).
-			Debug("disabled")
+		lgc.DefaultLoggerWithCommand(command).Debug("disabled")
 		return false
 	}
 	return true
