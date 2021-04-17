@@ -211,7 +211,7 @@ message Card {
           int32 idx = 4;
           string title = 5;
         }
-        repeated TextVoteCard options = 7;
+        repeated TextVoteOption options = 7;
         int64 status = 8;
         int64 type = 9;
         int64 uid = 10;
@@ -227,7 +227,7 @@ message Card {
     }
     EmojiInfo emoji_info = 1;
     Origin origin = 2;
-    repeated AddOnCardInfo add_on_card_info = 3; // 可能是新增的预约功能
+    repeated AddOnCardInfo add_on_card_info = 3; // 可能是新增的功能，会在动态下面加一个小卡片，目前如预约直播显示信息，发起投票的投票内容缩略，游戏官方动态下面的相关游戏
   }
   string card = 1;
   Desc desc = 2;

@@ -384,6 +384,16 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				result = append(result, localutils.MessageTextf("\n附加信息：\n%v\n%v\n", addon.GetReserveAttachCard().GetTitle(), addon.GetReserveAttachCard().GetDescFirst().GetText()))
 			case bilibili.AddOnCardShowType_game:
 			// TODO
+			case bilibili.AddOnCardShowType_vote:
+				textCard := new(bilibili.Card_Display_AddOnCardInfo_TextVoteCard)
+				if err := json.Unmarshal([]byte(addon.GetVoteCard()), textCard); err == nil {
+					result = append(result, message.NewText("\n附加信息：\n选项：\n"))
+					for _, opt := range textCard.GetOptions() {
+						result = append(result, localutils.MessageTextf("%v - %v\n", opt.GetIdx(), opt.GetDesc()))
+					}
+				} else {
+					log.WithField("content", addon.VoteCard).Info("found new VoteCard")
+				}
 			default:
 				if b, err := json.Marshal(card.GetDisplay()); err != nil {
 					log.WithField("content", card).Errorf("found new AddOnCardShowType but marshal failed %v", err)
