@@ -43,8 +43,9 @@ enum DynamicDescType {
 
 enum AddOnCardShowType {
   AddOnCardShowTypeUnknown = 0;
-  reserve = 6;
   game = 2;
+  vote = 3;
+  reserve = 6;
 }
 
 message RoomInitResponse {
@@ -195,9 +196,31 @@ message Card {
         string jump_url = 8;
         string oid_str = 9;
       }
+      // 可能分为文字投票和图片投票两种，遇到再说
+      message TextVoteCard {
+        int32 choice_cnt = 1;
+        int32 default_share = 2;
+        string default_text = 3;
+        string desc = 4;
+        int64 endtime = 5;
+        int64 join_num = 6;
+        message TextVoteOption {
+          string btn_str = 1;
+          int32 cnt = 2;
+          string desc = 3;
+          int32 idx = 4;
+          string title = 5;
+        }
+        repeated TextVoteCard options = 7;
+        int64 status = 8;
+        int64 type = 9;
+        int64 uid = 10;
+        int64 vote_id = 11;
+      }
       AddOnCardShowType add_on_card_show_type = 1;
       ReserveAttachCard reserve_attach_card = 2;
       AttachCard attach_card = 3;
+      string vote_card = 4;
     }
     message Origin {
       EmojiInfo emoji_info = 1;
