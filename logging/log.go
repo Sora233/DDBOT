@@ -171,7 +171,7 @@ func msgToString(elements []message.IMessageElement) (res string) {
 		case *message.ReplyElement:
 			res += "[Reply:" + strconv.FormatInt(int64(e.ReplySeq), 10) + "]"
 		case *message.GroupFileElement:
-			res += "[File]"
+			res += "[File]" + e.Name
 		case *message.GroupVoiceElement:
 			res += "[Voice]"
 		case *message.ShortVideoElement:
@@ -180,6 +180,10 @@ func msgToString(elements []message.IMessageElement) (res string) {
 			res += "[Forward]"
 		case *message.MusicShareElement:
 			res += "[Music]"
+		case *message.LightAppElement:
+			res += "[LightApp]" + e.Content
+		case *message.ServiceElement:
+			res += "[Service]" + e.Content
 		default:
 			logger.WithField("content", spew.Sdump(elem)).Debug("found new element")
 		}
