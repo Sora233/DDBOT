@@ -45,6 +45,7 @@ enum AddOnCardShowType {
   AddOnCardShowTypeUnknown = 0;
   game = 2;
   vote = 3;
+  match = 4; // lpl比赛
   reserve = 6;
 }
 

@@ -382,8 +382,8 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			switch addon.AddOnCardShowType {
 			case bilibili.AddOnCardShowType_reserve:
 				result = append(result, localutils.MessageTextf("\n附加信息：\n%v\n%v\n", addon.GetReserveAttachCard().GetTitle(), addon.GetReserveAttachCard().GetDescFirst().GetText()))
-			case bilibili.AddOnCardShowType_game:
-			// TODO
+			case bilibili.AddOnCardShowType_game, bilibili.AddOnCardShowType_match:
+			// TODO 暂时没必要
 			case bilibili.AddOnCardShowType_vote:
 				textCard := new(bilibili.Card_Display_AddOnCardInfo_TextVoteCard)
 				if err := json.Unmarshal([]byte(addon.GetVoteCard()), textCard); err == nil {

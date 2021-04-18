@@ -11,6 +11,7 @@ require (
 	github.com/Sora233/zhima-proxy-pool v0.0.0-20210124065344-04d96243cadd
 	github.com/alecthomas/kong v0.2.15
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.975
+	github.com/davecgh/go-spew v1.1.1
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
 	github.com/golang/protobuf v1.4.3
 	github.com/imroc/req v0.3.0
