@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"github.com/davecgh/go-spew/spew"
 	"strconv"
 	"sync"
 
@@ -179,6 +180,8 @@ func msgToString(elements []message.IMessageElement) (res string) {
 			res += "[Forward]"
 		case *message.MusicShareElement:
 			res += "[Music]"
+		default:
+			logger.WithField("content", spew.Sdump(elem)).Debug("found new element")
 		}
 	}
 	return
