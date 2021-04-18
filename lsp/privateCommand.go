@@ -45,7 +45,7 @@ func (c *LspPrivateCommand) Execute() {
 	if !c.DebugCheck() {
 		return
 	}
-	if c.GetCmd() != "" && !strings.HasPrefix(c.GetCmd(), "/") {
+	if !strings.HasPrefix(c.GetCmd(), "/") {
 		return
 	}
 	switch c.GetCmd() {
