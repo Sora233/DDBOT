@@ -141,10 +141,10 @@ LOOP:
 		} else {
 			break
 		}
+		logger.WithField("proxy", req.GetProxy()).WithField("retry", retry).WithField("maxRetry", maxRetry).Debugf("request failed %v, retry", err)
 		if retry == maxRetry {
 			break
 		}
-		logger.WithField("proxy", req.GetProxy()).WithField("retry", retry).WithField("maxRetry", maxRetry).Debugf("request failed %v, retry", err)
 		time.Sleep(time.Second)
 	}
 	proxy := req.GetProxy()
