@@ -360,8 +360,9 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 func (c *Concern) freshLive() ([]*LiveInfo, error) {
 	var liveInfo []*LiveInfo
 	var infoSet = make(map[int64]bool)
+	var page = 1
 	for {
-		resp, err := FeedList()
+		resp, err := FeedList(FeedPageOpt(page))
 		if err != nil {
 			logger.Errorf("freshLive FeedList error %v", err)
 			return nil, err
@@ -392,6 +393,7 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 		if (int(pageSize) != 0 && len(resp.GetData().GetList()) != int(pageSize)) || len(resp.GetData().GetList()) == 0 {
 			break
 		}
+		page++
 		time.Sleep(time.Millisecond * 500)
 	}
 	logger.WithField("LiveInfo Size", len(liveInfo)).Tracef("freshLive done")
