@@ -40,6 +40,9 @@ func HeaderOption(key, value string) Option {
 
 func ProxyOption(prefer proxy_pool.Prefer) Option {
 	return func(request *requests.Request) {
+		if prefer == proxy_pool.PreferNone {
+			return
+		}
 		proxy, err := proxy_pool.Get(prefer)
 		if err != nil {
 			if err != proxy_pool.ErrNil {
