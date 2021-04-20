@@ -60,7 +60,7 @@ func FeedList(opt ...FeedOpt) (*FeedListResponse, error) {
 	}
 	var opts []requests.Option
 	opts = append(opts,
-		requests.ProxyOption(proxy_pool.PreferAny),
+		requests.ProxyOption(proxy_pool.PreferNone),
 		AddUAOption(),
 		requests.TimeoutOption(time.Second*3),
 	)

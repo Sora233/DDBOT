@@ -53,7 +53,7 @@ func RelationModify(fid int64, act int) (*RelationModifyResponse, error) {
 	}
 	var opts []requests.Option
 	opts = append(opts,
-		requests.ProxyOption(proxy_pool.PreferAny),
+		requests.ProxyOption(proxy_pool.PreferNone),
 		requests.TimeoutOption(time.Second*5),
 		AddUAOption(),
 	)

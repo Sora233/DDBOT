@@ -41,7 +41,7 @@ func DynamicSrvDynamicNew() (*DynamicSvrDynamicNewResponse, error) {
 	}
 	var opts []requests.Option
 	opts = append(opts,
-		requests.ProxyOption(proxy_pool.PreferAny),
+		requests.ProxyOption(proxy_pool.PreferNone),
 		requests.HeaderOption("origin", fmt.Sprintf("https://t.bilibili.com")),
 		requests.HeaderOption("referer", fmt.Sprintf("https://t.bilibili.com")),
 		AddUAOption(),

@@ -26,7 +26,7 @@ func GetAttentionList() (*GetAttentionListResponse, error) {
 	url := BPath(PathGetAttentionList)
 	var opts []requests.Option
 	opts = append(opts,
-		requests.ProxyOption(proxy_pool.PreferAny),
+		requests.ProxyOption(proxy_pool.PreferNone),
 		AddUAOption(),
 		requests.TimeoutOption(time.Second*3),
 	)

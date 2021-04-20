@@ -51,7 +51,7 @@ func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
 		return nil, err
 	}
 	resp, err := requests.Get(ctx, url, params, 1,
-		requests.ProxyOption(proxy_pool.PreferAny),
+		requests.ProxyOption(proxy_pool.PreferNone),
 		AddUAOption(),
 		requests.HttpCookieOption(&http.Cookie{Name: "DedeUserID", Value: "2"}),
 		requests.HttpCookieOption(&http.Cookie{Name: "LIVE_BUVID", Value: genBUVID()}),
