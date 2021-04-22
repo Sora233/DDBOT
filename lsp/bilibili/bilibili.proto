@@ -37,6 +37,8 @@ enum DynamicDescType {
   WithMiss = 1024;
   // 评分、头像挂件，这种动态下面有一个小卡片的
   WithSketch = 2048;
+  // 首次发现于综艺
+  WithDrama = 4099;
   WithLive = 4200;
   WithLiveV2 = 4308;
 }
