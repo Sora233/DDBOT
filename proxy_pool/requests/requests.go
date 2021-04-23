@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
+	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/requests"
 	"net"
 	"net/http"

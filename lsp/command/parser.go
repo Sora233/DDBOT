@@ -2,7 +2,7 @@ package command
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/Sora233-MiraiGo/utils"
+	"github.com/Sora233/DDBOT/utils"
 	"strings"
 )
 

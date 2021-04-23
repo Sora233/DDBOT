@@ -3,7 +3,7 @@ package bilibili
 import (
 	"encoding/json"
 	"errors"
-	"github.com/Sora233/Sora233-MiraiGo/concern"
+	"github.com/Sora233/DDBOT/concern"
 )
 
 type NewsInfo struct {

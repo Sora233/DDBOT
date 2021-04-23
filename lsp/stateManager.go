@@ -2,8 +2,8 @@ package lsp
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
-	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
-	"github.com/Sora233/Sora233-MiraiGo/utils"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
 	"strconv"
 	"strings"

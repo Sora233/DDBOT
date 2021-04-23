@@ -2,7 +2,7 @@ package zhima
 
 import (
 	"encoding/json"
-	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	zhima_proxy_pool "github.com/Sora233/zhima-proxy-pool"
 	"github.com/tidwall/buntdb"
 )

@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/Sora233-MiraiGo/concern"
-	"github.com/Sora233/Sora233-MiraiGo/lsp/bilibili"
-	"github.com/Sora233/Sora233-MiraiGo/lsp/douyu"
-	"github.com/Sora233/Sora233-MiraiGo/lsp/youtube"
-	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
-	localutils "github.com/Sora233/Sora233-MiraiGo/utils"
+	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/lsp/bilibili"
+	"github.com/Sora233/DDBOT/lsp/douyu"
+	"github.com/Sora233/DDBOT/lsp/youtube"
+	"github.com/Sora233/DDBOT/proxy_pool"
+	localutils "github.com/Sora233/DDBOT/utils"
 	"runtime/debug"
 )
 

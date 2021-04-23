@@ -5,7 +5,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Mrs4s/MiraiGo/client"
-	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/tidwall/buntdb"
 	"time"
 )

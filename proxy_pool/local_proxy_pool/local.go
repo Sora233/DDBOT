@@ -2,7 +2,7 @@ package local_proxy_pool
 
 import (
 	"errors"
-	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
+	"github.com/Sora233/DDBOT/proxy_pool"
 	"sync/atomic"
 )
 

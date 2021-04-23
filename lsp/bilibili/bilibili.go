@@ -3,7 +3,7 @@ package bilibili
 import (
 	"errors"
 	"fmt"
-	"github.com/Sora233/Sora233-MiraiGo/proxy_pool/requests"
+	"github.com/Sora233/DDBOT/proxy_pool/requests"
 	"strings"
 )
 

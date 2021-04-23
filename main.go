@@ -4,15 +4,15 @@ import (
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/Sora233-MiraiGo/lsp"
+	"github.com/Sora233/DDBOT/lsp"
 	"github.com/alecthomas/kong"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 
-	_ "github.com/Sora233/Sora233-MiraiGo/logging"
-	_ "github.com/Sora233/Sora233-MiraiGo/lsp"
+	_ "github.com/Sora233/DDBOT/logging"
+	_ "github.com/Sora233/DDBOT/lsp"
 )
 
 func init() {

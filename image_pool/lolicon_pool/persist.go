@@ -2,7 +2,7 @@ package lolicon_pool
 
 import (
 	"encoding/json"
-	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/tidwall/buntdb"
 )
 

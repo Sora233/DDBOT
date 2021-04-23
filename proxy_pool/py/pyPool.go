@@ -3,7 +3,7 @@ package py
 import (
 	"errors"
 	"fmt"
-	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
+	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/requests"
 )
 

@@ -7,8 +7,8 @@ import (
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
-	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
-	"github.com/Sora233/Sora233-MiraiGo/lsp/permission"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
 	"github.com/sirupsen/logrus"
@@ -235,7 +235,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"禁用watch命令，调用watch命令将不再有任何反应：/disable watch\n" +
 		"注意，bot只会在群聊内工作，私聊无法生效\n" +
 		"详细使用介绍及样例，请查看https://github.com/Sora233/DDBOT/blob/master/EXAMPLE.md\n" +
-		"其他使用问题请在此提出：https://github.com/Sora233/Sora233-MiraiGo/discussions"
+		"其他使用问题请在此提出：https://github.com/Sora233/DDBOT/discussions"
 	c.textSend(help)
 }
 

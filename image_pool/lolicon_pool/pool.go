@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/Sora233-MiraiGo/image_pool"
+	"github.com/Sora233/DDBOT/image_pool"
 	"sync"
 	"time"
 )

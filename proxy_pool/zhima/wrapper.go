@@ -1,7 +1,7 @@
 package zhima
 
 import (
-	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
+	"github.com/Sora233/DDBOT/proxy_pool"
 	zhima_proxy_pool "github.com/Sora233/zhima-proxy-pool"
 	"sync"
 )

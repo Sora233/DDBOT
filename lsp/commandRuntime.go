@@ -3,7 +3,7 @@ package lsp
 import (
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
-	"github.com/Sora233/Sora233-MiraiGo/lsp/command"
+	"github.com/Sora233/DDBOT/lsp/command"
 	"github.com/alecthomas/kong"
 	"strings"
 )

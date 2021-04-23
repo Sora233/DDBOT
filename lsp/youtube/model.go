@@ -2,7 +2,7 @@ package youtube
 
 import (
 	"encoding/json"
-	"github.com/Sora233/Sora233-MiraiGo/concern"
+	"github.com/Sora233/DDBOT/concern"
 )
 
 type UserInfo struct {

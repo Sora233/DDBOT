@@ -2,7 +2,7 @@ package utils
 
 import (
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/Sora233-MiraiGo/concern"
+	"github.com/Sora233/DDBOT/concern"
 	pq "github.com/jupp0r/go-priority-queue"
 	"sync"
 	"time"

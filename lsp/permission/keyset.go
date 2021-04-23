@@ -1,6 +1,6 @@
 package permission
 
-import "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
+import "github.com/Sora233/DDBOT/lsp/buntdb"
 
 type KeySet struct{}
 

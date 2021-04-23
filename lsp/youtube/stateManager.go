@@ -2,8 +2,8 @@ package youtube
 
 import (
 	"encoding/json"
-	localdb "github.com/Sora233/Sora233-MiraiGo/lsp/buntdb"
-	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/tidwall/buntdb"
 	"time"
 )

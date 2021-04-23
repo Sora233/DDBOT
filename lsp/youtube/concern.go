@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/Sora233-MiraiGo/concern"
-	"github.com/Sora233/Sora233-MiraiGo/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_manager"
 )
 
 var logger = utils.GetModuleLogger("youtube")

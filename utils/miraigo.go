@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/Sora233-MiraiGo/proxy_pool"
+	"github.com/Sora233/DDBOT/proxy_pool"
 )
 
 func MessageFilter(msg []message.IMessageElement, filter func(message.IMessageElement) bool) []message.IMessageElement {

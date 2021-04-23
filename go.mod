@@ -1,4 +1,4 @@
-module github.com/Sora233/Sora233-MiraiGo
+module github.com/Sora233/DDBOT
 
 go 1.15
 
