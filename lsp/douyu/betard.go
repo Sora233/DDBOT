@@ -30,7 +30,10 @@ func Betard(id int64) (*BetardResponse, error) {
 		return nil, err
 	}
 	betardResp := new(BetardResponse)
-	content := resp.Content()
+	content, err := resp.Content()
+	if err != nil {
+		return nil, err
+	}
 	err = json.Unmarshal(content, betardResp)
 	if err != nil {
 		if strings.Contains(string(content), "没有开放") {

@@ -33,7 +33,7 @@ func ImageGet(url string, prefer proxy_pool.Prefer, opt ...requests.Option) ([]b
 	if err != nil {
 		return nil, err
 	}
-	return resp.Content(), nil
+	return resp.Content()
 }
 
 func ImageNormSize(origImage []byte) ([]byte, error) {

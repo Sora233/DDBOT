@@ -55,7 +55,8 @@ func DynamicSrvDynamicNew() (*DynamicSvrDynamicNewResponse, error) {
 	dynamicNewResp := new(DynamicSvrDynamicNewResponse)
 	err = resp.Json(dynamicNewResp)
 	if err != nil {
-		logger.WithField("content", string(resp.Content())).Errorf("DynamicSrvDynamicNew response json failed")
+		content, _ := resp.Content()
+		logger.WithField("content", string(content)).Errorf("DynamicSrvDynamicNew response json failed")
 		return nil, err
 	}
 	if dynamicNewResp.Code == -412 && resp.Proxy != "" {

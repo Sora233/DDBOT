@@ -63,7 +63,8 @@ func GetRoomInfoOld(mid int64) (*GetRoomInfoOldResponse, error) {
 	grioResp := new(GetRoomInfoOldResponse)
 	err = resp.Json(grioResp)
 	if err != nil {
-		logger.WithField("content", string(resp.Content())).Errorf("GetRoomInfoOld response json failed")
+		content, _ := resp.Content()
+		logger.WithField("content", string(content)).Errorf("GetRoomInfoOld response json failed")
 		return nil, err
 	}
 	if grioResp.Code == -412 && resp.Proxy != "" {

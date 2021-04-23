@@ -38,7 +38,8 @@ func GetAttentionList() (*GetAttentionListResponse, error) {
 	getAttentionListResp := new(GetAttentionListResponse)
 	err = resp.Json(getAttentionListResp)
 	if err != nil {
-		logger.WithField("content", string(resp.Content())).Errorf("GetAttentionList response json failed")
+		content, _ := resp.Content()
+		logger.WithField("content", string(content)).Errorf("GetAttentionList response json failed")
 		return nil, err
 	}
 	if getAttentionListResp.Code == -412 && resp.Proxy != "" {

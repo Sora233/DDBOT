@@ -46,7 +46,8 @@ func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, err
 	spaceHistoryResp := new(DynamicSvrSpaceHistoryResponse)
 	err = resp.Json(spaceHistoryResp)
 	if err != nil {
-		logger.WithField("content", string(resp.Content())).Errorf("DynamicSrvSpaceHistory response json failed")
+		content, _ := resp.Content()
+		logger.WithField("content", string(content)).Errorf("DynamicSrvSpaceHistory response json failed")
 		return nil, err
 	}
 	if spaceHistoryResp.Code == -412 && resp.Proxy != "" {

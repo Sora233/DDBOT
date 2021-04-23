@@ -62,7 +62,10 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	content := resp.Content()
+	content, err := resp.Content()
+	if err != nil {
+		return nil, err
+	}
 	var reg *regexp.Regexp
 	if strings.Contains(string(content), `window["ytInitialData"]`) {
 		reg = regexp.MustCompile("window\\[\"ytInitialData\"\\] = (?P<json>.*);")
