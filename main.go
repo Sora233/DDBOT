@@ -10,6 +10,9 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+
+	_ "github.com/Sora233/DDBOT/logging"
+	_ "github.com/Sora233/DDBOT/lsp"
 )
 
 func init() {
