@@ -54,7 +54,7 @@ type Setu struct {
 }
 
 func (s *Setu) Content() ([]byte, error) {
-	return utils.ImageGet(s.Url, proxy_pool.PreferMainland)
+	return utils.ImageGet(s.Url, proxy_pool.PreferOversea, requests.HeaderOption("referer", "https://www.pixiv.net"))
 }
 
 type Response struct {
@@ -72,7 +72,7 @@ func LoliconAppSetu(apikey string, R18 R18Type, keyword string, num int) (*Respo
 		R18:      int(R18),
 		Keyword:  keyword,
 		Num:      num,
-		Proxy:    "i.pixiv.cat",
+		Proxy:    "disable",
 		Size1200: true,
 	})
 	if err != nil {

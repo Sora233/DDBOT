@@ -19,13 +19,17 @@ import (
 	"time"
 )
 
-func ImageGet(url string, prefer proxy_pool.Prefer) ([]byte, error) {
+func ImageGet(url string, prefer proxy_pool.Prefer, opt ...requests.Option) ([]byte, error) {
 	if url == "" {
 		return nil, errors.New("empty url")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
-	resp, err := requests.Get(ctx, url, nil, 3, requests.ProxyOption(prefer), requests.TimeoutOption(time.Second*5))
+
+	opts := []requests.Option{requests.ProxyOption(prefer), requests.TimeoutOption(time.Second * 5)}
+	opts = append(opts, opt...)
+
+	resp, err := requests.Get(ctx, url, nil, 3, opts...)
 	if err != nil {
 		return nil, err
 	}
