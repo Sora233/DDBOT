@@ -241,7 +241,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	}
 
 	if setuCmd.Tag != "" {
-		lgc.textReply("失败 - 搜索已禁用")
+		lgc.textReply("失败 - tag搜索已禁用")
 		return
 	}
 
