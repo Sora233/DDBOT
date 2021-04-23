@@ -235,10 +235,20 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		num = 1
 	}
 
-	if num <= 0 || num > 10 {
-		lgc.textReply("失败 - 数量范围为1-10")
+	if num != 1 {
+		lgc.textReply("失败 - 数量限制为1")
 		return
 	}
+
+	if setuCmd.Tag != "" {
+		lgc.textReply("失败 - 搜索已禁用")
+		return
+	}
+
+	//if num <= 0 || num > 10 {
+	//	lgc.textReply("失败 - 数量范围为1-10")
+	//	return
+	//}
 
 	var options []image_pool.OptionFunc
 	if r18 {
