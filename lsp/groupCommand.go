@@ -370,8 +370,9 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	wg.Wait()
 
 	log = log.WithField("search_num", searchNum).WithField("miss", missCount)
-
-	lgc.textReplyF("本次共查询到%v张图片，有%v张图片被吞了哦", searchNum, missCount)
+	if searchNum != num || missCount != 0 {
+		lgc.textReplyF("本次共查询到%v张图片，有%v张图片被吞了哦", searchNum, missCount)
+	}
 
 	return
 }
@@ -761,12 +762,11 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 	if disable {
 		err = lgc.l.PermissionStateManager.DisableGroupCommand(groupCode, enableCmd.Command)
 	} else {
-		err = lgc.l.PermissionStateManager.EnableGroupCommand(groupCode, enableCmd.Command)
 		if enableCmd.Command == ImageContentCommand {
 			// 要收钱了，不能白嫖了
-			time.AfterFunc(time.Hour*24, func() {
-				lgc.l.PermissionStateManager.DisableGroupCommand(groupCode, EnableCommand)
-			})
+			err = lgc.l.PermissionStateManager.EnableGroupCommand(groupCode, enableCmd.Command, permission.ExpireOption(time.Hour*24))
+		} else {
+			err = lgc.l.PermissionStateManager.EnableGroupCommand(groupCode, enableCmd.Command)
 		}
 	}
 	if err != nil {

@@ -38,6 +38,9 @@ func RTxCover(f func(tx *buntdb.Tx) error) error {
 }
 
 func ExpireOption(duration time.Duration) *buntdb.SetOptions {
+	if duration == 0 {
+		return nil
+	}
 	return &buntdb.SetOptions{
 		Expires: true,
 		TTL:     duration,

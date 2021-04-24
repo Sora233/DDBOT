@@ -17,7 +17,19 @@ type StateManager struct {
 	*KeySet
 }
 
-// true if blocked
+type commandOption struct {
+	duration time.Duration
+}
+
+type CommandOption func(c *commandOption)
+
+func ExpireOption(d time.Duration) CommandOption {
+	return func(c *commandOption) {
+		c.duration = d
+	}
+}
+
+// CheckBlockList return true if blocked
 func (c *StateManager) CheckBlockList(caller int64) bool {
 	var result bool
 	err := c.RTxCover(func(tx *buntdb.Tx) error {
@@ -117,10 +129,14 @@ func (c *StateManager) CheckGroupRole(groupCode int64, caller int64, role RoleTy
 	return result
 }
 
-func (c *StateManager) EnableGroupCommand(groupCode int64, command string) error {
+func (c *StateManager) EnableGroupCommand(groupCode int64, command string, opts ...CommandOption) error {
+	opt := new(commandOption)
+	for _, o := range opts {
+		o(opt)
+	}
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.GroupEnabledKey(groupCode, command)
-		prev, replaced, err := tx.Set(key, Enable, nil)
+		prev, replaced, err := tx.Set(key, Enable, localdb.ExpireOption(opt.duration))
 		if err != nil {
 			return err
 		}
@@ -131,10 +147,14 @@ func (c *StateManager) EnableGroupCommand(groupCode int64, command string) error
 	})
 }
 
-func (c *StateManager) DisableGroupCommand(groupCode int64, command string) error {
+func (c *StateManager) DisableGroupCommand(groupCode int64, command string, opts ...CommandOption) error {
+	opt := new(commandOption)
+	for _, o := range opts {
+		o(opt)
+	}
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.GroupEnabledKey(groupCode, command)
-		prev, replaced, err := tx.Set(key, Disable, nil)
+		prev, replaced, err := tx.Set(key, Disable, localdb.ExpireOption(opt.duration))
 		if err != nil {
 			return err
 		}
@@ -145,14 +165,14 @@ func (c *StateManager) DisableGroupCommand(groupCode int64, command string) erro
 	})
 }
 
-// explicit enabled, must exist
+// CheckGroupCommandEnabled check explicit enabled, must exist
 func (c *StateManager) CheckGroupCommandEnabled(groupCode int64, command string) bool {
 	return c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
 		return exist && val == Enable
 	})
 }
 
-// explicit disabled, must exist
+// CheckGroupCommandDisabled check explicit disabled, must exist
 func (c *StateManager) CheckGroupCommandDisabled(groupCode int64, command string) bool {
 	return c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
 		return exist && val == Disable
