@@ -286,7 +286,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			WithField("group_name", event.Group.Name).
 			WithField("member_count", event.Group.MemberCount).
 			Info("leave group")
-		l.RemoveAll(event.Group.Code)
+		l.RemoveAllByGroup(event.Group.Code)
 	})
 
 	bot.OnGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {
@@ -415,11 +415,11 @@ func (l *Lsp) FreshIndex() {
 	l.LspStateManager.FreshIndex()
 }
 
-func (l *Lsp) RemoveAll(groupCode int64) {
-	l.bilibiliConcern.RemoveAll(groupCode)
-	l.douyuConcern.RemoveAll(groupCode)
-	l.youtubeConcern.RemoveAll(groupCode)
-	l.PermissionStateManager.RemoveAll(groupCode)
+func (l *Lsp) RemoveAllByGroup(groupCode int64) {
+	l.bilibiliConcern.RemoveAllByGroupCode(groupCode)
+	l.douyuConcern.RemoveAllByGroupCode(groupCode)
+	l.youtubeConcern.RemoveAllByGroupCode(groupCode)
+	l.PermissionStateManager.RemoveAllByGroup(groupCode)
 }
 
 func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.Image, error) {

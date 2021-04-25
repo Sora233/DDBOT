@@ -100,9 +100,12 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 	if err != nil {
 		log.Errorf("get concern error %v", err)
 	} else if oldCtype.Empty() {
-		err = c.modifyUserRelation(mid, ActSub)
+		resp, err := c.modifyUserRelation(mid, ActSub)
 		if err != nil {
 			return nil, fmt.Errorf("关注用户失败 - 内部错误")
+		}
+		if resp.Code != 0 {
+			return nil, fmt.Errorf("关注用户失败 - %v", resp.GetMessage())
 		}
 	}
 
@@ -422,10 +425,10 @@ func (c *Concern) findUser(mid int64, load bool) (*UserInfo, error) {
 	return c.StateManager.GetUserInfo(mid)
 }
 
-func (c *Concern) modifyUserRelation(mid int64, act int) error {
+func (c *Concern) modifyUserRelation(mid int64, act int) (*RelationModifyResponse, error) {
 	resp, err := RelationModify(mid, act)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if resp.GetCode() != 0 {
 		logger.WithField("code", resp.GetCode()).
@@ -433,10 +436,10 @@ func (c *Concern) modifyUserRelation(mid int64, act int) error {
 			WithField("act", act).
 			WithField("mid", mid).
 			Errorf("modifyUserRelation error")
-		return fmt.Errorf("%v %v", resp.GetCode(), resp.GetMessage())
+	} else {
+		logger.WithField("mid", mid).WithField("act", act).Debug("modify relation")
 	}
-	logger.WithField("mid", mid).WithField("act", act).Debug("modify relation")
-	return nil
+	return resp, nil
 }
 
 func (c *Concern) syncSub() {
@@ -458,6 +461,7 @@ func (c *Concern) syncSub() {
 		midSet[id.(int64)] = true
 		return true
 	})
+
 	if err != nil {
 		logger.Errorf("syncSub List all error %v", err)
 		return
@@ -467,7 +471,14 @@ func (c *Concern) syncSub() {
 	}
 	for mid := range midSet {
 		if _, found := attentionMidSet[mid]; !found {
-			c.modifyUserRelation(mid, ActSub)
+			resp, err := c.modifyUserRelation(mid, ActSub)
+			if err == nil && resp.Code == 22002 {
+				// 可能是被拉黑了
+				logger.WithField("modifyUserRelation Code", 22002).
+					WithField("mid", mid).
+					Errorf("modifyUserRelation failed, remove concern")
+				c.RemoveAllById(mid)
+			}
 			time.Sleep(time.Second * 3)
 		}
 	}

@@ -355,7 +355,7 @@ func (c *StateManager) RequireAny(option ...RequireOption) bool {
 	return false
 }
 
-func (c *StateManager) RemoveAll(groupCode int64) error {
+func (c *StateManager) RemoveAllByGroup(groupCode int64) error {
 	var deleteKey []string
 	err := c.RTxCover(func(tx *buntdb.Tx) error {
 		tx.Ascend(c.GroupPermissionKey(groupCode), func(key, value string) bool {

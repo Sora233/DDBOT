@@ -89,7 +89,7 @@ func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype
 	return
 }
 
-func (c *StateManager) RemoveAll(groupCode int64) (err error) {
+func (c *StateManager) RemoveAllByGroupCode(groupCode int64) (err error) {
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		var removeKey []string
 		var iterErr error
@@ -104,6 +104,28 @@ func (c *StateManager) RemoveAll(groupCode int64) (err error) {
 			tx.Delete(key)
 		}
 		tx.DropIndex(c.GroupConcernStateKey(groupCode))
+		return nil
+	})
+}
+
+func (c *StateManager) RemoveAllById(_id interface{}) (err error) {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
+		var removeKey []string
+		var iterErr error
+		iterErr = tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
+			var id interface{}
+			_, id, iterErr = c.ParseGroupConcernStateKey(key)
+			if id == _id {
+				removeKey = append(removeKey, key)
+			}
+			return true
+		})
+		if iterErr != nil {
+			return iterErr
+		}
+		for _, key := range removeKey {
+			tx.Delete(key)
+		}
 		return nil
 	})
 }
