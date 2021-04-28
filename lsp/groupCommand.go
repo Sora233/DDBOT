@@ -421,6 +421,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 
 	switch site {
 	case bilibili.Site:
+		id = strings.TrimLeft(id, "UID:")
 		mid, err := strconv.ParseInt(id, 10, 64)
 		if err != nil {
 			log.WithField("id", id).Errorf("not a int")
