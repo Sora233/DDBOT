@@ -1,0 +1,27 @@
+version: 2
+updates:
+- package-ecosystem: gomod
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "21:00"
+  open-pull-requests-limit: 10
+  reviewers:
+  - Sora233
+  ignore:
+  - dependency-name: github.com/aliyun/alibaba-cloud-sdk-go
+    versions:
+    - 1.61.885
+    - 1.61.888
+    - 1.61.902
+    - 1.61.905
+    - 1.61.913
+    - 1.61.946
+    - 1.61.950
+    - 1.61.957
+    - 1.61.962
+    - 1.61.968
+    - 1.61.971
+    - 1.61.976
+    - 1.61.977
+    - 1.61.979
