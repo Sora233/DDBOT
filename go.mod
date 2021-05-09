@@ -6,7 +6,7 @@ require (
 	github.com/Jeffail/gabs/v2 v2.6.0
 	github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486
 	github.com/Mrs4s/MiraiGo v0.0.0-20210304103008-effa2b84fe7a
-	github.com/Sora233/requests v0.0.0-20210426172519-01f5683ee5e8
+	github.com/Sora233/requests v0.0.0-20210509184157-15dc0c68eb92
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/Sora233/zhima-proxy-pool v0.0.0-20210124065344-04d96243cadd
 	github.com/alecthomas/kong v0.2.15
@@ -20,8 +20,8 @@ require (
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/lestrrat-go/strftime v1.0.4 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
-	github.com/tidwall/buntdb v1.2.3
 	github.com/sirupsen/logrus v1.8.1
+	github.com/tidwall/buntdb v1.2.3
 	gocv.io/x/gocv v0.26.0
 	golang.org/x/sys v0.0.0-20210223212115-eede4237b368 // indirect
 )

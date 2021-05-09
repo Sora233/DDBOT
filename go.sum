@@ -21,8 +21,8 @@ github.com/Mrs4s/MiraiGo v0.0.0-20210304103008-effa2b84fe7a/go.mod h1:drSlh4LlYt
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/Sora233/MiraiGo-Template v0.0.0-20210409132741-611440d4c59b h1:3adZUZlAW1rZnh73Hw4jA7ErTgtCcv/f/1KiAyL5Ok4=
 github.com/Sora233/MiraiGo-Template v0.0.0-20210409132741-611440d4c59b/go.mod h1:WedSdSuH/3cciTlsZBALaRzEwS5lgh68CwVmqaTAbz8=
-github.com/Sora233/requests v0.0.0-20210426172519-01f5683ee5e8 h1:ZfyEHyhqyafNRgiQ2NaVdBDfDIBpJ4Q+d1cpv8R/2e4=
-github.com/Sora233/requests v0.0.0-20210426172519-01f5683ee5e8/go.mod h1:k/QNjrV73zXkn1r3iG0rwZLc1naFS55Q67I/Wyo/UkI=
+github.com/Sora233/requests v0.0.0-20210509184157-15dc0c68eb92 h1:nXa3fxPTd7e90R78cst1ytbY09J9kcHfZDzky8O4Oj8=
+github.com/Sora233/requests v0.0.0-20210509184157-15dc0c68eb92/go.mod h1:k/QNjrV73zXkn1r3iG0rwZLc1naFS55Q67I/Wyo/UkI=
 github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882 h1:WXXRCSYXZsFd3ETkh+imU6Gz/Xdm0lXgAQILgBau0XY=
 github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882/go.mod h1:Ne6TKi7A5rdDza+cg+7YpXK1wJx7XdFZsJDqGG3lszI=
 github.com/Sora233/zhima-proxy-pool v0.0.0-20210124065344-04d96243cadd h1:927VLLVhRdw1nfgpyhyfuJUYmV9f9OgufxLBqQU529w=
