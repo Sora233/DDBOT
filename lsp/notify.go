@@ -402,7 +402,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					}
 				case bilibili.AddOnCardShowType_video:
 					ugcCard := addon.GetUgcAttachCard()
-					result = append(result, localutils.MessageTextf("\n附加视频：%v\n", ugcCard.GetTitle()))
+					result = append(result, localutils.MessageTextf("\n附加视频：\n%v\n", ugcCard.GetTitle()))
 					cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, ugcCard.GetImageUrl(), true, proxy_pool.PreferAny)
 					if err != nil {
 						log.WithField("pic", ugcCard.GetImageUrl()).Errorf("upload ugc cover failed %v", err)
