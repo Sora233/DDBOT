@@ -192,9 +192,10 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetPic(), true, proxy_pool.PreferAny)
 				if err != nil {
 					log.Errorf("upload video cover failed %v", err)
-					continue
+					result = append(result, message.NewText("[封面]\n"))
+				} else {
+					result = append(result, cover)
 				}
-				result = append(result, cover)
 			case bilibili.DynamicDescType_WithPost:
 				result = append(result, localutils.MessageTextf("%v转发了%v的专栏：\n%v\n%v\n\n原专栏：\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
 				origin := new(bilibili.CardWithPost)
@@ -212,9 +213,9 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				}
 				if err != nil {
 					log.Errorf("upload post cover failed %v", err)
-					continue
+				} else {
+					result = append(result, cover)
 				}
-				result = append(result, cover)
 			case bilibili.DynamicDescType_WithMusic:
 				// TODO
 				result = append(result, localutils.MessageTextf("%v转发了%v的动态音乐：\n%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
@@ -241,9 +242,10 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetCover(), false, proxy_pool.PreferAny)
 				if err != nil {
 					log.Errorf("upload live cover failed %v", err)
-					continue
+					result = append(result, message.NewText("[封面]\n"))
+				} else {
+					result = append(result, groupImage)
 				}
-				result = append(result, groupImage)
 			case bilibili.DynamicDescType_WithLiveV2:
 				result = append(result, localutils.MessageTextf("%v分享了%v的直播：\n%v\n%v\n\n原直播间：\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
 				origin := new(bilibili.CardWithLiveV2)
@@ -256,9 +258,9 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetLivePlayInfo().GetCover(), false, proxy_pool.PreferAny)
 				if err != nil {
 					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("upload liveV2 cover failed %v", err)
-					continue
+				} else {
+					result = append(result, groupImage)
 				}
-				result = append(result, groupImage)
 			case bilibili.DynamicDescType_WithMiss:
 				result = append(result, localutils.MessageTextf("%v分享了动态：\n%v\n%v\n\n%v\n", notify.Name, date, cardOrigin.GetItem().GetContent(), cardOrigin.GetItem().GetTips()))
 			default:
@@ -297,9 +299,9 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, cardVideo.GetPic(), true, proxy_pool.PreferAny)
 			if err != nil {
 				log.WithField("pic", cardVideo.GetPic()).Errorf("upload video cover failed %v", err)
-				continue
+			} else {
+				result = append(result, cover)
 			}
-			result = append(result, cover)
 		case bilibili.DynamicDescType_WithPost:
 			cardPost, err := notify.GetCardWithPost(index)
 			if err != nil {
@@ -317,9 +319,9 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				log.WithField("image_url", cardPost.GetImageUrls()).
 					WithField("banner_url", cardPost.GetBannerUrl()).
 					Errorf("upload image failed %v", err)
-				continue
+			} else {
+				result = append(result, cover)
 			}
-			result = append(result, cover)
 		case bilibili.DynamicDescType_WithMusic:
 			// TODO
 			log.Debugf("not supported")
@@ -344,10 +346,12 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			result = append(result, localutils.MessageTextf("%v发布了直播信息：\n%v\n%v\n", notify.Name, date, cardLive.GetTitle()))
 			cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, cardLive.GetCover(), true, proxy_pool.PreferAny)
 			if err != nil {
-				log.WithField("pic", cardLive.GetCover()).Errorf("upload live cover failed %v", err)
-				continue
+				log.WithField("pic", cardLive.GetCover()).
+					Errorf("upload live cover failed %v", err)
+				result = append(result, message.NewText("[封面]\n"))
+			} else {
+				result = append(result, cover)
 			}
-			result = append(result, cover)
 		case bilibili.DynamicDescType_WithLiveV2:
 			cardLiveV2, err := notify.GetCardWithLiveV2(index)
 			if err != nil {
@@ -359,10 +363,12 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			result = append(result, localutils.MessageTextf("%v发布了直播信息：\n%v\n%v\n", notify.Name, date, cardLiveV2.GetLivePlayInfo().GetTitle()))
 			cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, cardLiveV2.GetLivePlayInfo().GetCover(), true, proxy_pool.PreferAny)
 			if err != nil {
-				log.WithField("pic", cardLiveV2.GetLivePlayInfo().GetCover()).Errorf("upload live cover failed %v", err)
-				continue
+				log.WithField("pic", cardLiveV2.GetLivePlayInfo().GetCover()).
+					Errorf("upload live cover failed %v", err)
+				result = append(result, message.NewText("[封面]\n"))
+			} else {
+				result = append(result, cover)
 			}
-			result = append(result, cover)
 		case bilibili.DynamicDescType_WithMiss:
 			cardWithMiss, err := notify.GetCardWithOrig(index)
 			if err != nil {
@@ -406,6 +412,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, ugcCard.GetImageUrl(), true, proxy_pool.PreferAny)
 					if err != nil {
 						log.WithField("pic", ugcCard.GetImageUrl()).Errorf("upload ugc cover failed %v", err)
+						result = append(result, message.NewText("[封面]\n"))
 					} else {
 						result = append(result, cover)
 					}
