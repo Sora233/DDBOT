@@ -293,7 +293,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				log.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
 				continue
 			}
-			result = append(result, localutils.MessageTextf("%v发布了新视频：\n%v\n%v\n%v\n", notify.Name, date, cardVideo.GetTitle(), cardVideo.GetDynamic()))
+			result = append(result, localutils.MessageTextf("%v%v：\n%v\n%v\n%v\n", notify.Name, card.GetDisplay().GetUsrActionTxt(), date, cardVideo.GetTitle(), cardVideo.GetDynamic()))
 			cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, cardVideo.GetPic(), true, proxy_pool.PreferAny)
 			if err != nil {
 				log.WithField("pic", cardVideo.GetPic()).Errorf("upload video cover failed %v", err)
@@ -378,27 +378,44 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 		}
 
 		// 2021/04/16发现了有新增一个预约卡片
-		for _, addon := range card.GetDisplay().GetAddOnCardInfo() {
-			switch addon.AddOnCardShowType {
-			case bilibili.AddOnCardShowType_reserve:
-				result = append(result, localutils.MessageTextf("\n附加信息：\n%v\n%v\n", addon.GetReserveAttachCard().GetTitle(), addon.GetReserveAttachCard().GetDescFirst().GetText()))
-			case bilibili.AddOnCardShowType_game, bilibili.AddOnCardShowType_match:
-			// TODO 暂时没必要
-			case bilibili.AddOnCardShowType_vote:
-				textCard := new(bilibili.Card_Display_AddOnCardInfo_TextVoteCard)
-				if err := json.Unmarshal([]byte(addon.GetVoteCard()), textCard); err == nil {
-					result = append(result, message.NewText("\n附加信息：\n选项：\n"))
-					for _, opt := range textCard.GetOptions() {
-						result = append(result, localutils.MessageTextf("%v - %v\n", opt.GetIdx(), opt.GetDesc()))
+		for _, addons := range [][]*bilibili.Card_Display_AddOnCardInfo{
+			card.GetDisplay().GetAddOnCardInfo(),
+			card.GetDisplay().GetOrigin().GetAddOnCardInfo(),
+		} {
+			for _, addon := range addons {
+				switch addon.AddOnCardShowType {
+				case bilibili.AddOnCardShowType_reserve:
+					result = append(result, localutils.MessageTextf("\n附加信息：\n%v\n%v\n",
+						addon.GetReserveAttachCard().GetTitle(),
+						addon.GetReserveAttachCard().GetDescFirst().GetText()))
+				case bilibili.AddOnCardShowType_game, bilibili.AddOnCardShowType_match:
+				// TODO 暂时没必要
+				case bilibili.AddOnCardShowType_vote:
+					textCard := new(bilibili.Card_Display_AddOnCardInfo_TextVoteCard)
+					if err := json.Unmarshal([]byte(addon.GetVoteCard()), textCard); err == nil {
+						result = append(result, message.NewText("\n附加信息：\n选项：\n"))
+						for _, opt := range textCard.GetOptions() {
+							result = append(result, localutils.MessageTextf("%v - %v\n", opt.GetIdx(), opt.GetDesc()))
+						}
+					} else {
+						log.WithField("content", addon.GetVoteCard()).Info("found new VoteCard")
 					}
-				} else {
-					log.WithField("content", addon.VoteCard).Info("found new VoteCard")
-				}
-			default:
-				if b, err := json.Marshal(card.GetDisplay()); err != nil {
-					log.WithField("content", card).Errorf("found new AddOnCardShowType but marshal failed %v", err)
-				} else {
-					log.WithField("content", string(b)).Info("found new AddOnCardShowType")
+				case bilibili.AddOnCardShowType_video:
+					ugcCard := addon.GetUgcAttachCard()
+					result = append(result, localutils.MessageTextf("\n附加视频：%v\n", ugcCard.GetTitle()))
+					cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, ugcCard.GetImageUrl(), true, proxy_pool.PreferAny)
+					if err != nil {
+						log.WithField("pic", ugcCard.GetImageUrl()).Errorf("upload ugc cover failed %v", err)
+					} else {
+						result = append(result, cover)
+					}
+					result = append(result, localutils.MessageTextf("%v\n%v\n", ugcCard.GetDescSecond(), ugcCard.GetPlayUrl()))
+				default:
+					if b, err := json.Marshal(card.GetDisplay()); err != nil {
+						log.WithField("content", card).Errorf("found new AddOnCardShowType but marshal failed %v", err)
+					} else {
+						log.WithField("content", string(b)).Info("found new AddOnCardShowType")
+					}
 				}
 			}
 		}

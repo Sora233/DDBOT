@@ -47,8 +47,9 @@ enum AddOnCardShowType {
   AddOnCardShowTypeUnknown = 0;
   game = 2;
   vote = 3;
-  match = 4; // lpl比赛
-  reserve = 6;
+  match = 4; // 比赛
+  video = 5; // 视频
+  reserve = 6; // 直播预约
 }
 
 message RoomInitResponse {
@@ -166,6 +167,14 @@ message Card {
       }
       repeated EmojiDetail emoji_details = 1;
     }
+    message LikeInfo {
+      message LikeUser {
+        int64 uid = 1;
+        string name = 2;
+      }
+      string display_text = 1;
+      repeated LikeUser like_users = 2;
+    }
     // 动态下面附加一个信息
     message AddOnCardInfo {
       // 附加预约信息
@@ -220,17 +229,36 @@ message Card {
         int64 uid = 10;
         int64 vote_id = 11;
       }
+      message UgcAttachCard {
+        string type = 1; // ugc
+        string head_text = 2;
+        string title = 3;
+        string image_url = 4;
+        string desc_second = 5;
+        string play_url = 6;
+        string duration = 7;
+        bool multi_line = 8;
+        string oid_str = 9;
+      }
       AddOnCardShowType add_on_card_show_type = 1;
       ReserveAttachCard reserve_attach_card = 2;
       AttachCard attach_card = 3;
       string vote_card = 4;
+      UgcAttachCard ugc_attach_card = 5;
     }
     message Origin {
       EmojiInfo emoji_info = 1;
+      LikeInfo like_info = 2;
+      Origin origin = 3;
+      repeated AddOnCardInfo add_on_card_info = 4;
+      string usr_action_txt = 5;
     }
     EmojiInfo emoji_info = 1;
-    Origin origin = 2;
-    repeated AddOnCardInfo add_on_card_info = 3; // 可能是新增的功能，会在动态下面加一个小卡片，目前如预约直播显示信息，发起投票的投票内容缩略，游戏官方动态下面的相关游戏
+    LikeInfo like_info = 2;
+    Origin origin = 3;
+    // 可能是新增的功能，会在动态下面加一个小卡片，目前如预约直播显示信息，发起投票的投票内容缩略，游戏官方动态下面的相关游戏
+    repeated AddOnCardInfo add_on_card_info = 4;
+    string usr_action_txt = 5;
   }
   string card = 1;
   Desc desc = 2;
