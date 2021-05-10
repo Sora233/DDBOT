@@ -1204,7 +1204,7 @@ func (lgc *LspGroupCommand) privateSend(msg *message.SendingMessage) {
 	if lgc.msg.Sender.IsFriend {
 		lgc.bot.SendPrivateMessage(lgc.uin(), msg)
 	} else {
-		lgc.bot.SendTempMessage(lgc.groupCode(), lgc.uin(), msg)
+		lgc.bot.SendGroupTempMessage(lgc.groupCode(), lgc.uin(), msg)
 	}
 }
 

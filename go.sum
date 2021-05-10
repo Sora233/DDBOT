@@ -18,6 +18,8 @@ github.com/Jeffail/gabs/v2 v2.6.0 h1:WdCnGaDhNa4LSRTMwhLZzJ7SRDXjABNP13SOKvCpL5w
 github.com/Jeffail/gabs/v2 v2.6.0/go.mod h1:xCn81vdHKxFUuWWAaD5jCTQDNPBMh5pPs9IJ+NcziBI=
 github.com/Mrs4s/MiraiGo v0.0.0-20210304103008-effa2b84fe7a h1:7mc+NYNEQsHsodQR4XxODpHhV5/u3Hxb4W2OWsPiM6o=
 github.com/Mrs4s/MiraiGo v0.0.0-20210304103008-effa2b84fe7a/go.mod h1:drSlh4LlYtjOMJxirScUCSnylBKi1NIRxUz7TKdSsNs=
+github.com/Mrs4s/MiraiGo v0.0.0-20210503094755-b12e45fea93c h1:6Nyn1XkDM7E3VOVg1yrWFEui7vm2SmGQbiY8WoJ+9U4=
+github.com/Mrs4s/MiraiGo v0.0.0-20210503094755-b12e45fea93c/go.mod h1:NjiWhlvGxwv1ftOWIoiFa/OzklnAYI4YqNexFOKSZKw=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/Sora233/MiraiGo-Template v0.0.0-20210409132741-611440d4c59b h1:3adZUZlAW1rZnh73Hw4jA7ErTgtCcv/f/1KiAyL5Ok4=
 github.com/Sora233/MiraiGo-Template v0.0.0-20210409132741-611440d4c59b/go.mod h1:WedSdSuH/3cciTlsZBALaRzEwS5lgh68CwVmqaTAbz8=

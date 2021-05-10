@@ -1,11 +1,11 @@
 module github.com/Sora233/DDBOT
 
-go 1.15
+go 1.16
 
 require (
 	github.com/Jeffail/gabs/v2 v2.6.0
 	github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486
-	github.com/Mrs4s/MiraiGo v0.0.0-20210304103008-effa2b84fe7a
+	github.com/Mrs4s/MiraiGo v0.0.0-20210503094755-b12e45fea93c
 	github.com/Sora233/requests v0.0.0-20210509184157-15dc0c68eb92
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/Sora233/zhima-proxy-pool v0.0.0-20210124065344-04d96243cadd
