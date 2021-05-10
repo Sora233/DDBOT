@@ -13,7 +13,7 @@ require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.975
 	github.com/davecgh/go-spew v1.1.1
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
-	github.com/golang/protobuf v1.4.3
+	github.com/golang/protobuf v1.5.2
 	github.com/imroc/req v0.3.0
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jupp0r/go-priority-queue v0.0.0-20160601094913-ab1073853bde
