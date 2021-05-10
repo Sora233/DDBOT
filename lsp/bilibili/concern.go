@@ -3,6 +3,7 @@ package bilibili
 import (
 	"errors"
 	"fmt"
+	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
@@ -228,7 +229,7 @@ func (c *Concern) notifyLoop() {
 }
 
 func (c *Concern) watchCore() {
-	t := time.NewTimer(time.Second * 30)
+	t := time.NewTimer(config.GlobalConfig.GetDuration("bilibili.interval"))
 	var wg sync.WaitGroup
 	for {
 		<-t.C
@@ -312,7 +313,7 @@ func (c *Concern) watchCore() {
 			}
 		}()
 		wg.Wait()
-		t.Reset(time.Second * 30)
+		t.Reset(config.GlobalConfig.GetDuration("bilibili.interval"))
 		end := time.Now()
 		logger.WithField("cost", end.Sub(start)).Debug("watchCore loop done")
 	}

@@ -57,6 +57,7 @@ bot:
 bilibili:
   SESSDATA: ""
   bili_jct: ""
+  interval: 30s # 直播状态和动态检测间隔，过快可能导致ip被暂时封禁
 
 
 moderatecontent:
