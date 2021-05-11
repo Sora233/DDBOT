@@ -24,6 +24,7 @@ import (
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/sirupsen/logrus"
+	"github.com/tidwall/buntdb"
 	"os"
 	"path"
 	"strings"
@@ -389,6 +390,19 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 }
 
 func (l *Lsp) checkImage(img *message.ImageElement) string {
+	var cacheLabel string
+	localdb.RTxCover(func(tx *buntdb.Tx) error {
+		key := localdb.ImageCacheKey(string(img.Md5))
+		val, err := tx.Get(key)
+		if err == nil {
+			cacheLabel = val
+		}
+		return nil
+	})
+	if len(cacheLabel) != 0 {
+		logger.WithField("label", cacheLabel).Debug("detect cache")
+		return cacheLabel
+	}
 	resp, err := aliyun.Audit(img.Url)
 	if err != nil {
 		logger.Errorf("aliyun request error %v", err)
@@ -404,7 +418,13 @@ func (l *Lsp) checkImage(img *message.ImageElement) string {
 	logger.WithField("label", resp.Data.Results[0].SubResults[0].Label).
 		WithField("rate", resp.Data.Results[0].SubResults[0].Rate).
 		Debug("detect done")
-	return resp.Data.Results[0].SubResults[0].Label
+	label := resp.Data.Results[0].SubResults[0].Label
+	localdb.RWTxCover(func(tx *buntdb.Tx) error {
+		key := localdb.ImageCacheKey(string(img.Md5))
+		_, _, err := tx.Set(key, label, localdb.ExpireOption(time.Hour*72))
+		return err
+	})
+	return label
 }
 
 func (l *Lsp) FreshIndex() {

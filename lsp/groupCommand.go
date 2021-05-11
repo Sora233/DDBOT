@@ -1019,13 +1019,17 @@ func (lgc *LspGroupCommand) ImageContent() {
 	for _, e := range lgc.msg.Elements {
 		if e.Type() == message.Image {
 			if img, ok := e.(*message.ImageElement); ok {
-				rating := lgc.l.checkImage(img)
-				if rating == aliyun.SceneSexy {
-					lgc.textReply("就这")
-					return
-				} else if rating == aliyun.ScenePorn {
-					lgc.textReply("多发点")
-					return
+				if rand.Int()%2 == 0 {
+					rating := lgc.l.checkImage(img)
+					if rating == aliyun.SceneSexy {
+						lgc.textReply("就这")
+						return
+					} else if rating == aliyun.ScenePorn {
+						lgc.textReply("多发点")
+						return
+					}
+				} else {
+					log.Debug("random skip")
 				}
 			} else {
 				log.Error("can not cast element to ImageElement")
