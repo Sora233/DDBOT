@@ -380,8 +380,25 @@ message CardWithPost {
   int64 publish_time = 5;
 }
 
-// TODO
-message CardWithMusic {}
+message CardWithMusic {
+  string author = 1;
+  string cover = 2;
+  int64 ctime = 3;
+  int64 id = 4;
+  string intro = 5;
+  message Item {
+    string at_control = 1;
+  }
+  Item item = 6;
+  int64 playCnt = 7;
+  int64 replyCnt = 8;
+  string schema = 9;
+  string title = 10;
+  string typeInfo = 11;
+  int64 upId = 12;
+  string upper = 13;
+  string upperAvatar = 14;
+}
 
 message CardWithAnime {
   message ApiSeasonInfo {

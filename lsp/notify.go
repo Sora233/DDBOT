@@ -212,13 +212,35 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					cover, err = localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetBannerUrl(), false, proxy_pool.PreferAny)
 				}
 				if err != nil {
-					log.Errorf("upload post cover failed %v", err)
+					log.WithField("image_url", origin.GetImageUrls()).
+						WithField("banner_url", origin.GetBannerUrl()).
+						Errorf("upload image failed %v", err)
 				} else {
 					result = append(result, cover)
 				}
 			case bilibili.DynamicDescType_WithMusic:
-				// TODO
-				result = append(result, localutils.MessageTextf("%v转发了%v的动态音乐：\n%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+				origin := new(bilibili.CardWithMusic)
+				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
+				if err != nil {
+					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithMusic failed %v", err)
+					continue
+				}
+				result = append(result, localutils.MessageTextf(
+					"%v转发了%v的音频：\n%v\n%v\n\n原音频：\n",
+					notify.Name,
+					originName,
+					date,
+					cardOrigin.GetItem().GetContent(),
+				))
+				result = append(result, localutils.MessageTextf("%v\n%v\n", origin.GetTitle(), origin.GetIntro()))
+				if len(origin.GetCover()) != 0 {
+					cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetCover(), false, proxy_pool.PreferAny)
+					if err != nil {
+						log.WithField("cover", origin.GetCover()).Errorf("upload music cover failed %v", err)
+					} else {
+						result = append(result, cover)
+					}
+				}
 			case bilibili.DynamicDescType_WithAnime:
 				origin := new(bilibili.CardWithAnime)
 				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
@@ -323,9 +345,26 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				result = append(result, cover)
 			}
 		case bilibili.DynamicDescType_WithMusic:
-			// TODO
-			log.Debugf("not supported")
-			result = append(result, localutils.MessageTextf("%v发布了新动态音乐：\n%v\n", notify.Name, date))
+			cardMusic, err := notify.GetCardWithMusic(index)
+			if err != nil {
+				log.WithField("name", notify.Name).
+					WithField("card", card).
+					Errorf("cast failed %v", err)
+				continue
+			}
+			result = append(result, localutils.MessageTextf(
+				"%v投稿了新音频：\n%v\n%v\n%v\n",
+				notify.Name,
+				date,
+				cardMusic.GetTitle(),
+				cardMusic.GetIntro(),
+			))
+			cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, cardMusic.GetCover(), false, proxy_pool.PreferAny)
+			if err != nil {
+				log.WithField("cover", cardMusic.GetCover()).Errorf("upload image failed %v", err)
+			} else {
+				result = append(result, cover)
+			}
 		case bilibili.DynamicDescType_WithSketch:
 			cardSketch, err := notify.GetCardWithSketch(index)
 			if err != nil {
@@ -334,7 +373,14 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					Errorf("cast failed %v", err)
 				continue
 			}
-			result = append(result, localutils.MessageTextf("%v发表了新动态：\n%v\n%v\n内容：%v - %v", notify.Name, date, cardSketch.GetVest().GetContent(), cardSketch.GetSketch().GetTitle(), cardSketch.GetSketch().GetDescText()))
+			result = append(result, localutils.MessageTextf(
+				"%v发表了新动态：\n%v\n%v\n内容：%v - %v",
+				notify.Name,
+				date,
+				cardSketch.GetVest().GetContent(),
+				cardSketch.GetSketch().GetTitle(),
+				cardSketch.GetSketch().GetDescText(),
+			))
 		case bilibili.DynamicDescType_WithLive:
 			cardLive, err := notify.GetCardWithLive(index)
 			if err != nil {
