@@ -25,6 +25,7 @@ import (
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
+	"math/rand"
 	"os"
 	"path"
 	"strings"
@@ -402,6 +403,10 @@ func (l *Lsp) checkImage(img *message.ImageElement) string {
 	if len(cacheLabel) != 0 {
 		logger.WithField("label", cacheLabel).Debug("detect cache")
 		return cacheLabel
+	}
+	if rand.Int()%2 == 0 {
+		logger.Tracef("random skip")
+		return ""
 	}
 	resp, err := aliyun.Audit(img.Url)
 	if err != nil {
