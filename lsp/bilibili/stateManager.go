@@ -164,6 +164,14 @@ func (c *StateManager) SetUidFirstTimestamp(uid int64, timestamp int64) error {
 	})
 }
 
+func (c *StateManager) UnsetUidFirstTimestamp(uid int64) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
+		key := c.UidFirstTimestamp(uid)
+		_, err := tx.Delete(key)
+		return err
+	})
+}
+
 func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err error) {
 	c.RTxCover(func(tx *buntdb.Tx) error {
 		key := c.UidFirstTimestamp(uid)

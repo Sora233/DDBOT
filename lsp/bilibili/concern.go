@@ -146,6 +146,10 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 			logger.WithField("mid", mid).Debug("empty state, unsub")
 			c.modifyUserRelation(mid, ActUnsub)
 		}
+		err = c.UnsetUidFirstTimestamp(mid)
+		if err != nil {
+			logger.WithField("mid", mid).Errorf("UnsetUidFirstTimestamp error %v", err)
+		}
 	}
 	return newCtype, err
 }
