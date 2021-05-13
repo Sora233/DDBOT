@@ -371,10 +371,13 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	}())
 }
 
-func (l *Lsp) Start(bot *bot.Bot) {
+func (l *Lsp) PostStart(bot *bot.Bot) {
 	l.bilibiliConcern.Start()
 	l.douyuConcern.Start()
 	l.youtubeConcern.Start()
+}
+
+func (l *Lsp) Start(bot *bot.Bot) {
 	go l.ConcernNotify(bot)
 }
 

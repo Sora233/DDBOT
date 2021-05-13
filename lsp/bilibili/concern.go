@@ -237,7 +237,7 @@ func (c *Concern) notifyLoop() {
 }
 
 func (c *Concern) watchCore() {
-	t := time.NewTimer(config.GlobalConfig.GetDuration("bilibili.interval"))
+	t := time.NewTimer(time.Second * 3)
 	var wg sync.WaitGroup
 	for {
 		<-t.C
