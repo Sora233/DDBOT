@@ -20,15 +20,15 @@ func (p *Proxy) Prefer() proxy_pool.Prefer {
 
 type Pool struct {
 	proxies   map[proxy_pool.Prefer][]*Proxy
-	cnt       map[proxy_pool.Prefer]*int64
+	cnt       map[proxy_pool.Prefer]*uint32
 	total     int
-	preferCnt int64
+	preferCnt uint32
 }
 
 func (p *Pool) Get(prefer proxy_pool.Prefer) (proxy_pool.IProxy, error) {
 	if prefer == proxy_pool.PreferAny {
-		cnt := atomic.AddInt64(&p.preferCnt, 1) % int64(len(p.proxies))
-		var index int64 = 0
+		cnt := atomic.AddUint32(&p.preferCnt, 1) % uint32(len(p.proxies))
+		var index uint32 = 0
 		for k := range p.proxies {
 			if index == cnt {
 				prefer = k
@@ -41,8 +41,8 @@ func (p *Pool) Get(prefer proxy_pool.Prefer) (proxy_pool.IProxy, error) {
 	if s, found := p.proxies[prefer]; !found {
 		return nil, errors.New("no proxy found")
 	} else {
-		index := atomic.AddInt64(p.cnt[prefer], 1)
-		return s[index%int64(len(s))], nil
+		index := atomic.AddUint32(p.cnt[prefer], 1)
+		return s[index%uint32(len(s))], nil
 	}
 }
 
@@ -57,13 +57,13 @@ func (p *Pool) Stop() error {
 func NewLocalPool(proxies []*Proxy) *Pool {
 	pool := &Pool{
 		proxies: make(map[proxy_pool.Prefer][]*Proxy),
-		cnt:     make(map[proxy_pool.Prefer]*int64),
+		cnt:     make(map[proxy_pool.Prefer]*uint32),
 		total:   len(proxies),
 	}
 	for _, proxy := range proxies {
 		if _, found := pool.proxies[proxy.Type]; !found {
 			pool.proxies[proxy.Type] = make([]*Proxy, 0)
-			pool.cnt[proxy.Type] = new(int64)
+			pool.cnt[proxy.Type] = new(uint32)
 		}
 		pool.proxies[proxy.Type] = append(pool.proxies[proxy.Type], proxy)
 	}
