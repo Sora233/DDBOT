@@ -145,7 +145,7 @@ message Card {
     int32 like = 6;
     int32 view = 7;
     int32 repost = 8;
-    int32 timestamp = 9;
+    int64 timestamp = 9;
     DynamicDescType type = 10;
     string bvid = 11;
     string dynamic_id_str = 12;

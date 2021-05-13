@@ -7,6 +7,7 @@ import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/tidwall/buntdb"
+	"strconv"
 	"time"
 )
 
@@ -150,6 +151,28 @@ func (c *StateManager) MarkDynamicId(dynamic int64) (replaced bool, err error) {
 	c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.DynamicIdKey(dynamic)
 		_, replaced, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*48))
+		return err
+	})
+	return
+}
+
+func (c *StateManager) SetUidFirstTimestamp(uid int64, timestamp int64) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
+		key := c.UidFirstTimestamp(uid)
+		_, _, err := tx.Set(key, strconv.FormatInt(timestamp, 10), nil)
+		return err
+	})
+}
+
+func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err error) {
+	c.RTxCover(func(tx *buntdb.Tx) error {
+		key := c.UidFirstTimestamp(uid)
+		var tsStr string
+		tsStr, err = tx.Get(key)
+		if err != nil {
+			return err
+		}
+		timestamp, err = strconv.ParseInt(tsStr, 10, 64)
 		return err
 	})
 	return

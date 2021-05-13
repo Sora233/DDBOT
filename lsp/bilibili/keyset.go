@@ -35,6 +35,10 @@ func (k *extraKey) DynamicIdKey(keys ...interface{}) string {
 	return buntdb.BilibiliDynamicIdKey(keys...)
 }
 
+func (k *extraKey) UidFirstTimestamp(keys ...interface{}) string {
+	return buntdb.BilibiliUidFirstTimestampKey(keys...)
+}
+
 func NewKeySet() *keySet {
 	return &keySet{}
 }

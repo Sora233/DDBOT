@@ -115,6 +115,10 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 		log.Errorf("AddGroupConcern error %v", err)
 		return nil, fmt.Errorf("关注用户失败 - 内部错误")
 	}
+	err = c.StateManager.SetUidFirstTimestamp(mid, time.Now().Add(-time.Second*30).Unix())
+	if err != nil {
+		log.Errorf("SetUidFirstTimestamp failed %v", err)
+	}
 
 	userInfo := NewUserInfo(
 		mid,
@@ -331,16 +335,17 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 			Errorf("fresh dynamic new failed")
 		return nil, errors.New(resp.Message)
 	}
-	now := time.Now()
 	for _, card := range resp.GetData().GetCards() {
 		uid := card.GetDesc().GetUid()
-		t := time.Unix(int64(card.GetDesc().GetTimestamp()), 0)
 		replaced, err := c.MarkDynamicId(card.GetDesc().GetDynamicId())
 		if err != nil || replaced {
 			continue
 		}
-		if t.Add(time.Second * 90).Before(now) {
-			// TODO 观察一下有审核的情况
+		ts, err := c.StateManager.GetUidFirstTimestamp(uid)
+		if err == nil && card.GetDesc().GetTimestamp() < ts {
+			logger.WithField("uid", uid).
+				WithField("dynamicId", card.GetDesc().GetDynamicIdStr()).
+				Debugf("past news skip")
 			continue
 		}
 		newsMap[uid] = append(newsMap[uid], card)

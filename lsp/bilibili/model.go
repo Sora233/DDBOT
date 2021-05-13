@@ -9,7 +9,7 @@ import (
 type NewsInfo struct {
 	UserInfo
 	LastDynamicId int64   `json:"last_dynamic_id"`
-	Timestamp     int32   `json:"timestamp"`
+	Timestamp     int64   `json:"timestamp"`
 	Cards         []*Card `json:"-"`
 }
 
@@ -207,7 +207,7 @@ func NewLiveInfo(userInfo *UserInfo, liveTitle string, cover string, status Live
 	}
 }
 
-func NewNewsInfo(userInfo *UserInfo, dynamicId int64, timestamp int32) *NewsInfo {
+func NewNewsInfo(userInfo *UserInfo, dynamicId int64, timestamp int64) *NewsInfo {
 	if userInfo == nil {
 		return nil
 	}
@@ -220,7 +220,7 @@ func NewNewsInfo(userInfo *UserInfo, dynamicId int64, timestamp int32) *NewsInfo
 
 func NewNewsInfoWithDetail(userInfo *UserInfo, cards []*Card) *NewsInfo {
 	var dynamicId int64
-	var timestamp int32
+	var timestamp int64
 	if len(cards) > 0 {
 		dynamicId = cards[0].GetDesc().GetDynamicId()
 		timestamp = cards[0].GetDesc().GetTimestamp()
