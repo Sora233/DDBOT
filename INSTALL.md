@@ -29,7 +29,6 @@ go build
 禁用gocv将导致face命令无法正常工作
 
 ```
-go mod edit -droprequire gocv.io/x/gocv
 go build -tags nocv
 ```
 
