@@ -14,7 +14,7 @@ type Parser struct {
 func (p *Parser) Parse(e []message.IMessageElement) {
 	for _, element := range e {
 		if te, ok := element.(*message.TextElement); ok {
-			text := strings.TrimSpace(te.Content)
+			text := strings.TrimSpace(strings.Replace(te.Content, " ", " ", -1))
 			if text == "" {
 				continue
 			}
