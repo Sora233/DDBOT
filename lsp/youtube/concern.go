@@ -39,28 +39,23 @@ func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Inf
 	return NewInfo(videoInfo), nil
 }
 
-func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernNotify, error) {
-	log := logger.WithField("group_code", groupCode).WithField("all", all)
-	var result []*ConcernNotify
+func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo, error) {
+	log := logger.WithField("group_code", groupCode)
 
 	ids, _, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
-		return p.ContainAny(concern.YoutubeLive)
+		return p.ContainAny(ctype)
 	})
 	if err != nil {
 		return nil, err
 	}
-	if len(ids) != 0 {
-		result = make([]*ConcernNotify, 0)
-	}
+	var result = make([]*UserInfo, 0)
 	for _, id := range ids {
 		info, err := c.findOrLoad(id.(string))
 		if err != nil {
 			log.WithField("id", id.(string)).Errorf("findInfo failed %v", err)
 			continue
 		}
-		if len(info.VideoInfo) > 0 {
-			result = append(result, NewConcernNotify(groupCode, info.VideoInfo[0]))
-		}
+		result = append(result, NewUserInfo(info.ChannelId, info.ChannelName))
 	}
 	return result, nil
 }

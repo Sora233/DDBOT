@@ -113,3 +113,10 @@ func NewConcernNotify(groupCode int64, info *VideoInfo) *ConcernNotify {
 		GroupCode: groupCode,
 	}
 }
+
+func NewUserInfo(channelId, channelName string) *UserInfo {
+	return &UserInfo{
+		ChannelId:   channelId,
+		ChannelName: channelName,
+	}
+}

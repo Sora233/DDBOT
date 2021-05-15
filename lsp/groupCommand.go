@@ -543,7 +543,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 		listMsg.Append(message.NewText("当前关注：\n"))
 		userInfos, err := lgc.l.bilibiliConcern.ListWatching(groupCode, ctype)
 		if err != nil {
-			log.Debugf("list living failed %v", err)
+			log.Debugf("list failed %v", err)
 			lgc.textReply(fmt.Sprintf("list living 失败 - %v", err))
 			return
 		}
@@ -575,34 +575,27 @@ func (lgc *LspGroupCommand) ListCommand() {
 			}
 			listMsg.Append(utils.MessageTextf("%v %v", liveInfo.Nickname, liveInfo.RoomId))
 		}
-	case concern.YoutubeLive:
+	case concern.YoutubeLive, concern.YoutubeVideo:
 		listMsg.Append(message.NewText("当前关注：\n"))
-		living, err := lgc.l.youtubeConcern.ListLiving(groupCode, true)
+		userInfos, err := lgc.l.youtubeConcern.ListWatching(groupCode, ctype)
 		if err != nil {
-			log.Debugf("list living failed %v", err)
+			log.Debugf("list failed %v", err)
 			lgc.textReply(fmt.Sprintf("失败 - %v", err))
 			return
 		}
-		if living == nil {
+		if len(userInfos) == 0 {
 			lgc.textReply("关注列表为空，可以使用/watch命令关注")
 			return
 		}
-		for idx, info := range living {
+		for idx, info := range userInfos {
 			if idx != 0 {
 				listMsg.Append(message.NewText("\n"))
 			}
 			listMsg.Append(utils.MessageTextf("%v %v", info.ChannelName, info.ChannelId))
 		}
-	case concern.YoutubeVideo:
-		// TODO
-		log.Error("list youtube video not supported yet")
-		listMsg.Append(message.NewText("暂不支持"))
 	}
 
 	lgc.send(listMsg)
-	//lgc.privateAnswer(listMsg)
-	//lgc.textReply("该命令较为刷屏，已通过私聊发送")
-
 }
 
 func (lgc *LspGroupCommand) RollCommand() {
