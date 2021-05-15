@@ -1088,7 +1088,7 @@ func (lgc *LspGroupCommand) reserveGif(url string) {
 	groupImage, err := lgc.bot.UploadGroupImage(lgc.groupCode(), bytes.NewReader(img))
 	if err != nil {
 		log.Errorf("upload group image failed %v", err)
-		lgc.textReply(fmt.Sprintf("上传失败 - %v", err))
+		lgc.textReply("上传失败")
 		return
 	}
 	sendingMsg.Append(groupImage)
