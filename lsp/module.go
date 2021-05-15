@@ -459,14 +459,18 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 
 func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *message.GroupMessage {
 	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
-		logger.WithField("groupCode", groupCode).Debug("skip muted group")
+		logger.WithField("GroupCode", groupCode).Debug("skip muted group")
+		return &message.GroupMessage{Id: -1}
+	}
+	if msg == nil {
+		logger.WithField("GroupCode", groupCode).Debug("send with nil message")
 		return &message.GroupMessage{Id: -1}
 	}
 	// don't know why
 	// msg.Elements = l.compactTextElements(msg.Elements)
 	res := bot.Instance.SendGroupMessage(groupCode, msg)
 	if res.Id == -1 {
-		logger.WithField("group_code", groupCode).Errorf("send group message failed")
+		logger.WithField("GroupCode", groupCode).Errorf("send group message failed")
 	}
 	return res
 }
