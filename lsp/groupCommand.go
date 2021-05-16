@@ -423,7 +423,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	ctx.TextReply = func(text string) interface{} {
 		return lgc.textSend(text)
 	}
-	IWatchCommand(ctx, groupCode, id, site, watchType, remove)
+	IWatch(ctx, groupCode, id, site, watchType, remove)
 }
 
 func (lgc *LspGroupCommand) ListCommand() {
@@ -649,12 +649,13 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 	log.Infof("run enable command")
 	defer func() { log.Info("enable command end") }()
 
-	var enableCmd struct {
-		Command string `arg:"" help:"command name"`
-	}
 	name := "enable"
 	if disable {
 		name = "disable"
+	}
+
+	var enableCmd struct {
+		Command string `arg:"" help:"command name"`
 	}
 	output := lgc.parseCommandSyntax(&enableCmd, name)
 	if output != "" {
@@ -665,36 +666,14 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 	}
 
 	log = log.WithField("command", enableCmd.Command).WithField("disable", disable)
-	if !CheckOperateableCommand(enableCmd.Command) {
-		log.Errorf("unknown command")
-		lgc.textReply("失败 - invalid command name")
-		return
+
+	ctx := NewCommandContext()
+	ctx.Log = log
+	ctx.Lsp = lgc.l
+	ctx.TextReply = func(text string) interface{} {
+		return lgc.textReply(text)
 	}
-	var err error
-	if disable {
-		err = lgc.l.PermissionStateManager.DisableGroupCommand(groupCode, enableCmd.Command)
-	} else {
-		if enableCmd.Command == ImageContentCommand {
-			// 要收钱了，不能白嫖了
-			err = lgc.l.PermissionStateManager.EnableGroupCommand(groupCode, enableCmd.Command, permission.ExpireOption(time.Hour*24))
-		} else {
-			err = lgc.l.PermissionStateManager.EnableGroupCommand(groupCode, enableCmd.Command)
-		}
-	}
-	if err != nil {
-		log.Errorf("err %v", err)
-		if err == permission.ErrPermissionExist {
-			if disable {
-				lgc.textReply("失败 - 该命令已禁用")
-			} else {
-				lgc.textReply("失败 - 该命令已启用")
-			}
-		} else {
-			lgc.textReply(fmt.Sprintf("失败 - %v", err))
-		}
-		return
-	}
-	lgc.textReply("成功")
+	IEnable(ctx, groupCode, enableCmd.Command, disable)
 }
 
 func (lgc *LspGroupCommand) GrantCommand() {

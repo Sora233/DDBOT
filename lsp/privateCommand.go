@@ -3,6 +3,7 @@ package lsp
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
@@ -68,8 +69,9 @@ func (c *LspPrivateCommand) Execute() {
 	case "/unwatch":
 		c.WatchCommand(true)
 	case "/enable":
+		c.EnableCommand(false)
 	case "/disable":
-
+		c.EnableCommand(true)
 	case "/log":
 		if !c.l.PermissionStateManager.RequireAny(
 			permission.AdminRoleRequireOption(c.uin()),
@@ -94,12 +96,6 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 		err       error
 	)
 
-	var watchCmd struct {
-		Site  string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
-		Type  string `optional:"" short:"t" default:"live" help:"news / live"`
-		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
-		Id    string `arg:""`
-	}
 	var name string
 	var Command string
 	if remove {
@@ -109,6 +105,14 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 		name = "watch"
 		Command = WatchCommand
 	}
+
+	var watchCmd struct {
+		Site  string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
+		Type  string `optional:"" short:"t" default:"live" help:"news / live"`
+		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Id    string `arg:""`
+	}
+
 	output := c.parseCommandSyntax(&watchCmd, name)
 	if output != "" {
 		c.textReply(output)
@@ -129,10 +133,12 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 	id := watchCmd.Id
 	groupCode := watchCmd.Group
 
-	if groupCode == 0 {
-		c.textReply("没有设置qq群号码")
+	if err := c.checkGroupCode(groupCode); err != nil {
+		c.textReply(err.Error())
 		return
 	}
+
+	log = log.WithField("groupCode", groupCode)
 
 	if c.l.PermissionStateManager.CheckGroupCommandDisabled(groupCode, Command) {
 		c.disabledReply()
@@ -156,7 +162,58 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 		return c.textSend(text)
 	}
 	ctx.Lsp = c.l
-	IWatchCommand(ctx, groupCode, id, site, watchType, remove)
+	IWatch(ctx, groupCode, id, site, watchType, remove)
+}
+
+func (c *LspPrivateCommand) EnableCommand(disable bool) {
+	log := c.DefaultLoggerWithCommand(EnableCommand).WithField("disable", disable)
+	log.Info("run enable command")
+	defer func() { log.Info("watch enable end") }()
+
+	var name string
+	if disable {
+		name = "disable"
+	} else {
+		name = "enable"
+	}
+
+	var enableCmd struct {
+		Group   int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Command string `arg:"" help:"command name"`
+	}
+
+	output := c.parseCommandSyntax(&enableCmd, name)
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	groupCode := enableCmd.Group
+
+	if err := c.checkGroupCode(groupCode); err != nil {
+		c.textReply(err.Error())
+		return
+	}
+
+	log = log.WithField("groupCode", groupCode)
+
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+		permission.GroupAdminRoleRequireOption(groupCode, c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
+	ctx := NewCommandContext()
+	ctx.Log = log
+	ctx.Lsp = c.l
+	ctx.TextReply = func(text string) interface{} {
+		return c.textReply(text)
+	}
+	IEnable(ctx, groupCode, enableCmd.Command, disable)
 }
 
 func (c *LspPrivateCommand) BlockCommand() {
@@ -377,4 +434,19 @@ func (c *LspPrivateCommand) uin() int64 {
 
 func (c *LspPrivateCommand) name() string {
 	return c.sender().DisplayName()
+}
+
+func (c *LspPrivateCommand) checkGroupCode(groupCode int64) error {
+	if groupCode == 0 {
+		return fmt.Errorf("没有指定QQ群号码，请使用-g参数指定QQ群，例如对QQ群123456进行操作：%v %v %v", c.GetCmd(), "-g 123456", strings.Join(c.GetArgs(), " "))
+	}
+	group := c.bot.FindGroup(groupCode)
+	if group == nil {
+		return errors.New("没有找到该QQ群，请确认bot是否在群内")
+	}
+	member := group.FindMember(c.uin())
+	if member == nil {
+		return errors.New("没有在该群内找到您，请确认您是否在群内")
+	}
+	return nil
 }

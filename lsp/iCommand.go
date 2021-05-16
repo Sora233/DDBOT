@@ -6,10 +6,12 @@ import (
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	"github.com/Sora233/DDBOT/lsp/douyu"
+	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var errNilParam = errors.New("内部参数错误")
@@ -24,7 +26,7 @@ func NewCommandContext() *CommandContext {
 	return new(CommandContext)
 }
 
-func IWatchCommand(c *CommandContext, groupCode int64, id string, site string, watchType concern.Type, remove bool) {
+func IWatch(c *CommandContext, groupCode int64, id string, site string, watchType concern.Type, remove bool) {
 	err := c.requireNotNil(c.TextReply, c.Log, c.Lsp)
 	if err != nil {
 		c.Log.Errorf("params error %v", err)
@@ -119,6 +121,44 @@ func IWatchCommand(c *CommandContext, groupCode int64, id string, site string, w
 		c.TextReply("未支持的网站")
 	}
 	return
+}
+
+func IEnable(c *CommandContext, groupCode int64, command string, disable bool) {
+	err := c.requireNotNil(c.TextReply, c.Log, c.Lsp)
+	if err != nil {
+		c.Log.Errorf("params error %v", err)
+		return
+	}
+	log := c.Log
+	if !CheckOperateableCommand(command) {
+		log.Errorf("unknown command")
+		c.TextReply("失败 - invalid command name")
+		return
+	}
+	if disable {
+		err = c.Lsp.PermissionStateManager.DisableGroupCommand(groupCode, command)
+	} else {
+		if command == ImageContentCommand {
+			// 要收钱了，不能白嫖了
+			err = c.Lsp.PermissionStateManager.EnableGroupCommand(groupCode, command, permission.ExpireOption(time.Hour*24))
+		} else {
+			err = c.Lsp.PermissionStateManager.EnableGroupCommand(groupCode, command)
+		}
+	}
+	if err != nil {
+		log.Errorf("err %v", err)
+		if err == permission.ErrPermissionExist {
+			if disable {
+				c.TextReply("失败 - 该命令已禁用")
+			} else {
+				c.TextReply("失败 - 该命令已启用")
+			}
+		} else {
+			c.TextReply(fmt.Sprintf("失败 - %v", err))
+		}
+		return
+	}
+	c.TextReply("成功")
 }
 
 func (ic *CommandContext) requireNotNil(param ...interface{}) error {
