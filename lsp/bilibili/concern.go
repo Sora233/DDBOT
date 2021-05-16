@@ -370,6 +370,10 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 			logger.WithField("mid", uid).Debugf("find user info error %v", err)
 			continue
 		}
+		if len(cards) > 0 {
+			// 如果更新了名字，有机会在这里捞回来
+			userInfo.Name = cards[0].GetDesc().GetUserProfile().GetInfo().GetUname()
+		}
 		result = append(result, NewNewsInfoWithDetail(userInfo, cards))
 	}
 	logger.WithField("NewsInfo Size", len(result)).Tracef("freshDynamicNew done")

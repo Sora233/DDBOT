@@ -137,6 +137,14 @@ message FeedListResponse {
 
 message Card {
   message Desc {
+    message UserProfile {
+      message Info {
+        int64 uid = 1;
+        string uname = 2;
+        string face = 3;
+      }
+      Info info = 1;
+    }
     int64 dynamic_id = 1;
     int64 orig_dy_id = 2;
     DynamicDescType orig_type = 3;
@@ -150,6 +158,7 @@ message Card {
     string bvid = 11;
     string dynamic_id_str = 12;
     int64 uid = 13;
+    UserProfile user_profile = 14;
   }
   message Extra {
     int32 is_space_top = 1;
