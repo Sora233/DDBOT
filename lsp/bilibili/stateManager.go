@@ -57,7 +57,7 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 		if err != nil {
 			return err
 		}
-		_, _, err = tx.Set(c.CurrentLiveKey(liveInfo.Mid), liveInfo.ToString(), localdb.ExpireOption(time.Hour*24))
+		_, _, err = tx.Set(c.CurrentLiveKey(liveInfo.Mid), liveInfo.ToString(), localdb.ExpireOption(time.Hour*24*7))
 		return err
 	})
 	return err
