@@ -418,7 +418,7 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 			break
 		}
 		page++
-		time.Sleep(time.Millisecond * 500)
+		time.Sleep(time.Millisecond * 200)
 	}
 	logger.WithField("Page", page).WithField("LiveInfo Size", len(liveInfo)).Tracef("freshLive done")
 	return liveInfo, nil
