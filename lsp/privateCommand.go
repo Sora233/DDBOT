@@ -417,7 +417,8 @@ func (c *LspPrivateCommand) textSend(text string) *message.PrivateMessage {
 
 func (c *LspPrivateCommand) textReply(text string) *message.PrivateMessage {
 	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(message.NewPrivateReply(c.msg))
+	// reply work bad
+	//sendingMsg.Append(message.NewPrivateReply(c.msg))
 	sendingMsg.Append(message.NewText(text))
 	return c.send(sendingMsg)
 }
