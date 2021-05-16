@@ -97,7 +97,7 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 	var watchCmd struct {
 		Site  string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
 		Type  string `optional:"" short:"t" default:"live" help:"news / live"`
-		Group int64  `required:"" short:"g" help:"要操作的QQ群号码"`
+		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
 		Id    string `arg:""`
 	}
 	var name string
@@ -128,6 +128,11 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 
 	id := watchCmd.Id
 	groupCode := watchCmd.Group
+
+	if groupCode == 0 {
+		c.textReply("没有设置qq群号码")
+		return
+	}
 
 	if c.l.PermissionStateManager.CheckGroupCommandDisabled(groupCode, Command) {
 		c.disabledReply()
