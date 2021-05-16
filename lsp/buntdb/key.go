@@ -56,6 +56,9 @@ func BilibiliDynamicIdKey(keys ...interface{}) string {
 func BilibiliUidFirstTimestampKey(keys ...interface{}) string {
 	return NamedKey("UidFirstTimestamp", keys)
 }
+func BilibiliNotLiveCountKey(keys ...interface{}) string {
+	return NamedKey("NotLiveCount", keys)
+}
 func BilibiliUserInfoKey(keys ...interface{}) string {
 	return NamedKey("UserInfo", keys)
 }

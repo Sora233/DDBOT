@@ -303,15 +303,26 @@ func (c *Concern) watchCore() {
 				} else if oldInfo.Status == LiveStatus_Living {
 					if newInfo, found := liveInfoMap[mid]; !found {
 						// living -> notliving
+						if count := c.IncNotLiveCount(mid); count < 3 {
+							logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
+								WithField("notlive_count", count).
+								Debug("notlive counting")
+							continue
+						} else {
+							logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
+								Debug("notlive count done, notlive confirmed")
+						}
+						c.ClearNotLiveCount(mid)
 						newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle, oldInfo.Cover, LiveStatus_NoLiving)
 						c.eventChan <- newInfo
 						c.AddLiveInfo(newInfo)
 					} else {
+						c.ClearNotLiveCount(mid)
 						if newInfo.LiveTitle != oldInfo.LiveTitle && newInfo.LiveTitle != "bilibili主播的直播间" {
 							// live title change
 							c.eventChan <- newInfo
-							c.AddLiveInfo(newInfo)
 						}
+						c.AddLiveInfo(newInfo)
 					}
 				}
 			}

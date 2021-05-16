@@ -39,6 +39,10 @@ func (k *extraKey) UidFirstTimestamp(keys ...interface{}) string {
 	return buntdb.BilibiliUidFirstTimestampKey(keys...)
 }
 
+func (k *extraKey) NotLiveKey(keys ...interface{}) string {
+	return buntdb.BilibiliNotLiveCountKey(keys...)
+}
+
 func NewKeySet() *keySet {
 	return &keySet{}
 }
