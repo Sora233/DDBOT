@@ -148,7 +148,7 @@ func (pool *LoliconPool) fillCacheFromRemote(r18 R18Type) error {
 
 func (pool *LoliconPool) background() {
 	go func() {
-		for range time.Tick(time.Second * 30) {
+		for range time.Tick(time.Second * 5) {
 			pool.store()
 		}
 	}()
