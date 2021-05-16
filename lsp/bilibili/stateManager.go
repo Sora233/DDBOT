@@ -150,14 +150,14 @@ func (c *StateManager) CheckDynamicId(dynamic int64) bool {
 func (c *StateManager) MarkDynamicId(dynamic int64) (replaced bool, err error) {
 	c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.DynamicIdKey(dynamic)
-		_, replaced, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*48))
+		_, replaced, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*120))
 		return err
 	})
 	return
 }
 
 func (c *StateManager) SetUidFirstTimestamp(uid int64, timestamp int64) error {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	err := c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.UidFirstTimestamp(uid)
 		_, replaced, err := tx.Set(key, strconv.FormatInt(timestamp, 10), nil)
 		if err != nil {
@@ -168,6 +168,10 @@ func (c *StateManager) SetUidFirstTimestamp(uid int64, timestamp int64) error {
 		}
 		return nil
 	})
+	if err != nil && err.Error() == "rollback" {
+		err = nil
+	}
+	return err
 }
 
 func (c *StateManager) UnsetUidFirstTimestamp(uid int64) error {

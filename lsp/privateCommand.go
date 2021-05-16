@@ -7,6 +7,8 @@ import (
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/sliceutil"
@@ -61,6 +63,13 @@ func (c *LspPrivateCommand) Execute() {
 			return
 		}
 		c.BlockCommand()
+	case "/watch":
+		c.WatchCommand(false)
+	case "/unwatch":
+		c.WatchCommand(true)
+	case "/enable":
+	case "/disable":
+
 	case "/log":
 		if !c.l.PermissionStateManager.RequireAny(
 			permission.AdminRoleRequireOption(c.uin()),
@@ -74,8 +83,79 @@ func (c *LspPrivateCommand) Execute() {
 	}
 }
 
+func (c *LspPrivateCommand) WatchCommand(remove bool) {
+	log := c.DefaultLoggerWithCommand(WatchCommand).WithField("unwatch", remove)
+	log.Info("run watch command")
+	defer func() { log.Info("watch command end") }()
+
+	var (
+		site      = bilibili.Site
+		watchType = concern.BibiliLive
+		err       error
+	)
+
+	var watchCmd struct {
+		Site  string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
+		Type  string `optional:"" short:"t" default:"live" help:"news / live"`
+		Group int64  `required:"" short:"g" help:"要操作的QQ群号码"`
+		Id    string `arg:""`
+	}
+	var name string
+	var Command string
+	if remove {
+		name = "unwatch"
+		Command = UnwatchCommand
+	} else {
+		name = "watch"
+		Command = WatchCommand
+	}
+	output := c.parseCommandSyntax(&watchCmd, name)
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	site, watchType, err = c.ParseRawSiteAndType(watchCmd.Site, watchCmd.Type)
+	if err != nil {
+		log = log.WithField("args", c.GetArgs())
+		log.Errorf("parse raw concern failed %v", err)
+		c.textReply(fmt.Sprintf("参数错误 - %v", err))
+		return
+	}
+	log = log.WithField("site", site).WithField("type", watchType)
+
+	id := watchCmd.Id
+	groupCode := watchCmd.Group
+
+	if c.l.PermissionStateManager.CheckGroupCommandDisabled(groupCode, Command) {
+		c.disabledReply()
+		return
+	}
+
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+		permission.GroupAdminRoleRequireOption(groupCode, c.uin()),
+		permission.QQAdminRequireOption(groupCode, c.uin()),
+		permission.GroupCommandRequireOption(groupCode, c.uin(), WatchCommand),
+		permission.GroupCommandRequireOption(groupCode, c.uin(), UnwatchCommand),
+	) {
+		c.noPermission()
+		return
+	}
+
+	ctx := NewCommandContext()
+	ctx.Log = log
+	ctx.TextReply = func(text string) interface{} {
+		return c.textSend(text)
+	}
+	ctx.Lsp = c.l
+	IWatchCommand(ctx, groupCode, id, site, watchType, remove)
+}
+
 func (c *LspPrivateCommand) BlockCommand() {
-	log := c.DefaultLogger()
+	log := c.DefaultLoggerWithCommand(BlockCommand)
 	log.Info("run block command")
 	defer func() { log.Info("block command end") }()
 
@@ -131,7 +211,7 @@ func (c *LspPrivateCommand) BlockCommand() {
 }
 
 func (c *LspPrivateCommand) LogCommand() {
-	log := c.DefaultLogger()
+	log := c.DefaultLoggerWithCommand(LogCommand)
 	log.Info("run log command")
 	defer func() { log.Info("log command end") }()
 
@@ -187,7 +267,7 @@ func (c *LspPrivateCommand) LogCommand() {
 }
 
 func (c *LspPrivateCommand) PingCommand() {
-	log := c.DefaultLogger()
+	log := c.DefaultLoggerWithCommand(PingCommand)
 	log.Info("run ping command")
 	defer func() { log.Info("ping command end") }()
 
@@ -202,7 +282,7 @@ func (c *LspPrivateCommand) PingCommand() {
 }
 
 func (c *LspPrivateCommand) HelpCommand() {
-	log := c.DefaultLogger()
+	log := c.DefaultLoggerWithCommand(HelpCommand)
 	log.Info("run help command")
 	defer func() { log.Info("help command end") }()
 
@@ -255,8 +335,16 @@ func (c *LspPrivateCommand) DefaultLogger() *logrus.Entry {
 	return logger.WithField("Uin", c.uin()).WithField("Name", c.name())
 }
 
+func (c *LspPrivateCommand) DefaultLoggerWithCommand(command string) *logrus.Entry {
+	return c.DefaultLogger().WithField("command", command)
+}
+
 func (c *LspPrivateCommand) noPermission() *message.PrivateMessage {
 	return c.textReply("权限不够")
+}
+
+func (c *LspPrivateCommand) disabledReply() *message.PrivateMessage {
+	return c.textSend("该命令已被设置为disable，请设置enable后重试")
 }
 
 func (c *LspPrivateCommand) textSend(text string) *message.PrivateMessage {
@@ -267,12 +355,7 @@ func (c *LspPrivateCommand) textSend(text string) *message.PrivateMessage {
 
 func (c *LspPrivateCommand) textReply(text string) *message.PrivateMessage {
 	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(&message.ReplyElement{
-		ReplySeq: c.msg.Id,
-		Sender:   c.uin(),
-		Time:     c.msg.Time,
-		Elements: c.msg.Elements,
-	})
+	sendingMsg.Append(message.NewPrivateReply(c.msg))
 	sendingMsg.Append(message.NewText(text))
 	return c.send(sendingMsg)
 }
