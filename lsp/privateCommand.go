@@ -45,12 +45,24 @@ func (c *LspPrivateCommand) Execute() {
 			c.textSend("エラー発生")
 		}
 	}()
-	if !c.DebugCheck() {
-		return
-	}
 	if !strings.HasPrefix(c.GetCmd(), "/") {
 		return
 	}
+
+	log := c.DefaultLogger().WithField("cmd", c.GetCmd()).WithField("args", c.GetArgs())
+
+	if c.l.PermissionStateManager.CheckBlockList(c.uin()) {
+		log.Debug("blocked")
+		return
+	}
+
+	if !c.DebugCheck() {
+		log.Debugf("debug mode, skip execute.")
+		return
+	}
+
+	log.Debug("execute command")
+
 	switch c.GetCmd() {
 	case "/ping":
 		c.PingCommand()
@@ -82,6 +94,7 @@ func (c *LspPrivateCommand) Execute() {
 		c.LogCommand()
 	default:
 		c.textReply("阁下似乎输入了一个无法识别的命令，请注意BOT的大多数命令只能在群聊内生效。")
+		log.Debug("no command matched")
 	}
 }
 
