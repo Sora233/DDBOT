@@ -125,7 +125,7 @@ func ImageCacheKey(keys ...interface{}) string {
 	return NamedKey("ImageCache", keys)
 }
 
-func ParseConcernStateKey(key string) (groupCode int64, id int64, err error) {
+func ParseConcernStateKeyWithInt64(key string) (groupCode int64, id int64, err error) {
 	keys := strings.Split(key, ":")
 	if len(keys) != 3 {
 		return 0, 0, errors.New("invalid key")
@@ -140,7 +140,7 @@ func ParseConcernStateKey(key string) (groupCode int64, id int64, err error) {
 	}
 	return groupCode, id, nil
 }
-func ParseYoutubeConcernStateKey(key string) (groupCode int64, id string, err error) {
+func ParseConcernStateKeyWithString(key string) (groupCode int64, id string, err error) {
 	keys := strings.Split(key, ":")
 	if len(keys) != 3 {
 		return 0, "", errors.New("invalid key")

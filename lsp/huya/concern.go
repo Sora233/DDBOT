@@ -60,7 +60,7 @@ func (c *Concern) Start() {
 	go c.EmitFreshCore("huya", func(ctype concern.Type, id interface{}) error {
 		roomid, ok := id.(string)
 		if !ok {
-			return fmt.Errorf("cast fresh id type<%v> to int64 failed", reflect.ValueOf(id).Type().String())
+			return fmt.Errorf("cast fresh id type<%v> to string failed", reflect.ValueOf(id).Type().String())
 		}
 		if ctype.ContainAll(concern.HuyaLive) {
 			oldInfo, _ := c.findRoom(roomid, false)

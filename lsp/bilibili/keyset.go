@@ -14,7 +14,7 @@ func (k *keySet) FreshKey(keys ...interface{}) string {
 }
 
 func (k *keySet) ParseGroupConcernStateKey(key string) (int64, interface{}, error) {
-	return buntdb.ParseConcernStateKey(key)
+	return buntdb.ParseConcernStateKeyWithInt64(key)
 }
 
 type extraKey struct {
