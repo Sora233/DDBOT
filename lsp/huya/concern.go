@@ -58,7 +58,7 @@ func (c *Concern) Start() {
 
 	go c.notifyLoop()
 	go c.EmitFreshCore("huya", func(ctype concern.Type, id interface{}) error {
-		roomid, ok := id.(int64)
+		roomid, ok := id.(string)
 		if !ok {
 			return fmt.Errorf("cast fresh id type<%v> to int64 failed", reflect.ValueOf(id).Type().String())
 		}
@@ -88,7 +88,7 @@ func (c *Concern) Add(groupCode int64, id interface{}, ctype concern.Type) (*Liv
 		return nil, err
 	}
 
-	liveInfo, err := RoomPage(id.(int64))
+	liveInfo, err := RoomPage(id.(string))
 	if err != nil {
 		log.Error(err)
 		return nil, fmt.Errorf("查询房间信息失败 %v - %v", id, err)
@@ -114,7 +114,7 @@ func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, e
 		result = make([]*ConcernLiveNotify, 0)
 	}
 	for _, id := range ids {
-		liveInfo, err := c.StateManager.GetLiveInfo(id.(int64))
+		liveInfo, err := c.StateManager.GetLiveInfo(id.(string))
 		if err != nil {
 			log.WithField("id", id).Errorf("get LiveInfo err %v", err)
 			continue
@@ -142,7 +142,7 @@ func (c *Concern) notifyLoop() {
 			log.Debugf("debug event")
 
 			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-				return id.(int64) == event.RoomId && p.ContainAny(concern.HuyaLive)
+				return id.(string) == event.RoomId && p.ContainAny(concern.HuyaLive)
 			})
 			if err != nil {
 				log.Errorf("list id failed %v", err)
@@ -161,7 +161,7 @@ func (c *Concern) notifyLoop() {
 	}
 }
 
-func (c *Concern) findRoom(roomId int64, load bool) (*LiveInfo, error) {
+func (c *Concern) findRoom(roomId string, load bool) (*LiveInfo, error) {
 	var liveInfo *LiveInfo
 	if load {
 		var err error

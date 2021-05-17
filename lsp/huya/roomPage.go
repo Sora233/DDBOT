@@ -9,13 +9,12 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/requests"
 	"github.com/Sora233/DDBOT/utils"
-	"strconv"
 	"strings"
 	"time"
 )
 
 type LiveInfo struct {
-	RoomId   int64  `json:"room_id"`
+	RoomId   string `json:"room_id"`
 	RoomUrl  string `json:"room_url"`
 	Avatar   string `json:"avatar"`
 	Name     string `json:"name"`
@@ -38,7 +37,7 @@ func (m *LiveInfo) ToString() string {
 	return string(bin)
 }
 
-func RoomPage(roomId int64) (*LiveInfo, error) {
+func RoomPage(roomId string) (*LiveInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	st := time.Now()
@@ -46,7 +45,7 @@ func RoomPage(roomId int64) (*LiveInfo, error) {
 		ed := time.Now()
 		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
-	url := HuyaPath(strconv.FormatInt(roomId, 10))
+	url := HuyaPath(roomId)
 	resp, err := requests.Get(ctx, url, nil, 3,
 		requests.AddUAOption(),
 		requests.ProxyOption(proxy_pool.PreferAny),

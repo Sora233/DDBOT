@@ -14,7 +14,7 @@ type StateManager struct {
 	*extraKey
 }
 
-func (c *StateManager) GetLiveInfo(id int64) (*LiveInfo, error) {
+func (c *StateManager) GetLiveInfo(id string) (*LiveInfo, error) {
 	var liveInfo = &LiveInfo{}
 
 	err := c.RTxCover(func(tx *buntdb.Tx) error {
