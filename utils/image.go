@@ -41,7 +41,7 @@ func ImageNormSize(origImage []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("image decode failed %v", err)
 	}
-	resizedImage := resize.Thumbnail(1280, 860, dImage, resize.Lanczos3)
+	resizedImage := resize.Thumbnail(1200, 1200, dImage, resize.Lanczos3)
 	resizedImageBuffer := bytes.NewBuffer(make([]byte, 0))
 	switch format {
 	case "jpeg":

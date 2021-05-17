@@ -164,7 +164,11 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				}
 				result = append(result, localutils.MessageTextf("%v\n", origin.GetItem().GetDescription()))
 				for _, pic := range origin.GetItem().GetPictures() {
-					groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), false, proxy_pool.PreferAny)
+					var isNorm = false
+					if pic.GetImgHeight() > 1200 && pic.GetImgHeight() > 1200 {
+						isNorm = true
+					}
+					groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), isNorm, proxy_pool.PreferAny)
 					if err != nil {
 						log.WithField("pic", pic).Errorf("upload group image %v", err)
 						continue
@@ -297,7 +301,11 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			}
 			result = append(result, localutils.MessageTextf("%v发布了新态：\n%v\n%v\n", notify.Name, date, cardImage.GetItem().GetDescription()))
 			for _, pic := range cardImage.GetItem().GetPictures() {
-				groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), false, proxy_pool.PreferAny)
+				var isNorm = false
+				if pic.GetImgHeight() > 1200 && pic.GetImgHeight() > 1200 {
+					isNorm = true
+				}
+				groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), isNorm, proxy_pool.PreferAny)
 				if err != nil {
 					log.WithField("pic", pic.GetImgSrc()).Errorf("upload image failed %v", err)
 					continue
