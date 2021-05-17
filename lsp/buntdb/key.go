@@ -86,6 +86,15 @@ func YoutubeInfoKey(keys ...interface{}) string {
 func YoutubeVideoKey(keys ...interface{}) string {
 	return NamedKey("YoutubeVideo", keys)
 }
+func HuyaGroupConcernStateKey(keys ...interface{}) string {
+	return NamedKey("HuyaConcernState", keys)
+}
+func HuyaFreshKey(keys ...interface{}) string {
+	return NamedKey("huyaFresh", keys)
+}
+func HuyaCurrentLiveKey(keys ...interface{}) string {
+	return NamedKey("HuyaCurrentLive", keys)
+}
 func PermissionKey(keys ...interface{}) string {
 	return NamedKey("Permission", keys)
 }

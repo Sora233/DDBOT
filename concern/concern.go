@@ -12,9 +12,10 @@ const (
 	DouyuLive
 	YoutubeLive
 	YoutubeVideo
+	HuyaLive
 )
 
-var all = [...]Type{BibiliLive, BilibiliNews, DouyuLive, YoutubeLive, YoutubeVideo}
+var all = [...]Type{BibiliLive, BilibiliNews, DouyuLive, YoutubeLive, YoutubeVideo, HuyaLive}
 
 type Notify interface {
 	Type() Type

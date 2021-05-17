@@ -1,4 +1,4 @@
-package douyu
+package huya
 
 import (
 	"encoding/json"
@@ -48,15 +48,7 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	})
 }
 
-func (c *StateManager) Start() error {
-	db, err := localdb.GetClient()
-	if err == nil {
-		db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
-	}
-	return c.StateManager.Start()
-}
+// ?为什么没有泛型?
 
 func NewStateManager() *StateManager {
 	sm := &StateManager{}

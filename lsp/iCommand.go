@@ -6,6 +6,7 @@ import (
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	"github.com/Sora233/DDBOT/lsp/douyu"
+	"github.com/Sora233/DDBOT/lsp/huya"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/sirupsen/logrus"
@@ -116,6 +117,27 @@ func IWatch(c *CommandContext, groupCode int64, id string, site string, watchTyp
 		} else {
 			c.TextReply(fmt.Sprintf("watch成功 - YTB用户 %v", info.ChannelName))
 		}
+	case huya.Site:
+		log = log.WithField("id", id)
+		if remove {
+			// unwatch
+			if _, err := c.Lsp.huyaConcern.RemoveGroupConcern(groupCode, id, watchType); err != nil {
+				c.TextReply(fmt.Sprintf("unwatch失败 - %v", err))
+			} else {
+				log.WithField("id", id).Debugf("unwatch success")
+				c.TextReply("unwatch成功")
+			}
+			return
+		}
+		info, err := c.Lsp.huyaConcern.Add(groupCode, id, watchType)
+		if err != nil {
+			log.Errorf("watch error %v", err)
+			c.TextReply(fmt.Sprintf("watch失败 - %v", err))
+			break
+		}
+		log = log.WithField("name", info.Name)
+		log.Debugf("watch success")
+		c.TextReply(fmt.Sprintf("watch成功 - 虎牙用户 %v", info.Name))
 	default:
 		log.WithField("site", site).Error("unsupported")
 		c.TextReply("未支持的网站")

@@ -7,6 +7,7 @@ import (
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	"github.com/Sora233/DDBOT/lsp/douyu"
+	"github.com/Sora233/DDBOT/lsp/huya"
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
@@ -92,6 +93,23 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					sendingMsg.Append(msg)
 				}
 				l.sendGroupMessage(notify.GroupCode, sendingMsg)
+			case concern.HuyaLive:
+				notify := (inotify).(*huya.ConcernLiveNotify)
+				logger.WithField("site", huya.Site).
+					WithField("GroupCode", notify.GroupCode).
+					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
+					WithField("Name", notify.Name).
+					WithField("Title", notify.RoomName).
+					WithField("Status", notify.Living).
+					Info("notify")
+				if notify.Living {
+					sendingMsg := message.NewSendingMessage()
+					notifyMsg := l.NotifyMessage(bot, notify)
+					for _, msg := range notifyMsg {
+						sendingMsg.Append(msg)
+					}
+					l.sendGroupMessage(notify.GroupCode, sendingMsg)
+				}
 			}
 		}
 	}
@@ -112,6 +130,9 @@ func (l *Lsp) NotifyMessage(bot *bot.Bot, inotify concern.Notify) []message.IMes
 	case concern.YoutubeLive, concern.YoutubeVideo:
 		notify := (inotify).(*youtube.ConcernNotify)
 		result = append(result, l.notifyYoutube(bot, notify)...)
+	case concern.HuyaLive:
+		notify := (inotify).(*huya.ConcernLiveNotify)
+		result = append(result, l.notifyHuyaLive(bot, notify)...)
 	}
 	return result
 }
@@ -527,5 +548,22 @@ func (l *Lsp) notifyYoutube(bot *bot.Bot, notify *youtube.ConcernNotify) []messa
 		result = append(result, groupImg)
 	}
 	result = append(result, message.NewText(youtube.VideoViewUrl(notify.VideoId)+"\n"))
+	return result
+}
+
+func (l *Lsp) notifyHuyaLive(bot *bot.Bot, notify *huya.ConcernLiveNotify) []message.IMessageElement {
+	var result []message.IMessageElement
+	if notify.Living {
+		result = append(result, localutils.MessageTextf("虎牙-%s正在直播【%v】\n", notify.Name, notify.RoomName))
+		result = append(result, message.NewText(notify.RoomUrl))
+		cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Avatar, false, proxy_pool.PreferAny)
+		if err != nil {
+			logger.WithField("avatar", notify.Avatar).Errorf("upload avatar failed %v", err)
+		} else {
+			result = append(result, cover)
+		}
+	} else {
+		result = append(result, localutils.MessageTextf("虎牙-%s暂未直播\n", notify.Name))
+	}
 	return result
 }
