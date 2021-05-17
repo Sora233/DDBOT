@@ -107,7 +107,7 @@ func (r *Runtime) ParseRawSite(rawSite string) (string, error) {
 		site  string
 	)
 
-	site, found = utils.PrefixMatch([]string{bilibili.Site, douyu.Site, youtube.Site}, rawSite)
+	site, found = utils.PrefixMatch([]string{bilibili.Site, douyu.Site, youtube.Site, huya.Site}, rawSite)
 	if !found {
 		return "", errors.New("can not determine site")
 	}
