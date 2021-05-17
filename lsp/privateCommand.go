@@ -120,7 +120,7 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 	}
 
 	var watchCmd struct {
-		Site  string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
+		Site  string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
 		Type  string `optional:"" short:"t" default:"live" help:"news / live"`
 		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
 		Id    string `arg:""`
@@ -376,6 +376,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"uid即b站用户空间末尾的数字\n" +
 		"订阅斗鱼6655号直播间（https://www.douyu.com/6655）：/watch -s douyu -t live 6655\n" +
 		"订阅油管karory（https://www.youtube.com/channel/UCGXspjV3G7ZSunbikIdp3EA）直播和预约直播：/watch -s youtube -t live UCGXspjV3G7ZSunbikIdp3EA\n" +
+		"订阅斗鱼乐言直播间（https://www.huya.com/xiaoleyan）：/watch -s huya -t live xiaoleyan\n" +
 		"可以用相应的/unwatch命令取消订阅\n" +
 		"取消订阅斗鱼6655直播间：/unwatch -s douyu -t live 6655\n" +
 		"该系列命令默认情况下仅管理员可用\n" +

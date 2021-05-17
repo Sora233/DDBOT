@@ -57,12 +57,12 @@ Arguments:
 
 Flags:
   -h, --help               Show context-sensitive help.
-  -s, --site="bilibili"    bilibili / douyu / youtube
+  -s, --site="bilibili"    bilibili / douyu / youtube / huya
   -t, --type="live"        news / live
 ```
 
 `Flags`里展示了`watch`命令的三个命令参数，分别是`-s/--site`、`-t/--type`、`-h/--help`，其中`--site="bilibili"`表示`-s/--site`
-的默认参数是bilibili，而后面`bilibili / douyu / youtube`部分则表示--site可以指定为这三个网站。
+的默认参数是bilibili，而后面`bilibili / douyu / youtube / huya`部分则表示--site可以指定为这四个网站。
 
 `-t/--type`同理。
 
@@ -78,7 +78,7 @@ DDBOT的命令格式皆遵守这个规则。
 |----------|-------|--------|
 |QQ群管理员 / bot群管理员|是|是|
 
-订阅推送，支持推送b站直播，b站动态，斗鱼直播，YTB视频，YTB直播
+订阅推送，支持推送b站直播，b站动态，斗鱼直播，YTB视频，YTB直播，虎牙直播
 
 一些例子：
 
@@ -110,6 +110,12 @@ DDBOT的命令格式皆遵守这个规则。
 
 ```shell
 /watch -s youtube -t news UCvEX2UICvFAa_T6pqizC20g
+```
+
+- 订阅虎牙乐爷的直播：https://www.huya.com/xiaoleyan
+
+```shell
+/watch -s huya xiaoleyan
 ```
 
 ### /watch （私聊版本）
@@ -154,6 +160,12 @@ DDBOT的命令格式皆遵守这个规则。
 
 ```shell
 /unwatch -s youtube -t news UCvEX2UICvFAa_T6pqizC20g
+```
+
+- 取消订阅虎牙乐爷的直播：https://www.huya.com/xiaoleyan
+
+```shell
+/unwatch -s huya xiaoleyan
 ```
 
 **一句话来说，把watch命令原封不动的复制过来，并把`watch`替换成`unwatch`即可取消订阅。**
