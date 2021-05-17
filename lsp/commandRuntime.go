@@ -8,6 +8,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	"github.com/Sora233/DDBOT/lsp/command"
 	"github.com/Sora233/DDBOT/lsp/douyu"
+	"github.com/Sora233/DDBOT/lsp/huya"
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/alecthomas/kong"
@@ -81,6 +82,8 @@ func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, c
 			watchType = concern.DouyuLive
 		} else if site == youtube.Site {
 			watchType = concern.YoutubeLive
+		} else if site == huya.Site {
+			watchType = concern.HuyaLive
 		} else {
 			return "", concern.Empty, errors.New("unknown watch type")
 		}
@@ -104,7 +107,7 @@ func (r *Runtime) ParseRawSite(rawSite string) (string, error) {
 		site  string
 	)
 
-	site, found = utils.PrefixMatch([]string{bilibili.Site, douyu.Site, youtube.Site}, rawSite)
+	site, found = utils.PrefixMatch([]string{bilibili.Site, douyu.Site, youtube.Site, huya.Site}, rawSite)
 	if !found {
 		return "", errors.New("can not determine site")
 	}

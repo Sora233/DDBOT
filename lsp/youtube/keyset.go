@@ -14,7 +14,7 @@ func (k *KeySet) FreshKey(keys ...interface{}) string {
 }
 
 func (k *KeySet) ParseGroupConcernStateKey(key string) (int64, interface{}, error) {
-	return buntdb.ParseYoutubeConcernStateKey(key)
+	return buntdb.ParseConcernStateKeyWithString(key)
 }
 
 func NewKeySet() *KeySet {

@@ -1,4 +1,4 @@
-package douyu
+package huya
 
 import "github.com/Sora233/DDBOT/lsp/buntdb"
 
@@ -6,22 +6,21 @@ type keySet struct {
 }
 
 func (l *keySet) GroupConcernStateKey(keys ...interface{}) string {
-	return buntdb.DouyuGroupConcernStateKey(keys...)
+	return buntdb.HuyaGroupConcernStateKey(keys...)
 }
 
 func (l *keySet) FreshKey(keys ...interface{}) string {
-	return buntdb.DouyuFreshKey(keys...)
+	return buntdb.HuyaFreshKey(keys...)
 }
 
 func (l *keySet) ParseGroupConcernStateKey(key string) (int64, interface{}, error) {
-	return buntdb.ParseConcernStateKeyWithInt64(key)
+	return buntdb.ParseConcernStateKeyWithString(key)
 }
 
-type extraKey struct {
-}
+type extraKey struct{}
 
-func (l *extraKey) CurrentLiveKey(keys ...interface{}) string {
-	return buntdb.DouyuCurrentLiveKey(keys...)
+func (k extraKey) CurrentLiveKey(keys ...interface{}) string {
+	return buntdb.HuyaCurrentLiveKey(keys...)
 }
 
 func NewExtraKey() *extraKey {

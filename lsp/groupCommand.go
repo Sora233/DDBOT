@@ -388,7 +388,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	defer func() { log.Info("watch command end") }()
 
 	var watchCmd struct {
-		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
+		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
 		Type string `optional:"" short:"t" default:"live" help:"news / live"`
 		Id   string `arg:""`
 	}
@@ -510,6 +510,24 @@ func (lgc *LspGroupCommand) ListCommand() {
 				listMsg.Append(message.NewText("\n"))
 			}
 			listMsg.Append(utils.MessageTextf("%v %v", info.ChannelName, info.ChannelId))
+		}
+	case concern.HuyaLive:
+		listMsg.Append(message.NewText("当前关注：\n"))
+		living, err := lgc.l.huyaConcern.ListLiving(groupCode, true)
+		if err != nil {
+			log.Debugf("list living failed %v", err)
+			lgc.textReply(fmt.Sprintf("失败 - %v", err))
+			return
+		}
+		if living == nil {
+			lgc.textReply("关注列表为空，可以使用/watch命令关注")
+			return
+		}
+		for idx, liveInfo := range living {
+			if idx != 0 {
+				listMsg.Append(message.NewText("\n"))
+			}
+			listMsg.Append(utils.MessageTextf("%v %v", liveInfo.Name, liveInfo.RoomId))
 		}
 	}
 

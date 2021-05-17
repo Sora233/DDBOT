@@ -1,4 +1,4 @@
-package douyu
+package huya
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ type StateManager struct {
 	*extraKey
 }
 
-func (c *StateManager) GetLiveInfo(id int64) (*LiveInfo, error) {
+func (c *StateManager) GetLiveInfo(id string) (*LiveInfo, error) {
 	var liveInfo = &LiveInfo{}
 
 	err := c.RTxCover(func(tx *buntdb.Tx) error {
@@ -57,6 +57,8 @@ func (c *StateManager) Start() error {
 	}
 	return c.StateManager.Start()
 }
+
+// ?为什么没有泛型?
 
 func NewStateManager() *StateManager {
 	sm := &StateManager{}

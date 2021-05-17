@@ -15,6 +15,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/douyu"
+	"github.com/Sora233/DDBOT/lsp/huya"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/proxy_pool"
@@ -41,12 +42,14 @@ var Debug = false
 
 type Lsp struct {
 	bilibiliConcern *bilibili.Concern
-	douyuConcern    *douyu.Concern
-	youtubeConcern  *youtube.Concern
-	pool            image_pool.Pool
-	concernNotify   chan concern.Notify
-	stop            chan interface{}
-	status          *Status
+	// 辣鸡语言毁我青春
+	douyuConcern   *douyu.Concern
+	youtubeConcern *youtube.Concern
+	huyaConcern    *huya.Concern
+	pool           image_pool.Pool
+	concernNotify  chan concern.Notify
+	stop           chan interface{}
+	status         *Status
 
 	PermissionStateManager *permission.StateManager
 	LspStateManager        *StateManager
@@ -90,6 +93,7 @@ func (l *Lsp) Init() {
 	l.bilibiliConcern = bilibili.NewConcern(l.concernNotify)
 	l.douyuConcern = douyu.NewConcern(l.concernNotify)
 	l.youtubeConcern = youtube.NewConcern(l.concernNotify)
+	l.huyaConcern = huya.NewConcern(l.concernNotify)
 
 	imagePoolType := config.GlobalConfig.GetString("imagePool.type")
 	log = logger.WithField("image_pool_type", imagePoolType)
@@ -375,6 +379,7 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 	l.bilibiliConcern.Start()
 	l.douyuConcern.Start()
 	l.youtubeConcern.Start()
+	l.huyaConcern.Start()
 }
 
 func (l *Lsp) Start(bot *bot.Bot) {
@@ -439,6 +444,7 @@ func (l *Lsp) FreshIndex() {
 	l.bilibiliConcern.FreshIndex()
 	l.douyuConcern.FreshIndex()
 	l.youtubeConcern.FreshIndex()
+	l.huyaConcern.FreshIndex()
 	l.PermissionStateManager.FreshIndex()
 	l.LspStateManager.FreshIndex()
 }
@@ -447,6 +453,7 @@ func (l *Lsp) RemoveAllByGroup(groupCode int64) {
 	l.bilibiliConcern.RemoveAllByGroupCode(groupCode)
 	l.douyuConcern.RemoveAllByGroupCode(groupCode)
 	l.youtubeConcern.RemoveAllByGroupCode(groupCode)
+	l.huyaConcern.RemoveAllByGroupCode(groupCode)
 	l.PermissionStateManager.RemoveAllByGroup(groupCode)
 }
 

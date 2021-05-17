@@ -3,7 +3,6 @@ package bilibili
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/tidwall/buntdb"
@@ -119,7 +118,7 @@ func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 		}
 		err = json.Unmarshal([]byte(val), newsInfo)
 		if err != nil {
-			fmt.Println(val)
+			logger.WithField("mid", mid).WithField("dbval", val).Errorf("Unmarshal error %v", err)
 			return err
 		}
 		return nil
