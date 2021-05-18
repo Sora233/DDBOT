@@ -39,7 +39,7 @@ func HeaderOption(key, value string) Option {
 }
 
 func AddUAOption() Option {
-	return HeaderOption("user-agent", fmt.Sprintf("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36'"))
+	return HeaderOption("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
 }
 
 func ProxyOption(prefer proxy_pool.Prefer) Option {

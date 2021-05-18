@@ -55,8 +55,8 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 
 	path := fmt.Sprintf(VideoPath, channelID)
 	resp, err := requests.Get(ctx, path, nil, 3,
-		requests.HeaderOption("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.130 Safari/537.36"),
 		requests.HeaderOption("accept-language", "zh-CN"),
+		requests.AddUAOption(),
 		requests.ProxyOption(proxy_pool.PreferOversea),
 	)
 	if err != nil {
