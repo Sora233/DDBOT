@@ -505,9 +505,11 @@ func (c *LspPrivateCommand) checkGroupCode(groupCode int64) error {
 	if group == nil {
 		return errors.New("没有找到该QQ群，请确认bot是否在群内")
 	}
-	member := group.FindMember(c.uin())
-	if member == nil {
-		return errors.New("没有在该群内找到您，请确认您是否在群内")
+	if !c.l.PermissionStateManager.CheckRole(c.uin(), permission.Admin) {
+		member := group.FindMember(c.uin())
+		if member == nil {
+			return errors.New("没有在该群内找到您，请确认您是否在群内")
+		}
 	}
 	return nil
 }
