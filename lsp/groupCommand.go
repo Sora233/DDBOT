@@ -417,21 +417,15 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 
 	id := watchCmd.Id
 
-	ctx := NewCommandContext()
-	ctx.Log = log
-	ctx.Lsp = lgc.l
-	ctx.TextReply = func(text string) interface{} {
-		return lgc.textSend(text)
-	}
-	IWatch(ctx, groupCode, id, site, watchType, remove)
+	IWatch(lgc.NewCommandContext(log), groupCode, id, site, watchType, remove)
 }
 
 func (lgc *LspGroupCommand) ListCommand() {
 	groupCode := lgc.groupCode()
 
 	log := lgc.DefaultLoggerWithCommand(ListCommand)
-	log.Info("run list living command")
-	defer func() { log.Info("list living command end") }()
+	log.Info("run list command")
+	defer func() { log.Info("list command end") }()
 
 	var listLivingCmd struct {
 		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
@@ -454,84 +448,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 	}
 	log = log.WithField("site", site).WithField("type", ctype)
 
-	listMsg := message.NewSendingMessage()
-
-	switch ctype {
-	case concern.BibiliLive, concern.BilibiliNews:
-		listMsg.Append(message.NewText("当前关注：\n"))
-		userInfos, err := lgc.l.bilibiliConcern.ListWatching(groupCode, ctype)
-		if err != nil {
-			log.Debugf("list failed %v", err)
-			lgc.textReply(fmt.Sprintf("list living 失败 - %v", err))
-			return
-		}
-		if len(userInfos) == 0 {
-			lgc.textReply("关注列表为空，可以使用/watch命令关注")
-			return
-		}
-		for idx, userInfo := range userInfos {
-			if idx != 0 {
-				listMsg.Append(message.NewText("\n"))
-			}
-			listMsg.Append(utils.MessageTextf("%v %v", userInfo.Name, userInfo.Mid))
-		}
-	case concern.DouyuLive:
-		listMsg.Append(message.NewText("当前关注：\n"))
-		living, err := lgc.l.douyuConcern.ListLiving(groupCode, true)
-		if err != nil {
-			log.Debugf("list living failed %v", err)
-			lgc.textReply(fmt.Sprintf("失败 - %v", err))
-			return
-		}
-		if living == nil {
-			lgc.textReply("关注列表为空，可以使用/watch命令关注")
-			return
-		}
-		for idx, liveInfo := range living {
-			if idx != 0 {
-				listMsg.Append(message.NewText("\n"))
-			}
-			listMsg.Append(utils.MessageTextf("%v %v", liveInfo.Nickname, liveInfo.RoomId))
-		}
-	case concern.YoutubeLive, concern.YoutubeVideo:
-		listMsg.Append(message.NewText("当前关注：\n"))
-		userInfos, err := lgc.l.youtubeConcern.ListWatching(groupCode, ctype)
-		if err != nil {
-			log.Debugf("list failed %v", err)
-			lgc.textReply(fmt.Sprintf("失败 - %v", err))
-			return
-		}
-		if len(userInfos) == 0 {
-			lgc.textReply("关注列表为空，可以使用/watch命令关注")
-			return
-		}
-		for idx, info := range userInfos {
-			if idx != 0 {
-				listMsg.Append(message.NewText("\n"))
-			}
-			listMsg.Append(utils.MessageTextf("%v %v", info.ChannelName, info.ChannelId))
-		}
-	case concern.HuyaLive:
-		listMsg.Append(message.NewText("当前关注：\n"))
-		living, err := lgc.l.huyaConcern.ListLiving(groupCode, true)
-		if err != nil {
-			log.Debugf("list living failed %v", err)
-			lgc.textReply(fmt.Sprintf("失败 - %v", err))
-			return
-		}
-		if living == nil {
-			lgc.textReply("关注列表为空，可以使用/watch命令关注")
-			return
-		}
-		for idx, liveInfo := range living {
-			if idx != 0 {
-				listMsg.Append(message.NewText("\n"))
-			}
-			listMsg.Append(utils.MessageTextf("%v %v", liveInfo.Name, liveInfo.RoomId))
-		}
-	}
-
-	lgc.send(listMsg)
+	IList(lgc.NewCommandContext(log), groupCode, site, ctype)
 }
 
 func (lgc *LspGroupCommand) RollCommand() {
@@ -685,13 +602,7 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 
 	log = log.WithField("command", enableCmd.Command).WithField("disable", disable)
 
-	ctx := NewCommandContext()
-	ctx.Log = log
-	ctx.Lsp = lgc.l
-	ctx.TextReply = func(text string) interface{} {
-		return lgc.textReply(text)
-	}
-	IEnable(ctx, groupCode, enableCmd.Command, disable)
+	IEnable(lgc.NewCommandContext(log), groupCode, enableCmd.Command, disable)
 }
 
 func (lgc *LspGroupCommand) GrantCommand() {
@@ -1125,4 +1036,20 @@ func (lgc *LspGroupCommand) privateTextSend(text string) {
 
 func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {
 	return lgc.textReply("权限不够")
+}
+
+func (lgc *LspGroupCommand) NewCommandContext(log *logrus.Entry) *CommandContext {
+	ctx := NewCommandContext()
+	ctx.Lsp = lgc.l
+	ctx.Log = log
+	ctx.TextReply = func(text string) interface{} {
+		return lgc.textReply(text)
+	}
+	ctx.Send = func(msg *message.SendingMessage) interface{} {
+		return lgc.send(msg)
+	}
+	ctx.Reply = func(sendingMessage *message.SendingMessage) interface{} {
+		return lgc.reply(sendingMessage)
+	}
+	return ctx
 }

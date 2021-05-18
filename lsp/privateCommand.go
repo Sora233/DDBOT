@@ -92,10 +92,54 @@ func (c *LspPrivateCommand) Execute() {
 			return
 		}
 		c.LogCommand()
+	case "/list":
+		c.ListCommand()
 	default:
 		c.textReply("阁下似乎输入了一个无法识别的命令，请注意BOT的大多数命令只能在群聊内生效。")
 		log.Debug("no command matched")
 	}
+}
+
+func (c *LspPrivateCommand) ListCommand() {
+	log := c.DefaultLoggerWithCommand(ListCommand)
+	log.Info("run list command")
+	defer func() { log.Info("list command end") }()
+
+	var listCmd struct {
+		Site  string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
+		Type  string `optional:"" short:"t" default:"live" help:"news / live"`
+		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
+	}
+	output := c.parseCommandSyntax(&listCmd, ListCommand)
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+	site, watchType, err := c.ParseRawSiteAndType(listCmd.Site, listCmd.Type)
+	if err != nil {
+		log = log.WithField("args", c.GetArgs())
+		log.Errorf("parse raw concern failed %v", err)
+		c.textReply(fmt.Sprintf("参数错误 - %v", err))
+		return
+	}
+	log = log.WithField("site", site).WithField("type", watchType)
+
+	groupCode := listCmd.Group
+	if err := c.checkGroupCode(groupCode); err != nil {
+		c.textReply(err.Error())
+		return
+	}
+	log = log.WithField("groupCode", groupCode)
+
+	if c.l.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ListCommand) {
+		c.disabledReply()
+		return
+	}
+
+	IList(c.NewCommandContext(log), groupCode, site, watchType)
+
 }
 
 func (c *LspPrivateCommand) WatchCommand(remove bool) {
@@ -169,19 +213,13 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 		return
 	}
 
-	ctx := NewCommandContext()
-	ctx.Log = log
-	ctx.TextReply = func(text string) interface{} {
-		return c.textSend(text)
-	}
-	ctx.Lsp = c.l
-	IWatch(ctx, groupCode, id, site, watchType, remove)
+	IWatch(c.NewCommandContext(log), groupCode, id, site, watchType, remove)
 }
 
 func (c *LspPrivateCommand) EnableCommand(disable bool) {
 	log := c.DefaultLoggerWithCommand(EnableCommand).WithField("disable", disable)
 	log.Info("run enable command")
-	defer func() { log.Info("watch enable end") }()
+	defer func() { log.Info("enable command end") }()
 
 	var name string
 	if disable {
@@ -220,13 +258,7 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 		return
 	}
 
-	ctx := NewCommandContext()
-	ctx.Log = log
-	ctx.Lsp = c.l
-	ctx.TextReply = func(text string) interface{} {
-		return c.textReply(text)
-	}
-	IEnable(ctx, groupCode, enableCmd.Command, disable)
+	IEnable(c.NewCommandContext(log), groupCode, enableCmd.Command, disable)
 }
 
 func (c *LspPrivateCommand) BlockCommand() {
@@ -449,6 +481,20 @@ func (c *LspPrivateCommand) uin() int64 {
 
 func (c *LspPrivateCommand) name() string {
 	return c.sender().DisplayName()
+}
+
+func (c *LspPrivateCommand) NewCommandContext(log *logrus.Entry) *CommandContext {
+	ctx := NewCommandContext()
+	ctx.Lsp = c.l
+	ctx.Log = log
+	ctx.TextReply = func(text string) interface{} {
+		return c.textReply(text)
+	}
+	ctx.Send = func(msg *message.SendingMessage) interface{} {
+		return c.send(msg)
+	}
+	ctx.Reply = ctx.Send
+	return ctx
 }
 
 func (c *LspPrivateCommand) checkGroupCode(groupCode int64) error {
