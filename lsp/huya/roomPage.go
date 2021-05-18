@@ -48,7 +48,7 @@ func RoomPage(roomId string) (*LiveInfo, error) {
 	url := HuyaPath(roomId)
 	resp, err := requests.Get(ctx, url, nil, 3,
 		requests.AddUAOption(),
-		requests.ProxyOption(proxy_pool.PreferAny),
+		requests.ProxyOption(proxy_pool.PreferNone),
 	)
 	if err != nil {
 		return nil, err
