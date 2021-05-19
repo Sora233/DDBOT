@@ -3,7 +3,7 @@ module github.com/Sora233/DDBOT
 go 1.16
 
 require (
-	github.com/Jeffail/gabs/v2 v2.6.0
+	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486
 	github.com/Mrs4s/MiraiGo v0.0.0-20210503094755-b12e45fea93c
 	github.com/PuerkitoBio/goquery v1.6.1
