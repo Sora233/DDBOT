@@ -30,7 +30,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				logger.WithField("site", bilibili.Site).
 					WithField("GroupCode", notify.GroupCode).
 					WithField("Uid", notify.Mid).
-					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
+					WithField("GroupName", l.findGroupName(notify.GroupCode)).
 					WithField("Name", notify.Name).
 					WithField("Title", notify.LiveTitle).
 					WithField("Status", notify.Status.String()).
@@ -48,7 +48,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				logger.WithField("site", bilibili.Site).
 					WithField("GroupCode", notify.GroupCode).
 					WithField("Uid", notify.Mid).
-					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
+					WithField("GroupName", l.findGroupName(notify.GroupCode)).
 					WithField("Name", notify.Name).
 					WithField("NewsCount", len(notify.Cards)).
 					Info("notify")
@@ -62,7 +62,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*douyu.ConcernLiveNotify)
 				logger.WithField("site", douyu.Site).
 					WithField("GroupCode", notify.GroupCode).
-					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
+					WithField("GroupName", l.findGroupName(notify.GroupCode)).
 					WithField("Name", notify.Nickname).
 					WithField("Title", notify.RoomName).
 					WithField("Status", notify.ShowStatus.String()).
@@ -79,7 +79,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*youtube.ConcernNotify)
 				logger.WithField("site", youtube.Site).
 					WithField("GroupCode", notify.GroupCode).
-					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
+					WithField("GroupName", l.findGroupName(notify.GroupCode)).
 					WithField("ChannelName", notify.ChannelName).
 					WithField("ChannelID", notify.ChannelId).
 					WithField("VideoId", notify.VideoId).
@@ -97,7 +97,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				notify := (inotify).(*huya.ConcernLiveNotify)
 				logger.WithField("site", huya.Site).
 					WithField("GroupCode", notify.GroupCode).
-					WithField("GroupName", bot.FindGroup(notify.GroupCode).Name).
+					WithField("GroupName", l.findGroupName(notify.GroupCode)).
 					WithField("Name", notify.Name).
 					WithField("Title", notify.RoomName).
 					WithField("Status", notify.Living).
@@ -566,4 +566,12 @@ func (l *Lsp) notifyHuyaLive(bot *bot.Bot, notify *huya.ConcernLiveNotify) []mes
 		result = append(result, localutils.MessageTextf("虎牙-%s暂未直播\n", notify.Name))
 	}
 	return result
+}
+
+func (l *Lsp) findGroupName(groupCode int64) string {
+	gi := bot.Instance.FindGroup(groupCode)
+	if gi == nil {
+		return ""
+	}
+	return gi.Name
 }
