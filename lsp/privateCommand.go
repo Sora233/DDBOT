@@ -423,7 +423,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"禁用watch命令，调用watch命令将不再有任何反应：/disable watch\n" +
 		"注意，bot只会在群聊内工作，私聊无法生效\n" +
 		"详细使用介绍及样例，请查看https://github.com/Sora233/DDBOT/blob/master/EXAMPLE.md\n" +
-		"其他使用问题请在此提出：https://github.com/Sora233/DDBOT/discussions"
+		"如果您觉得DDBOT缺少了必要功能，请反馈到：https://www.bilibili.com/read/cv10602230"
 	c.textSend(help)
 }
 

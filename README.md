@@ -2,6 +2,8 @@
 
 一个基于MiraiGO的多功能QQ群机器人。
 
+[Bilibili专栏](https://www.bilibili.com/read/cv10602230)
+
 -----
 
 ## 设计理念
