@@ -219,6 +219,21 @@ func (c *StateManager) ListByGroup(groupCode int64, filter func(id interface{}, 
 	return
 }
 
+func (c *StateManager) ListIds() (ids []interface{}, err error) {
+	var idSet = make(map[interface{}]bool)
+	_, _, _, err = c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+		idSet[id] = true
+		return true
+	})
+	if err != nil {
+		return nil, err
+	}
+	for k := range idSet {
+		ids = append(ids, k)
+	}
+	return ids, nil
+}
+
 func (c *StateManager) GroupTypeById(ids []interface{}, types []concern.Type) ([]interface{}, []concern.Type, error) {
 	if len(ids) != len(types) {
 		return nil, nil, ErrLengthMismatch

@@ -22,9 +22,10 @@ const (
 
 // private command
 const (
-	PingCommand  = "ping"
-	LogCommand   = "log"
-	BlockCommand = "block"
+	PingCommand    = "ping"
+	LogCommand     = "log"
+	BlockCommand   = "block"
+	SysinfoCommand = "sysinfo"
 )
 
 var allGroupCommand = [...]string{
@@ -36,7 +37,10 @@ var allGroupCommand = [...]string{
 }
 
 var allPrivateOperate = [...]string{
-	PingCommand, HelpCommand, LogCommand, BlockCommand,
+	PingCommand, HelpCommand, LogCommand,
+	BlockCommand, SysinfoCommand, ListCommand,
+	WatchCommand, UnwatchCommand, DisableCommand,
+	EnableCommand,
 }
 
 var nonOprateable = [...]string{

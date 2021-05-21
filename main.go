@@ -82,10 +82,6 @@ func main() {
 
 	lsp.Instance.PostStart(bot.Instance)
 
-	if lsp.Instance != nil {
-		lsp.Instance.FreshIndex()
-	}
-
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
 	<-ch

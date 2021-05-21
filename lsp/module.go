@@ -53,6 +53,7 @@ type Lsp struct {
 
 	PermissionStateManager *permission.StateManager
 	LspStateManager        *StateManager
+	started                bool
 }
 
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
@@ -376,10 +377,12 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 }
 
 func (l *Lsp) PostStart(bot *bot.Bot) {
+	l.FreshIndex()
 	l.bilibiliConcern.Start()
 	l.douyuConcern.Start()
 	l.youtubeConcern.Start()
 	l.huyaConcern.Start()
+	l.started = true
 }
 
 func (l *Lsp) Start(bot *bot.Bot) {

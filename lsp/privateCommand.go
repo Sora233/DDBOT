@@ -12,6 +12,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/permission"
+	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
 	"github.com/sirupsen/logrus"
@@ -94,6 +95,8 @@ func (c *LspPrivateCommand) Execute() {
 		c.LogCommand()
 	case "/list":
 		c.ListCommand()
+	case "/sysinfo":
+		c.SysinfoCommand()
 	default:
 		c.textReply("阁下似乎输入了一个无法识别的命令，请注意BOT的大多数命令只能在群聊内生效。")
 		log.Debug("no command matched")
@@ -418,7 +421,59 @@ func (c *LspPrivateCommand) HelpCommand() {
 	time.AfterFunc(time.Millisecond*500, func() {
 		c.textReply(help2)
 	})
+}
 
+func (c *LspPrivateCommand) SysinfoCommand() {
+	log := c.DefaultLoggerWithCommand(SysinfoCommand)
+	log.Info("run sysinfo command")
+	defer func() { log.Info("sysinfo command end") }()
+
+	output := c.parseCommandSyntax(&struct{}{}, SysinfoCommand)
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	if !c.l.PermissionStateManager.RequireAny(permission.AdminRoleRequireOption(c.uin())) {
+		c.noPermission()
+		return
+	}
+
+	if c.bot == nil || !c.l.started {
+		c.textReply("当前暂时无法查询")
+		return
+	}
+
+	msg := message.NewSendingMessage()
+	msg.Append(localutils.MessageTextf("当前好友数：%v\n", len(c.bot.FriendList)))
+	msg.Append(localutils.MessageTextf("当前群组数：%v\n", len(c.bot.GroupList)))
+	ids, err := c.l.bilibiliConcern.ListIds()
+	if err != nil {
+		msg.Append(localutils.MessageTextf("当前Bilibili订阅数：获取失败\n"))
+	} else {
+		msg.Append(localutils.MessageTextf("当前Bilibili订阅数：%v\n", len(ids)))
+	}
+	ids, err = c.l.douyuConcern.ListIds()
+	if err != nil {
+		msg.Append(localutils.MessageTextf("当前Douyu订阅数：获取失败\n"))
+	} else {
+		msg.Append(localutils.MessageTextf("当前Douyu订阅数：%v\n", len(ids)))
+	}
+	ids, err = c.l.youtubeConcern.ListIds()
+	if err != nil {
+		msg.Append(localutils.MessageTextf("当前YTB订阅数：获取失败\n"))
+	} else {
+		msg.Append(localutils.MessageTextf("当前YTB订阅数：%v\n", len(ids)))
+	}
+	ids, err = c.l.huyaConcern.ListIds()
+	if err != nil {
+		msg.Append(localutils.MessageTextf("当前Huya订阅数：获取失败\n"))
+	} else {
+		msg.Append(localutils.MessageTextf("当前Huya订阅数：%v\n", len(ids)))
+	}
+	c.send(msg)
 }
 
 func (c *LspPrivateCommand) DebugCheck() bool {
