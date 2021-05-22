@@ -109,8 +109,8 @@ func (c *LspPrivateCommand) ListCommand() {
 	defer func() { log.Info("list command end") }()
 
 	var listCmd struct {
-		Site  string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
-		Type  string `optional:"" short:"t" default:"live" help:"news / live"`
+		Site  string `optional:"" short:"s" help:"bilibili / douyu / youtube"`
+		Type  string `optional:"" short:"t" help:"news / live"`
 		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
 	}
 	output := c.parseCommandSyntax(&listCmd, ListCommand)
@@ -120,14 +120,11 @@ func (c *LspPrivateCommand) ListCommand() {
 	if c.exit {
 		return
 	}
-	site, watchType, err := c.ParseRawSiteAndType(listCmd.Site, listCmd.Type)
-	if err != nil {
-		log = log.WithField("args", c.GetArgs())
-		log.Errorf("parse raw concern failed %v", err)
-		c.textReply(fmt.Sprintf("参数错误 - %v", err))
+
+	if listCmd.Site != "" || listCmd.Type != "" {
+		c.textReply("命令已更新，请直接输入/list即可")
 		return
 	}
-	log = log.WithField("site", site).WithField("type", watchType)
 
 	groupCode := listCmd.Group
 	if err := c.checkGroupCode(groupCode); err != nil {
@@ -141,8 +138,7 @@ func (c *LspPrivateCommand) ListCommand() {
 		return
 	}
 
-	IList(c.NewCommandContext(log), groupCode, site, watchType)
-
+	IList(c.NewCommandContext(log), groupCode)
 }
 
 func (c *LspPrivateCommand) WatchCommand(remove bool) {

@@ -42,7 +42,7 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	}
 
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(c.CurrentLiveKey(liveInfo.RoomId), liveInfo.ToString(), localdb.ExpireOption(time.Hour*24))
+		_, _, err := tx.Set(c.CurrentLiveKey(liveInfo.RoomId), liveInfo.ToString(), localdb.ExpireOption(time.Hour*24*7))
 		return err
 
 	})

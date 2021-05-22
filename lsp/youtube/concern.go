@@ -39,25 +39,27 @@ func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Inf
 	return NewInfo(videoInfo), nil
 }
 
-func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo, error) {
+func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo, []concern.Type, error) {
 	log := logger.WithField("group_code", groupCode)
 
-	ids, _, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
+	ids, ctypes, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
 		return p.ContainAny(ctype)
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	var result = make([]*UserInfo, 0)
-	for _, id := range ids {
+	var result = make([]*UserInfo, 0, len(ids))
+	var resultTypes = make([]concern.Type, 0, len(ids))
+	for index, id := range ids {
 		info, err := c.findOrLoad(id.(string))
 		if err != nil {
 			log.WithField("id", id.(string)).Errorf("findInfo failed %v", err)
 			continue
 		}
 		result = append(result, NewUserInfo(info.ChannelId, info.ChannelName))
+		resultTypes = append(resultTypes, ctypes[index])
 	}
-	return result, nil
+	return result, resultTypes, nil
 }
 
 func (c *Concern) Start() {

@@ -100,31 +100,28 @@ func (c *Concern) Add(groupCode int64, id interface{}, ctype concern.Type) (*Liv
 	return liveInfo, nil
 }
 
-func (c *Concern) ListLiving(groupCode int64, all bool) ([]*ConcernLiveNotify, error) {
-	log := logger.WithField("group_code", groupCode).WithField("all", all)
-	var result []*ConcernLiveNotify
+func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*LiveInfo, []concern.Type, error) {
+	log := logger.WithField("group_code", groupCode)
 
-	ids, _, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
-		return p.ContainAny(concern.HuyaLive)
+	ids, ctypes, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
+		return p.ContainAny(ctype)
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	if len(ids) != 0 {
-		result = make([]*ConcernLiveNotify, 0)
-	}
-	for _, id := range ids {
-		liveInfo, err := c.StateManager.GetLiveInfo(id.(string))
+	var resultTypes = make([]concern.Type, 0, len(ids))
+	var result = make([]*LiveInfo, 0, len(ids))
+	for index, id := range ids {
+		liveInfo, err := c.findOrLoadRoom(id.(string))
 		if err != nil {
 			log.WithField("id", id).Errorf("get LiveInfo err %v", err)
 			continue
 		}
-		if all || liveInfo.Living {
-			result = append(result, NewConcernLiveNotify(groupCode, liveInfo))
-		}
+		result = append(result, liveInfo)
+		resultTypes = append(resultTypes, ctypes[index])
 	}
 
-	return result, nil
+	return result, resultTypes, nil
 }
 
 func (c *Concern) notifyLoop() {
@@ -175,6 +172,14 @@ func (c *Concern) findRoom(roomId string, load bool) (*LiveInfo, error) {
 		return liveInfo, nil
 	}
 	return c.StateManager.GetLiveInfo(roomId)
+}
+
+func (c *Concern) findOrLoadRoom(roomId string) (*LiveInfo, error) {
+	info, _ := c.findRoom(roomId, false)
+	if info == nil {
+		return c.findRoom(roomId, true)
+	}
+	return info, nil
 }
 
 func NewConcern(notify chan<- concern.Notify) *Concern {

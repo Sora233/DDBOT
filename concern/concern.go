@@ -1,6 +1,9 @@
 package concern
 
-import "strconv"
+import (
+	"strconv"
+	"strings"
+)
 
 type Type int64
 
@@ -85,4 +88,27 @@ func FromString(s string) Type {
 		return Type(0)
 	}
 	return Type(t)
+}
+
+func (t Type) Description() string {
+	switch t {
+	case BibiliLive, HuyaLive, DouyuLive, YoutubeLive:
+		return "live"
+	case BilibiliNews, YoutubeVideo:
+		return "news"
+	}
+
+	sb := strings.Builder{}
+	var first = true
+	for _, o := range all {
+		if t.ContainAny(o) {
+			if first {
+				first = false
+			} else {
+				sb.WriteString("/")
+			}
+			sb.WriteString(o.Description())
+		}
+	}
+	return sb.String()
 }

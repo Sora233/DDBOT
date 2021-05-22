@@ -427,11 +427,11 @@ func (lgc *LspGroupCommand) ListCommand() {
 	log.Info("run list command")
 	defer func() { log.Info("list command end") }()
 
-	var listLivingCmd struct {
-		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube"`
-		Type string `optional:"" short:"t" default:"live" help:"news / live"`
+	var listCmd struct {
+		Site string `optional:"" short:"s" help:"bilibili / douyu / youtube"`
+		Type string `optional:"" short:"t" help:"news / live"`
 	}
-	output := lgc.parseCommandSyntax(&listLivingCmd, ListCommand)
+	output := lgc.parseCommandSyntax(&listCmd, ListCommand)
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -439,16 +439,12 @@ func (lgc *LspGroupCommand) ListCommand() {
 		return
 	}
 
-	site, ctype, err := lgc.ParseRawSiteAndType(listLivingCmd.Site, listLivingCmd.Type)
-	if err != nil {
-		log = log.WithField("args", lgc.GetArgs())
-		log.Errorf("parse raw site failed %v", err)
-		lgc.textReply(fmt.Sprintf("失败 - %v", err))
+	if listCmd.Site != "" || listCmd.Type != "" {
+		lgc.textReply("命令已更新，请直接输入/list即可")
 		return
 	}
-	log = log.WithField("site", site).WithField("type", ctype)
 
-	IList(lgc.NewCommandContext(log), groupCode, site, ctype)
+	IList(lgc.NewCommandContext(log), groupCode)
 }
 
 func (lgc *LspGroupCommand) RollCommand() {

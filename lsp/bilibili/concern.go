@@ -150,25 +150,27 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 	return newCtype, err
 }
 
-func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo, error) {
+func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo, []concern.Type, error) {
 	log := logger.WithField("group_code", groupCode)
 
-	mids, _, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
+	mids, ctypes, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
 		return p.ContainAny(ctype)
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	var result = make([]*UserInfo, 0)
-	for _, mid := range mids {
+	var result = make([]*UserInfo, 0, len(mids))
+	var resultTypes = make([]concern.Type, 0, len(mids))
+	for index, mid := range mids {
 		userInfo, err := c.StateManager.GetUserInfo(mid.(int64))
 		if err != nil {
 			log.WithField("mid", mid).Errorf("GetUserInfo error %v", err)
 			continue
 		}
 		result = append(result, userInfo)
+		resultTypes = append(resultTypes, ctypes[index])
 	}
-	return result, nil
+	return result, resultTypes, nil
 }
 
 func (c *Concern) notifyLoop() {
