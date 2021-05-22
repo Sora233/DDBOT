@@ -186,7 +186,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				result = append(result, localutils.MessageTextf("%v\n", origin.GetItem().GetDescription()))
 				for _, pic := range origin.GetItem().GetPictures() {
 					var isNorm = false
-					if pic.GetImgHeight() > 1200 && pic.GetImgHeight() > 1200 {
+					if pic.GetImgHeight() > 1200 && pic.GetImgWidth() > 1200 {
 						isNorm = true
 					}
 					groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), isNorm, proxy_pool.PreferAny)
@@ -323,7 +323,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 			result = append(result, localutils.MessageTextf("%v发布了新态：\n%v\n%v\n", notify.Name, date, cardImage.GetItem().GetDescription()))
 			for _, pic := range cardImage.GetItem().GetPictures() {
 				var isNorm = false
-				if pic.GetImgHeight() > 1200 && pic.GetImgHeight() > 1200 {
+				if pic.GetImgHeight() > 1200 && pic.GetImgWidth() > 1200 {
 					isNorm = true
 				}
 				groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), isNorm, proxy_pool.PreferAny)
