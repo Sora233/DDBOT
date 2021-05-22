@@ -17,13 +17,13 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/Jeffail/gabs/v2 v2.6.1 h1:wwbE6nTQTwIMsMxzi6XFQQYRZ6wDc1mSdxoAN+9U4Gk=
 github.com/Jeffail/gabs/v2 v2.6.1/go.mod h1:xCn81vdHKxFUuWWAaD5jCTQDNPBMh5pPs9IJ+NcziBI=
 github.com/Mrs4s/MiraiGo v0.0.0-20210304103008-effa2b84fe7a/go.mod h1:drSlh4LlYtjOMJxirScUCSnylBKi1NIRxUz7TKdSsNs=
-github.com/Mrs4s/MiraiGo v0.0.0-20210503094755-b12e45fea93c h1:6Nyn1XkDM7E3VOVg1yrWFEui7vm2SmGQbiY8WoJ+9U4=
-github.com/Mrs4s/MiraiGo v0.0.0-20210503094755-b12e45fea93c/go.mod h1:NjiWhlvGxwv1ftOWIoiFa/OzklnAYI4YqNexFOKSZKw=
+github.com/Mrs4s/MiraiGo v0.0.0-20210518070025-f145000ac0ef h1:lyLn7JgvEeV0mp2S3SGfDK2GgAdhxnBkpNwcCLoj9BY=
+github.com/Mrs4s/MiraiGo v0.0.0-20210518070025-f145000ac0ef/go.mod h1:NjiWhlvGxwv1ftOWIoiFa/OzklnAYI4YqNexFOKSZKw=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/PuerkitoBio/goquery v1.6.1 h1:FgjbQZKl5HTmcn4sKBgvx8vv63nhyhIpv7lJpFGCWpk=
 github.com/PuerkitoBio/goquery v1.6.1/go.mod h1:GsLWisAFVj4WgDibEWF4pvYnkVQBpKBKeU+7zCJoLcc=
-github.com/Sora233/MiraiGo-Template v0.0.0-20210409132741-611440d4c59b h1:3adZUZlAW1rZnh73Hw4jA7ErTgtCcv/f/1KiAyL5Ok4=
-github.com/Sora233/MiraiGo-Template v0.0.0-20210409132741-611440d4c59b/go.mod h1:WedSdSuH/3cciTlsZBALaRzEwS5lgh68CwVmqaTAbz8=
+github.com/Sora233/MiraiGo-Template v0.0.0-20210522075506-dca471c99f51 h1:FshjcAa622IeEN0XZOhbWnguRTZxXhGP9TENYvavGFU=
+github.com/Sora233/MiraiGo-Template v0.0.0-20210522075506-dca471c99f51/go.mod h1:WedSdSuH/3cciTlsZBALaRzEwS5lgh68CwVmqaTAbz8=
 github.com/Sora233/requests v0.0.0-20210509184157-15dc0c68eb92 h1:nXa3fxPTd7e90R78cst1ytbY09J9kcHfZDzky8O4Oj8=
 github.com/Sora233/requests v0.0.0-20210509184157-15dc0c68eb92/go.mod h1:k/QNjrV73zXkn1r3iG0rwZLc1naFS55Q67I/Wyo/UkI=
 github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882 h1:WXXRCSYXZsFd3ETkh+imU6Gz/Xdm0lXgAQILgBau0XY=

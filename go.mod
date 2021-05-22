@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486
-	github.com/Mrs4s/MiraiGo v0.0.0-20210503094755-b12e45fea93c
+	github.com/Mrs4s/MiraiGo v0.0.0-20210518070025-f145000ac0ef
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/Sora233/requests v0.0.0-20210509184157-15dc0c68eb92
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
@@ -28,4 +28,4 @@ require (
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
 )
 
-replace github.com/Logiase/MiraiGo-Template => github.com/Sora233/MiraiGo-Template v0.0.0-20210409132741-611440d4c59b
+replace github.com/Logiase/MiraiGo-Template => github.com/Sora233/MiraiGo-Template v0.0.0-20210522075506-dca471c99f51
