@@ -110,25 +110,11 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.SetuCommand(true)
 		}
 	case "/watch":
-		if lgc.requireNotDisable(WatchCommand) {
-			if !lgc.requireAnyCommand(WatchCommand, UnwatchCommand) {
-				lgc.noPermissionReply()
-				return
-			}
-			lgc.WatchCommand(false)
-		}
+		lgc.WatchCommand(false)
 	case "/unwatch":
-		if lgc.requireNotDisable(UnwatchCommand) {
-			if !lgc.requireAnyCommand(WatchCommand, UnwatchCommand) {
-				lgc.noPermissionReply()
-				return
-			}
-			lgc.WatchCommand(true)
-		}
+		lgc.WatchCommand(true)
 	case "/list":
-		if lgc.requireNotDisable(ListCommand) {
-			lgc.ListCommand()
-		}
+		lgc.ListCommand()
 	case "/签到":
 		if lgc.requireNotDisable(CheckinCommand) {
 			lgc.CheckinCommand()
@@ -138,25 +124,10 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.RollCommand()
 		}
 	case "/grant":
-		// permission will be checked later
 		lgc.GrantCommand()
 	case "/enable":
-		if !lgc.l.PermissionStateManager.RequireAny(
-			permission.AdminRoleRequireOption(lgc.uin()),
-			permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
-		) {
-			lgc.noPermissionReply()
-			return
-		}
 		lgc.EnableCommand(false)
 	case "/disable":
-		if !lgc.l.PermissionStateManager.RequireAny(
-			permission.AdminRoleRequireOption(lgc.uin()),
-			permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
-		) {
-			lgc.noPermissionReply()
-			return
-		}
 		lgc.EnableCommand(true)
 	case "/face":
 		if lgc.requireNotDisable(FaceCommand) {
@@ -950,7 +921,7 @@ func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {
 }
 
 func (lgc *LspGroupCommand) NewCommandContext(log *logrus.Entry) *MessageContext {
-	ctx := NewCommandContext()
+	ctx := NewMessageContext()
 	ctx.Lsp = lgc.l
 	ctx.Log = log
 	ctx.TextReply = func(text string) interface{} {
@@ -964,6 +935,10 @@ func (lgc *LspGroupCommand) NewCommandContext(log *logrus.Entry) *MessageContext
 	}
 	ctx.NoPermissionReply = func() interface{} {
 		return lgc.noPermissionReply()
+	}
+	ctx.DisabledReply = func() interface{} {
+		ctx.Log.Debugf("disabled")
+		return nil
 	}
 	ctx.Sender = lgc.sender()
 	return ctx

@@ -64,6 +64,7 @@ func (c *LspPrivateCommand) Execute() {
 
 	log.Debug("execute command")
 
+	// all permission will be checked later
 	switch c.GetCmd() {
 	case "/ping":
 		c.PingCommand()
@@ -135,12 +136,7 @@ func (c *LspPrivateCommand) ListCommand() {
 	}
 	log = log.WithField("groupCode", groupCode)
 
-	if c.l.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ListCommand) {
-		c.disabledReply()
-		return
-	}
-
-	IList(c.NewCommandContext(log), groupCode)
+	IList(c.NewMessageContext(log), groupCode)
 }
 
 func (c *LspPrivateCommand) WatchCommand(remove bool) {
@@ -155,13 +151,10 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 	)
 
 	var name string
-	var Command string
 	if remove {
 		name = "unwatch"
-		Command = UnwatchCommand
 	} else {
 		name = "watch"
-		Command = WatchCommand
 	}
 
 	var watchCmd struct {
@@ -198,23 +191,7 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 
 	log = log.WithField("groupCode", groupCode)
 
-	if c.l.PermissionStateManager.CheckGroupCommandDisabled(groupCode, Command) {
-		c.disabledReply()
-		return
-	}
-
-	if !c.l.PermissionStateManager.RequireAny(
-		permission.AdminRoleRequireOption(c.uin()),
-		permission.GroupAdminRoleRequireOption(groupCode, c.uin()),
-		permission.QQAdminRequireOption(groupCode, c.uin()),
-		permission.GroupCommandRequireOption(groupCode, c.uin(), WatchCommand),
-		permission.GroupCommandRequireOption(groupCode, c.uin(), UnwatchCommand),
-	) {
-		c.noPermission()
-		return
-	}
-
-	IWatch(c.NewCommandContext(log), groupCode, id, site, watchType, remove)
+	IWatch(c.NewMessageContext(log), groupCode, id, site, watchType, remove)
 }
 
 func (c *LspPrivateCommand) EnableCommand(disable bool) {
@@ -251,15 +228,7 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 
 	log = log.WithField("groupCode", groupCode)
 
-	if !c.l.PermissionStateManager.RequireAny(
-		permission.AdminRoleRequireOption(c.uin()),
-		permission.GroupAdminRoleRequireOption(groupCode, c.uin()),
-	) {
-		c.noPermission()
-		return
-	}
-
-	IEnable(c.NewCommandContext(log), groupCode, enableCmd.Command, disable)
+	IEnable(c.NewMessageContext(log), groupCode, enableCmd.Command, disable)
 }
 
 func (c *LspPrivateCommand) GrantCommand() {
@@ -301,9 +270,9 @@ func (c *LspPrivateCommand) GrantCommand() {
 	log = log.WithField("grantFrom", grantFrom).WithField("grantTo", grantTo).WithField("delete", del)
 
 	if grantCmd.Command != "" {
-		IGrantCmd(c.NewCommandContext(log), groupCode, grantCmd.Command, grantTo, del)
+		IGrantCmd(c.NewMessageContext(log), groupCode, grantCmd.Command, grantTo, del)
 	} else if grantCmd.Role != "" {
-		IGrantRole(c.NewCommandContext(log), groupCode, grantCmd.Role, grantTo, del)
+		IGrantRole(c.NewMessageContext(log), groupCode, grantCmd.Role, grantTo, del)
 	}
 }
 
@@ -575,8 +544,8 @@ func (c *LspPrivateCommand) name() string {
 	return c.sender().DisplayName()
 }
 
-func (c *LspPrivateCommand) NewCommandContext(log *logrus.Entry) *MessageContext {
-	ctx := NewCommandContext()
+func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
+	ctx := NewMessageContext()
 	ctx.Lsp = c.l
 	ctx.Log = log
 	ctx.TextReply = func(text string) interface{} {
@@ -588,6 +557,10 @@ func (c *LspPrivateCommand) NewCommandContext(log *logrus.Entry) *MessageContext
 	ctx.Reply = ctx.Send
 	ctx.NoPermissionReply = func() interface{} {
 		return c.noPermission()
+	}
+	ctx.DisabledReply = func() interface{} {
+		ctx.Log.Debugf("disabled")
+		return c.disabledReply()
 	}
 	ctx.Sender = c.sender()
 	return ctx

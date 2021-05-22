@@ -25,12 +25,13 @@ type MessageContext struct {
 	Reply             func(sendingMessage *message.SendingMessage) interface{}
 	Send              func(sendingMessage *message.SendingMessage) interface{}
 	NoPermissionReply func() interface{}
+	DisabledReply     func() interface{}
 	Lsp               *Lsp
 	Log               *logrus.Entry
 	Sender            *message.Sender
 }
 
-func NewCommandContext() *MessageContext {
+func NewMessageContext() *MessageContext {
 	return new(MessageContext)
 }
 
@@ -41,6 +42,11 @@ func IList(c *MessageContext, groupCode int64) {
 		return
 	}
 	log := c.Log
+
+	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ListCommand) {
+		c.DisabledReply()
+		return
+	}
 
 	listMsg := message.NewSendingMessage()
 
@@ -113,6 +119,23 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		return
 	}
 	log := c.Log
+
+	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, WatchCommand) {
+		c.DisabledReply()
+		return
+	}
+
+	if !c.Lsp.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.Sender.Uin),
+		permission.GroupAdminRoleRequireOption(groupCode, c.Sender.Uin),
+		permission.QQAdminRequireOption(groupCode, c.Sender.Uin),
+		permission.GroupCommandRequireOption(groupCode, c.Sender.Uin, WatchCommand),
+		permission.GroupCommandRequireOption(groupCode, c.Sender.Uin, UnwatchCommand),
+	) {
+		c.NoPermissionReply()
+		return
+	}
+
 	switch site {
 	case bilibili.Site:
 		id = strings.TrimLeft(id, "UID:")
@@ -225,12 +248,26 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 }
 
 func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
-	err := c.requireNotNil(c.TextReply, c.Log, c.Lsp)
+	err := c.requireNotNil(c.TextReply, c.Log, c.Lsp, c.Sender, c.NoPermissionReply)
 	if err != nil {
 		c.Log.Errorf("params error %v", err)
 		return
 	}
+
 	log := c.Log
+
+	if !c.Lsp.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.Sender.Uin),
+		permission.GroupAdminRoleRequireOption(groupCode, c.Sender.Uin),
+	) {
+		c.NoPermissionReply()
+		return
+	}
+
+	if command == UnwatchCommand {
+		command = WatchCommand
+	}
+
 	if !CheckOperateableCommand(command) {
 		log.Errorf("unknown command")
 		c.TextReply("失败 - invalid command name")
@@ -329,6 +366,9 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 	if err != nil {
 		c.Log.Errorf("params error %v", err)
 		return
+	}
+	if command == UnwatchCommand {
+		command = WatchCommand
 	}
 	log := c.Log.WithField("command", command)
 	if !CheckOperateableCommand(command) {
