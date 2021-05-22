@@ -36,11 +36,6 @@ func NewMessageContext() *MessageContext {
 }
 
 func IList(c *MessageContext, groupCode int64) {
-	err := c.requireNotNil(c.TextReply, c.Send, c.Log, c.Lsp)
-	if err != nil {
-		c.Log.Errorf("params error %v", err)
-		return
-	}
 	log := c.Log
 
 	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ListCommand) {
@@ -113,11 +108,6 @@ func IList(c *MessageContext, groupCode int64) {
 }
 
 func IWatch(c *MessageContext, groupCode int64, id string, site string, watchType concern.Type, remove bool) {
-	err := c.requireNotNil(c.TextReply, c.Log, c.Lsp)
-	if err != nil {
-		c.Log.Errorf("params error %v", err)
-		return
-	}
 	log := c.Log
 
 	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, WatchCommand) {
@@ -248,12 +238,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 }
 
 func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
-	err := c.requireNotNil(c.TextReply, c.Log, c.Lsp, c.Sender, c.NoPermissionReply)
-	if err != nil {
-		c.Log.Errorf("params error %v", err)
-		return
-	}
-
+	var err error
 	log := c.Log
 
 	if !c.Lsp.PermissionStateManager.RequireAny(
@@ -300,11 +285,7 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 }
 
 func IGrantRole(c *MessageContext, groupCode int64, role string, grantTo int64, del bool) {
-	err := c.requireNotNil(c.TextReply, c.Log, c.Lsp, c.Sender, c.NoPermissionReply)
-	if err != nil {
-		c.Log.Errorf("params error %v", err)
-		return
-	}
+	var err error
 	grantRole := permission.FromString(role)
 	log := c.Log.WithField("role", grantRole.String())
 	switch grantRole {
@@ -362,11 +343,7 @@ func IGrantRole(c *MessageContext, groupCode int64, role string, grantTo int64, 
 }
 
 func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64, del bool) {
-	err := c.requireNotNil(c.TextReply, c.Log, c.Lsp, c.Sender, c.NoPermissionReply)
-	if err != nil {
-		c.Log.Errorf("params error %v", err)
-		return
-	}
+	var err error
 	if command == UnwatchCommand {
 		command = WatchCommand
 	}
