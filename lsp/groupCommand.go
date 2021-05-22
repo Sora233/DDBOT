@@ -428,8 +428,8 @@ func (lgc *LspGroupCommand) ListCommand() {
 	defer func() { log.Info("list command end") }()
 
 	var listCmd struct {
-		Site string `optional:"" short:"s" help:"bilibili / douyu / youtube"`
-		Type string `optional:"" short:"t" help:"news / live"`
+		Site string `optional:"" short:"s" help:"已弃用"`
+		Type string `optional:"" short:"t" help:"已弃用"`
 	}
 	output := lgc.parseCommandSyntax(&listCmd, ListCommand)
 	if output != "" {

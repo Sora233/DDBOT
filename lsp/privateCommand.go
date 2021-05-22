@@ -109,8 +109,8 @@ func (c *LspPrivateCommand) ListCommand() {
 	defer func() { log.Info("list command end") }()
 
 	var listCmd struct {
-		Site  string `optional:"" short:"s" help:"bilibili / douyu / youtube"`
-		Type  string `optional:"" short:"t" help:"news / live"`
+		Site  string `optional:"" short:"s" help:"已弃用"`
+		Type  string `optional:"" short:"t" help:"已弃用"`
 		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
 	}
 	output := c.parseCommandSyntax(&listCmd, ListCommand)
@@ -407,7 +407,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"可以用相应的/unwatch命令取消订阅\n" +
 		"取消订阅b站uid为2的用户的动态信息：/unwatch -s bilibili -t news 2\n" +
 		"/list 用于查看当前订阅，例如：\n" +
-		"查看当前b站订阅列表中正在直播的：/list -s bilibili -t live\n" +
+		"展示所有订阅列表：/list\n" +
 		"/enable和/disable 用于开启与禁用命令，例如：\n" +
 		"开启watch命令：/enable watch\n" +
 		"禁用watch命令，调用watch命令将不再有任何反应：/disable watch"
