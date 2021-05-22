@@ -319,8 +319,11 @@ func (c *Concern) watchCore() {
 						c.eventChan <- newInfo
 						c.AddLiveInfo(newInfo)
 					} else {
+						if newInfo.LiveTitle == "bilibili主播的直播间" {
+							newInfo.LiveTitle = oldInfo.LiveTitle
+						}
 						c.ClearNotLiveCount(mid)
-						if newInfo.LiveTitle != oldInfo.LiveTitle && newInfo.LiveTitle != "bilibili主播的直播间" {
+						if newInfo.LiveTitle != oldInfo.LiveTitle {
 							// live title change
 							c.eventChan <- newInfo
 						}
