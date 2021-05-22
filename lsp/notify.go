@@ -12,6 +12,7 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"runtime/debug"
+	"strings"
 )
 
 func (l *Lsp) ConcernNotify(bot *bot.Bot) {
@@ -346,7 +347,11 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				log.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
 				continue
 			}
-			result = append(result, localutils.MessageTextf("%v%v：\n%v\n%v\n%v\n", notify.Name, card.GetDisplay().GetUsrActionTxt(), date, cardVideo.GetTitle(), cardVideo.GetDynamic()))
+			description := strings.TrimSpace(cardVideo.GetDynamic())
+			if description == "" {
+				description = cardVideo.GetDesc()
+			}
+			result = append(result, localutils.MessageTextf("%v%v：\n%v\n%v\n%v\n", notify.Name, card.GetDisplay().GetUsrActionTxt(), date, cardVideo.GetTitle(), description))
 			cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, cardVideo.GetPic(), true, proxy_pool.PreferAny)
 			if err != nil {
 				log.WithField("pic", cardVideo.GetPic()).Errorf("upload video cover failed %v", err)
