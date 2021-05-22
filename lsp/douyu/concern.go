@@ -83,8 +83,8 @@ func (c *Concern) Start() {
 			return fmt.Errorf("cast fresh id type<%v> to int64 failed", reflect.ValueOf(id).Type().String())
 		}
 		if ctype.ContainAll(concern.DouyuLive) {
-			oldInfo, _ := c.findRoom(roomid, false)
-			liveInfo, err := c.findRoom(roomid, true)
+			oldInfo, _ := c.FindRoom(roomid, false)
+			liveInfo, err := c.FindRoom(roomid, true)
 			if err != nil {
 				return fmt.Errorf("load liveinfo failed %v", err)
 			}
@@ -139,7 +139,7 @@ func (c *Concern) ListWatching(groupCode int64, p concern.Type) ([]*LiveInfo, []
 	var resultTypes = make([]concern.Type, 0, len(ids))
 	var result = make([]*LiveInfo, 0, len(ids))
 	for index, id := range ids {
-		liveInfo, err := c.findOrLoadRoom(id.(int64))
+		liveInfo, err := c.FindOrLoadRoom(id.(int64))
 		if err != nil {
 			log.WithField("id", id).Errorf("get LiveInfo err %v", err)
 			continue
@@ -186,7 +186,7 @@ func (c *Concern) notifyLoop() {
 	}
 }
 
-func (c *Concern) findRoom(id int64, load bool) (*LiveInfo, error) {
+func (c *Concern) FindRoom(id int64, load bool) (*LiveInfo, error) {
 	var liveInfo *LiveInfo
 	if load {
 		betardResp, err := Betard(id)
@@ -210,10 +210,10 @@ func (c *Concern) findRoom(id int64, load bool) (*LiveInfo, error) {
 	return c.StateManager.GetLiveInfo(id)
 }
 
-func (c *Concern) findOrLoadRoom(roomId int64) (*LiveInfo, error) {
-	info, _ := c.findRoom(roomId, false)
+func (c *Concern) FindOrLoadRoom(roomId int64) (*LiveInfo, error) {
+	info, _ := c.FindRoom(roomId, false)
 	if info == nil {
-		return c.findRoom(roomId, true)
+		return c.FindRoom(roomId, true)
 	}
 	return info, nil
 }

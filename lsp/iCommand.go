@@ -138,11 +138,16 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		log = log.WithField("mid", mid)
 		if remove {
 			// unwatch
+			userInfo, _ := c.Lsp.bilibiliConcern.FindUser(mid, false)
 			if _, err := c.Lsp.bilibiliConcern.Remove(groupCode, mid, watchType); err != nil {
 				c.TextReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
 				log.Debugf("unwatch success")
-				c.TextReply("unwatch成功")
+				if userInfo == nil {
+					c.TextReply("unwatch成功")
+				} else {
+					c.TextReply(fmt.Sprintf("unwatch成功 - bilibili用户 %v", userInfo.Name))
+				}
 			}
 			return
 		}
@@ -166,11 +171,16 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		log = log.WithField("mid", mid)
 		if remove {
 			// unwatch
+			info, _ := c.Lsp.douyuConcern.FindRoom(mid, false)
 			if _, err := c.Lsp.douyuConcern.RemoveGroupConcern(groupCode, mid, watchType); err != nil {
 				c.TextReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
 				log.Debugf("unwatch success")
-				c.TextReply("unwatch成功")
+				if info == nil {
+					c.TextReply("unwatch成功")
+				} else {
+					c.TextReply(fmt.Sprintf("unwatch成功 - 斗鱼用户 %v", info.Nickname))
+				}
 			}
 			return
 		}
@@ -188,11 +198,16 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		log = log.WithField("id", id)
 		if remove {
 			// unwatch
+			info, _ := c.Lsp.youtubeConcern.FindInfo(id, false)
 			if _, err := c.Lsp.youtubeConcern.RemoveGroupConcern(groupCode, id, watchType); err != nil {
 				c.TextReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
 				log.WithField("id", id).Debugf("unwatch success")
-				c.TextReply("unwatch成功")
+				if info == nil {
+					c.TextReply("unwatch成功")
+				} else {
+					c.TextReply(fmt.Sprintf("unwatch成功 - YTB用户 %v", info.ChannelName))
+				}
 			}
 			return
 		}
@@ -213,11 +228,16 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		log = log.WithField("id", id)
 		if remove {
 			// unwatch
+			info, _ := c.Lsp.huyaConcern.FindRoom(id, false)
 			if _, err := c.Lsp.huyaConcern.RemoveGroupConcern(groupCode, id, watchType); err != nil {
 				c.TextReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
 				log.WithField("id", id).Debugf("unwatch success")
-				c.TextReply("unwatch成功")
+				if info == nil {
+					c.TextReply("unwatch成功")
+				} else {
+					c.TextReply(fmt.Sprintf("unwatch成功 - 虎牙用户 %v", info.Name))
+				}
 			}
 			return
 		}

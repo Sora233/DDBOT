@@ -51,9 +51,9 @@ func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo
 	var result = make([]*UserInfo, 0, len(ids))
 	var resultTypes = make([]concern.Type, 0, len(ids))
 	for index, id := range ids {
-		info, err := c.findOrLoad(id.(string))
+		info, err := c.FindOrLoad(id.(string))
 		if err != nil {
-			log.WithField("id", id.(string)).Errorf("findInfo failed %v", err)
+			log.WithField("id", id.(string)).Errorf("FindInfo failed %v", err)
 			continue
 		}
 		result = append(result, NewUserInfo(info.ChannelId, info.ChannelName))
@@ -135,8 +135,8 @@ func (c *Concern) notifyLoop() {
 
 func (c *Concern) freshInfo(channelId string) {
 	log := logger.WithField("channel_id", channelId)
-	oldInfo, _ := c.findInfo(channelId, false)
-	newInfo, err := c.findInfo(channelId, true)
+	oldInfo, _ := c.FindInfo(channelId, false)
+	newInfo, err := c.FindInfo(channelId, true)
 	if err != nil {
 		log.Errorf("load newInfo failed %v", err)
 		return
@@ -183,7 +183,7 @@ func (c *Concern) freshInfo(channelId string) {
 	}
 }
 
-func (c *Concern) findInfo(channelId string, load bool) (*Info, error) {
+func (c *Concern) FindInfo(channelId string, load bool) (*Info, error) {
 	var info *Info
 	if load {
 		vi, err := XFetchInfo(channelId)
@@ -200,10 +200,10 @@ func (c *Concern) findInfo(channelId string, load bool) (*Info, error) {
 	return c.GetInfo(channelId)
 }
 
-func (c *Concern) findOrLoad(channelId string) (*Info, error) {
-	info, _ := c.findInfo(channelId, false)
+func (c *Concern) FindOrLoad(channelId string) (*Info, error) {
+	info, _ := c.FindInfo(channelId, false)
 	if info == nil {
-		return c.findInfo(channelId, true)
+		return c.FindInfo(channelId, true)
 	} else {
 		return info, nil
 	}

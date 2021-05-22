@@ -63,8 +63,8 @@ func (c *Concern) Start() {
 			return fmt.Errorf("cast fresh id type<%v> to string failed", reflect.ValueOf(id).Type().String())
 		}
 		if ctype.ContainAll(concern.HuyaLive) {
-			oldInfo, _ := c.findRoom(roomid, false)
-			liveInfo, err := c.findRoom(roomid, true)
+			oldInfo, _ := c.FindRoom(roomid, false)
+			liveInfo, err := c.FindRoom(roomid, true)
 			if err != nil {
 				return fmt.Errorf("load liveinfo failed %v", err)
 			}
@@ -112,7 +112,7 @@ func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*LiveInfo
 	var resultTypes = make([]concern.Type, 0, len(ids))
 	var result = make([]*LiveInfo, 0, len(ids))
 	for index, id := range ids {
-		liveInfo, err := c.findOrLoadRoom(id.(string))
+		liveInfo, err := c.FindOrLoadRoom(id.(string))
 		if err != nil {
 			log.WithField("id", id).Errorf("get LiveInfo err %v", err)
 			continue
@@ -158,7 +158,7 @@ func (c *Concern) notifyLoop() {
 	}
 }
 
-func (c *Concern) findRoom(roomId string, load bool) (*LiveInfo, error) {
+func (c *Concern) FindRoom(roomId string, load bool) (*LiveInfo, error) {
 	var liveInfo *LiveInfo
 	if load {
 		var err error
@@ -174,10 +174,10 @@ func (c *Concern) findRoom(roomId string, load bool) (*LiveInfo, error) {
 	return c.StateManager.GetLiveInfo(roomId)
 }
 
-func (c *Concern) findOrLoadRoom(roomId string) (*LiveInfo, error) {
-	info, _ := c.findRoom(roomId, false)
+func (c *Concern) FindOrLoadRoom(roomId string) (*LiveInfo, error) {
+	info, _ := c.FindRoom(roomId, false)
 	if info == nil {
-		return c.findRoom(roomId, true)
+		return c.FindRoom(roomId, true)
 	}
 	return info, nil
 }

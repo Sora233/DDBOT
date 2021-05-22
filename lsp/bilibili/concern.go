@@ -101,7 +101,7 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 	if err != nil {
 		log.Errorf("get concern error %v", err)
 	} else if oldCtype.Empty() {
-		resp, err := c.modifyUserRelation(mid, ActSub)
+		resp, err := c.ModifyUserRelation(mid, ActSub)
 		if err != nil {
 			return nil, fmt.Errorf("关注用户失败 - 内部错误")
 		}
@@ -144,7 +144,7 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 			logger.WithField("mid", mid).Errorf("GetConcern error %v", err)
 		} else if state.Empty() {
 			logger.WithField("mid", mid).Debug("empty state, unsub")
-			c.modifyUserRelation(mid, ActUnsub)
+			c.ModifyUserRelation(mid, ActUnsub)
 		}
 	}
 	return newCtype, err
@@ -429,7 +429,7 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 	return liveInfo, nil
 }
 
-func (c *Concern) findUser(mid int64, load bool) (*UserInfo, error) {
+func (c *Concern) FindUser(mid int64, load bool) (*UserInfo, error) {
 	if load {
 		resp, err := XSpaceAccInfo(mid)
 		if err != nil {
@@ -451,7 +451,7 @@ func (c *Concern) findUser(mid int64, load bool) (*UserInfo, error) {
 	return c.StateManager.GetUserInfo(mid)
 }
 
-func (c *Concern) modifyUserRelation(mid int64, act int) (*RelationModifyResponse, error) {
+func (c *Concern) ModifyUserRelation(mid int64, act int) (*RelationModifyResponse, error) {
 	resp, err := RelationModify(mid, act)
 	if err != nil {
 		return nil, err
@@ -461,7 +461,7 @@ func (c *Concern) modifyUserRelation(mid int64, act int) (*RelationModifyRespons
 			WithField("message", resp.GetMessage()).
 			WithField("act", act).
 			WithField("mid", mid).
-			Errorf("modifyUserRelation error")
+			Errorf("ModifyUserRelation error")
 	} else {
 		logger.WithField("mid", mid).WithField("act", act).Debug("modify relation")
 	}
@@ -497,12 +497,12 @@ func (c *Concern) syncSub() {
 	}
 	for mid := range midSet {
 		if _, found := attentionMidSet[mid]; !found {
-			resp, err := c.modifyUserRelation(mid, ActSub)
+			resp, err := c.ModifyUserRelation(mid, ActSub)
 			if err == nil && resp.Code == 22002 {
 				// 可能是被拉黑了
-				logger.WithField("modifyUserRelation Code", 22002).
+				logger.WithField("ModifyUserRelation Code", 22002).
 					WithField("mid", mid).
-					Errorf("modifyUserRelation failed, remove concern")
+					Errorf("ModifyUserRelation failed, remove concern")
 				c.RemoveAllById(mid)
 			}
 			time.Sleep(time.Second * 3)
@@ -510,16 +510,16 @@ func (c *Concern) syncSub() {
 	}
 }
 
-func (c *Concern) findOrLoadUser(mid int64) (*UserInfo, error) {
-	info, err := c.findUser(mid, false)
+func (c *Concern) FindOrLoadUser(mid int64) (*UserInfo, error) {
+	info, err := c.FindUser(mid, false)
 	if err != nil || info == nil {
-		info, err = c.findUser(mid, true)
+		info, err = c.FindUser(mid, true)
 	}
 	return info, err
 }
 
-func (c *Concern) findUserLiving(mid int64, load bool) (*LiveInfo, error) {
-	userInfo, err := c.findUser(mid, load)
+func (c *Concern) FindUserLiving(mid int64, load bool) (*LiveInfo, error) {
+	userInfo, err := c.FindUser(mid, load)
 	if err != nil {
 		return nil, err
 	}
@@ -548,8 +548,8 @@ func (c *Concern) findUserLiving(mid int64, load bool) (*LiveInfo, error) {
 	return c.StateManager.GetLiveInfo(mid)
 }
 
-func (c *Concern) findUserNews(mid int64, load bool) (*NewsInfo, error) {
-	userInfo, err := c.findUser(mid, load)
+func (c *Concern) FindUserNews(mid int64, load bool) (*NewsInfo, error) {
+	userInfo, err := c.FindUser(mid, load)
 	if err != nil {
 		return nil, err
 	}
@@ -573,8 +573,8 @@ func (c *Concern) findUserNews(mid int64, load bool) (*NewsInfo, error) {
 	return c.StateManager.GetNewsInfo(mid)
 }
 
-func (c *Concern) clearUserNews(mid int64) error {
-	newsInfo, err := c.findUserNews(mid, false)
+func (c *Concern) ClearUserNews(mid int64) error {
+	newsInfo, err := c.FindUserNews(mid, false)
 	if err != nil {
 		return err
 	}
