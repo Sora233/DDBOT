@@ -40,7 +40,7 @@ var allPrivateOperate = [...]string{
 	PingCommand, HelpCommand, LogCommand,
 	BlockCommand, SysinfoCommand, ListCommand,
 	WatchCommand, UnwatchCommand, DisableCommand,
-	EnableCommand,
+	EnableCommand, GrantCommand,
 }
 
 var nonOprateable = [...]string{

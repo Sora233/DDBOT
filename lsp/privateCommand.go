@@ -85,6 +85,8 @@ func (c *LspPrivateCommand) Execute() {
 		c.EnableCommand(false)
 	case "/disable":
 		c.EnableCommand(true)
+	case "/grant":
+		c.GrantCommand()
 	case "/log":
 		if !c.l.PermissionStateManager.RequireAny(
 			permission.AdminRoleRequireOption(c.uin()),
@@ -258,6 +260,51 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 	}
 
 	IEnable(c.NewCommandContext(log), groupCode, enableCmd.Command, disable)
+}
+
+func (c *LspPrivateCommand) GrantCommand() {
+	log := c.DefaultLoggerWithCommand(GrantCommand)
+	log.Info("run grant command")
+	defer func() { log.Info("grant command end") }()
+
+	var grantCmd struct {
+		Group   int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Command string `optional:"" short:"c" xor:"1" help:"command name"`
+		Role    string `optional:"" short:"r" xor:"1" enum:"Admin,GroupAdmin," help:"Admin / GroupAdmin"`
+		Delete  bool   `short:"d" help:"perform a ungrant instead"`
+		Target  int64  `arg:""`
+	}
+	output := c.parseCommandSyntax(&grantCmd, GrantCommand)
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	groupCode := grantCmd.Group
+
+	if err := c.checkGroupCode(groupCode); err != nil {
+		c.textReply(err.Error())
+		return
+	}
+
+	grantFrom := c.uin()
+	grantTo := grantCmd.Target
+	if grantCmd.Command == "" && grantCmd.Role == "" {
+		log.Errorf("command and role both empty")
+		c.textReply("参数错误 - 必须指定-c / -r")
+		return
+	}
+
+	del := grantCmd.Delete
+	log = log.WithField("grantFrom", grantFrom).WithField("grantTo", grantTo).WithField("delete", del)
+
+	if grantCmd.Command != "" {
+		IGrantCmd(c.NewCommandContext(log), groupCode, grantCmd.Command, grantTo, del)
+	} else if grantCmd.Role != "" {
+		IGrantRole(c.NewCommandContext(log), groupCode, grantCmd.Role, grantTo, del)
+	}
 }
 
 func (c *LspPrivateCommand) BlockCommand() {
@@ -528,7 +575,7 @@ func (c *LspPrivateCommand) name() string {
 	return c.sender().DisplayName()
 }
 
-func (c *LspPrivateCommand) NewCommandContext(log *logrus.Entry) *CommandContext {
+func (c *LspPrivateCommand) NewCommandContext(log *logrus.Entry) *MessageContext {
 	ctx := NewCommandContext()
 	ctx.Lsp = c.l
 	ctx.Log = log
@@ -539,6 +586,10 @@ func (c *LspPrivateCommand) NewCommandContext(log *logrus.Entry) *CommandContext
 		return c.send(msg)
 	}
 	ctx.Reply = ctx.Send
+	ctx.NoPermissionReply = func() interface{} {
+		return c.noPermission()
+	}
+	ctx.Sender = c.sender()
 	return ctx
 }
 

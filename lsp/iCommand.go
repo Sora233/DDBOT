@@ -3,6 +3,7 @@ package lsp
 import (
 	"errors"
 	"fmt"
+	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
@@ -19,19 +20,21 @@ import (
 
 var errNilParam = errors.New("内部参数错误")
 
-type CommandContext struct {
-	TextReply func(text string) interface{}
-	Reply     func(sendingMessage *message.SendingMessage) interface{}
-	Send      func(sendingMessage *message.SendingMessage) interface{}
-	Lsp       *Lsp
-	Log       *logrus.Entry
+type MessageContext struct {
+	TextReply         func(text string) interface{}
+	Reply             func(sendingMessage *message.SendingMessage) interface{}
+	Send              func(sendingMessage *message.SendingMessage) interface{}
+	NoPermissionReply func() interface{}
+	Lsp               *Lsp
+	Log               *logrus.Entry
+	Sender            *message.Sender
 }
 
-func NewCommandContext() *CommandContext {
-	return new(CommandContext)
+func NewCommandContext() *MessageContext {
+	return new(MessageContext)
 }
 
-func IList(c *CommandContext, groupCode int64) {
+func IList(c *MessageContext, groupCode int64) {
 	err := c.requireNotNil(c.TextReply, c.Send, c.Log, c.Lsp)
 	if err != nil {
 		c.Log.Errorf("params error %v", err)
@@ -103,7 +106,7 @@ func IList(c *CommandContext, groupCode int64) {
 	c.Send(listMsg)
 }
 
-func IWatch(c *CommandContext, groupCode int64, id string, site string, watchType concern.Type, remove bool) {
+func IWatch(c *MessageContext, groupCode int64, id string, site string, watchType concern.Type, remove bool) {
 	err := c.requireNotNil(c.TextReply, c.Log, c.Lsp)
 	if err != nil {
 		c.Log.Errorf("params error %v", err)
@@ -221,7 +224,7 @@ func IWatch(c *CommandContext, groupCode int64, id string, site string, watchTyp
 	return
 }
 
-func IEnable(c *CommandContext, groupCode int64, command string, disable bool) {
+func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 	err := c.requireNotNil(c.TextReply, c.Log, c.Lsp)
 	if err != nil {
 		c.Log.Errorf("params error %v", err)
@@ -259,7 +262,114 @@ func IEnable(c *CommandContext, groupCode int64, command string, disable bool) {
 	c.TextReply("成功")
 }
 
-func (ic *CommandContext) requireNotNil(param ...interface{}) error {
+func IGrantRole(c *MessageContext, groupCode int64, role string, grantTo int64, del bool) {
+	err := c.requireNotNil(c.TextReply, c.Log, c.Lsp, c.Sender, c.NoPermissionReply)
+	if err != nil {
+		c.Log.Errorf("params error %v", err)
+		return
+	}
+	grantRole := permission.FromString(role)
+	log := c.Log.WithField("role", grantRole.String())
+	switch grantRole {
+	case permission.GroupAdmin:
+		if !c.Lsp.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(c.Sender.Uin),
+			permission.GroupAdminRoleRequireOption(groupCode, c.Sender.Uin),
+		) {
+			c.NoPermissionReply()
+			return
+		}
+		if bot.Instance.FindGroup(groupCode).FindMember(grantTo) != nil {
+			if del {
+				err = c.Lsp.PermissionStateManager.UngrantGroupRole(groupCode, grantTo, grantRole)
+			} else {
+				err = c.Lsp.PermissionStateManager.GrantGroupRole(groupCode, grantTo, grantRole)
+			}
+		} else {
+			log.Errorf("can not find uin")
+			err = errors.New("未找到用户")
+		}
+	case permission.Admin:
+		if !c.Lsp.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(c.Sender.Uin),
+		) {
+			c.NoPermissionReply()
+			return
+		}
+		if bot.Instance.FindGroup(groupCode).FindMember(grantTo) != nil {
+			if del {
+				err = c.Lsp.PermissionStateManager.UngrantRole(grantTo, grantRole)
+			} else {
+				err = c.Lsp.PermissionStateManager.GrantRole(grantTo, grantRole)
+			}
+		} else {
+			log.Errorf("can not find uin")
+			err = errors.New("未找到用户")
+		}
+	default:
+		err = errors.New("invalid role")
+	}
+	if err != nil {
+		log.Errorf("grant failed %v", err)
+		if err == permission.ErrPermissionExist {
+			c.TextReply("失败 - 目标已有该权限")
+		} else if err == permission.ErrPermissionNotExist {
+			c.TextReply("失败 - 目标未有该权限")
+		} else {
+			c.TextReply(fmt.Sprintf("失败 - %v", err))
+		}
+		return
+	}
+	log.Debug("grant success")
+	c.TextReply("成功")
+}
+
+func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64, del bool) {
+	err := c.requireNotNil(c.TextReply, c.Log, c.Lsp, c.Sender, c.NoPermissionReply)
+	if err != nil {
+		c.Log.Errorf("params error %v", err)
+		return
+	}
+	log := c.Log.WithField("command", command)
+	if !CheckOperateableCommand(command) {
+		log.Errorf("unknown command")
+		c.TextReply("失败 - invalid command name")
+		return
+	}
+	if !c.Lsp.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.Sender.Uin),
+		permission.GroupAdminRoleRequireOption(groupCode, c.Sender.Uin),
+		permission.QQAdminRequireOption(groupCode, c.Sender.Uin),
+	) {
+		c.NoPermissionReply()
+		return
+	}
+	if bot.Instance.FindGroup(groupCode).FindMember(grantTo) != nil {
+		if del {
+			err = c.Lsp.PermissionStateManager.UngrantPermission(groupCode, grantTo, command)
+		} else {
+			err = c.Lsp.PermissionStateManager.GrantPermission(groupCode, grantTo, command)
+		}
+	} else {
+		log.Errorf("can not find uin")
+		err = errors.New("未找到用户")
+	}
+	if err != nil {
+		log.Errorf("grant failed %v", err)
+		if err == permission.ErrPermissionExist {
+			c.TextReply("失败 - 目标已有该权限")
+		} else if err == permission.ErrPermissionNotExist {
+			c.TextReply("失败 - 目标未有该权限")
+		} else {
+			c.TextReply(fmt.Sprintf("失败 - %v", err))
+		}
+		return
+	}
+	log.Debug("grant success")
+	c.TextReply("成功")
+}
+
+func (ic *MessageContext) requireNotNil(param ...interface{}) error {
 	for _, p := range param {
 		if p == nil {
 			return errNilParam
