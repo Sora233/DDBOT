@@ -287,7 +287,7 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithSketch failed %v", err)
 					continue
 				}
-				result = append(result, localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n原动态：\nv%\n%v\n%v", notify.Name, originName, date, cardOrigin.GetItem().GetContent(),
+				result = append(result, localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n原动态：\n%v\n%v\n%v", notify.Name, originName, date, cardOrigin.GetItem().GetContent(),
 					origin.GetVest().GetContent(), origin.GetSketch().GetTitle(), origin.GetSketch().GetDescText()))
 				if len(origin.GetSketch().GetCoverUrl()) != 0 {
 					cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetSketch().GetCoverUrl(), true, proxy_pool.PreferAny)
