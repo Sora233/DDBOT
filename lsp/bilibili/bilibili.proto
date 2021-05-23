@@ -442,6 +442,16 @@ message CardWithSketch {
   message Sketch {
     string title = 1;
     string desc_text = 2;
+    int32 biz_type = 3;
+    string sketch_id = 4;
+    string cover_url = 5;
+    message Tag {
+      string color = 1;
+      string name = 2;
+      int32 type = 3;
+    }
+    repeated Tag tags = 6;
+    string target_url = 7;
   }
   Sketch sketch = 2;
 }

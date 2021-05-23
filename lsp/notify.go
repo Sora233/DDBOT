@@ -274,10 +274,30 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithAnime failed %v", err)
 					continue
 				}
-				result = append(result, localutils.MessageTextf("%v转发了%v【%v】：\n%v\n%v\n", notify.Name, origin.GetApiSeasonInfo().GetTypeName(), origin.GetApiSeasonInfo().GetTitle(), date, cardOrigin.GetItem().GetContent()))
+				result = append(result, localutils.MessageTextf("%v转发了%v【%v】：\n%v\n%v\n", notify.Name,
+					origin.GetApiSeasonInfo().GetTypeName(),
+					origin.GetApiSeasonInfo().GetTitle(),
+					date,
+					cardOrigin.GetItem().GetContent()),
+				)
 			case bilibili.DynamicDescType_WithSketch:
-				// TODO
-				result = append(result, localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+				origin := new(bilibili.CardWithSketch)
+				err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
+				if err != nil {
+					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithSketch failed %v", err)
+					continue
+				}
+				result = append(result, localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n原动态：\nv%\n%v\n%v", notify.Name, originName, date, cardOrigin.GetItem().GetContent(),
+					origin.GetVest().GetContent(), origin.GetSketch().GetTitle(), origin.GetSketch().GetDescText()))
+				if len(origin.GetSketch().GetCoverUrl()) != 0 {
+					cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetSketch().GetCoverUrl(), true, proxy_pool.PreferAny)
+					if err != nil {
+						log.WithField("pic", origin.GetSketch().GetCoverUrl()).
+							Errorf("upload sketch cover failed %v", err)
+					} else {
+						result = append(result, cover)
+					}
+				}
 			case bilibili.DynamicDescType_WithLive:
 				result = append(result, localutils.MessageTextf("%v分享了%v的直播：\n%v\n%v\n\n原直播间：\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
 				origin := new(bilibili.CardWithLive)
@@ -415,6 +435,15 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 				cardSketch.GetSketch().GetTitle(),
 				cardSketch.GetSketch().GetDescText(),
 			))
+			if len(cardSketch.GetSketch().GetCoverUrl()) != 0 {
+				cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, cardSketch.GetSketch().GetCoverUrl(), true, proxy_pool.PreferAny)
+				if err != nil {
+					log.WithField("pic", cardSketch.GetSketch().GetCoverUrl()).
+						Errorf("upload sketch cover failed %v", err)
+				} else {
+					result = append(result, cover)
+				}
+			}
 		case bilibili.DynamicDescType_WithLive:
 			cardLive, err := notify.GetCardWithLive(index)
 			if err != nil {
