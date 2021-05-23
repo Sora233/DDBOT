@@ -378,6 +378,15 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 
 func (l *Lsp) PostStart(bot *bot.Bot) {
 	l.FreshIndex()
+	go func() {
+		ticker := time.NewTicker(time.Second * 30)
+		for {
+			select {
+			case <-ticker.C:
+				l.FreshIndex()
+			}
+		}
+	}()
 	l.bilibiliConcern.Start()
 	l.douyuConcern.Start()
 	l.youtubeConcern.Start()
