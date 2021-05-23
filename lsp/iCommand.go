@@ -43,6 +43,8 @@ func IList(c *MessageContext, groupCode int64) {
 		return
 	}
 
+	var success bool
+
 	listMsg := message.NewSendingMessage()
 
 	{
@@ -52,6 +54,7 @@ func IList(c *MessageContext, groupCode int64) {
 			listMsg.Append(message.NewText("bilibili订阅：\n查询失败\n"))
 			log.Errorf("bilibili ListWatching error %v ", err)
 		} else if len(userInfos) != 0 {
+			success = true
 			listMsg.Append(message.NewText("bilibili订阅：\n"))
 			for index := range userInfos {
 				listMsg.Append(utils.MessageTextf("%v %v %v\n", userInfos[index].Name, userInfos[index].Mid, ctypes[index].Description()))
@@ -67,6 +70,7 @@ func IList(c *MessageContext, groupCode int64) {
 			listMsg.Append(message.NewText("douyu订阅：\n查询失败\n"))
 			log.Errorf("douyu ListWatching error %v ", err)
 		} else if len(info) != 0 {
+			success = true
 			listMsg.Append(message.NewText("douyu订阅：\n"))
 			for index := range info {
 				listMsg.Append(utils.MessageTextf("%v %v %v\n", info[index].Nickname, info[index].RoomId, ctypes[index].Description()))
@@ -81,6 +85,7 @@ func IList(c *MessageContext, groupCode int64) {
 			listMsg.Append(message.NewText("huya订阅：\n查询失败\n"))
 			log.Errorf("huya ListWatching error %v ", err)
 		} else if len(info) != 0 {
+			success = true
 			listMsg.Append(message.NewText("huya订阅：\n"))
 			for index := range info {
 				listMsg.Append(utils.MessageTextf("%v %v %v\n", info[index].Name, info[index].RoomId, ctypes[index].Description()))
@@ -95,16 +100,21 @@ func IList(c *MessageContext, groupCode int64) {
 			listMsg.Append(message.NewText("ytb订阅：\n查询失败\n"))
 			log.Errorf("youtube ListWatching error %v ", err)
 		} else if len(info) != 0 {
+			success = true
 			listMsg.Append(message.NewText("ytb订阅：\n"))
 			for index := range info {
 				listMsg.Append(utils.MessageTextf("%v %v %v\n", info[index].ChannelName, info[index].ChannelId, ctypes[index].Description()))
 			}
 		}
 	}
-	if len(listMsg.Elements) == 0 {
-		listMsg.Append(message.NewText("暂无订阅，可以使用/watch命令订阅"))
+	if !success {
+		c.TextReply("查询失败，请重试")
+	} else {
+		if len(listMsg.Elements) == 0 {
+			listMsg.Append(message.NewText("暂无订阅，可以使用/watch命令订阅"))
+		}
+		c.Send(listMsg)
 	}
-	c.Send(listMsg)
 }
 
 func IWatch(c *MessageContext, groupCode int64, id string, site string, watchType concern.Type, remove bool) {
