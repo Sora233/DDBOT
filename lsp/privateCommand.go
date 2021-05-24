@@ -417,11 +417,12 @@ func (c *LspPrivateCommand) HelpCommand() {
 	}
 
 	help := "部分指令：\n" +
-		"/watch 用于订阅推送，例如：\n" +
-		"订阅b站uid为2的用户（https://space.bilibili.com/2）的直播信息：/watch -s bilibili -t live 2\n" +
-		"订阅b站uid为2的用户的动态信息：/watch -s bilibili -t news 2\n" +
+		"/watch 用于订阅推送，订阅动态和直播都使用UID（非直播间ID），例如：\n" +
+		"作者的B站UID为97505，则\n" +
+		"订阅直播信息：/watch -s bilibili -t live 97505\n" +
+		"订阅动态信息：/watch -s bilibili -t news 97505\n" +
 		"可以用相应的/unwatch命令取消订阅\n" +
-		"取消订阅b站uid为2的用户的动态信息：/unwatch -s bilibili -t news 2\n" +
+		"取消订阅动态信息：/unwatch -s bilibili -t news 97505\n" +
 		"/list 用于查看当前订阅，例如：\n" +
 		"展示所有订阅列表：/list\n" +
 		"/enable和/disable 用于开启与禁用命令，例如：\n" +
