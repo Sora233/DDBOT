@@ -107,7 +107,11 @@ func (lgc *LspGroupCommand) Execute() {
 		}
 	case "/黄图":
 		if lgc.requireEnable(HuangtuCommand) {
-			lgc.SetuCommand(true)
+			if lgc.l.PermissionStateManager.RequireAny(permission.AdminRoleRequireOption(lgc.uin())) {
+				lgc.SetuCommand(true)
+			} else {
+				lgc.noPermissionReply()
+			}
 		}
 	case "/watch":
 		lgc.WatchCommand(false)
