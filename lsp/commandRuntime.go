@@ -34,6 +34,7 @@ func (r *Runtime) Debug() {
 func (r *Runtime) parseCommandSyntax(ast interface{}, name string, options ...kong.Option) string {
 	args := r.GetArgs()
 	cmdOut := &strings.Builder{}
+	// kong 错误信息不太友好
 	options = append(options, kong.Name(name), kong.UsageOnError(), kong.Exit(r.Exit))
 	k, err := kong.New(ast, options...)
 	if err != nil {
