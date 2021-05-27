@@ -188,7 +188,7 @@ func (c *StateManager) ClearNotLiveCount(uid int64) error {
 	})
 }
 
-func (c *StateManager) SetUidFirstTimestamp(uid int64, timestamp int64) error {
+func (c *StateManager) SetUidFirstTimestampIfNotExist(uid int64, timestamp int64) error {
 	err := c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.UidFirstTimestamp(uid)
 		_, replaced, err := tx.Set(key, strconv.FormatInt(timestamp, 10), nil)

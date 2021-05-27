@@ -7,7 +7,6 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
-	"github.com/Sora233/sliceutil"
 	"github.com/tidwall/buntdb"
 	"strconv"
 	"sync"
@@ -80,21 +79,28 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 		}
 		return nil, err
 	}
+	var userInfo *UserInfo
 
-	infoResp, err := XSpaceAccInfo(mid)
-	if err != nil {
-		log.Error(err)
-		return nil, fmt.Errorf("查询用户信息失败 %v - %v", mid, err)
-	}
-	if infoResp.Code != 0 {
-		log.WithField("code", infoResp.Code).Errorf(infoResp.Message)
-		return nil, fmt.Errorf("查询用户信息失败 %v - %v %v", mid, infoResp.Code, infoResp.Message)
-	}
+	userInfo, err = c.GetUserInfo(mid)
+	if userInfo == nil {
+		infoResp, err := XSpaceAccInfo(mid)
+		if err != nil {
+			log.Error(err)
+			return nil, fmt.Errorf("查询用户信息失败 %v - %v", mid, err)
+		}
+		if infoResp.Code != 0 {
+			log.WithField("code", infoResp.Code).Errorf(infoResp.Message)
+			return nil, fmt.Errorf("查询用户信息失败 %v - %v %v", mid, infoResp.Code, infoResp.Message)
+		}
 
-	name := infoResp.GetData().GetName()
-
-	if sliceutil.Contains([]int64{491474049}, mid) {
-		return nil, fmt.Errorf("用户 %v 禁止watch", name)
+		userInfo = NewUserInfo(
+			mid,
+			infoResp.GetData().GetLiveRoom().GetRoomid(),
+			infoResp.GetData().GetName(),
+			infoResp.GetData().GetLiveRoom().GetUrl(),
+		)
+	} else {
+		log.Debugf("UserInfo cache hit")
 	}
 
 	oldCtype, err := c.StateManager.GetConcern(mid)
@@ -115,17 +121,10 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 		log.Errorf("AddGroupConcern error %v", err)
 		return nil, fmt.Errorf("关注用户失败 - 内部错误")
 	}
-	err = c.StateManager.SetUidFirstTimestamp(mid, time.Now().Add(-time.Second*30).Unix())
+	err = c.StateManager.SetUidFirstTimestampIfNotExist(mid, time.Now().Add(-time.Second*30).Unix())
 	if err != nil {
-		log.Errorf("SetUidFirstTimestamp failed %v", err)
+		log.Errorf("SetUidFirstTimestampIfNotExist failed %v", err)
 	}
-
-	userInfo := NewUserInfo(
-		mid,
-		infoResp.GetData().GetLiveRoom().GetRoomid(),
-		infoResp.GetData().GetName(),
-		infoResp.GetData().GetLiveRoom().GetUrl(),
-	)
 
 	_ = c.StateManager.AddUserInfo(userInfo)
 	return userInfo, nil
@@ -575,6 +574,16 @@ func (c *Concern) FindUserNews(mid int64, load bool) (*NewsInfo, error) {
 		return newsInfo, nil
 	}
 	return c.StateManager.GetNewsInfo(mid)
+}
+
+func (c *Concern) GroupWatchNotify(groupCode, mid int64, ctype concern.Type) {
+	if ctype.ContainAny(concern.BibiliLive) {
+		liveInfo, _ := c.GetLiveInfo(mid)
+		if liveInfo != nil {
+			c.notify <- NewConcernLiveNotify(groupCode, liveInfo)
+		}
+	}
+
 }
 
 func (c *Concern) ClearUserNews(mid int64) error {
