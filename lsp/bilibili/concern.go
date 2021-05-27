@@ -379,6 +379,10 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 			// 如果更新了名字，有机会在这里捞回来
 			userInfo.Name = cards[0].GetDesc().GetUserProfile().GetInfo().GetUname()
 		}
+		if len(cards) > 3 {
+			// 有时候b站抽风会刷屏
+			cards = cards[:3]
+		}
 		result = append(result, NewNewsInfoWithDetail(userInfo, cards))
 	}
 	logger.WithField("NewsInfo Size", len(result)).Tracef("freshDynamicNew done")
