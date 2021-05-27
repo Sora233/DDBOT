@@ -109,8 +109,6 @@ func (lgc *LspGroupCommand) Execute() {
 		if lgc.requireEnable(HuangtuCommand) {
 			if lgc.l.PermissionStateManager.RequireAny(permission.AdminRoleRequireOption(lgc.uin())) {
 				lgc.SetuCommand(true)
-			} else {
-				lgc.noPermissionReply()
 			}
 		}
 	case "/watch":
