@@ -490,6 +490,22 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 	res := bot.Instance.SendGroupMessage(groupCode, msg)
 	if res.Id == -1 {
 		logger.WithField("GroupCode", groupCode).Errorf("send group message failed")
+		go func() {
+			const retryCount = 10
+			for i := 1; i <= retryCount; i++ {
+				time.Sleep(time.Millisecond * 200)
+				retryRes := l.sendGroupMessage(groupCode, msg)
+				if retryRes.Id != -1 {
+					logger.WithField("GroupCode", groupCode).
+						WithField("retryCount", i).
+						Errorf("retry send group message ok")
+					return
+				}
+			}
+			logger.WithField("GroupCode", groupCode).
+				WithField("retryCount", retryCount).
+				Errorf("retry send group message failed")
+		}()
 	}
 	return res
 }
