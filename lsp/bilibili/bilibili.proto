@@ -173,6 +173,11 @@ message Card {
         int32 type = 5;
         string text = 6;
         string url = 7;
+        message Meta {
+          int32 size = 1;
+        }
+        Meta meta = 8;
+        int64 mtime = 9;
       }
       repeated EmojiDetail emoji_details = 1;
     }
