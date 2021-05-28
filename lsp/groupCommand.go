@@ -735,10 +735,9 @@ func (lgc *LspGroupCommand) ImageContent() {
 }
 
 func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {
-	return logger.WithField("GroupCode", lgc.groupCode()).
-		WithField("GroupName", lgc.groupName()).
-		WithField("Name", lgc.displayName()).
-		WithField("Uin", lgc.uin())
+	return logger.WithField("Name", lgc.displayName()).
+		WithField("Uin", lgc.uin()).
+		WithFields(utils.GroupLogFields(lgc.groupCode()))
 }
 
 func (lgc *LspGroupCommand) DefaultLoggerWithCommand(command string) *logrus.Entry {

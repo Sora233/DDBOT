@@ -43,6 +43,8 @@ func IList(c *MessageContext, groupCode int64) {
 		return
 	}
 
+	log = log.WithFields(utils.GroupLogFields(groupCode))
+
 	var success bool
 
 	listMsg := message.NewSendingMessage()
@@ -144,6 +146,8 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		return
 	}
 
+	log = log.WithFields(utils.GroupLogFields(groupCode))
+
 	switch site {
 	case bilibili.Site:
 		id = strings.TrimLeft(id, "UID:")
@@ -160,12 +164,13 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			if _, err := c.Lsp.bilibiliConcern.Remove(groupCode, mid, watchType); err != nil {
 				c.TextReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
-				log.Debugf("unwatch success")
 				if userInfo == nil {
 					c.TextReply("unwatch成功")
 				} else {
+					log = log.WithField("name", userInfo.Name)
 					c.TextReply(fmt.Sprintf("unwatch成功 - bilibili用户 %v", userInfo.Name))
 				}
+				log.Debugf("unwatch success")
 			}
 			return
 		}
@@ -195,12 +200,13 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			if _, err := c.Lsp.douyuConcern.RemoveGroupConcern(groupCode, mid, watchType); err != nil {
 				c.TextReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
-				log.Debugf("unwatch success")
 				if info == nil {
 					c.TextReply("unwatch成功")
 				} else {
+					log = log.WithField("name", info.Nickname)
 					c.TextReply(fmt.Sprintf("unwatch成功 - 斗鱼用户 %v", info.Nickname))
 				}
+				log.Debugf("unwatch success")
 			}
 			return
 		}
@@ -222,12 +228,13 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			if _, err := c.Lsp.youtubeConcern.RemoveGroupConcern(groupCode, id, watchType); err != nil {
 				c.TextReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
-				log.WithField("id", id).Debugf("unwatch success")
 				if info == nil {
 					c.TextReply("unwatch成功")
 				} else {
+					log = log.WithField("name", info.ChannelName)
 					c.TextReply(fmt.Sprintf("unwatch成功 - YTB用户 %v", info.ChannelName))
 				}
+				log.Debugf("unwatch success")
 			}
 			return
 		}
@@ -252,12 +259,13 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			if _, err := c.Lsp.huyaConcern.RemoveGroupConcern(groupCode, id, watchType); err != nil {
 				c.TextReply(fmt.Sprintf("unwatch失败 - %v", err))
 			} else {
-				log.WithField("id", id).Debugf("unwatch success")
 				if info == nil {
 					c.TextReply("unwatch成功")
 				} else {
+					log = log.WithField("name", info.Name)
 					c.TextReply(fmt.Sprintf("unwatch成功 - 虎牙用户 %v", info.Name))
 				}
+				log.Debugf("unwatch success")
 			}
 			return
 		}
@@ -288,6 +296,8 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 		c.NoPermissionReply()
 		return
 	}
+
+	log = log.WithFields(utils.GroupLogFields(groupCode))
 
 	if command == UnwatchCommand {
 		command = WatchCommand
@@ -327,7 +337,7 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 func IGrantRole(c *MessageContext, groupCode int64, role string, grantTo int64, del bool) {
 	var err error
 	grantRole := permission.FromString(role)
-	log := c.Log.WithField("role", grantRole.String())
+	log := c.Log.WithField("role", grantRole.String()).WithFields(utils.GroupLogFields(groupCode))
 	switch grantRole {
 	case permission.GroupAdmin:
 		if !c.Lsp.PermissionStateManager.RequireAny(
@@ -387,7 +397,7 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 	if command == UnwatchCommand {
 		command = WatchCommand
 	}
-	log := c.Log.WithField("command", command)
+	log := c.Log.WithField("command", command).WithFields(utils.GroupLogFields(groupCode))
 	if !CheckOperateableCommand(command) {
 		log.Errorf("unknown command")
 		c.TextReply("失败 - invalid command name")

@@ -3,7 +3,9 @@ package utils
 import (
 	"errors"
 	"fmt"
+	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Sora233/requests"
+	"github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -154,4 +156,16 @@ func ArgSplit(str string) (result []string) {
 		result = append(result, strings.Trim(strings.TrimSpace(s), `" `))
 	}
 	return
+}
+
+func GroupLogFields(groupCode int64) logrus.Fields {
+	var fields = make(logrus.Fields)
+	fields["GroupCode"] = groupCode
+	if bot.Instance == nil {
+		return fields
+	}
+	if groupInfo := bot.Instance.FindGroup(groupCode); groupInfo != nil {
+		fields["GroupName"] = groupInfo.Name
+	}
+	return fields
 }
