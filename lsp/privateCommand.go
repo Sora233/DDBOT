@@ -427,7 +427,8 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"展示所有订阅列表：/list\n" +
 		"/enable和/disable 用于开启与禁用命令，例如：\n" +
 		"开启watch命令：/enable watch\n" +
-		"禁用watch命令，调用watch命令将不再有任何反应：/disable watch"
+		"禁用watch命令，调用watch命令将不再有任何反应：/disable watch\n" +
+		"以上命令可以通过私聊操作以避免在群内刷屏"
 	help2 := "详细使用介绍及样例，请查看https://github.com/Sora233/DDBOT/blob/master/EXAMPLE.md\n" +
 		"如果您觉得DDBOT缺少了必要功能，请反馈到：https://www.bilibili.com/read/cv10602230"
 	c.textSend(help)
