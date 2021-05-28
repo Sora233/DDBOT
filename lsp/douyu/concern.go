@@ -76,7 +76,10 @@ func (c *Concern) Start() {
 		logger.Errorf("state manager start err %v", err)
 	}
 
-	go c.notifyLoop()
+	for i := 0; i < 3; i++ {
+		go c.notifyLoop()
+	}
+
 	go c.EmitFreshCore("douyu", func(ctype concern.Type, id interface{}) error {
 		roomid, ok := id.(int64)
 		if !ok {

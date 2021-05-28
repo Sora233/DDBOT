@@ -395,7 +395,9 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 }
 
 func (l *Lsp) Start(bot *bot.Bot) {
-	go l.ConcernNotify(bot)
+	for i := 0; i < 3; i++ {
+		go l.ConcernNotify(bot)
+	}
 }
 
 func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {

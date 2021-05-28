@@ -51,7 +51,9 @@ func (c *Concern) Start() {
 		logger.Errorf("state manager start err %v", err)
 	}
 
-	go c.notifyLoop()
+	for i := 0; i < 3; i++ {
+		go c.notifyLoop()
+	}
 	go c.watchCore()
 	go func() {
 		c.syncSub()

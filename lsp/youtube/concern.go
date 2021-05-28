@@ -67,7 +67,10 @@ func (c *Concern) Start() {
 		logger.Errorf("state manager start err %v", err)
 	}
 
-	go c.notifyLoop()
+	for i := 0; i < 3; i++ {
+		go c.notifyLoop()
+	}
+
 	go c.EmitFreshCore("youtube", func(ctype concern.Type, id interface{}) error {
 		if ctype.ContainAny(concern.YoutubeLive | concern.YoutubeVideo) {
 			channelId, ok := id.(string)
