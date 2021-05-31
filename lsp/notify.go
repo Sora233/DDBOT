@@ -505,9 +505,10 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 						addon.GetReserveAttachCard().GetDescFirst().GetText()))
 				case bilibili.AddOnCardShowType_match:
 				// TODO 暂时没必要
-				case bilibili.AddOnCardShowType_withImage:
+				case bilibili.AddOnCardShowType_related:
 					aCard := addon.GetAttachCard()
-					if aCard.GetType() == "decoration" {
+					// 游戏应该不需要
+					if aCard.GetType() != "game" {
 						result = append(result, localutils.MessageTextf("\n%v：\n%v\n%v\n",
 							aCard.GetHeadText(),
 							aCard.GetTitle(),

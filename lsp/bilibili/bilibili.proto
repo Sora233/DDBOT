@@ -45,12 +45,15 @@ enum DynamicDescType {
 
 enum AddOnCardShowType {
   AddOnCardShowTypeUnknown = 0;
-  // 游戏&装扮都是2，看上去都是带图的，这个type可能是指模板类型
-  withImage = 2;
+  // 相关游戏/作品/装扮
+  related = 2;
   vote = 3;
-  match = 4; // 比赛
-  video = 5; // 视频
-  reserve = 6; // 直播预约
+  // 比赛
+  match = 4;
+  // 视频
+  video = 5;
+  // 直播预约
+  reserve = 6;
 }
 
 message RoomInitResponse {
