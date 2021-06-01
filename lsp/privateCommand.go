@@ -253,11 +253,6 @@ func (c *LspPrivateCommand) GrantCommand() {
 
 	groupCode := grantCmd.Group
 
-	if err := c.checkGroupCode(groupCode); err != nil {
-		c.textReply(err.Error())
-		return
-	}
-
 	grantFrom := c.uin()
 	grantTo := grantCmd.Target
 	if grantCmd.Command == "" && grantCmd.Role == "" {
@@ -270,9 +265,20 @@ func (c *LspPrivateCommand) GrantCommand() {
 	log = log.WithField("grantFrom", grantFrom).WithField("grantTo", grantTo).WithField("delete", del)
 
 	if grantCmd.Command != "" {
+		if err := c.checkGroupCode(groupCode); err != nil {
+			c.textReply(err.Error())
+			return
+		}
 		IGrantCmd(c.NewMessageContext(log), groupCode, grantCmd.Command, grantTo, del)
 	} else if grantCmd.Role != "" {
-		IGrantRole(c.NewMessageContext(log), groupCode, grantCmd.Role, grantTo, del)
+		role := permission.FromString(grantCmd.Role)
+		if role != permission.Admin {
+			if err := c.checkGroupCode(groupCode); err != nil {
+				c.textReply(err.Error())
+				return
+			}
+		}
+		IGrantRole(c.NewMessageContext(log), groupCode, role, grantTo, del)
 	}
 }
 

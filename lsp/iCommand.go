@@ -334,9 +334,8 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 	c.TextReply("成功")
 }
 
-func IGrantRole(c *MessageContext, groupCode int64, role string, grantTo int64, del bool) {
+func IGrantRole(c *MessageContext, groupCode int64, grantRole permission.RoleType, grantTo int64, del bool) {
 	var err error
-	grantRole := permission.FromString(role)
 	log := c.Log.WithField("role", grantRole.String()).WithFields(utils.GroupLogFields(groupCode))
 	switch grantRole {
 	case permission.GroupAdmin:
@@ -364,15 +363,10 @@ func IGrantRole(c *MessageContext, groupCode int64, role string, grantTo int64, 
 			c.NoPermissionReply()
 			return
 		}
-		if bot.Instance.FindGroup(groupCode).FindMember(grantTo) != nil {
-			if del {
-				err = c.Lsp.PermissionStateManager.UngrantRole(grantTo, grantRole)
-			} else {
-				err = c.Lsp.PermissionStateManager.GrantRole(grantTo, grantRole)
-			}
+		if del {
+			err = c.Lsp.PermissionStateManager.UngrantRole(grantTo, grantRole)
 		} else {
-			log.Errorf("can not find uin")
-			err = errors.New("未找到用户")
+			err = c.Lsp.PermissionStateManager.GrantRole(grantTo, grantRole)
 		}
 	default:
 		err = errors.New("invalid role")
