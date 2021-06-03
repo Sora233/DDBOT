@@ -22,6 +22,7 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool/local_proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/py"
 	"github.com/Sora233/DDBOT/proxy_pool/zhima"
+	localutils "github.com/Sora233/DDBOT/utils"
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/sirupsen/logrus"
@@ -487,6 +488,9 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 		logger.WithField("GroupCode", groupCode).Debug("send with nil message")
 		return &message.GroupMessage{Id: -1}
 	}
+	msg.Elements = localutils.MessageFilter(msg.Elements, func(element message.IMessageElement) bool {
+		return element != nil
+	})
 	// don't know why
 	// msg.Elements = l.compactTextElements(msg.Elements)
 	res := bot.Instance.SendGroupMessage(groupCode, msg)
