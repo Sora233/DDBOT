@@ -499,6 +499,23 @@ func (l *Lsp) notifyBilibiliNews(bot *bot.Bot, notify *bilibili.ConcernNewsNotif
 		} {
 			for _, addon := range addons {
 				switch addon.AddOnCardShowType {
+				case bilibili.AddOnCardShowType_goods:
+					goodsCard := new(bilibili.Card_Display_AddOnCardInfo_GoodsCard)
+					if err := json.Unmarshal([]byte(addon.GetGoodsCard()), goodsCard); err != nil {
+						log.WithField("goods", addon.GetGoodsCard()).Errorf("Unmarshal goods card failed %v", err)
+						continue
+					}
+					if len(goodsCard.GetList()) == 0 {
+						continue
+					}
+					var item = goodsCard.GetList()[0]
+					result = append(result, localutils.MessageTextf("\n%v：\n%v\n", item.AdMark, item.Name))
+					cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, item.GetImg(), true, proxy_pool.PreferAny)
+					if err != nil {
+						log.WithField("img", item.GetImg()).Errorf("update goods img failed %v", err)
+					} else {
+						result = append(result, cover)
+					}
 				case bilibili.AddOnCardShowType_reserve:
 					result = append(result, localutils.MessageTextf("\n附加信息：\n%v\n%v\n",
 						addon.GetReserveAttachCard().GetTitle(),

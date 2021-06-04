@@ -45,6 +45,8 @@ enum DynamicDescType {
 
 enum AddOnCardShowType {
   AddOnCardShowTypeUnknown = 0;
+  // 商品
+  goods = 1;
   // 相关游戏/作品/装扮
   related = 2;
   vote = 3;
@@ -258,11 +260,44 @@ message Card {
         bool multi_line = 8;
         string oid_str = 9;
       }
+      message GoodsCard {
+        message ListItem {
+          // UP主的推荐
+          string adMark = 1;
+          string appName = 2;
+          string brief = 3;
+          // descTags = 4; 目前格式未知
+          int64 dynamicId = 5;
+          string iconName = 6;
+          string iconUrl = 7;
+          int64 id = 8;
+          string img = 9; // 这个是头图
+          string itemIdStr = 10;
+          int64 itemsId = 11;
+          string jumpLink = 12;
+          string jumpLinkDesc = 13;
+          string msource = 14;
+          string name = 15;
+          string oriPrice = 16;
+          int64 outerId = 17;
+          int64 price = 18;
+          string priceStr = 19;
+          string schemaPackageName = 20;
+          string schemaUrl = 21;
+          int32 shopGoodType = 22;
+          int32 sourceType = 23;
+          int32 type = 24;
+          bool useAdWebV2 = 25;
+          string wordJumpLinkDesc = 26;
+        }
+        repeated ListItem list = 1;
+      }
       AddOnCardShowType add_on_card_show_type = 1;
       ReserveAttachCard reserve_attach_card = 2;
       AttachCard attach_card = 3;
       string vote_card = 4;
       UgcAttachCard ugc_attach_card = 5;
+      string goods_card = 6;
     }
     message Origin {
       EmojiInfo emoji_info = 1;
