@@ -778,7 +778,7 @@ func (lgc *LspGroupCommand) faceDetect(url string) {
 func (lgc *LspGroupCommand) reserveGif(url string) {
 	log := lgc.DefaultLoggerWithCommand(ReverseCommand)
 	log.WithField("reserve_url", url).Debug("reserve image")
-	img, err := utils.ImageGet(url, proxy_pool.PreferMainland)
+	img, err := utils.ImageGet(url, proxy_pool.PreferNone)
 	if err != nil {
 		log.Errorf("get image err %v", err)
 		lgc.textReply("获取图片失败")
