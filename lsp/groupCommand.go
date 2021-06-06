@@ -313,7 +313,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 						Debug("debug image")
 					sendingMsg.Append(utils.MessageTextf("标题：%v\n", loliconImage.Title))
 					sendingMsg.Append(utils.MessageTextf("作者：%v\n", loliconImage.Author))
-					sendingMsg.Append(utils.MessageTextf("PID：%v\n", loliconImage.Pid))
+					sendingMsg.Append(utils.MessageTextf("PID：%v P%v\n", loliconImage.Pid, loliconImage.P))
 					tagCount := len(loliconImage.Tags)
 					if tagCount >= 2 {
 						tagCount = 2
