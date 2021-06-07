@@ -10,7 +10,7 @@ require (
 	github.com/Sora233/requests v0.0.0-20210509184157-15dc0c68eb92
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/Sora233/zhima-proxy-pool v0.0.0-20210124065344-04d96243cadd
-	github.com/alecthomas/kong v0.2.16
+	github.com/alecthomas/kong v0.2.17
 	github.com/aliyun/alibaba-cloud-sdk-go v1.61.975
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1
