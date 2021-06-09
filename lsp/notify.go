@@ -42,7 +42,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					for _, msg := range notifyMsg {
 						sendingMsg.Append(msg)
 					}
-					l.sendGroupMessage(notify.GroupCode, sendingMsg)
+					go l.sendGroupMessage(notify.GroupCode, sendingMsg)
 				}
 			case concern.BilibiliNews:
 				notify := (inotify).(*bilibili.ConcernNewsNotify)
@@ -58,7 +58,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				for _, msg := range notifyMsg {
 					sendingMsg.Append(msg)
 				}
-				l.sendGroupMessage(notify.GroupCode, sendingMsg)
+				go l.sendGroupMessage(notify.GroupCode, sendingMsg)
 			case concern.DouyuLive:
 				notify := (inotify).(*douyu.ConcernLiveNotify)
 				logger.WithField("site", douyu.Site).
@@ -74,7 +74,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					for _, msg := range notifyMsg {
 						sendingMsg.Append(msg)
 					}
-					l.sendGroupMessage(notify.GroupCode, sendingMsg)
+					go l.sendGroupMessage(notify.GroupCode, sendingMsg)
 				}
 			case concern.YoutubeLive, concern.YoutubeVideo:
 				notify := (inotify).(*youtube.ConcernNotify)
@@ -93,7 +93,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				for _, msg := range notifyMsg {
 					sendingMsg.Append(msg)
 				}
-				l.sendGroupMessage(notify.GroupCode, sendingMsg)
+				go l.sendGroupMessage(notify.GroupCode, sendingMsg)
 			case concern.HuyaLive:
 				notify := (inotify).(*huya.ConcernLiveNotify)
 				logger.WithField("site", huya.Site).
@@ -109,7 +109,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					for _, msg := range notifyMsg {
 						sendingMsg.Append(msg)
 					}
-					l.sendGroupMessage(notify.GroupCode, sendingMsg)
+					go l.sendGroupMessage(notify.GroupCode, sendingMsg)
 				}
 			}
 		}

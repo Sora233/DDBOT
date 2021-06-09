@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
+	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/requests"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
@@ -168,4 +170,47 @@ func GroupLogFields(groupCode int64) logrus.Fields {
 		fields["GroupName"] = groupInfo.Name
 	}
 	return fields
+}
+
+func MsgToString(elements []message.IMessageElement) (res string) {
+	for _, elem := range elements {
+		if elem == nil {
+			continue
+		}
+		switch e := elem.(type) {
+		case *message.TextElement:
+			res += e.Content
+		case *message.ImageElement:
+			res += "[Image]"
+		case *message.FaceElement:
+			res += "[" + e.Name + "]"
+		case *message.GroupImageElement:
+			res += "[Image]"
+		case *message.GroupFlashImgElement:
+			res += "[Flash Image]"
+		case *message.AtElement:
+			res += e.Display
+		case *message.RedBagElement:
+			res += "[RedBag:" + e.Title + "]"
+		case *message.ReplyElement:
+			res += "[Reply:" + strconv.FormatInt(int64(e.ReplySeq), 10) + "]"
+		case *message.GroupFileElement:
+			res += "[File]" + e.Name
+		case *message.ShortVideoElement:
+			res += "[Video]"
+		case *message.ForwardElement:
+			res += "[Forward]"
+		case *message.MusicShareElement:
+			res += "[Music]"
+		case *message.LightAppElement:
+			res += "[LightApp]" + e.Content
+		case *message.ServiceElement:
+			res += "[Service]" + e.Content
+		case *message.VoiceElement, *message.PrivateVoiceElement, *message.GroupVoiceElement:
+			res += "[Voice]"
+		default:
+			logger.WithField("content", spew.Sdump(elem)).Debug("found new element")
+		}
+	}
+	return
 }

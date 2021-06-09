@@ -154,7 +154,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		mid, err := strconv.ParseInt(id, 10, 64)
 		if err != nil {
 			log.WithField("id", id).Errorf("not a int")
-			c.TextReply("失败 - bilibili mid格式错误")
+			c.TextReply("失败 - bilibili uid格式错误")
 			return
 		}
 		log = log.WithField("mid", mid)
@@ -181,7 +181,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			c.TextReply(fmt.Sprintf("watch失败 - %v", err))
 			return
 		}
-		// 其他群关注了同一mid，并且推送过Living，那么给新watch的群也推一份
+		// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
 		defer c.Lsp.bilibiliConcern.GroupWatchNotify(groupCode, mid, watchType)
 		log = log.WithField("name", userInfo.Name)
 		log.Debugf("watch success")

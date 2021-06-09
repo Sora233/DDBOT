@@ -493,9 +493,18 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 	})
 	// don't know why
 	// msg.Elements = l.compactTextElements(msg.Elements)
-	res := bot.Instance.SendGroupMessage(groupCode, msg)
-	if res.Id == -1 {
-		logger.WithField("GroupCode", groupCode).Errorf("send group message failed")
+	var res *message.GroupMessage
+	result := localutils.Retry(3, time.Millisecond*200, func() bool {
+		res = bot.Instance.SendGroupMessage(groupCode, msg)
+		return res != nil && res.Id != -1
+	})
+	if !result {
+		logger.WithField("content", localutils.MsgToString(msg.Elements)).
+			WithField("GroupCode", groupCode).
+			Errorf("send group message failed after")
+	}
+	if res == nil {
+		res = &message.GroupMessage{Id: -1}
 	}
 	return res
 }
