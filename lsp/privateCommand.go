@@ -578,11 +578,11 @@ func (c *LspPrivateCommand) checkGroupCode(groupCode int64) error {
 	if groupCode == 0 {
 		return fmt.Errorf("没有指定QQ群号码，请使用-g参数指定QQ群，例如对QQ群123456进行操作：%v %v %v", c.GetCmd(), "-g 123456", strings.Join(c.GetArgs(), " "))
 	}
-	group := c.bot.FindGroup(groupCode)
-	if group == nil {
-		return errors.New("没有找到该QQ群，请确认bot是否在群内")
-	}
 	if !c.l.PermissionStateManager.CheckRole(c.uin(), permission.Admin) {
+		group := c.bot.FindGroup(groupCode)
+		if group == nil {
+			return errors.New("没有找到该QQ群，请确认bot是否在群内")
+		}
 		member := group.FindMember(c.uin())
 		if member == nil {
 			return errors.New("没有在该群内找到您，请确认您是否在群内")
