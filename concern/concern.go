@@ -1,6 +1,7 @@
 package concern
 
 import (
+	"github.com/Mrs4s/MiraiGo/message"
 	"strconv"
 	"strings"
 )
@@ -22,6 +23,7 @@ var all = [...]Type{BibiliLive, BilibiliNews, DouyuLive, YoutubeLive, YoutubeVid
 
 type Notify interface {
 	Type() Type
+	ToMessage() []message.IMessageElement
 }
 
 func (t Type) String() string {

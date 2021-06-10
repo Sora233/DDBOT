@@ -430,6 +430,10 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 	c.TextReply("成功")
 }
 
+func IConfigCmd(c *MessageContext, groupCode int64, id interface{}, action string, status string) {
+
+}
+
 func (ic *MessageContext) requireNotNil(param ...interface{}) error {
 	for _, p := range param {
 		if p == nil {

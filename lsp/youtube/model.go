@@ -2,7 +2,10 @@ package youtube
 
 import (
 	"encoding/json"
+	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/proxy_pool"
+	localutils "github.com/Sora233/DDBOT/utils"
 )
 
 type UserInfo struct {
@@ -96,8 +99,32 @@ type ConcernNotify struct {
 	GroupCode int64 `json:"group_code"`
 }
 
-func (c *ConcernNotify) Type() concern.Type {
-	if c.IsLive() {
+func (notify *ConcernNotify) ToMessage() []message.IMessageElement {
+	var result []message.IMessageElement
+	if notify.IsLive() {
+		if notify.IsLiving() {
+			result = append(result, localutils.MessageTextf("YTB-%v正在直播：\n%v\n", notify.ChannelName, notify.VideoTitle))
+		} else {
+			result = append(result, localutils.MessageTextf("YTB-%v发布了直播预约：\n%v\n时间：%v\n", notify.ChannelName, notify.VideoTitle, localutils.TimestampFormat(notify.VideoTimestamp)))
+		}
+	} else if notify.IsVideo() {
+		result = append(result, localutils.MessageTextf("YTB-%s发布了新视频：\n%v\n", notify.ChannelName, notify.VideoTitle))
+	}
+	groupImg, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Cover, false, proxy_pool.PreferOversea)
+	if err != nil {
+		logger.WithField("channel_name", notify.ChannelName).
+			WithField("video_id", notify.VideoId).
+			WithField("group_code", notify.GroupCode).
+			Errorf("upload cover failed %v", err)
+	} else {
+		result = append(result, groupImg)
+	}
+	result = append(result, message.NewText(VideoViewUrl(notify.VideoId)+"\n"))
+	return result
+}
+
+func (notify *ConcernNotify) Type() concern.Type {
+	if notify.IsLive() {
 		return concern.YoutubeLive
 	} else {
 		return concern.YoutubeVideo

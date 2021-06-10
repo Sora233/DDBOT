@@ -4,8 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
+	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/proxy_pool"
+	localutils "github.com/Sora233/DDBOT/utils"
 	"reflect"
 )
 
@@ -24,6 +27,22 @@ type ConcernEvent interface {
 type ConcernLiveNotify struct {
 	LiveInfo
 	GroupCode int64 `json:"group_code"`
+}
+
+func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
+	var result []message.IMessageElement
+	if notify.Living {
+		result = append(result, localutils.MessageTextf("虎牙-%s正在直播【%v】\n%v", notify.Name, notify.RoomName, notify.RoomUrl))
+		cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Avatar, false, proxy_pool.PreferNone)
+		if err != nil {
+			logger.WithField("avatar", notify.Avatar).Errorf("upload avatar failed %v", err)
+		} else {
+			result = append(result, cover)
+		}
+	} else {
+		result = append(result, localutils.MessageTextf("虎牙-%s暂未直播\n%v", notify.Name, notify.RoomUrl))
+	}
+	return result
 }
 
 func (notify *ConcernLiveNotify) Type() concern.Type {
