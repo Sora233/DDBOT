@@ -6,7 +6,7 @@
 
 ## 预编译版本
 
-*预编译版本均为nocv版本，即无法正常使用face命令。*
+*预编译版本均为nocv版本，即无法正常使用face命令（本来也没啥人用这个命令）。*
 
 从 [Release](https://github.com/Sora233/DDBOT/releases) 中下载适合您的版本
 
