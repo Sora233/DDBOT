@@ -31,7 +31,7 @@ func (r *Runtime) Debug() {
 	r.debug = true
 }
 
-func (r *Runtime) parseCommandSyntax(ast interface{}, name string, options ...kong.Option) string {
+func (r *Runtime) parseCommandSyntax(ast interface{}, name string, options ...kong.Option) (*kong.Context, string) {
 	args := r.GetArgs()
 	cmdOut := &strings.Builder{}
 	// kong 错误信息不太友好
@@ -40,20 +40,20 @@ func (r *Runtime) parseCommandSyntax(ast interface{}, name string, options ...ko
 	if err != nil {
 		logger.Errorf("kong new failed %v", err)
 		r.Exit(0)
-		return ""
+		return nil, ""
 	}
 	k.Stdout = cmdOut
-	_, err = k.Parse(args)
+	ctx, err := k.Parse(args)
 	if r.exit {
 		logger.WithField("content", args).Debug("exit")
-		return cmdOut.String()
+		return ctx, cmdOut.String()
 	}
 	if err != nil {
 		logger.WithField("content", args).Errorf("kong parse failed %v", err)
 		r.Exit(0)
-		return fmt.Sprintf("失败 - %v", err)
+		return nil, fmt.Sprintf("参数解析失败 - %v", err)
 	}
-	return ""
+	return ctx, ""
 }
 
 func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, concern.Type, error) {

@@ -116,7 +116,7 @@ func (c *LspPrivateCommand) ListCommand() {
 		Type  string `optional:"" short:"t" help:"已弃用"`
 		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
 	}
-	output := c.parseCommandSyntax(&listCmd, ListCommand)
+	_, output := c.parseCommandSyntax(&listCmd, ListCommand)
 	if output != "" {
 		c.textReply(output)
 	}
@@ -164,7 +164,7 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 		Id    string `arg:""`
 	}
 
-	output := c.parseCommandSyntax(&watchCmd, name)
+	_, output := c.parseCommandSyntax(&watchCmd, name)
 	if output != "" {
 		c.textReply(output)
 	}
@@ -211,7 +211,7 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 		Command string `arg:"" help:"command name"`
 	}
 
-	output := c.parseCommandSyntax(&enableCmd, name)
+	_, output := c.parseCommandSyntax(&enableCmd, name)
 	if output != "" {
 		c.textReply(output)
 	}
@@ -243,7 +243,7 @@ func (c *LspPrivateCommand) GrantCommand() {
 		Delete  bool   `short:"d" help:"perform a ungrant instead"`
 		Target  int64  `arg:""`
 	}
-	output := c.parseCommandSyntax(&grantCmd, GrantCommand)
+	_, output := c.parseCommandSyntax(&grantCmd, GrantCommand)
 	if output != "" {
 		c.textReply(output)
 	}
@@ -293,7 +293,7 @@ func (c *LspPrivateCommand) BlockCommand() {
 		Delete bool  `optional:"" short:"d"`
 	}
 
-	output := c.parseCommandSyntax(&blockCmd, BlockCommand)
+	_, output := c.parseCommandSyntax(&blockCmd, BlockCommand)
 	if output != "" {
 		c.textReply(output)
 	}
@@ -349,7 +349,7 @@ func (c *LspPrivateCommand) LogCommand() {
 		Keyword string    `optional:"" short:"k" help:"the lines contains at lease one keyword"`
 	}
 
-	output := c.parseCommandSyntax(&logCmd, LogCommand)
+	_, output := c.parseCommandSyntax(&logCmd, LogCommand)
 	if output != "" {
 		c.textSend(output)
 	}
@@ -399,7 +399,7 @@ func (c *LspPrivateCommand) PingCommand() {
 	log.Info("run ping command")
 	defer func() { log.Info("ping command end") }()
 
-	output := c.parseCommandSyntax(&struct{}{}, PingCommand, kong.Description("reply a pong"), kong.UsageOnError())
+	_, output := c.parseCommandSyntax(&struct{}{}, PingCommand, kong.Description("reply a pong"), kong.UsageOnError())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -414,7 +414,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 	log.Info("run help command")
 	defer func() { log.Info("help command end") }()
 
-	output := c.parseCommandSyntax(&struct{}{}, HelpCommand, kong.Description("print help message"))
+	_, output := c.parseCommandSyntax(&struct{}{}, HelpCommand, kong.Description("print help message"))
 	if output != "" {
 		c.textReply(output)
 	}
@@ -448,7 +448,7 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 	log.Info("run sysinfo command")
 	defer func() { log.Info("sysinfo command end") }()
 
-	output := c.parseCommandSyntax(&struct{}{}, SysinfoCommand)
+	_, output := c.parseCommandSyntax(&struct{}{}, SysinfoCommand)
 	if output != "" {
 		c.textReply(output)
 	}
