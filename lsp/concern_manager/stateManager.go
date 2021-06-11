@@ -27,19 +27,19 @@ type StateManager struct {
 }
 
 type AtAll struct {
-	Id    interface{}  `json:"id,string"`
+	Id    json.Number  `json:"id"`
 	Ctype concern.Type `json:"ctype"`
 }
 
 type AtSomeone struct {
-	Id     interface{}  `json:"id"`
+	Id     json.Number  `json:"id"`
 	Ctype  concern.Type `json:"ctype"`
 	AtList []int64      `json:"at_list"`
 }
 
 type GroupConcernAtConfig struct {
-	AtAll     []AtAll     `json:"at_all"`
-	AtSomeone []AtSomeone `json:"at_someone"`
+	AtAll     []*AtAll     `json:"at_all"`
+	AtSomeone []*AtSomeone `json:"at_someone"`
 }
 
 func (g *GroupConcernAtConfig) CheckAtAll(id interface{}, ctype concern.Type) bool {
@@ -47,7 +47,7 @@ func (g *GroupConcernAtConfig) CheckAtAll(id interface{}, ctype concern.Type) bo
 		return false
 	}
 	for _, at := range g.AtAll {
-		if compareId(at.Id.(json.Number), id) && at.Ctype.ContainAll(ctype) {
+		if localutils.CompareId(at.Id, id) && at.Ctype.ContainAll(ctype) {
 			return true
 		}
 	}
@@ -59,7 +59,7 @@ func (g *GroupConcernAtConfig) GetAtSomeoneList(id interface{}, ctype concern.Ty
 		return nil
 	}
 	for _, at := range g.AtSomeone {
-		if compareId(at.Id.(json.Number), id) && at.Ctype.ContainAll(ctype) {
+		if localutils.CompareId(at.Id, id) && at.Ctype.ContainAll(ctype) {
 			return at.AtList
 		}
 	}
@@ -101,8 +101,8 @@ func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (c
 	return
 }
 
-// OperateGroupConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，并保存返回的GroupConcernConfig。
-func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig *GroupConcernConfig) *GroupConcernConfig) error {
+// OperateGroupConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，并保存GroupConcernConfig。
+func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig *GroupConcernConfig)) error {
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		var concernConfig *GroupConcernConfig
 		var configKey = c.GroupConcernConfigKey(groupCode, id)
@@ -116,7 +116,7 @@ func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}
 		if err != nil {
 			return err
 		}
-		concernConfig = f(concernConfig)
+		f(concernConfig)
 		_, _, err = tx.Set(configKey, concernConfig.ToString(), nil)
 		return err
 	})
@@ -516,23 +516,4 @@ func NewStateManager(keySet KeySet, useEmit bool) *StateManager {
 		sm.emitQueue = localutils.NewEmitQueue(sm.emitChan, config.GlobalConfig.GetDuration("concern.emitInterval"))
 	}
 	return sm
-}
-
-// compareId 用_id的类型信息去转换number类型，并尝试比较
-func compareId(number json.Number, _id interface{}) bool {
-	switch id := _id.(type) {
-	case int64:
-		// bilibili / douyu
-		jid, err := number.Int64()
-		if err != nil {
-			panic(err)
-		}
-		return jid == id
-	case string:
-		// huya / youtube
-		jid := number.String()
-		return jid == id
-	default:
-		return false
-	}
 }
