@@ -72,7 +72,7 @@ func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, c
 	}
 	_type, found = utils.PrefixMatch([]string{"live", "news"}, rawType)
 	if !found {
-		return "", concern.Empty, errors.New("can not determine type")
+		return "", concern.Empty, errors.New("不支持的类型参数")
 	}
 
 	switch _type {
@@ -86,7 +86,7 @@ func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, c
 		} else if site == huya.Site {
 			watchType = concern.HuyaLive
 		} else {
-			return "", concern.Empty, errors.New("unknown watch type")
+			return "", concern.Empty, errors.New("不支持的类型参数")
 		}
 	case "news":
 		if site == bilibili.Site {
@@ -94,10 +94,10 @@ func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, c
 		} else if site == youtube.Site {
 			watchType = concern.YoutubeVideo
 		} else {
-			return "", concern.Empty, errors.New("unknown watch type")
+			return "", concern.Empty, errors.New("不支持的类型参数")
 		}
 	default:
-		return "", concern.Empty, errors.New("unknown watch type")
+		return "", concern.Empty, errors.New("不支持的类型参数")
 	}
 	return site, watchType, nil
 }
@@ -110,7 +110,7 @@ func (r *Runtime) ParseRawSite(rawSite string) (string, error) {
 
 	site, found = utils.PrefixMatch([]string{bilibili.Site, douyu.Site, youtube.Site, huya.Site}, rawSite)
 	if !found {
-		return "", errors.New("can not determine site")
+		return "", errors.New("不支持的网站参数")
 	}
 	return site, nil
 }
