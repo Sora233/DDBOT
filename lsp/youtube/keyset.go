@@ -5,6 +5,14 @@ import "github.com/Sora233/DDBOT/lsp/buntdb"
 type KeySet struct {
 }
 
+func (k *KeySet) GroupAtAllMarkKey(keys ...interface{}) string {
+	return buntdb.YoutubeGroupAtAllMarkKey(keys...)
+}
+
+func (k *KeySet) GroupConcernConfigKey(keys ...interface{}) string {
+	return buntdb.YoutubeGroupConcernConfigKey(keys...)
+}
+
 func (k *KeySet) GroupConcernStateKey(keys ...interface{}) string {
 	return buntdb.YoutubeGroupConcernStateKey(keys...)
 }

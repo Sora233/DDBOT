@@ -5,6 +5,14 @@ import "github.com/Sora233/DDBOT/lsp/buntdb"
 type keySet struct {
 }
 
+func (k *keySet) GroupAtAllMarkKey(keys ...interface{}) string {
+	return buntdb.BilibiliGroupAtAllMarkKey(keys...)
+}
+
+func (k *keySet) GroupConcernConfigKey(keys ...interface{}) string {
+	return buntdb.BilibiliGroupConcernConfigKey(keys...)
+}
+
 func (k *keySet) GroupConcernStateKey(keys ...interface{}) string {
 	return buntdb.BilibiliGroupConcernStateKey(keys...)
 }

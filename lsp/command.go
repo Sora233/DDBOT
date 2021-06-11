@@ -18,6 +18,7 @@ const (
 	ReverseCommand      = "reverse"
 	ImageContentCommand = "ic"
 	HelpCommand         = "help"
+	ConfigCommand       = "config"
 )
 
 // private command
@@ -33,14 +34,14 @@ var allGroupCommand = [...]string{
 	LspCommand, WatchCommand, UnwatchCommand,
 	ListCommand, SetuCommand, HuangtuCommand,
 	EnableCommand, DisableCommand, ImageContentCommand,
-	FaceCommand,
+	FaceCommand, ConfigCommand,
 }
 
 var allPrivateOperate = [...]string{
 	PingCommand, HelpCommand, LogCommand,
 	BlockCommand, SysinfoCommand, ListCommand,
 	WatchCommand, UnwatchCommand, DisableCommand,
-	EnableCommand, GrantCommand,
+	EnableCommand, GrantCommand, ConfigCommand,
 }
 
 var nonOprateable = [...]string{

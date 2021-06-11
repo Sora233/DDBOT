@@ -1,6 +1,7 @@
 package concern_manager
 
 import (
+	"encoding/json"
 	"errors"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
@@ -23,6 +24,121 @@ type StateManager struct {
 	emitChan  chan *localutils.EmitE
 	emitQueue *localutils.EmitQueue
 	useEmit   bool
+}
+
+type AtAll struct {
+	Id    interface{}  `json:"id,string"`
+	Ctype concern.Type `json:"ctype"`
+}
+
+type AtSomeone struct {
+	Id     interface{}  `json:"id"`
+	Ctype  concern.Type `json:"ctype"`
+	AtList []int64      `json:"at_list"`
+}
+
+type GroupConcernAtConfig struct {
+	AtAll     []AtAll     `json:"at_all"`
+	AtSomeone []AtSomeone `json:"at_someone"`
+}
+
+func (g *GroupConcernAtConfig) CheckAtAll(id interface{}, ctype concern.Type) bool {
+	if g == nil {
+		return false
+	}
+	for _, at := range g.AtAll {
+		if compareId(at.Id.(json.Number), id) && at.Ctype.ContainAll(ctype) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *GroupConcernAtConfig) GetAtSomeoneList(id interface{}, ctype concern.Type) []int64 {
+	if g == nil {
+		return nil
+	}
+	for _, at := range g.AtSomeone {
+		if compareId(at.Id.(json.Number), id) && at.Ctype.ContainAll(ctype) {
+			return at.AtList
+		}
+	}
+	return nil
+}
+
+type GroupConcernConfig struct {
+	GroupConcernAt GroupConcernAtConfig `json:"group_concern_at"`
+}
+
+func NewGroupConcernConfigFromString(s string) (*GroupConcernConfig, error) {
+	var concernConfig *GroupConcernConfig
+	decoder := json.NewDecoder(strings.NewReader(s))
+	decoder.UseNumber()
+	err := decoder.Decode(&concernConfig)
+	return concernConfig, err
+}
+
+func (g *GroupConcernConfig) ToString() string {
+	b, e := json.Marshal(g)
+	if e != nil {
+		panic(e)
+	}
+	return string(b)
+}
+
+func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig *GroupConcernConfig, err error) {
+	err = c.RTxCover(func(tx *buntdb.Tx) error {
+		val, err := tx.Get(c.GroupConcernConfigKey(groupCode, id))
+		if err != nil {
+			return err
+		}
+		concernConfig, err = NewGroupConcernConfigFromString(val)
+		return err
+	})
+	if err != nil {
+		concernConfig = nil
+	}
+	return
+}
+
+// OperateGroupConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，并保存返回的GroupConcernConfig。
+func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig *GroupConcernConfig) *GroupConcernConfig) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
+		var concernConfig *GroupConcernConfig
+		var configKey = c.GroupConcernConfigKey(groupCode, id)
+		val, err := tx.Get(configKey)
+		if err == nil {
+			concernConfig, err = NewGroupConcernConfigFromString(val)
+		} else if err == buntdb.ErrNotFound {
+			concernConfig = new(GroupConcernConfig)
+			err = nil
+		}
+		if err != nil {
+			return err
+		}
+		concernConfig = f(concernConfig)
+		_, _, err = tx.Set(configKey, concernConfig.ToString(), nil)
+		return err
+	})
+}
+
+// CheckAndSetAtAllMark 检查@全体标记是否过期，已过期返回true，并重置标记，否则返回false。
+// 因为@全体有次数限制，并且较为恼人，故设置标记，两次@全体之间必须有间隔。
+func (c *StateManager) CheckAndSetAtAllMark(groupCode int64) (result bool) {
+	_ = c.RWTxCover(func(tx *buntdb.Tx) error {
+		key := c.GroupAtAllMarkKey(groupCode)
+		_, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			result = true
+			_, _, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*6))
+			if err != nil {
+				// 如果设置失败，可能会造成连续at
+				result = false
+			}
+		}
+		return nil
+	})
+	return
 }
 
 func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype concern.Type) error {
@@ -400,4 +516,23 @@ func NewStateManager(keySet KeySet, useEmit bool) *StateManager {
 		sm.emitQueue = localutils.NewEmitQueue(sm.emitChan, config.GlobalConfig.GetDuration("concern.emitInterval"))
 	}
 	return sm
+}
+
+// compareId 用_id的类型信息去转换number类型，并尝试比较
+func compareId(number json.Number, _id interface{}) bool {
+	switch id := _id.(type) {
+	case int64:
+		// bilibili / douyu
+		jid, err := number.Int64()
+		if err != nil {
+			panic(err)
+		}
+		return jid == id
+	case string:
+		// huya / youtube
+		jid := number.String()
+		return jid == id
+	default:
+		return false
+	}
 }
