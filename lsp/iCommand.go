@@ -1,20 +1,23 @@
 package lsp
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/Sora233/DDBOT/lsp/douyu"
 	"github.com/Sora233/DDBOT/lsp/huya"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
+	"reflect"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -150,10 +153,8 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 
 	switch site {
 	case bilibili.Site:
-		id = strings.TrimLeft(id, "UID:")
-		mid, err := strconv.ParseInt(id, 10, 64)
+		mid, err := bilibili.ParseUid(id)
 		if err != nil {
-			log.WithField("id", id).Errorf("not a int")
 			c.TextReply("失败 - bilibili uid格式错误")
 			return
 		}
@@ -430,8 +431,96 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 	c.TextReply("成功")
 }
 
-func IConfigCmd(c *MessageContext, groupCode int64, id interface{}, action string, status string) {
+func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
+	log := c.Log.WithFields(utils.GroupLogFields(groupCode))
+	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ConfigCommand) {
+		c.DisabledReply()
+		return
+	}
 
+	if !c.Lsp.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.Sender.Uin),
+		permission.GroupAdminRoleRequireOption(groupCode, c.Sender.Uin),
+		permission.QQAdminRequireOption(groupCode, c.Sender.Uin),
+		permission.GroupCommandRequireOption(groupCode, c.Sender.Uin, ConfigCommand),
+	) {
+		c.NoPermissionReply()
+		return
+	}
+
+	var err error
+
+	switch site {
+	case bilibili.Site:
+		var mid int64
+		mid, err = bilibili.ParseUid(id)
+		if err != nil {
+			log.WithField("id", id).Errorf("parse failed")
+			c.TextReply("失败 - bilibili uid格式错误")
+			return
+		}
+		err = c.Lsp.bilibiliConcern.OperateGroupConcernConfig(groupCode, mid, operateAtAllConcern(c, mid, ctype, on))
+	case douyu.Site:
+		var uid int64
+		uid, err = douyu.ParseUid(id)
+		if err != nil {
+			log.WithField("id", id).Errorf("parse failed")
+			c.TextReply("失败 - douyu id格式错误")
+			return
+		}
+		err = c.Lsp.douyuConcern.OperateGroupConcernConfig(groupCode, uid, operateAtAllConcern(c, uid, ctype, on))
+
+	case youtube.Site:
+		err = c.Lsp.youtubeConcern.OperateGroupConcernConfig(groupCode, id, operateAtAllConcern(c, id, ctype, on))
+	case huya.Site:
+		err = c.Lsp.huyaConcern.OperateGroupConcernConfig(groupCode, id, operateAtAllConcern(c, id, ctype, on))
+	}
+	if err == nil {
+		log.Debug("config success")
+		c.TextReply("成功")
+	} else if !localdb.IsRollback(err) {
+		log.Errorf("OperateGroupConcernConfig failed %v", err)
+		c.TextReply("失败 - 内部错误")
+		return
+	}
+}
+
+func operateAtAllConcern(c *MessageContext, id interface{}, ctype concern.Type, on bool) func(concernConfig *concern_manager.GroupConcernConfig) bool {
+	return func(concernConfig *concern_manager.GroupConcernConfig) bool {
+		if concernConfig.GroupConcernAt.CheckAtAll(id, ctype) {
+			if on {
+				// 配置@all，但已经配置了
+				c.TextReply("失败 - 已经配置过了")
+				return false
+			}
+			for _, atAll := range concernConfig.GroupConcernAt.AtAll {
+				if utils.CompareId(atAll.Id, id) && atAll.Ctype.ContainAll(ctype) {
+					atAll.Ctype = atAll.Ctype.Remove(ctype)
+				}
+			}
+		} else {
+			if !on {
+				// 取消配置，但并没有配置
+				c.TextReply("失败 - 该配置未设置")
+				return false
+			}
+			var nid json.Number
+			var idType = reflect.TypeOf(id)
+			switch idType.Kind() {
+			case reflect.String:
+				nid = json.Number(id.(string))
+			case reflect.Int64:
+				nid = json.Number(strconv.FormatInt(id.(int64), 10))
+			default:
+				panic("未知的id类型，你可能忘记改这里了")
+			}
+			concernConfig.GroupConcernAt.AtAll = append(concernConfig.GroupConcernAt.AtAll, &concern_manager.AtAll{
+				Id:    nid,
+				Ctype: ctype,
+			})
+		}
+		return true
+	}
 }
 
 func (ic *MessageContext) requireNotNil(param ...interface{}) error {

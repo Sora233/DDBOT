@@ -117,6 +117,8 @@ func (lgc *LspGroupCommand) Execute() {
 		lgc.WatchCommand(true)
 	case "/list":
 		lgc.ListCommand()
+	case "/config":
+		lgc.ConfigCommand()
 	case "/签到":
 		if lgc.requireNotDisable(CheckinCommand) {
 			lgc.CheckinCommand()
@@ -628,15 +630,23 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 	if lgc.exit {
 		return
 	}
-	if len(kongCtx.Path) == 0 {
+	if len(kongCtx.Path) <= 1 {
 		return
 	}
 
-	switch kongCtx.Path[0].Command.Name {
-	case "at":
-		// TODO
+	switch kongCtx.Path[1].Command.Name {
+	//case "at":
+	//	// TODO
 	case "at_all":
-		// TODO
+		site, ctype, err := lgc.ParseRawSiteAndType(configCmd.AtAll.Site, "live")
+		if err != nil {
+			log.WithField("site", configCmd.AtAll.Site).Errorf("ParseRawSiteAndType failed %v", err)
+			lgc.textSend(fmt.Sprintf("失败 - %v", err.Error()))
+			return
+		}
+		var on = utils.Switch2Bool(configCmd.AtAll.Switch)
+		log = log.WithField("site", site).WithField("id", configCmd.AtAll.Id).WithField("on", on)
+		IConfigAtAllCmd(lgc.NewCommandContext(log), lgc.groupCode(), configCmd.AtAll.Id, site, ctype, on)
 	default:
 		lgc.textSend("暂未支持，你可以催作者GKD")
 	}

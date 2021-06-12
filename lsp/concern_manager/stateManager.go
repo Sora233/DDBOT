@@ -101,9 +101,9 @@ func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (c
 	return
 }
 
-// OperateGroupConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，并保存GroupConcernConfig。
-func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig *GroupConcernConfig)) error {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+// OperateGroupConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，如果返回true，就保存GroupConcernConfig，否则就回滚。
+func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig *GroupConcernConfig) bool) error {
+	err := c.RWTxCover(func(tx *buntdb.Tx) error {
 		var concernConfig *GroupConcernConfig
 		var configKey = c.GroupConcernConfigKey(groupCode, id)
 		val, err := tx.Get(configKey)
@@ -116,10 +116,13 @@ func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}
 		if err != nil {
 			return err
 		}
-		f(concernConfig)
+		if !f(concernConfig) {
+			return errors.New("rollback")
+		}
 		_, _, err = tx.Set(configKey, concernConfig.ToString(), nil)
 		return err
 	})
+	return err
 }
 
 // CheckAndSetAtAllMark 检查@全体标记是否过期，已过期返回true，并重置标记，否则返回false。

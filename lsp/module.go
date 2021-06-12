@@ -480,10 +480,11 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 }
 
 func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *message.GroupMessage {
-	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
-		logger.WithField("GroupCode", groupCode).Debug("skip muted group")
-		return &message.GroupMessage{Id: -1}
-	}
+	// TODO 要求send不在事务中发送确实有点难，等把buntdb重构一下，支持获取当前事务之后再来处理
+	//if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
+	//	logger.WithField("GroupCode", groupCode).Debug("skip muted group")
+	//	return &message.GroupMessage{Id: -1}
+	//}
 	if msg == nil {
 		logger.WithField("GroupCode", groupCode).Debug("send with nil message")
 		return &message.GroupMessage{Id: -1}

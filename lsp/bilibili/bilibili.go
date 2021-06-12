@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Sora233/DDBOT/proxy_pool/requests"
+	"strconv"
 	"strings"
 )
 
@@ -67,4 +68,9 @@ func IsVerifyGiven() bool {
 		return false
 	}
 	return true
+}
+
+func ParseUid(s string) (int64, error) {
+	s = strings.TrimLeft(s, "UID:")
+	return strconv.ParseInt(s, 10, 64)
 }

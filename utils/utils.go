@@ -233,3 +233,7 @@ func CompareId(number json.Number, _id interface{}) bool {
 		return false
 	}
 }
+
+func Switch2Bool(_s string) bool {
+	return _s == "on"
+}
