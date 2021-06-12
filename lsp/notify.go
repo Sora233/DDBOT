@@ -31,20 +31,21 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 			innertState := l.getInnerState(inotify.Type())
 			if innertState != nil {
 				cfg, _ := innertState.GetGroupConcernConfig(inotify.GetGroupCode(), inotify.GetUid())
-
-				// atConfig
-				{
-					var qqadmin = checkGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
-					var checkAtAll = qqadmin && cfg.GroupConcernAt.CheckAtAll(inotify.GetUid(), inotify.Type())
-					var atAllMark = qqadmin && checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
-					logger.WithField("qqadmin", qqadmin).WithField("checkAtAll", checkAtAll).WithField("atMark", atAllMark).Trace("at_all")
-					if qqadmin && checkAtAll && atAllMark {
-						chainMsg = append(chainMsg, newAtAllMsg())
-					} else {
-						ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.GetUid(), inotify.Type())
-						logger.WithField("ids", ids).Trace("at someone")
-						if len(ids) != 0 {
-							chainMsg = append(chainMsg, newAtIdsMsg(ids))
+				if cfg != nil {
+					// atConfig
+					{
+						var qqadmin = checkGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
+						var checkAtAll = qqadmin && cfg.GroupConcernAt.CheckAtAll(inotify.GetUid(), inotify.Type())
+						var atAllMark = qqadmin && checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
+						logger.WithField("qqadmin", qqadmin).WithField("checkAtAll", checkAtAll).WithField("atMark", atAllMark).Trace("at_all")
+						if qqadmin && checkAtAll && atAllMark {
+							chainMsg = append(chainMsg, newAtAllMsg())
+						} else {
+							ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.GetUid(), inotify.Type())
+							logger.WithField("ids", ids).Trace("at someone")
+							if len(ids) != 0 {
+								chainMsg = append(chainMsg, newAtIdsMsg(ids))
+							}
 						}
 					}
 				}
