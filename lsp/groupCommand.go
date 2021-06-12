@@ -385,7 +385,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 
 	id := watchCmd.Id
 
-	IWatch(lgc.NewCommandContext(log), groupCode, id, site, watchType, remove)
+	IWatch(lgc.NewMessageContext(log), groupCode, id, site, watchType, remove)
 }
 
 func (lgc *LspGroupCommand) ListCommand() {
@@ -412,7 +412,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 		return
 	}
 
-	IList(lgc.NewCommandContext(log), groupCode)
+	IList(lgc.NewMessageContext(log), groupCode)
 }
 
 func (lgc *LspGroupCommand) RollCommand() {
@@ -566,7 +566,7 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 
 	log = log.WithField("command", enableCmd.Command).WithField("disable", disable)
 
-	IEnable(lgc.NewCommandContext(log), groupCode, enableCmd.Command, disable)
+	IEnable(lgc.NewMessageContext(log), groupCode, enableCmd.Command, disable)
 }
 
 func (lgc *LspGroupCommand) GrantCommand() {
@@ -599,9 +599,9 @@ func (lgc *LspGroupCommand) GrantCommand() {
 	log = log.WithField("grantFrom", grantFrom).WithField("grantTo", grantTo).WithField("delete", del)
 
 	if grantCmd.Command != "" {
-		IGrantCmd(lgc.NewCommandContext(log), lgc.groupCode(), grantCmd.Command, grantTo, del)
+		IGrantCmd(lgc.NewMessageContext(log), lgc.groupCode(), grantCmd.Command, grantTo, del)
 	} else if grantCmd.Role != "" {
-		IGrantRole(lgc.NewCommandContext(log), lgc.groupCode(), permission.FromString(grantCmd.Role), grantTo, del)
+		IGrantRole(lgc.NewMessageContext(log), lgc.groupCode(), permission.FromString(grantCmd.Role), grantTo, del)
 	}
 }
 
@@ -619,7 +619,7 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		AtAll struct {
 			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
 			Id     string `arg:"" help:"配置的主播id"`
-			Switch string `arg:"" default:"on" enum:"on,off"`
+			Switch string `arg:"" default:"on" enum:"on,off" help:"on / off"`
 		} `cmd:"" help:"配置推送时@全体成员，需要管理员权限" name:"at_all"`
 	}
 
@@ -627,10 +627,7 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 	if output != "" {
 		lgc.textReply(output)
 	}
-	if lgc.exit {
-		return
-	}
-	if len(kongCtx.Path) <= 1 {
+	if lgc.exit || len(kongCtx.Path) <= 1 {
 		return
 	}
 
@@ -646,7 +643,7 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		}
 		var on = utils.Switch2Bool(configCmd.AtAll.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.AtAll.Id).WithField("on", on)
-		IConfigAtAllCmd(lgc.NewCommandContext(log), lgc.groupCode(), configCmd.AtAll.Id, site, ctype, on)
+		IConfigAtAllCmd(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.AtAll.Id, site, ctype, on)
 	default:
 		lgc.textSend("暂未支持，你可以催作者GKD")
 	}
@@ -969,7 +966,7 @@ func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {
 	return lgc.textReply("权限不够")
 }
 
-func (lgc *LspGroupCommand) NewCommandContext(log *logrus.Entry) *MessageContext {
+func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
 	ctx := NewMessageContext()
 	ctx.Lsp = lgc.l
 	ctx.Log = log

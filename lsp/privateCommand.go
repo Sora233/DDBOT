@@ -100,6 +100,8 @@ func (c *LspPrivateCommand) Execute() {
 		c.ListCommand()
 	case "/sysinfo":
 		c.SysinfoCommand()
+	case "/config":
+		c.ConfigCommand()
 	default:
 		c.textReply("阁下似乎输入了一个无法识别的命令，请注意BOT的大多数命令只能在群聊内生效。")
 		log.Debug("no command matched")
@@ -134,9 +136,61 @@ func (c *LspPrivateCommand) ListCommand() {
 		c.textReply(err.Error())
 		return
 	}
-	log = log.WithField("groupCode", groupCode)
-
+	log = log.WithFields(localutils.GroupLogFields(groupCode))
 	IList(c.NewMessageContext(log), groupCode)
+}
+
+func (c *LspPrivateCommand) ConfigCommand() {
+	log := c.DefaultLoggerWithCommand(ConfigCommand)
+	log.Info("run config command")
+	defer func() { log.Info("config command end") }()
+
+	var configCmd struct {
+		At struct {
+			Site string  `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Id   string  `arg:"" help:"配置的主播id"`
+			QQ   []int64 `arg:"" help:"需要@的成员QQ号码"`
+		} `cmd:"" help:"配置推送时的@人员列表" name:"at"`
+		AtAll struct {
+			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Id     string `arg:"" help:"配置的主播id"`
+			Switch string `arg:"" default:"on" enum:"on,off" help:"on / off"`
+		} `cmd:"" help:"配置推送时@全体成员，需要管理员权限" name:"at_all"`
+		Group int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
+	}
+
+	kongCtx, output := c.parseCommandSyntax(&configCmd, ConfigCommand)
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit || len(kongCtx.Path) <= 1 {
+		return
+	}
+
+	groupCode := configCmd.Group
+	if err := c.checkGroupCode(groupCode); err != nil {
+		c.textReply(err.Error())
+		return
+	}
+	log = log.WithFields(localutils.GroupLogFields(groupCode))
+
+	switch kongCtx.Path[1].Command.Name {
+	case "at_all":
+		site, ctype, err := c.ParseRawSiteAndType(configCmd.AtAll.Site, "live")
+		if err != nil {
+			log.WithField("site", configCmd.AtAll.Site).Errorf("ParseRawSiteAndType failed %v", err)
+			c.textSend(fmt.Sprintf("失败 - %v", err.Error()))
+			return
+		}
+		var on = localutils.Switch2Bool(configCmd.AtAll.Switch)
+		log = log.WithField("site", site).WithField("id", configCmd.AtAll.Id).WithField("on", on)
+		IConfigAtAllCmd(c.NewMessageContext(log), groupCode, configCmd.AtAll.Id, site, ctype, on)
+		//case "at":
+		//	TODO
+	default:
+		c.textSend("暂未支持，你可以催作者GKD")
+	}
+
 }
 
 func (c *LspPrivateCommand) WatchCommand(remove bool) {
@@ -189,7 +243,7 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 		return
 	}
 
-	log = log.WithField("groupCode", groupCode)
+	log = log.WithFields(localutils.GroupLogFields(groupCode))
 
 	IWatch(c.NewMessageContext(log), groupCode, id, site, watchType, remove)
 }
@@ -226,7 +280,7 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 		return
 	}
 
-	log = log.WithField("groupCode", groupCode)
+	log = log.WithFields(localutils.GroupLogFields(groupCode))
 
 	IEnable(c.NewMessageContext(log), groupCode, enableCmd.Command, disable)
 }
@@ -269,6 +323,7 @@ func (c *LspPrivateCommand) GrantCommand() {
 			c.textReply(err.Error())
 			return
 		}
+		log = log.WithFields(localutils.GroupLogFields(groupCode))
 		IGrantCmd(c.NewMessageContext(log), groupCode, grantCmd.Command, grantTo, del)
 	} else if grantCmd.Role != "" {
 		role := permission.FromString(grantCmd.Role)
@@ -278,6 +333,7 @@ func (c *LspPrivateCommand) GrantCommand() {
 				return
 			}
 		}
+		log = log.WithFields(localutils.GroupLogFields(groupCode))
 		IGrantRole(c.NewMessageContext(log), groupCode, role, grantTo, del)
 	}
 }

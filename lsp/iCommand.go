@@ -46,8 +46,6 @@ func IList(c *MessageContext, groupCode int64) {
 		return
 	}
 
-	log = log.WithFields(utils.GroupLogFields(groupCode))
-
 	var success bool
 
 	listMsg := message.NewSendingMessage()
@@ -148,8 +146,6 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		c.NoPermissionReply()
 		return
 	}
-
-	log = log.WithFields(utils.GroupLogFields(groupCode))
 
 	switch site {
 	case bilibili.Site:
@@ -298,8 +294,6 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 		return
 	}
 
-	log = log.WithFields(utils.GroupLogFields(groupCode))
-
 	if command == UnwatchCommand {
 		command = WatchCommand
 	}
@@ -392,7 +386,7 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 	if command == UnwatchCommand {
 		command = WatchCommand
 	}
-	log := c.Log.WithField("command", command).WithFields(utils.GroupLogFields(groupCode))
+	log := c.Log.WithField("command", command)
 	if !CheckOperateableCommand(command) {
 		log.Errorf("unknown command")
 		c.TextReply("失败 - invalid command name")
@@ -432,7 +426,7 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 }
 
 func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
-	log := c.Log.WithFields(utils.GroupLogFields(groupCode))
+	log := c.Log
 	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ConfigCommand) {
 		c.DisabledReply()
 		return
