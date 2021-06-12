@@ -439,7 +439,7 @@ func (notify *ConcernNewsNotify) ToMessage() []message.IMessageElement {
 				log.WithField("name", notify.Name).WithField("card", card).Errorf("cast failed %v", err)
 				continue
 			}
-			result = append(result, localutils.MessageTextf("%v发布了新态：\n%v\n%v\n", notify.Name, date, cardImage.GetItem().GetDescription()))
+			result = append(result, localutils.MessageTextf("%v发布了新动态：\n%v\n%v\n", notify.Name, date, cardImage.GetItem().GetDescription()))
 			for _, pic := range cardImage.GetItem().GetPictures() {
 				var isNorm = false
 				if pic.GetImgHeight() > 1200 && pic.GetImgWidth() > 1200 {
