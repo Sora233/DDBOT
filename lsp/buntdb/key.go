@@ -41,6 +41,9 @@ func NamedKey(name string, keys []interface{}) string {
 func BilibiliGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("ConcernState", keys)
 }
+func BilibiliGroupConcernConfigKey(keys ...interface{}) string {
+	return NamedKey("ConcernConfig", keys)
+}
 func BilibliFreshKey(keys ...interface{}) string {
 	return NamedKey("fresh", keys)
 }
@@ -62,8 +65,14 @@ func BilibiliNotLiveCountKey(keys ...interface{}) string {
 func BilibiliUserInfoKey(keys ...interface{}) string {
 	return NamedKey("UserInfo", keys)
 }
+func BilibiliGroupAtAllMarkKey(keys ...interface{}) string {
+	return NamedKey("GroupAtAll", keys)
+}
 func DouyuGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("DouyuConcernState", keys)
+}
+func DouyuGroupConcernConfigKey(keys ...interface{}) string {
+	return NamedKey("DouyuConcernConfig", keys)
 }
 func DouyuFreshKey(keys ...interface{}) string {
 	return NamedKey("douyuFresh", keys)
@@ -71,8 +80,14 @@ func DouyuFreshKey(keys ...interface{}) string {
 func DouyuCurrentLiveKey(keys ...interface{}) string {
 	return NamedKey("DouyuCurrentLive", keys)
 }
+func DouyuGroupAtAllMarkKey(keys ...interface{}) string {
+	return NamedKey("DouyuGroupAtAll", keys)
+}
 func YoutubeGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("YoutubeConcernState", keys)
+}
+func YoutubeGroupConcernConfigKey(keys ...interface{}) string {
+	return NamedKey("YoutubeConcernConfig", keys)
 }
 func YoutubeFreshKey(keys ...interface{}) string {
 	return NamedKey("youtubeFresh", keys)
@@ -86,14 +101,23 @@ func YoutubeInfoKey(keys ...interface{}) string {
 func YoutubeVideoKey(keys ...interface{}) string {
 	return NamedKey("YoutubeVideo", keys)
 }
+func YoutubeGroupAtAllMarkKey(keys ...interface{}) string {
+	return NamedKey("YoutubeGroupAtAll", keys)
+}
 func HuyaGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("HuyaConcernState", keys)
+}
+func HuyaGroupConcernConfigKey(keys ...interface{}) string {
+	return NamedKey("HuyaConcernConfig", keys)
 }
 func HuyaFreshKey(keys ...interface{}) string {
 	return NamedKey("huyaFresh", keys)
 }
 func HuyaCurrentLiveKey(keys ...interface{}) string {
 	return NamedKey("HuyaCurrentLive", keys)
+}
+func HuyaGroupAtAllMarkKey(keys ...interface{}) string {
+	return NamedKey("HuyaGroupAtAll", keys)
 }
 func PermissionKey(keys ...interface{}) string {
 	return NamedKey("Permission", keys)

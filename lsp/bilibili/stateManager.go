@@ -196,11 +196,11 @@ func (c *StateManager) SetUidFirstTimestampIfNotExist(uid int64, timestamp int64
 			return err
 		}
 		if replaced {
-			return errors.New("rollback")
+			return localdb.ErrRollback
 		}
 		return nil
 	})
-	if err != nil && err.Error() == "rollback" {
+	if err != nil && err == localdb.ErrRollback {
 		err = nil
 	}
 	return err

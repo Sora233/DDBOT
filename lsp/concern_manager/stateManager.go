@@ -1,6 +1,7 @@
 package concern_manager
 
 import (
+	"encoding/json"
 	"errors"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
@@ -23,6 +24,127 @@ type StateManager struct {
 	emitChan  chan *localutils.EmitE
 	emitQueue *localutils.EmitQueue
 	useEmit   bool
+}
+
+type AtAll struct {
+	Id    json.Number  `json:"id"`
+	Ctype concern.Type `json:"ctype"`
+}
+
+type AtSomeone struct {
+	Id     json.Number  `json:"id"`
+	Ctype  concern.Type `json:"ctype"`
+	AtList []int64      `json:"at_list"`
+}
+
+type GroupConcernAtConfig struct {
+	AtAll     []*AtAll     `json:"at_all"`
+	AtSomeone []*AtSomeone `json:"at_someone"`
+}
+
+func (g *GroupConcernAtConfig) CheckAtAll(id interface{}, ctype concern.Type) bool {
+	if g == nil {
+		return false
+	}
+	for _, at := range g.AtAll {
+		if localutils.CompareId(at.Id, id) && at.Ctype.ContainAll(ctype) {
+			return true
+		}
+	}
+	return false
+}
+
+func (g *GroupConcernAtConfig) GetAtSomeoneList(id interface{}, ctype concern.Type) []int64 {
+	if g == nil {
+		return nil
+	}
+	for _, at := range g.AtSomeone {
+		if localutils.CompareId(at.Id, id) && at.Ctype.ContainAll(ctype) {
+			return at.AtList
+		}
+	}
+	return nil
+}
+
+type GroupConcernConfig struct {
+	GroupConcernAt GroupConcernAtConfig `json:"group_concern_at"`
+}
+
+func NewGroupConcernConfigFromString(s string) (*GroupConcernConfig, error) {
+	var concernConfig *GroupConcernConfig
+	decoder := json.NewDecoder(strings.NewReader(s))
+	decoder.UseNumber()
+	err := decoder.Decode(&concernConfig)
+	return concernConfig, err
+}
+
+func (g *GroupConcernConfig) ToString() string {
+	b, e := json.Marshal(g)
+	if e != nil {
+		panic(e)
+	}
+	return string(b)
+}
+
+func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig *GroupConcernConfig, err error) {
+	err = c.RTxCover(func(tx *buntdb.Tx) error {
+		val, err := tx.Get(c.GroupConcernConfigKey(groupCode, id))
+		if err != nil {
+			return err
+		}
+		concernConfig, err = NewGroupConcernConfigFromString(val)
+		return err
+	})
+	if err != nil {
+		concernConfig = nil
+	}
+	if err == buntdb.ErrNotFound {
+		err = nil
+	}
+	return
+}
+
+// OperateGroupConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，如果返回true，就保存GroupConcernConfig，否则就回滚。
+func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig *GroupConcernConfig) bool) error {
+	err := c.RWTxCover(func(tx *buntdb.Tx) error {
+		var concernConfig *GroupConcernConfig
+		var configKey = c.GroupConcernConfigKey(groupCode, id)
+		val, err := tx.Get(configKey)
+		if err == nil {
+			concernConfig, err = NewGroupConcernConfigFromString(val)
+		} else if err == buntdb.ErrNotFound {
+			concernConfig = new(GroupConcernConfig)
+			err = nil
+		}
+		if err != nil {
+			return err
+		}
+		if !f(concernConfig) {
+			return errors.New("rollback")
+		}
+		_, _, err = tx.Set(configKey, concernConfig.ToString(), nil)
+		return err
+	})
+	return err
+}
+
+// CheckAndSetAtAllMark 检查@全体标记是否过期，已过期返回true，并重置标记，否则返回false。
+// 因为@全体有次数限制，并且较为恼人，故设置标记，两次@全体之间必须有间隔。
+func (c *StateManager) CheckAndSetAtAllMark(groupCode int64, id interface{}) (result bool) {
+	_ = c.RWTxCover(func(tx *buntdb.Tx) error {
+		key := c.GroupAtAllMarkKey(groupCode, id)
+		_, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			result = true
+			_, _, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*6))
+			if err != nil {
+				// 如果设置失败，可能会造成连续at
+				result = false
+			}
+		}
+		return nil
+	})
+	return
 }
 
 func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype concern.Type) error {
@@ -93,17 +215,25 @@ func (c *StateManager) RemoveAllByGroupCode(groupCode int64) (err error) {
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		var removeKey []string
 		var iterErr error
-		iterErr = tx.Ascend(c.GroupConcernStateKey(groupCode), func(key, value string) bool {
-			removeKey = append(removeKey, key)
-			return true
-		})
-		if iterErr != nil {
-			return iterErr
+		var indexes = []string{
+			c.GroupConcernStateKey(groupCode),
+			c.GroupConcernConfigKey(groupCode),
+		}
+		for _, key := range indexes {
+			iterErr = tx.Ascend(key, func(key, value string) bool {
+				removeKey = append(removeKey, key)
+				return true
+			})
+			if iterErr != nil {
+				return iterErr
+			}
 		}
 		for _, key := range removeKey {
 			tx.Delete(key)
 		}
-		tx.DropIndex(c.GroupConcernStateKey(groupCode))
+		for _, key := range indexes {
+			tx.DropIndex(key)
+		}
 		return nil
 	})
 }
@@ -287,6 +417,8 @@ func (c *StateManager) FreshIndex() {
 	}
 	for _, groupInfo := range miraiBot.Instance.GroupList {
 		db.CreateIndex(c.GroupConcernStateKey(groupInfo.Code), c.GroupConcernStateKey(groupInfo.Code, "*"), buntdb.IndexString)
+		db.CreateIndex(c.GroupConcernConfigKey(groupInfo.Code), c.GroupConcernConfigKey(groupInfo.Code, "*"), buntdb.IndexString)
+		db.CreateIndex(c.GroupAtAllMarkKey(groupInfo.Code), c.GroupAtAllMarkKey(groupInfo.Code, "*"), buntdb.IndexString)
 	}
 }
 
