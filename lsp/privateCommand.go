@@ -147,9 +147,10 @@ func (c *LspPrivateCommand) ConfigCommand() {
 
 	var configCmd struct {
 		At struct {
-			Site string  `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
-			Id   string  `arg:"" help:"配置的主播id"`
-			QQ   []int64 `arg:"" help:"需要@的成员QQ号码"`
+			Site   string  `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Id     string  `arg:"" help:"配置的主播id"`
+			Action string  `arg:"" enum:"add,remove,clear" help:"add / remove / clear"`
+			QQ     []int64 `arg:"" optional:"" help:"需要@的成员QQ号码"`
 		} `cmd:"" help:"配置推送时的@人员列表" name:"at"`
 		AtAll struct {
 			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
@@ -490,6 +491,9 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"/enable和/disable 用于开启与禁用命令，例如：\n" +
 		"开启watch命令：/enable watch\n" +
 		"禁用watch命令，调用watch命令将不再有任何反应：/disable watch\n" +
+		"/config 用于配置BOT，例如：\n" +
+		"/config at_all 97505 on / off 用于设置推送作者的直播时自动@全体成员，on表示开启，off表示关闭\n" +
+		"使用时请把作者的UID换成你需要的主播的UID\n" +
 		"以上命令可以通过私聊操作以避免在群内刷屏"
 	help2 := "详细使用介绍及样例，请查看https://github.com/Sora233/DDBOT/blob/master/EXAMPLE.md\n" +
 		"如果您觉得DDBOT缺少了必要功能，请反馈到：https://www.bilibili.com/read/cv10602230"

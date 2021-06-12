@@ -612,9 +612,10 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 
 	var configCmd struct {
 		At struct {
-			Site string  `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
-			Id   string  `arg:"" help:"配置的主播id"`
-			QQ   []int64 `arg:"" help:"需要@的成员QQ号码"`
+			Site   string  `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Id     string  `arg:"" help:"配置的主播id"`
+			Action string  `arg:"" enum:"add,remove,clear" help:"add / remove / clear"`
+			QQ     []int64 `arg:"" help:"需要@的成员QQ号码"`
 		} `cmd:"" help:"配置推送时的@人员列表" name:"at"`
 		AtAll struct {
 			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
