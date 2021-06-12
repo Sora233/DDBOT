@@ -29,6 +29,16 @@ type ConcernLiveNotify struct {
 	GroupCode int64 `json:"group_code"`
 }
 
+func (notify *ConcernLiveNotify) ShouldSend() bool {
+	return notify.Living
+}
+func (notify *ConcernLiveNotify) GetGroupCode() int64 {
+	return notify.GroupCode
+}
+func (notify *ConcernLiveNotify) GetUid() interface{} {
+	return notify.RoomId
+}
+
 func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 	var result []message.IMessageElement
 	if notify.Living {

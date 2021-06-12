@@ -98,6 +98,9 @@ func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (c
 	if err != nil {
 		concernConfig = nil
 	}
+	if err == buntdb.ErrNotFound {
+		err = nil
+	}
 	return
 }
 
@@ -127,9 +130,9 @@ func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}
 
 // CheckAndSetAtAllMark 检查@全体标记是否过期，已过期返回true，并重置标记，否则返回false。
 // 因为@全体有次数限制，并且较为恼人，故设置标记，两次@全体之间必须有间隔。
-func (c *StateManager) CheckAndSetAtAllMark(groupCode int64) (result bool) {
+func (c *StateManager) CheckAndSetAtAllMark(groupCode int64, id interface{}) (result bool) {
 	_ = c.RWTxCover(func(tx *buntdb.Tx) error {
-		key := c.GroupAtAllMarkKey(groupCode)
+		key := c.GroupAtAllMarkKey(groupCode, id)
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
 			result = true
@@ -212,17 +215,25 @@ func (c *StateManager) RemoveAllByGroupCode(groupCode int64) (err error) {
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		var removeKey []string
 		var iterErr error
-		iterErr = tx.Ascend(c.GroupConcernStateKey(groupCode), func(key, value string) bool {
-			removeKey = append(removeKey, key)
-			return true
-		})
-		if iterErr != nil {
-			return iterErr
+		var indexes = []string{
+			c.GroupConcernStateKey(groupCode),
+			c.GroupConcernConfigKey(groupCode),
+		}
+		for _, key := range indexes {
+			iterErr = tx.Ascend(key, func(key, value string) bool {
+				removeKey = append(removeKey, key)
+				return true
+			})
+			if iterErr != nil {
+				return iterErr
+			}
 		}
 		for _, key := range removeKey {
 			tx.Delete(key)
 		}
-		tx.DropIndex(c.GroupConcernStateKey(groupCode))
+		for _, key := range indexes {
+			tx.DropIndex(key)
+		}
 		return nil
 	})
 }
@@ -406,6 +417,8 @@ func (c *StateManager) FreshIndex() {
 	}
 	for _, groupInfo := range miraiBot.Instance.GroupList {
 		db.CreateIndex(c.GroupConcernStateKey(groupInfo.Code), c.GroupConcernStateKey(groupInfo.Code, "*"), buntdb.IndexString)
+		db.CreateIndex(c.GroupConcernConfigKey(groupInfo.Code), c.GroupConcernConfigKey(groupInfo.Code, "*"), buntdb.IndexString)
+		db.CreateIndex(c.GroupAtAllMarkKey(groupInfo.Code), c.GroupAtAllMarkKey(groupInfo.Code, "*"), buntdb.IndexString)
 	}
 }
 

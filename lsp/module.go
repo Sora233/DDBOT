@@ -14,6 +14,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/aliyun"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/Sora233/DDBOT/lsp/douyu"
 	"github.com/Sora233/DDBOT/lsp/huya"
 	"github.com/Sora233/DDBOT/lsp/permission"
@@ -479,6 +480,7 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 	return l.pool.Get(options...)
 }
 
+// sendGroupMessage 发送一条消息，返回值总是非nil，Id为-1表示发送失败
 func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *message.GroupMessage {
 	// TODO 要求send不在事务中发送确实有点难，等把buntdb重构一下，支持获取当前事务之后再来处理
 	//if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
@@ -495,7 +497,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 	// don't know why
 	// msg.Elements = l.compactTextElements(msg.Elements)
 	var res *message.GroupMessage
-	result := localutils.Retry(3, time.Millisecond*200, func() bool {
+	result := localutils.Retry(2, time.Millisecond*50, func() bool {
 		res = bot.Instance.SendGroupMessage(groupCode, msg)
 		return res != nil && res.Id != -1
 	})
@@ -506,6 +508,19 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 	}
 	if res == nil {
 		res = &message.GroupMessage{Id: -1}
+	}
+	return res
+}
+
+// sendChainGroupMessage 发送一串消息，要求前面消息成功才能发后面的消息
+func (l *Lsp) sendChainGroupMessage(groupCode int64, msgs []*message.SendingMessage) []*message.GroupMessage {
+	var res []*message.GroupMessage
+	for _, msg := range msgs {
+		r := l.sendGroupMessage(groupCode, msg)
+		if r.Id == -1 {
+			break
+		}
+		res = append(res, r)
 	}
 	return res
 }
@@ -528,6 +543,21 @@ func (l *Lsp) compactTextElements(elements []message.IMessageElement) []message.
 		compactMsg = append(compactMsg, message.NewText(sb.String()))
 	}
 	return compactMsg
+}
+
+func (l *Lsp) getInnerState(ctype concern.Type) *concern_manager.StateManager {
+	switch ctype {
+	case concern.BilibiliNews, concern.BibiliLive:
+		return l.bilibiliConcern.StateManager.StateManager
+	case concern.DouyuLive:
+		return l.douyuConcern.StateManager.StateManager
+	case concern.YoutubeVideo, concern.YoutubeLive:
+		return l.youtubeConcern.StateManager.StateManager
+	case concern.HuyaLive:
+		return l.huyaConcern.StateManager.StateManager
+	default:
+		return nil
+	}
 }
 
 var Instance *Lsp

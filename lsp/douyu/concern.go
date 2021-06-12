@@ -53,6 +53,16 @@ func (notify *ConcernLiveNotify) Type() concern.Type {
 	return concern.DouyuLive
 }
 
+func (notify *ConcernLiveNotify) ShouldSend() bool {
+	return notify.Living()
+}
+func (notify *ConcernLiveNotify) GetGroupCode() int64 {
+	return notify.GroupCode
+}
+func (notify *ConcernLiveNotify) GetUid() interface{} {
+	return notify.RoomId
+}
+
 func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 	var result []message.IMessageElement
 	switch notify.ShowStatus {

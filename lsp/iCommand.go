@@ -459,6 +459,11 @@ func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string,
 			c.TextReply("失败 - bilibili uid格式错误")
 			return
 		}
+		err = c.Lsp.bilibiliConcern.CheckGroupConcern(groupCode, mid, ctype)
+		if err != concern_manager.ErrAlreadyExists {
+			c.TextReply("失败 - 该id尚未watch")
+			return
+		}
 		err = c.Lsp.bilibiliConcern.OperateGroupConcernConfig(groupCode, mid, operateAtAllConcern(c, mid, ctype, on))
 	case douyu.Site:
 		var uid int64
@@ -468,11 +473,25 @@ func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string,
 			c.TextReply("失败 - douyu id格式错误")
 			return
 		}
+		err = c.Lsp.douyuConcern.CheckGroupConcern(groupCode, uid, ctype)
+		if err != concern_manager.ErrAlreadyExists {
+			c.TextReply("失败 - 该id尚未watch")
+			return
+		}
 		err = c.Lsp.douyuConcern.OperateGroupConcernConfig(groupCode, uid, operateAtAllConcern(c, uid, ctype, on))
-
 	case youtube.Site:
+		err = c.Lsp.youtubeConcern.CheckGroupConcern(groupCode, id, ctype)
+		if err != concern_manager.ErrAlreadyExists {
+			c.TextReply("失败 - 该id尚未watch")
+			return
+		}
 		err = c.Lsp.youtubeConcern.OperateGroupConcernConfig(groupCode, id, operateAtAllConcern(c, id, ctype, on))
 	case huya.Site:
+		err = c.Lsp.huyaConcern.CheckGroupConcern(groupCode, id, ctype)
+		if err != concern_manager.ErrAlreadyExists {
+			c.TextReply("失败 - 该id尚未watch")
+			return
+		}
 		err = c.Lsp.huyaConcern.OperateGroupConcernConfig(groupCode, id, operateAtAllConcern(c, id, ctype, on))
 	}
 	if err == nil {
