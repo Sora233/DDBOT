@@ -112,13 +112,21 @@ func (lgc *LspGroupCommand) Execute() {
 			}
 		}
 	case "/watch":
-		lgc.WatchCommand(false)
+		if lgc.requireNotDisable(WatchCommand) {
+			lgc.WatchCommand(false)
+		}
 	case "/unwatch":
-		lgc.WatchCommand(true)
+		if lgc.requireNotDisable(WatchCommand) {
+			lgc.WatchCommand(true)
+		}
 	case "/list":
-		lgc.ListCommand()
+		if lgc.requireNotDisable(ListCommand) {
+			lgc.ListCommand()
+		}
 	case "/config":
-		lgc.ConfigCommand()
+		if lgc.requireNotDisable(ConfigCommand) {
+			lgc.ConfigCommand()
+		}
 	case "/签到":
 		if lgc.requireNotDisable(CheckinCommand) {
 			lgc.CheckinCommand()
