@@ -175,7 +175,9 @@ func (c *LspPrivateCommand) ConfigCommand() {
 	}
 	log = log.WithFields(localutils.GroupLogFields(groupCode))
 
-	switch kongCtx.Path[1].Command.Name {
+	cmd := strings.Split(kongCtx.Command(), " ")[0]
+
+	switch cmd {
 	case "at_all":
 		site, ctype, err := c.ParseRawSiteAndType(configCmd.AtAll.Site, "live")
 		if err != nil {

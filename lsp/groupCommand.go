@@ -632,7 +632,9 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		return
 	}
 
-	switch kongCtx.Path[1].Command.Name {
+	cmd := strings.Split(kongCtx.Command(), " ")[0]
+
+	switch cmd {
 	//case "at":
 	//	// TODO
 	case "at_all":
