@@ -248,7 +248,7 @@ func (c *Concern) watchCore() {
 		wg.Add(2)
 		go func() {
 			defer wg.Done()
-			defer logger.Tracef("watchCore dynamic fresh done")
+			defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore dynamic fresh done") }()
 			newsList, err := c.freshDynamicNew()
 			if err != nil {
 				logger.Errorf("freshDynamicNew failed %v", err)
@@ -262,7 +262,7 @@ func (c *Concern) watchCore() {
 
 		go func() {
 			defer wg.Done()
-			defer logger.Tracef("watchCore live fresh done")
+			defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore live fresh done") }()
 			liveInfo, err := c.freshLive()
 			if err != nil {
 				logger.Errorf("freshLive error %v", err)
@@ -341,6 +341,7 @@ func (c *Concern) watchCore() {
 }
 
 func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
+	var start = time.Now()
 	resp, err := DynamicSrvDynamicNew()
 	if err != nil {
 		return nil, err
@@ -386,12 +387,13 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 		}
 		result = append(result, NewNewsInfoWithDetail(userInfo, cards))
 	}
-	logger.WithField("NewsInfo Size", len(result)).Tracef("freshDynamicNew done")
+	logger.WithField("cost", time.Now().Sub(start)).WithField("NewsInfo Size", len(result)).Tracef("freshDynamicNew done")
 	return result, nil
 }
 
 // return all LiveInfo in LiveStatus_Living
 func (c *Concern) freshLive() ([]*LiveInfo, error) {
+	var start = time.Now()
 	var liveInfo []*LiveInfo
 	var infoSet = make(map[int64]bool)
 	var page = 1
@@ -429,7 +431,7 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 		}
 		page++
 	}
-	logger.WithField("Page", page).WithField("LiveInfo Size", len(liveInfo)).Tracef("freshLive done")
+	logger.WithField("cost", time.Now().Sub(start)).WithField("Page", page).WithField("LiveInfo Size", len(liveInfo)).Tracef("freshLive done")
 	return liveInfo, nil
 }
 
