@@ -507,7 +507,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 			Errorf("send group message failed after retry")
 	}
 	if res == nil {
-		res = &message.GroupMessage{Id: -1}
+		res = &message.GroupMessage{Id: -1, Elements: msg.Elements}
 	}
 	return res
 }
