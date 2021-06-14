@@ -226,6 +226,22 @@ DDBOT的命令格式皆遵守这个规则。
 /config at_all --site bilibili 2 off
 ```
 
+### /config（私聊版本）
+
+在QQ群123456内设置，推送b站UID为2的用户的直播信息时，同时@全体成员（需要将BOT设置为管理员，否则配置后无法@全体成员）
+
+```shell
+/config -g 123456 at_all --site bilibili 2 on
+```
+
+- 在QQ群123456内取消上面的配置，不再@全体成员
+
+```shell
+/config -g 123456 at_all --site bilibili 2 off
+```
+
+**一句话来说，用法同群聊一样，只是需要增加`-g 要操作的qq群号码`参数。**
+
 ### /grant
 
 |默认使用权限|默认启用|是否可禁用|
