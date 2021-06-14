@@ -353,7 +353,7 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 			Errorf("fresh dynamic new failed")
 		return nil, errors.New(resp.Message)
 	}
-	logger.WithField("cost", time.Now().Sub(start)).Debug("freshDynamicNew debug1")
+	logger.WithField("cost", time.Now().Sub(start)).Trace("freshDynamicNew cost 1")
 	for _, card := range resp.GetData().GetCards() {
 		uid := card.GetDesc().GetUid()
 		replaced, err := c.MarkDynamicId(card.GetDesc().GetDynamicId())
@@ -369,7 +369,7 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 		}
 		newsMap[uid] = append(newsMap[uid], card)
 	}
-	logger.WithField("cost", time.Now().Sub(start)).Debug("freshDynamicNew debug2")
+	logger.WithField("cost", time.Now().Sub(start)).Trace("freshDynamicNew cost 2")
 	var result []*NewsInfo
 	for uid, cards := range newsMap {
 		userInfo, err := c.StateManager.GetUserInfo(uid)
@@ -389,7 +389,7 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 		}
 		result = append(result, NewNewsInfoWithDetail(userInfo, cards))
 	}
-	logger.WithField("cost", time.Now().Sub(start)).WithField("NewsInfo Size", len(result)).Debug("freshDynamicNew done")
+	logger.WithField("cost", time.Now().Sub(start)).WithField("NewsInfo Size", len(result)).Trace("freshDynamicNew done")
 	return result, nil
 }
 
