@@ -8,6 +8,7 @@ import (
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/tidwall/buntdb"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -51,9 +52,14 @@ func (c *Concern) Start() {
 		logger.Errorf("state manager start err %v", err)
 	}
 
-	for i := 0; i < 3; i++ {
+	if runtime.NumCPU() >= 3 {
+		for i := 0; i < 3; i++ {
+			go c.notifyLoop()
+		}
+	} else {
 		go c.notifyLoop()
 	}
+
 	go c.watchCore()
 	go func() {
 		c.syncSub()

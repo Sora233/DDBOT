@@ -31,6 +31,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -397,9 +398,14 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 }
 
 func (l *Lsp) Start(bot *bot.Bot) {
-	for i := 0; i < 3; i++ {
+	if runtime.NumCPU() >= 3 {
+		for i := 0; i < 3; i++ {
+			go l.ConcernNotify(bot)
+		}
+	} else {
 		go l.ConcernNotify(bot)
 	}
+
 }
 
 func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {

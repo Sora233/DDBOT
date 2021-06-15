@@ -11,6 +11,7 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"reflect"
+	"runtime"
 )
 
 var logger = utils.GetModuleLogger("douyu-concern")
@@ -107,7 +108,11 @@ func (c *Concern) Start() {
 		logger.Errorf("state manager start err %v", err)
 	}
 
-	for i := 0; i < 3; i++ {
+	if runtime.NumCPU() >= 3 {
+		for i := 0; i < 3; i++ {
+			go c.notifyLoop()
+		}
+	} else {
 		go c.notifyLoop()
 	}
 

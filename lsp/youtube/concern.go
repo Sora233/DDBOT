@@ -6,6 +6,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"runtime"
 )
 
 var logger = utils.GetModuleLogger("youtube")
@@ -67,7 +68,11 @@ func (c *Concern) Start() {
 		logger.Errorf("state manager start err %v", err)
 	}
 
-	for i := 0; i < 3; i++ {
+	if runtime.NumCPU() >= 3 {
+		for i := 0; i < 3; i++ {
+			go c.notifyLoop()
+		}
+	} else {
 		go c.notifyLoop()
 	}
 
