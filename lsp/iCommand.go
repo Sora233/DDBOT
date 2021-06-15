@@ -16,7 +16,6 @@ import (
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
-	"reflect"
 	"strconv"
 	"time"
 )
@@ -507,7 +506,7 @@ func operateAtAllConcern(c *MessageContext, id interface{}, ctype concern.Type, 
 				return false
 			}
 			for _, atAll := range concernConfig.GroupConcernAt.AtAll {
-				if utils.CompareId(atAll.Id, id) && atAll.Ctype.ContainAll(ctype) {
+				if utils.CompareId(json.Number(atAll.Id), id) && atAll.Ctype.ContainAll(ctype) {
 					atAll.Ctype = atAll.Ctype.Remove(ctype)
 				}
 			}
@@ -517,18 +516,8 @@ func operateAtAllConcern(c *MessageContext, id interface{}, ctype concern.Type, 
 				c.TextReply("失败 - 该配置未设置")
 				return false
 			}
-			var nid json.Number
-			var idType = reflect.TypeOf(id)
-			switch idType.Kind() {
-			case reflect.String:
-				nid = json.Number(id.(string))
-			case reflect.Int64:
-				nid = json.Number(strconv.FormatInt(id.(int64), 10))
-			default:
-				panic("未知的id类型，你可能忘记改这里了")
-			}
 			concernConfig.GroupConcernAt.AtAll = append(concernConfig.GroupConcernAt.AtAll, &concern_manager.AtAll{
-				Id:    nid,
+				Id:    concern_manager.NewUID(id),
 				Ctype: ctype,
 			})
 		}
