@@ -3,7 +3,7 @@ COV := .coverage.out
 TARGET := DDBOT
 
 $(COV): $(SRC)
-	go test ./... -coverprofile=$(COV)
+	go test ./... -tags=nocv -coverprofile=$(COV)
 
 
 $(TARGET): $(SRC)
