@@ -21,7 +21,6 @@ import (
 
 func init() {
 	utils.WriteLogToFS()
-	config.Init()
 }
 
 func main() {
@@ -52,6 +51,8 @@ func main() {
 		}
 		return
 	}
+
+	config.Init()
 
 	// 快速初始化
 	bot.Init()
