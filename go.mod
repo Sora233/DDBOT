@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486
-	github.com/Mrs4s/MiraiGo v0.0.0-20210518070025-f145000ac0ef
+	github.com/Mrs4s/MiraiGo v0.0.0-20210611062429-4f967b0a6264
 	github.com/PuerkitoBio/goquery v1.6.1
 	github.com/Sora233/requests v0.0.0-20210509184157-15dc0c68eb92
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
@@ -20,7 +20,6 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jupp0r/go-priority-queue v0.0.0-20160601094913-ab1073853bde
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
-	github.com/lestrrat-go/strftime v1.0.4 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/sirupsen/logrus v1.8.1
 	github.com/tidwall/buntdb v1.2.3
@@ -28,4 +27,4 @@ require (
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
 )
 
-replace github.com/Logiase/MiraiGo-Template => github.com/Sora233/MiraiGo-Template v0.0.0-20210522075506-dca471c99f51
+replace github.com/Logiase/MiraiGo-Template => github.com/Sora233/MiraiGo-Template v0.0.0-20210615055330-ed2cee5d8c65
