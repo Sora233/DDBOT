@@ -176,6 +176,9 @@ type LiveInfo struct {
 	Status    LiveStatus `json:"status"`
 	LiveTitle string     `json:"live_title"`
 	Cover     string     `json:"cover"`
+
+	LiveStatusChanged bool `json:"-"`
+	LiveTitleChanged  bool `json:"-"`
 }
 
 func (l *LiveInfo) Type() EventType {

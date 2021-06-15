@@ -300,6 +300,7 @@ func (c *Concern) watchCore() {
 				if oldInfo.Status == LiveStatus_NoLiving {
 					if newInfo, found := liveInfoMap[mid]; found {
 						// notliving -> living
+						newInfo.LiveStatusChanged = true
 						c.eventChan <- newInfo
 						c.AddLiveInfo(newInfo)
 					}
@@ -317,6 +318,7 @@ func (c *Concern) watchCore() {
 						}
 						c.ClearNotLiveCount(mid)
 						newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle, oldInfo.Cover, LiveStatus_NoLiving)
+						newInfo.LiveStatusChanged = true
 						c.eventChan <- newInfo
 						c.AddLiveInfo(newInfo)
 					} else {
@@ -326,6 +328,7 @@ func (c *Concern) watchCore() {
 						c.ClearNotLiveCount(mid)
 						if newInfo.LiveTitle != oldInfo.LiveTitle {
 							// live title change
+							newInfo.LiveTitleChanged = true
 							c.eventChan <- newInfo
 						}
 						c.AddLiveInfo(newInfo)
