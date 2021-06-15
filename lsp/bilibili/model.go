@@ -693,7 +693,7 @@ func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 			result = append(result, cover)
 		}
 	case LiveStatus_NoLiving:
-		result = append(result, localutils.MessageTextf("%s暂未直播\n%v", notify.Name, notify.RoomUrl))
+		result = append(result, localutils.MessageTextf("%s直播结束了\n%v", notify.Name, notify.RoomUrl))
 	}
 	return result
 }

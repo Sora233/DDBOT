@@ -76,7 +76,7 @@ func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 			result = append(result, cover)
 		}
 	case ShowStatus_NoLiving:
-		result = append(result, localutils.MessageTextf("斗鱼-%s暂未直播\n%v", notify.Nickname, notify.RoomUrl))
+		result = append(result, localutils.MessageTextf("斗鱼-%s直播结束了\n%v", notify.Nickname, notify.RoomUrl))
 	}
 	return result
 }
