@@ -11,8 +11,6 @@ import (
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/sliceutil"
 	"github.com/tidwall/buntdb"
-	"reflect"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -28,102 +26,29 @@ type StateManager struct {
 	useEmit   bool
 }
 
-type UID string
-
-// NewUID 只接受int64和string格式的id
-func NewUID(id interface{}) (uid UID) {
-	var idType = reflect.TypeOf(id)
-	switch idType.Kind() {
-	case reflect.String:
-		uid = UID(id.(string))
-	case reflect.Int64:
-		uid = UID(strconv.FormatInt(id.(int64), 10))
-	default:
-		panic("未知的id类型，你可能忘记改这里了")
-	}
-	return
-}
-
-type AtAll struct {
-	Id    UID          `json:"id"`
-	Ctype concern.Type `json:"ctype"`
-}
-
 type AtSomeone struct {
-	Id     UID          `json:"id"`
 	Ctype  concern.Type `json:"ctype"`
 	AtList []int64      `json:"at_list"`
 }
 
 type GroupConcernAtConfig struct {
-	AtAll     []*AtAll     `json:"at_all"`
+	AtAll     concern.Type `json:"at_all"`
 	AtSomeone []*AtSomeone `json:"at_someone"`
 }
 
-func (g *GroupConcernAtConfig) Compact() {
-	if len(g.AtAll) > 0 {
-		var hash = make(map[UID]map[concern.Type]bool)
-		var newAtAll = make([]*AtAll, 0)
-		for _, atAll := range g.AtAll {
-			var pass = true
-			if i, found := hash[atAll.Id]; found {
-				if i[atAll.Ctype] {
-					pass = false
-				} else {
-					i[atAll.Ctype] = true
-				}
-			} else {
-				hash[atAll.Id] = make(map[concern.Type]bool)
-				hash[atAll.Id][atAll.Ctype] = true
-			}
-			if pass {
-				newAtAll = append(newAtAll, atAll)
-			}
-		}
-		g.AtAll = newAtAll
-	}
-
-	if len(g.AtSomeone) > 0 {
-		var newAtSomeone = make([]*AtSomeone, 0)
-		var hash = make(map[UID]map[concern.Type]bool)
-		for _, atSomeone := range g.AtSomeone {
-			var pass = true
-			if i, found := hash[atSomeone.Id]; found {
-				if i[atSomeone.Ctype] {
-					pass = false
-				} else {
-					i[atSomeone.Ctype] = true
-				}
-			} else {
-				hash[atSomeone.Id] = make(map[concern.Type]bool)
-				hash[atSomeone.Id][atSomeone.Ctype] = true
-			}
-			if pass {
-				newAtSomeone = append(newAtSomeone, atSomeone)
-			}
-		}
-		g.AtSomeone = newAtSomeone
-	}
-}
-
-func (g *GroupConcernAtConfig) CheckAtAll(id interface{}, ctype concern.Type) bool {
+func (g *GroupConcernAtConfig) CheckAtAll(ctype concern.Type) bool {
 	if g == nil {
 		return false
 	}
-	for _, at := range g.AtAll {
-		if localutils.CompareId(json.Number(at.Id), id) && at.Ctype.ContainAll(ctype) {
-			return true
-		}
-	}
-	return false
+	return g.AtAll.ContainAll(ctype)
 }
 
-func (g *GroupConcernAtConfig) GetAtSomeoneList(id interface{}, ctype concern.Type) []int64 {
+func (g *GroupConcernAtConfig) GetAtSomeoneList(ctype concern.Type) []int64 {
 	if g == nil {
 		return nil
 	}
 	for _, at := range g.AtSomeone {
-		if localutils.CompareId(json.Number(at.Id), id) && at.Ctype.ContainAll(ctype) {
+		if at.Ctype.ContainAll(ctype) {
 			return at.AtList
 		}
 	}
@@ -132,10 +57,6 @@ func (g *GroupConcernAtConfig) GetAtSomeoneList(id interface{}, ctype concern.Ty
 
 type GroupConcernConfig struct {
 	GroupConcernAt GroupConcernAtConfig `json:"group_concern_at"`
-}
-
-func (g *GroupConcernConfig) Compact() {
-	g.GroupConcernAt.Compact()
 }
 
 func NewGroupConcernConfigFromString(s string) (*GroupConcernConfig, error) {
@@ -190,7 +111,6 @@ func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}
 		if !f(concernConfig) {
 			return errors.New("rollback")
 		}
-		concernConfig.Compact()
 		_, _, err = tx.Set(configKey, concernConfig.ToString(), nil)
 		return err
 	})

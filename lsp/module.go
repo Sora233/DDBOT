@@ -560,6 +560,15 @@ func (l *Lsp) getInnerState(ctype concern.Type) *concern_manager.StateManager {
 	}
 }
 
+func (l *Lsp) getConcernConfig(groupCode int64, id interface{}, ctype concern.Type) *concern_manager.GroupConcernConfig {
+	state := l.getInnerState(ctype)
+	if state == nil {
+		return nil
+	}
+	cfg, _ := state.GetGroupConcernConfig(groupCode, id)
+	return cfg
+}
+
 var Instance *Lsp
 
 func init() {

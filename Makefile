@@ -1,10 +1,10 @@
-SRC = $(wildcard **/*.go) main.go
-COV = .coverage.out
-$(COV): $(SRC)
-	go test ./... -v -coverprofile=$(COV)
-	go tool cover -func=$(COV)
+SRC := $(shell find . -type f -name '*.go')
+COV := .coverage.out
+TARGET := DDBOT
 
-TARGET = DDBOT
+$(COV): $(SRC)
+	go test ./... -coverprofile=$(COV)
+
 
 $(TARGET): $(SRC)
 	go build -o $(TARGET)
@@ -12,6 +12,9 @@ $(TARGET): $(SRC)
 build: $(TARGET)
 
 test: $(COV)
+
+coverage: $(COV)
+	go tool cover -func=$(COV)
 
 clean:
 	- rm -rf $(TARGET) $(COV)

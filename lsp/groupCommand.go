@@ -63,7 +63,7 @@ func (lgc *LspGroupCommand) Execute() {
 		if err := recover(); err != nil {
 			logger.WithField("stack", string(debug.Stack())).
 				Errorf("panic recovered: %v", err)
-			lgc.textReply("エラー発生")
+			lgc.textReply("エラー発生：看到该信息表示BOT出了一些问题，该问题已记录")
 		}
 	}()
 

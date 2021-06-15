@@ -1,7 +1,6 @@
 package lsp
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
@@ -457,7 +456,7 @@ func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string,
 			c.TextReply("失败 - 该id尚未watch")
 			return
 		}
-		err = c.Lsp.bilibiliConcern.OperateGroupConcernConfig(groupCode, mid, operateAtAllConcern(c, mid, ctype, on))
+		err = c.Lsp.bilibiliConcern.OperateGroupConcernConfig(groupCode, mid, operateAtAllConcern(c, ctype, on))
 	case douyu.Site:
 		var uid int64
 		uid, err = douyu.ParseUid(id)
@@ -471,21 +470,21 @@ func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string,
 			c.TextReply("失败 - 该id尚未watch")
 			return
 		}
-		err = c.Lsp.douyuConcern.OperateGroupConcernConfig(groupCode, uid, operateAtAllConcern(c, uid, ctype, on))
+		err = c.Lsp.douyuConcern.OperateGroupConcernConfig(groupCode, uid, operateAtAllConcern(c, ctype, on))
 	case youtube.Site:
 		err = c.Lsp.youtubeConcern.CheckGroupConcern(groupCode, id, ctype)
 		if err != concern_manager.ErrAlreadyExists {
 			c.TextReply("失败 - 该id尚未watch")
 			return
 		}
-		err = c.Lsp.youtubeConcern.OperateGroupConcernConfig(groupCode, id, operateAtAllConcern(c, id, ctype, on))
+		err = c.Lsp.youtubeConcern.OperateGroupConcernConfig(groupCode, id, operateAtAllConcern(c, ctype, on))
 	case huya.Site:
 		err = c.Lsp.huyaConcern.CheckGroupConcern(groupCode, id, ctype)
 		if err != concern_manager.ErrAlreadyExists {
 			c.TextReply("失败 - 该id尚未watch")
 			return
 		}
-		err = c.Lsp.huyaConcern.OperateGroupConcernConfig(groupCode, id, operateAtAllConcern(c, id, ctype, on))
+		err = c.Lsp.huyaConcern.OperateGroupConcernConfig(groupCode, id, operateAtAllConcern(c, ctype, on))
 	}
 	if err == nil {
 		log.Debug("config success")
@@ -497,31 +496,29 @@ func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string,
 	}
 }
 
-func operateAtAllConcern(c *MessageContext, id interface{}, ctype concern.Type, on bool) func(concernConfig *concern_manager.GroupConcernConfig) bool {
+func operateAtAllConcern(c *MessageContext, ctype concern.Type, on bool) func(concernConfig *concern_manager.GroupConcernConfig) bool {
 	return func(concernConfig *concern_manager.GroupConcernConfig) bool {
-		if concernConfig.GroupConcernAt.CheckAtAll(id, ctype) {
+		if concernConfig.GroupConcernAt.CheckAtAll(ctype) {
 			if on {
 				// 配置@all，但已经配置了
 				c.TextReply("失败 - 已经配置过了")
 				return false
-			}
-			for _, atAll := range concernConfig.GroupConcernAt.AtAll {
-				if utils.CompareId(json.Number(atAll.Id), id) && atAll.Ctype.ContainAll(ctype) {
-					atAll.Ctype = atAll.Ctype.Remove(ctype)
-				}
+			} else {
+				// 取消配置@all
+				concernConfig.GroupConcernAt.AtAll = concernConfig.GroupConcernAt.AtAll.Remove(ctype)
+				return true
 			}
 		} else {
 			if !on {
 				// 取消配置，但并没有配置
 				c.TextReply("失败 - 该配置未设置")
 				return false
+			} else {
+				// 配置@all
+				concernConfig.GroupConcernAt.AtAll = concernConfig.GroupConcernAt.AtAll.Add(ctype)
+				return true
 			}
-			concernConfig.GroupConcernAt.AtAll = append(concernConfig.GroupConcernAt.AtAll, &concern_manager.AtAll{
-				Id:    concern_manager.NewUID(id),
-				Ctype: ctype,
-			})
 		}
-		return true
 	}
 }
 

@@ -6,109 +6,81 @@ import (
 	"testing"
 )
 
-func TestGroupConcernConfig_Compact(t *testing.T) {
-	var g = &GroupConcernAtConfig{
-		AtAll: []*AtAll{
-			{
-				Id:    "1",
-				Ctype: 1,
-			},
-			{
-				Id:    "1",
-				Ctype: 1,
-			},
-			{
-				Id:    "2",
-				Ctype: 1,
-			},
-			{
-				Id:    "1",
-				Ctype: 1,
-			},
-			{
-				Id:    "1",
-				Ctype: 2,
-			},
-		},
-		AtSomeone: []*AtSomeone{
-			{
-				Id:     "1",
-				Ctype:  1,
-				AtList: nil,
-			},
-			{
-				Id:     "1",
-				Ctype:  1,
-				AtList: nil,
-			},
-			{
-				Id:     "2",
-				Ctype:  1,
-				AtList: nil,
-			},
-			{
-				Id:     "2",
-				Ctype:  2,
-				AtList: nil,
-			},
-			{
-				Id:     "1",
-				Ctype:  1,
-				AtList: nil,
-			},
-		},
-	}
-	var expected = &GroupConcernAtConfig{
-		AtAll: []*AtAll{
-			{
-				Id:    "1",
-				Ctype: 1,
-			},
-			{
-				Id:    "2",
-				Ctype: 1,
-			},
-			{
-				Id:    "1",
-				Ctype: 2,
-			},
-		},
-		AtSomeone: []*AtSomeone{
-			{
-				Id:     "1",
-				Ctype:  1,
-				AtList: nil,
-			},
-			{
-				Id:     "2",
-				Ctype:  1,
-				AtList: nil,
-			},
-			{
-				Id:     "2",
-				Ctype:  2,
-				AtList: nil,
-			},
-		},
-	}
-	g.Compact()
-
-	assert.EqualValues(t, expected, g)
-}
-
 func TestGroupConcernAtConfig_CheckAtAll(t *testing.T) {
 	var g = &GroupConcernAtConfig{
-		AtAll: []*AtAll{
-			{
-				Id:    "1",
-				Ctype: 1,
-			},
-			{
-				Id:    "1",
-				Ctype: 2,
+		AtAll: concern.BilibiliNews,
+	}
+	assert.True(t, g.CheckAtAll(concern.BilibiliNews))
+	assert.False(t, g.CheckAtAll(concern.BibiliLive))
+}
+
+func TestNewGroupConcernConfigFromString(t *testing.T) {
+	var testCase = []string{
+		`{"group_concern_at":{"at_all":1,"at_someone":[{"ctype":1, "at_list":[1,2,3,4,5]}]}}`,
+	}
+	var expected = []*GroupConcernConfig{
+		{
+			GroupConcernAt: GroupConcernAtConfig{
+				AtAll: concern.BibiliLive,
+				AtSomeone: []*AtSomeone{
+					{
+						Ctype:  concern.BibiliLive,
+						AtList: []int64{1, 2, 3, 4, 5},
+					},
+				},
 			},
 		},
 	}
-	assert.True(t, g.CheckAtAll(int64(1), concern.Type(2)))
-	assert.False(t, g.CheckAtAll(int64(1), concern.Type(3)))
+	assert.Equal(t, len(testCase), len(expected))
+	for i := 0; i < len(testCase); i++ {
+		g, err := NewGroupConcernConfigFromString(testCase[i])
+		assert.Nil(t, err)
+		assert.EqualValues(t, expected[i], g)
+	}
+}
+
+func TestGroupConcernConfig_ToString(t *testing.T) {
+	var testCase = []*GroupConcernConfig{
+		{
+			GroupConcernAt: GroupConcernAtConfig{
+				AtAll: concern.BibiliLive,
+				AtSomeone: []*AtSomeone{
+					{
+						Ctype:  concern.BibiliLive,
+						AtList: []int64{1, 2, 3, 4, 5},
+					},
+				},
+			},
+		},
+	}
+	var expected = []string{
+		`{"group_concern_at":{"at_all":1,"at_someone":[{"ctype":1, "at_list":[1,2,3,4,5]}]}}`,
+	}
+	assert.Equal(t, len(testCase), len(expected))
+	for i := 0; i < len(testCase); i++ {
+		assert.JSONEq(t, expected[i], testCase[i].ToString())
+	}
+}
+
+func TestGroupConcernAtConfig_GetAtSomeoneList(t *testing.T) {
+	var testCase = []*GroupConcernConfig{
+		{
+			GroupConcernAt: GroupConcernAtConfig{
+				AtAll: concern.BibiliLive,
+				AtSomeone: []*AtSomeone{
+					{
+						Ctype:  concern.BibiliLive,
+						AtList: []int64{1, 2, 3, 4, 5},
+					},
+				},
+			},
+		},
+	}
+	var expected = [][]int64{
+		{1, 2, 3, 4, 5},
+	}
+	assert.Equal(t, len(testCase), len(expected))
+	for i := 0; i < len(testCase); i++ {
+		assert.EqualValues(t, expected[i], testCase[i].GroupConcernAt.GetAtSomeoneList(concern.BibiliLive))
+	}
 }

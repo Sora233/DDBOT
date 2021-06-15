@@ -43,7 +43,7 @@ func (c *LspPrivateCommand) Execute() {
 		if err := recover(); err != nil {
 			logger.WithField("stack", string(debug.Stack())).
 				Errorf("panic recovered: %v", err)
-			c.textSend("エラー発生")
+			c.textSend("エラー発生：看到该信息表示BOT出了一些问题，该问题已记录")
 		}
 	}()
 	if !strings.HasPrefix(c.GetCmd(), "/") {
