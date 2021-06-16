@@ -177,7 +177,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			return
 		}
 		// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
-		defer c.Lsp.bilibiliConcern.GroupWatchNotify(groupCode, mid, watchType)
+		//defer c.Lsp.bilibiliConcern.GroupWatchNotify(groupCode, mid, watchType)
 		log = log.WithField("name", userInfo.Name)
 		log.Debugf("watch success")
 		c.TextReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", userInfo.Name))

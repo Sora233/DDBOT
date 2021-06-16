@@ -30,24 +30,36 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 			chainMsg = append(chainMsg, l.NotifyMessage(inotify))
 			innertState := l.getInnerState(inotify.Type())
 			cfg := l.getConcernConfig(inotify.GetGroupCode(), inotify.GetUid(), inotify.Type())
-			if cfg != nil {
-				// atConfig
-				{
-					var qqadmin = checkGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
-					var checkAtAll = qqadmin && cfg.GroupConcernAt.CheckAtAll(inotify.Type())
-					var atAllMark = qqadmin && checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
-					logger.WithField("qqadmin", qqadmin).WithField("checkAtAll", checkAtAll).WithField("atMark", atAllMark).Trace("at_all")
-					if qqadmin && checkAtAll && atAllMark {
-						chainMsg = append(chainMsg, newAtAllMsg())
-					} else {
-						ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
-						logger.WithField("ids", ids).Trace("at someone")
-						if len(ids) != 0 {
-							chainMsg = append(chainMsg, newAtIdsMsg(ids))
-						}
+			if cfg == nil {
+				goto END
+			}
+
+			// atConfig
+			{
+				// 这儿可能需要重构下
+				var precheck = true
+				if inotify.Type() == concern.BibiliLive {
+					precheck = inotify.(*bilibili.ConcernLiveNotify).LiveStatusChanged
+				}
+				var qqadmin = precheck && checkGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
+				var checkAtAll = qqadmin && cfg.GroupConcernAt.CheckAtAll(inotify.Type())
+				var atAllMark = qqadmin && checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
+				logger.WithField("precheck", precheck).
+					WithField("qqadmin", qqadmin).
+					WithField("checkAtAll", checkAtAll).
+					WithField("atMark", atAllMark).
+					Trace("at_all")
+				if precheck && qqadmin && checkAtAll && atAllMark {
+					chainMsg = append(chainMsg, newAtAllMsg())
+				} else {
+					ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
+					logger.WithField("ids", ids).Trace("at someone")
+					if len(ids) != 0 {
+						chainMsg = append(chainMsg, newAtIdsMsg(ids))
 					}
 				}
 			}
+		END:
 			go l.sendChainGroupMessage(inotify.GetGroupCode(), chainMsg)
 		}
 	}
