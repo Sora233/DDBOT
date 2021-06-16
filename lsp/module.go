@@ -571,8 +571,25 @@ func (l *Lsp) getConcernConfig(groupCode int64, id interface{}, ctype concern.Ty
 	if state == nil {
 		return nil
 	}
-	cfg, _ := state.GetGroupConcernConfig(groupCode, id)
-	return cfg
+	return state.GetGroupConcernConfig(groupCode, id)
+}
+
+func (l *Lsp) getConcernConfigHook(ctype concern.Type, concernConfig *concern_manager.GroupConcernConfig) concern_manager.Hook {
+	if concernConfig == nil {
+		return nil
+	}
+	switch ctype {
+	case concern.BibiliLive, concern.BilibiliNews:
+		return bilibili.NewGroupConcernConfig(concernConfig)
+	case concern.DouyuLive:
+		return douyu.NewGroupConcernConfig(concernConfig)
+	case concern.YoutubeLive, concern.YoutubeVideo:
+		return youtube.NewGroupConcernConfig(concernConfig)
+	case concern.HuyaLive:
+		return huya.NewGroupConcernConfig(concernConfig)
+	default:
+		return concernConfig
+	}
 }
 
 var Instance *Lsp

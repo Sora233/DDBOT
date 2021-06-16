@@ -34,12 +34,3 @@ message BetardResponse {
     Room room = 1;
 }
 
-message LiveInfo {
-    string nickname = 1;
-    int64 room_id = 2;
-    string room_name = 3;
-    string room_url = 4;
-    ShowStatus show_status = 5;
-    VideoLoopStatus videoLoop = 6;
-    Avatar avatar = 7;
-}

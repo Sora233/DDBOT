@@ -105,6 +105,9 @@ func (c *Concern) Start() {
 			if err != nil {
 				return fmt.Errorf("load liveinfo failed %v", err)
 			}
+			if oldInfo != nil && oldInfo.Living != liveInfo.Living {
+				liveInfo.LiveStatusChanged = true
+			}
 			if oldInfo == nil || oldInfo.Living != liveInfo.Living || oldInfo.RoomName != liveInfo.RoomName {
 				c.eventChan <- liveInfo
 			}

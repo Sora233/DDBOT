@@ -23,7 +23,6 @@ var all = [...]Type{BibiliLive, BilibiliNews, DouyuLive, YoutubeLive, YoutubeVid
 
 type Notify interface {
 	Type() Type
-	ShouldSend() bool
 	GetGroupCode() int64
 	GetUid() interface{}
 	ToMessage() []message.IMessageElement

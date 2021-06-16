@@ -3,7 +3,6 @@ package huya
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/Sora233/DDBOT/proxy_pool"
@@ -12,30 +11,6 @@ import (
 	"strings"
 	"time"
 )
-
-type LiveInfo struct {
-	RoomId   string `json:"room_id"`
-	RoomUrl  string `json:"room_url"`
-	Avatar   string `json:"avatar"`
-	Name     string `json:"name"`
-	RoomName string `json:"room_name"`
-	Living   bool   `json:"living"`
-}
-
-func (m *LiveInfo) Type() EventType {
-	return Live
-}
-
-func (m *LiveInfo) ToString() string {
-	if m == nil {
-		return ""
-	}
-	bin, err := json.Marshal(m)
-	if err != nil {
-		return ""
-	}
-	return string(bin)
-}
 
 func RoomPage(roomId string) (*LiveInfo, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)

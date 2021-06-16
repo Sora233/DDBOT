@@ -24,32 +24,28 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 		select {
 		case inotify := <-l.concernNotify:
 			debugNotify(inotify)
-			if !inotify.ShouldSend() {
-				continue
-			}
-			chainMsg = append(chainMsg, l.NotifyMessage(inotify))
 			innertState := l.getInnerState(inotify.Type())
 			cfg := l.getConcernConfig(inotify.GetGroupCode(), inotify.GetUid(), inotify.Type())
-			if cfg == nil {
-				goto END
+			hook := l.getConcernConfigHook(inotify.Type(), cfg)
+
+			if !hook.ShouldSendHook(inotify) {
+				continue
 			}
+
+			chainMsg = append(chainMsg, l.NotifyMessage(inotify))
 
 			// atConfig
 			{
-				// 这儿可能需要重构下
-				var precheck = true
-				if inotify.Type() == concern.BibiliLive {
-					precheck = inotify.(*bilibili.ConcernLiveNotify).LiveStatusChanged
-				}
-				var qqadmin = precheck && checkGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
+				var atAllBefore = hook.AtAllBeforeHook(inotify)
+				var qqadmin = atAllBefore && checkGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
 				var checkAtAll = qqadmin && cfg.GroupConcernAt.CheckAtAll(inotify.Type())
-				var atAllMark = qqadmin && checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
-				logger.WithField("precheck", precheck).
+				var atAllMark = checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
+				logger.WithField("atAllBefore", atAllBefore).
 					WithField("qqadmin", qqadmin).
 					WithField("checkAtAll", checkAtAll).
 					WithField("atMark", atAllMark).
 					Trace("at_all")
-				if precheck && qqadmin && checkAtAll && atAllMark {
+				if atAllBefore && qqadmin && checkAtAll && atAllMark {
 					chainMsg = append(chainMsg, newAtAllMsg())
 				} else {
 					ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
@@ -59,7 +55,6 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					}
 				}
 			}
-		END:
 			go l.sendChainGroupMessage(inotify.GetGroupCode(), chainMsg)
 		}
 	}

@@ -1,7 +1,6 @@
 package douyu
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
@@ -24,25 +23,6 @@ const (
 
 type ConcernEvent interface {
 	Type() EventType
-}
-
-func (m *LiveInfo) ToString() string {
-	if m == nil {
-		return ""
-	}
-	bin, err := json.Marshal(m)
-	if err != nil {
-		return ""
-	}
-	return string(bin)
-}
-
-func (m *LiveInfo) Living() bool {
-	return m.ShowStatus == ShowStatus_Living && m.VideoLoop == VideoLoopStatus_Off
-}
-
-func (m *LiveInfo) Type() EventType {
-	return Live
 }
 
 type ConcernLiveNotify struct {
@@ -87,8 +67,8 @@ func NewConcernLiveNotify(groupCode int64, l *LiveInfo) *ConcernLiveNotify {
 		return nil
 	}
 	return &ConcernLiveNotify{
-		*l,
-		groupCode,
+		LiveInfo:  *l,
+		GroupCode: groupCode,
 	}
 }
 
@@ -126,6 +106,9 @@ func (c *Concern) Start() {
 			liveInfo, err := c.FindRoom(roomid, true)
 			if err != nil {
 				return fmt.Errorf("load liveinfo failed %v", err)
+			}
+			if oldInfo != nil && oldInfo.Living() != liveInfo.Living() {
+				liveInfo.LiveStatusChanged = true
 			}
 			if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {
 				c.eventChan <- liveInfo

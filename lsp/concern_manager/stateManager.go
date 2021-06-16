@@ -56,6 +56,7 @@ func (g *GroupConcernAtConfig) GetAtSomeoneList(ctype concern.Type) []int64 {
 }
 
 type GroupConcernConfig struct {
+	defaultHook
 	GroupConcernAt GroupConcernAtConfig `json:"group_concern_at"`
 }
 
@@ -75,7 +76,9 @@ func (g *GroupConcernConfig) ToString() string {
 	return string(b)
 }
 
-func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig *GroupConcernConfig, err error) {
+// GetGroupConcernConfig always return non-nil
+func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig *GroupConcernConfig) {
+	var err error
 	err = c.RTxCover(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernConfigKey(groupCode, id))
 		if err != nil {
@@ -84,11 +87,11 @@ func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (c
 		concernConfig, err = NewGroupConcernConfigFromString(val)
 		return err
 	})
-	if err != nil {
-		concernConfig = nil
+	if err != nil && err != buntdb.ErrNotFound {
+		logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id).Errorf("GetGroupConcernConfig error %v", err)
 	}
-	if err == buntdb.ErrNotFound {
-		err = nil
+	if concernConfig == nil {
+		concernConfig = new(GroupConcernConfig)
 	}
 	return
 }
