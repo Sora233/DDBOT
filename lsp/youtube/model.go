@@ -99,9 +99,6 @@ type ConcernNotify struct {
 	GroupCode int64 `json:"group_code"`
 }
 
-func (notify *ConcernNotify) ShouldSend() bool {
-	return true
-}
 func (notify *ConcernNotify) GetGroupCode() int64 {
 	return notify.GroupCode
 }

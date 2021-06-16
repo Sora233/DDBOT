@@ -1,7 +1,6 @@
 package concern_manager
 
 import (
-	"encoding/json"
 	"errors"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
@@ -24,56 +23,6 @@ type StateManager struct {
 	emitChan  chan *localutils.EmitE
 	emitQueue *localutils.EmitQueue
 	useEmit   bool
-}
-
-type AtSomeone struct {
-	Ctype  concern.Type `json:"ctype"`
-	AtList []int64      `json:"at_list"`
-}
-
-type GroupConcernAtConfig struct {
-	AtAll     concern.Type `json:"at_all"`
-	AtSomeone []*AtSomeone `json:"at_someone"`
-}
-
-func (g *GroupConcernAtConfig) CheckAtAll(ctype concern.Type) bool {
-	if g == nil {
-		return false
-	}
-	return g.AtAll.ContainAll(ctype)
-}
-
-func (g *GroupConcernAtConfig) GetAtSomeoneList(ctype concern.Type) []int64 {
-	if g == nil {
-		return nil
-	}
-	for _, at := range g.AtSomeone {
-		if at.Ctype.ContainAll(ctype) {
-			return at.AtList
-		}
-	}
-	return nil
-}
-
-type GroupConcernConfig struct {
-	defaultHook
-	GroupConcernAt GroupConcernAtConfig `json:"group_concern_at"`
-}
-
-func NewGroupConcernConfigFromString(s string) (*GroupConcernConfig, error) {
-	var concernConfig *GroupConcernConfig
-	decoder := json.NewDecoder(strings.NewReader(s))
-	decoder.UseNumber()
-	err := decoder.Decode(&concernConfig)
-	return concernConfig, err
-}
-
-func (g *GroupConcernConfig) ToString() string {
-	b, e := json.Marshal(g)
-	if e != nil {
-		panic(e)
-	}
-	return string(b)
 }
 
 // GetGroupConcernConfig always return non-nil

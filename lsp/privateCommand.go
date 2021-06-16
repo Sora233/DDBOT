@@ -157,6 +157,11 @@ func (c *LspPrivateCommand) ConfigCommand() {
 			Id     string `arg:"" help:"配置的主播id"`
 			Switch string `arg:"" default:"on" enum:"on,off" help:"on / off"`
 		} `cmd:"" help:"配置推送时@全体成员，需要管理员权限" name:"at_all"`
+		TitleNotify struct {
+			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Id     string `arg:"" help:"配置的主播id"`
+			Switch string `arg:"" default:"off" enum:"on,off" help:"on / off"`
+		} `cmd:"" help:"配置直播间标题发生变化时是否进行推送，默认不推送" name:"title_notify"`
 		Group int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
 	}
 
@@ -173,9 +178,10 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		c.textReply(err.Error())
 		return
 	}
-	log = log.WithFields(localutils.GroupLogFields(groupCode))
 
 	cmd := strings.Split(kongCtx.Command(), " ")[0]
+
+	log = log.WithFields(localutils.GroupLogFields(groupCode)).WithField("sub_command", cmd)
 
 	switch cmd {
 	case "at_all":
@@ -190,6 +196,16 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		IConfigAtAllCmd(c.NewMessageContext(log), groupCode, configCmd.AtAll.Id, site, ctype, on)
 		//case "at":
 		//	TODO
+	case "title_notify":
+		site, ctype, err := c.ParseRawSiteAndType(configCmd.TitleNotify.Site, "live")
+		if err != nil {
+			log.WithField("site", configCmd.AtAll.Site).Errorf("ParseRawSiteAndType failed %v", err)
+			c.textSend(fmt.Sprintf("失败 - %v", err.Error()))
+			return
+		}
+		var on = localutils.Switch2Bool(configCmd.TitleNotify.Switch)
+		log = log.WithField("site", site).WithField("id", configCmd.AtAll.Id).WithField("on", on)
+		IConfigTitleNotifyCmd(c.NewMessageContext(log), groupCode, configCmd.TitleNotify.Id, site, ctype, on)
 	default:
 		c.textSend("暂未支持，你可以催作者GKD")
 	}

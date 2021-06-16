@@ -669,9 +669,6 @@ func (notify *ConcernNewsNotify) ToMessage() []message.IMessageElement {
 	}
 	return results
 }
-func (notify *ConcernNewsNotify) ShouldSend() bool {
-	return true
-}
 func (notify *ConcernNewsNotify) GetGroupCode() int64 {
 	return notify.GroupCode
 }
@@ -696,9 +693,6 @@ func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 		result = append(result, localutils.MessageTextf("%s直播结束了\n%v", notify.Name, notify.RoomUrl))
 	}
 	return result
-}
-func (notify *ConcernLiveNotify) ShouldSend() bool {
-	return notify.Status == LiveStatus_Living
 }
 func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 	return notify.GroupCode

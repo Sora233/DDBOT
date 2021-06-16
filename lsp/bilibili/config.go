@@ -23,9 +23,18 @@ func (g *GroupConcernConfig) AtAllBeforeHook(notify concern.Notify) bool {
 func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) bool {
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
-		return e.ShouldSend()
+		if e.Status != LiveStatus_Living {
+			return false
+		}
+		if e.LiveStatusChanged {
+			return true
+		}
+		if e.LiveTitleChanged {
+			return g.GroupConcernNotify.CheckTitleChangeNotify(notify.Type())
+		}
+		return true
 	case *ConcernNewsNotify:
-		return e.ShouldSend()
+		return true
 	default:
 		return false
 	}

@@ -6,8 +6,13 @@ import (
 
 var db *buntdb.DB
 
-func InitBuntDB() error {
-	buntDB, err := buntdb.Open(".lsp.db")
+const MEMORYDB = ":memory:"
+
+func InitBuntDB(dbpath string) error {
+	if dbpath == "" {
+		dbpath = ".lsp.db"
+	}
+	buntDB, err := buntdb.Open(dbpath)
 	if err != nil {
 		return err
 	}

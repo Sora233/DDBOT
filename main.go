@@ -38,7 +38,7 @@ func main() {
 	}
 
 	if cli.SetAdmin != 0 {
-		if err := localdb.InitBuntDB(); err != nil {
+		if err := localdb.InitBuntDB(""); err != nil {
 			fmt.Println("can not init buntdb")
 			os.Exit(1)
 		}

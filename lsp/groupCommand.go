@@ -624,12 +624,17 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 			Id     string  `arg:"" help:"配置的主播id"`
 			Action string  `arg:"" enum:"add,remove,clear" help:"add / remove / clear"`
 			QQ     []int64 `arg:"" help:"需要@的成员QQ号码"`
-		} `cmd:"" help:"配置推送时的@人员列表" name:"at"`
+		} `cmd:"" help:"配置推送时的@人员列表，默认为空" name:"at"`
 		AtAll struct {
 			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
 			Id     string `arg:"" help:"配置的主播id"`
 			Switch string `arg:"" default:"on" enum:"on,off" help:"on / off"`
-		} `cmd:"" help:"配置推送时@全体成员，需要管理员权限" name:"at_all"`
+		} `cmd:"" help:"配置推送时@全体成员，默认关闭，需要管理员权限" name:"at_all"`
+		TitleNotify struct {
+			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Id     string `arg:"" help:"配置的主播id"`
+			Switch string `arg:"" default:"off" enum:"on,off" help:"on / off"`
+		} `cmd:"" help:"配置直播间标题发生变化时是否进行推送，默认不推送" name:"title_notify"`
 	}
 
 	kongCtx, output := lgc.parseCommandSyntax(&configCmd, ConfigCommand, kong.Description("管理BOT的配置，目前支持配置@成员和@全体成员"))
@@ -641,6 +646,7 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 	}
 
 	cmd := strings.Split(kongCtx.Command(), " ")[0]
+	log = log.WithField("sub_command", cmd)
 
 	switch cmd {
 	//case "at":
@@ -655,6 +661,16 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		var on = utils.Switch2Bool(configCmd.AtAll.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.AtAll.Id).WithField("on", on)
 		IConfigAtAllCmd(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.AtAll.Id, site, ctype, on)
+	case "title_notify":
+		site, ctype, err := lgc.ParseRawSiteAndType(configCmd.TitleNotify.Site, "live")
+		if err != nil {
+			log.WithField("site", configCmd.AtAll.Site).Errorf("ParseRawSiteAndType failed %v", err)
+			lgc.textSend(fmt.Sprintf("失败 - %v", err.Error()))
+			return
+		}
+		var on = utils.Switch2Bool(configCmd.TitleNotify.Switch)
+		log = log.WithField("site", site).WithField("id", configCmd.AtAll.Id).WithField("on", on)
+		IConfigTitleNotifyCmd(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.TitleNotify.Id, site, ctype, on)
 	default:
 		lgc.textSend("暂未支持，你可以催作者GKD")
 	}

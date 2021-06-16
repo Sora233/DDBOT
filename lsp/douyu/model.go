@@ -12,6 +12,7 @@ type LiveInfo struct {
 	Avatar     *Avatar         `json:"avatar"`
 
 	LiveStatusChanged bool `json:"-"`
+	LiveTitleChanged  bool `json:"-"`
 }
 
 func (m *LiveInfo) ToString() string {

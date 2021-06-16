@@ -76,7 +76,7 @@ func (l *Lsp) Init() {
 		logrus.SetLevel(lev)
 		log.Info("set log level")
 	}
-	if err := localdb.InitBuntDB(); err != nil {
+	if err := localdb.InitBuntDB(""); err != nil {
 		panic(err)
 	}
 

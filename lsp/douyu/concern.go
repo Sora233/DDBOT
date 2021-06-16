@@ -33,10 +33,6 @@ type ConcernLiveNotify struct {
 func (notify *ConcernLiveNotify) Type() concern.Type {
 	return concern.DouyuLive
 }
-
-func (notify *ConcernLiveNotify) ShouldSend() bool {
-	return notify.Living()
-}
 func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 	return notify.GroupCode
 }
@@ -109,6 +105,9 @@ func (c *Concern) Start() {
 			}
 			if oldInfo != nil && oldInfo.Living() != liveInfo.Living() {
 				liveInfo.LiveStatusChanged = true
+			}
+			if oldInfo != nil && oldInfo.RoomName != liveInfo.RoomName {
+				liveInfo.LiveTitleChanged = true
 			}
 			if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {
 				c.eventChan <- liveInfo

@@ -21,7 +21,7 @@ func (g *GroupConcernConfig) AtAllBeforeHook(notify concern.Notify) bool {
 func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) bool {
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
-		return e.ShouldSend()
+		return e.Living
 	default:
 		return false
 	}
