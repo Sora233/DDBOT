@@ -85,7 +85,7 @@ func (lgc *LspGroupCommand) Execute() {
 
 	if lgc.GetCmd() == "" && len(lgc.GetArgs()) == 0 {
 		if !lgc.groupEnabled(ImageContentCommand) {
-			log.WithField("command", ImageContentCommand).Trace("not enabled")
+			//log.WithField("command", ImageContentCommand).Trace("not enabled")
 			return
 		}
 		if lgc.uin() != lgc.bot.Uin {
