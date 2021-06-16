@@ -128,7 +128,7 @@ func (c *StateManager) CheckAndSetAtAllMark(groupCode int64, id interface{}) (re
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
 			result = true
-			_, _, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*6))
+			_, _, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*2))
 			if err != nil {
 				// 如果设置失败，可能会造成连续at
 				result = false
