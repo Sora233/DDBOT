@@ -23,7 +23,7 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
-	github.com/tidwall/buntdb v1.2.3
+	github.com/tidwall/buntdb v1.2.4
 	gocv.io/x/gocv v0.27.0
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
 )
