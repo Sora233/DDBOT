@@ -12,7 +12,7 @@ type GroupConcernConfig struct {
 func (g *GroupConcernConfig) AtAllBeforeHook(notify concern.Notify) bool {
 	switch notify.Type() {
 	case concern.YoutubeLive:
-		return true
+		return notify.(*ConcernNotify).IsLiving()
 	case concern.YoutubeVideo:
 		return true
 	default:
