@@ -9,6 +9,8 @@ import (
 	"github.com/Sora233/DDBOT/lsp/douyu"
 	"github.com/Sora233/DDBOT/lsp/huya"
 	"github.com/Sora233/DDBOT/lsp/youtube"
+	"github.com/Sora233/DDBOT/utils"
+	"github.com/sirupsen/logrus"
 	"runtime/debug"
 )
 
@@ -23,12 +25,13 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 		var chainMsg []*message.SendingMessage
 		select {
 		case inotify := <-l.concernNotify:
-			debugNotify(inotify)
+			log := getLog(inotify)
 			innertState := l.getInnerState(inotify.Type())
 			cfg := l.getConcernConfig(inotify.GetGroupCode(), inotify.GetUid(), inotify.Type())
 			hook := l.getConcernConfigHook(inotify.Type(), cfg)
 
 			if !hook.ShouldSendHook(inotify) {
+				log.Debug("hook ShouldSendHook filtered")
 				continue
 			}
 
@@ -40,21 +43,24 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				var qqadmin = atAllBefore && checkGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
 				var checkAtAll = qqadmin && cfg.GroupConcernAt.CheckAtAll(inotify.Type())
 				var atAllMark = checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
-				logger.WithField("atAllBefore", atAllBefore).
+				log.WithField("atAllBefore", atAllBefore).
 					WithField("qqadmin", qqadmin).
 					WithField("checkAtAll", checkAtAll).
 					WithField("atMark", atAllMark).
 					Trace("at_all")
 				if atAllBefore && qqadmin && checkAtAll && atAllMark {
+					log = log.WithField("at_all", true)
 					chainMsg = append(chainMsg, newAtAllMsg())
 				} else {
 					ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
-					logger.WithField("ids", ids).Trace("at someone")
+					log.WithField("at_ids", ids).Trace("at someone")
 					if len(ids) != 0 {
+						log = log.WithField("at_ids", ids)
 						chainMsg = append(chainMsg, newAtIdsMsg(ids))
 					}
 				}
 			}
+			log.Info("notify")
 			go l.sendChainGroupMessage(inotify.GetGroupCode(), chainMsg)
 		}
 	}
@@ -66,39 +72,36 @@ func (l *Lsp) NotifyMessage(inotify concern.Notify) *message.SendingMessage {
 	return sendingMsgs
 }
 
-func debugNotify(inotify concern.Notify) {
+func getLog(inotify concern.Notify) *logrus.Entry {
 	switch inotify.Type() {
 	case concern.BibiliLive:
 		notify := (inotify).(*bilibili.ConcernLiveNotify)
-		logger.WithField("site", bilibili.Site).
+		return logger.WithField("site", bilibili.Site).
 			WithField("GroupCode", notify.GroupCode).
 			WithField("Uid", notify.Mid).
 			WithField("GroupName", findGroupName(notify.GroupCode)).
 			WithField("Name", notify.Name).
 			WithField("Title", notify.LiveTitle).
-			WithField("Status", notify.Status.String()).
-			Info("notify")
+			WithField("Status", notify.Status.String())
 	case concern.BilibiliNews:
 		notify := (inotify).(*bilibili.ConcernNewsNotify)
-		logger.WithField("site", bilibili.Site).
+		return logger.WithField("site", bilibili.Site).
 			WithField("GroupCode", notify.GroupCode).
 			WithField("Uid", notify.Mid).
 			WithField("GroupName", findGroupName(notify.GroupCode)).
 			WithField("Name", notify.Name).
-			WithField("NewsCount", len(notify.Cards)).
-			Info("notify")
+			WithField("NewsCount", len(notify.Cards))
 	case concern.DouyuLive:
 		notify := (inotify).(*douyu.ConcernLiveNotify)
-		logger.WithField("site", douyu.Site).
+		return logger.WithField("site", douyu.Site).
 			WithField("GroupCode", notify.GroupCode).
 			WithField("GroupName", findGroupName(notify.GroupCode)).
 			WithField("Name", notify.Nickname).
 			WithField("Title", notify.RoomName).
-			WithField("Status", notify.ShowStatus.String()).
-			Info("notify")
+			WithField("Status", notify.ShowStatus.String())
 	case concern.YoutubeLive, concern.YoutubeVideo:
 		notify := (inotify).(*youtube.ConcernNotify)
-		logger.WithField("site", youtube.Site).
+		return logger.WithField("site", youtube.Site).
 			WithField("GroupCode", notify.GroupCode).
 			WithField("GroupName", findGroupName(notify.GroupCode)).
 			WithField("ChannelName", notify.ChannelName).
@@ -106,18 +109,17 @@ func debugNotify(inotify concern.Notify) {
 			WithField("VideoId", notify.VideoId).
 			WithField("VideoTitle", notify.VideoTitle).
 			WithField("VideoStatus", notify.VideoStatus.String()).
-			WithField("VideoType", notify.VideoType.String()).
-			Info("notify")
+			WithField("VideoType", notify.VideoType.String())
 	case concern.HuyaLive:
 		notify := (inotify).(*huya.ConcernLiveNotify)
-		logger.WithField("site", huya.Site).
+		return logger.WithField("site", huya.Site).
 			WithField("GroupCode", notify.GroupCode).
 			WithField("GroupName", findGroupName(notify.GroupCode)).
 			WithField("Name", notify.Name).
 			WithField("Title", notify.RoomName).
-			WithField("Status", notify.Living).
-			Info("notify")
+			WithField("Status", notify.Living)
 	}
+	return logger.WithFields(utils.GroupLogFields(inotify.GetGroupCode()))
 }
 
 func findGroupName(groupCode int64) string {

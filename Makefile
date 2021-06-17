@@ -16,5 +16,8 @@ test: $(COV)
 coverage: $(COV)
 	go tool cover -func=$(COV)
 
+report: $(COV)
+	go tool cover -html=$(COV)
+
 clean:
 	- rm -rf $(TARGET) $(COV)

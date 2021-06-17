@@ -87,3 +87,12 @@ func TestGroupConcernAtConfig_GetAtSomeoneList(t *testing.T) {
 		assert.EqualValues(t, expected[i], testCase[i].GroupConcernAt.GetAtSomeoneList(concern.BibiliLive))
 	}
 }
+
+func TestGroupConcernNotifyConfig_CheckTitleChangeNotify(t *testing.T) {
+	var g = &GroupConcernNotifyConfig{
+		TitleChangeNotify: concern.BibiliLive | concern.DouyuLive,
+	}
+	assert.True(t, g.CheckTitleChangeNotify(concern.BibiliLive))
+	assert.True(t, g.CheckTitleChangeNotify(concern.DouyuLive))
+	assert.False(t, g.CheckTitleChangeNotify(concern.HuyaLive))
+}
