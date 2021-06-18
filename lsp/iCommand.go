@@ -424,69 +424,18 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 }
 
 func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
-	log := c.Log
-
-	if !configCmdCommon(c, groupCode) {
-		return
-	}
-
-	var err error
-
-	switch site {
-	case bilibili.Site:
-		var mid int64
-		mid, err = bilibili.ParseUid(id)
-		if err != nil {
-			log.WithField("id", id).Errorf("parse failed")
-			c.TextReply("失败 - bilibili uid格式错误")
-			return
-		}
-		err = c.Lsp.bilibiliConcern.CheckGroupConcern(groupCode, mid, ctype)
-		if err != concern_manager.ErrAlreadyExists {
-			c.TextReply("失败 - 该id尚未watch")
-			return
-		}
-		err = c.Lsp.bilibiliConcern.OperateGroupConcernConfig(groupCode, mid, operateAtAllConcernConfig(c, ctype, on))
-	case douyu.Site:
-		var uid int64
-		uid, err = douyu.ParseUid(id)
-		if err != nil {
-			log.WithField("id", id).Errorf("parse failed")
-			c.TextReply("失败 - douyu id格式错误")
-			return
-		}
-		err = c.Lsp.douyuConcern.CheckGroupConcern(groupCode, uid, ctype)
-		if err != concern_manager.ErrAlreadyExists {
-			c.TextReply("失败 - 该id尚未watch")
-			return
-		}
-		err = c.Lsp.douyuConcern.OperateGroupConcernConfig(groupCode, uid, operateAtAllConcernConfig(c, ctype, on))
-	case youtube.Site:
-		err = c.Lsp.youtubeConcern.CheckGroupConcern(groupCode, id, ctype)
-		if err != concern_manager.ErrAlreadyExists {
-			c.TextReply("失败 - 该id尚未watch")
-			return
-		}
-		err = c.Lsp.youtubeConcern.OperateGroupConcernConfig(groupCode, id, operateAtAllConcernConfig(c, ctype, on))
-	case huya.Site:
-		err = c.Lsp.huyaConcern.CheckGroupConcern(groupCode, id, ctype)
-		if err != concern_manager.ErrAlreadyExists {
-			c.TextReply("失败 - 该id尚未watch")
-			return
-		}
-		err = c.Lsp.huyaConcern.OperateGroupConcernConfig(groupCode, id, operateAtAllConcernConfig(c, ctype, on))
-	}
-	if err == nil {
-		log.Debug("config success")
-		c.TextReply("成功")
-	} else if !localdb.IsRollback(err) {
-		log.Errorf("OperateGroupConcernConfig failed %v", err)
-		c.TextReply("失败 - 内部错误")
-		return
-	}
+	iConfigCmd(c, groupCode, id, site, ctype, on, operateAtAllConcernConfig(c, ctype, on))
 }
 
 func IConfigTitleNotifyCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
+	iConfigCmd(c, groupCode, id, site, ctype, on, operateNotifyConcernConfig(c, ctype, on))
+}
+
+func IConfigOfflineNotifyCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
+	iConfigCmd(c, groupCode, id, site, ctype, on, operateOfflineNotifyConcernConfig(c, ctype, on))
+}
+
+func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool, f func(*concern_manager.GroupConcernConfig) bool) {
 	log := c.Log
 	if !configCmdCommon(c, groupCode) {
 		return
@@ -507,7 +456,7 @@ func IConfigTitleNotifyCmd(c *MessageContext, groupCode int64, id string, site s
 			c.TextReply("失败 - 该id尚未watch")
 			return
 		}
-		err = c.Lsp.bilibiliConcern.OperateGroupConcernConfig(groupCode, mid, operateNotifyConcernConfig(c, ctype, on))
+		err = c.Lsp.bilibiliConcern.OperateGroupConcernConfig(groupCode, mid, f)
 	case douyu.Site:
 		var uid int64
 		uid, err = douyu.ParseUid(id)
@@ -521,21 +470,21 @@ func IConfigTitleNotifyCmd(c *MessageContext, groupCode int64, id string, site s
 			c.TextReply("失败 - 该id尚未watch")
 			return
 		}
-		err = c.Lsp.douyuConcern.OperateGroupConcernConfig(groupCode, uid, operateNotifyConcernConfig(c, ctype, on))
+		err = c.Lsp.douyuConcern.OperateGroupConcernConfig(groupCode, uid, f)
 	case youtube.Site:
 		err = c.Lsp.youtubeConcern.CheckGroupConcern(groupCode, id, ctype)
 		if err != concern_manager.ErrAlreadyExists {
 			c.TextReply("失败 - 该id尚未watch")
 			return
 		}
-		err = c.Lsp.youtubeConcern.OperateGroupConcernConfig(groupCode, id, operateNotifyConcernConfig(c, ctype, on))
+		err = c.Lsp.youtubeConcern.OperateGroupConcernConfig(groupCode, id, f)
 	case huya.Site:
 		err = c.Lsp.huyaConcern.CheckGroupConcern(groupCode, id, ctype)
 		if err != concern_manager.ErrAlreadyExists {
 			c.TextReply("失败 - 该id尚未watch")
 			return
 		}
-		err = c.Lsp.huyaConcern.OperateGroupConcernConfig(groupCode, id, operateNotifyConcernConfig(c, ctype, on))
+		err = c.Lsp.huyaConcern.OperateGroupConcernConfig(groupCode, id, f)
 	}
 	if err == nil {
 		log.Debug("config success")
@@ -611,6 +560,31 @@ func operateNotifyConcernConfig(c *MessageContext, ctype concern.Type, on bool) 
 			} else {
 				// 配置推送
 				concernConfig.GroupConcernNotify.TitleChangeNotify = concernConfig.GroupConcernNotify.TitleChangeNotify.Add(ctype)
+				return true
+			}
+		}
+	}
+}
+
+func operateOfflineNotifyConcernConfig(c *MessageContext, ctype concern.Type, on bool) func(concernConfig *concern_manager.GroupConcernConfig) bool {
+	return func(concernConfig *concern_manager.GroupConcernConfig) bool {
+		if concernConfig.GroupConcernNotify.CheckOfflineNotify(ctype) {
+			if on {
+				// 配置推送，但已经配置过了
+				c.TextReply("失败 - 已经配置过了")
+				return false
+			} else {
+				// 取消配置推送
+				concernConfig.GroupConcernNotify.OfflineNotify = concernConfig.GroupConcernNotify.OfflineNotify.Remove(ctype)
+				return true
+			}
+		} else {
+			if !on {
+				// 取消配置，但并没有配置
+				c.TextReply("失败 - 该配置未设置")
+				return false
+			} else {
+				concernConfig.GroupConcernNotify.OfflineNotify = concernConfig.GroupConcernNotify.OfflineNotify.Add(ctype)
 				return true
 			}
 		}

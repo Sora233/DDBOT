@@ -41,14 +41,14 @@ func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 	var result []message.IMessageElement
 	if notify.Living {
 		result = append(result, localutils.MessageTextf("虎牙-%s正在直播【%v】\n%v", notify.Name, notify.RoomName, notify.RoomUrl))
-		cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Avatar, false, proxy_pool.PreferNone)
-		if err != nil {
-			logger.WithField("avatar", notify.Avatar).Errorf("upload avatar failed %v", err)
-		} else {
-			result = append(result, cover)
-		}
 	} else {
 		result = append(result, localutils.MessageTextf("虎牙-%s直播结束了\n%v", notify.Name, notify.RoomUrl))
+	}
+	cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Avatar, false, proxy_pool.PreferNone)
+	if err != nil {
+		logger.WithField("avatar", notify.Avatar).Errorf("upload avatar failed %v", err)
+	} else {
+		result = append(result, cover)
 	}
 	return result
 }
@@ -104,6 +104,9 @@ func (c *Concern) Start() {
 			}
 			if oldInfo != nil && oldInfo.Living != liveInfo.Living {
 				liveInfo.LiveStatusChanged = true
+			}
+			if oldInfo != nil && oldInfo.RoomName != liveInfo.RoomName {
+				liveInfo.LiveTitleChanged = true
 			}
 			if oldInfo == nil || oldInfo.Living != liveInfo.Living || oldInfo.RoomName != liveInfo.RoomName {
 				c.eventChan <- liveInfo

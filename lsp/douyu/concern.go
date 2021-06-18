@@ -44,16 +44,15 @@ func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 	var result []message.IMessageElement
 	switch notify.ShowStatus {
 	case ShowStatus_Living:
-		result = append(result, localutils.MessageTextf("斗鱼-%s正在直播【%v】\n", notify.Nickname, notify.RoomName))
-		result = append(result, message.NewText(notify.RoomUrl))
-		cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.GetAvatar().GetBig(), false, proxy_pool.PreferNone)
-		if err != nil {
-			logger.WithField("avatar", notify.GetAvatar().GetBig()).Errorf("upload avatar failed %v", err)
-		} else {
-			result = append(result, cover)
-		}
+		result = append(result, localutils.MessageTextf("斗鱼-%s正在直播【%v】\n%v", notify.Nickname, notify.RoomName, notify.RoomUrl))
 	case ShowStatus_NoLiving:
 		result = append(result, localutils.MessageTextf("斗鱼-%s直播结束了\n%v", notify.Nickname, notify.RoomUrl))
+	}
+	cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.GetAvatar().GetBig(), false, proxy_pool.PreferNone)
+	if err != nil {
+		logger.WithField("avatar", notify.GetAvatar().GetBig()).Errorf("upload avatar failed %v", err)
+	} else {
+		result = append(result, cover)
 	}
 	return result
 }

@@ -23,16 +23,20 @@ func (g *GroupConcernConfig) AtAllBeforeHook(notify concern.Notify) bool {
 func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) bool {
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
-		if e.Status != LiveStatus_Living {
-			return false
-		}
 		if e.LiveStatusChanged {
-			return true
+			if e.Status != LiveStatus_Living {
+				// 下播了，检查下播推送配置
+				return g.GroupConcernNotify.CheckOfflineNotify(notify.Type())
+			} else {
+				// 上播了，推
+				return true
+			}
 		}
 		if e.LiveTitleChanged {
+			// 直播间标题改了，检查改标题推送配置
 			return g.GroupConcernNotify.CheckTitleChangeNotify(notify.Type())
 		}
-		return true
+		return g.GroupConcernConfig.ShouldSendHook(notify)
 	case *ConcernNewsNotify:
 		return true
 	default:

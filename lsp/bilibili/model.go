@@ -679,21 +679,21 @@ func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 	var result []message.IMessageElement
 	switch notify.Status {
 	case LiveStatus_Living:
-		result = append(result, localutils.MessageTextf("%s正在直播【%v】\n", notify.Name, notify.LiveTitle))
-		result = append(result, message.NewText(notify.RoomUrl))
-		cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Cover, false, proxy_pool.PreferNone)
-		if err != nil {
-			logger.WithField("group_code", notify.GroupCode).
-				WithField("cover", notify.Cover).
-				Errorf("add cover failed %v", err)
-		} else {
-			result = append(result, cover)
-		}
+		result = append(result, localutils.MessageTextf("%s正在直播【%v】\n%v", notify.Name, notify.LiveTitle, notify.RoomUrl))
 	case LiveStatus_NoLiving:
 		result = append(result, localutils.MessageTextf("%s直播结束了\n%v", notify.Name, notify.RoomUrl))
 	}
+	cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Cover, false, proxy_pool.PreferNone)
+	if err != nil {
+		logger.WithField("group_code", notify.GroupCode).
+			WithField("cover", notify.Cover).
+			Errorf("add cover failed %v", err)
+	} else {
+		result = append(result, cover)
+	}
 	return result
 }
+
 func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 	return notify.GroupCode
 }

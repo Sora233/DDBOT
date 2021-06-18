@@ -11,6 +11,7 @@ type LiveInfo struct {
 	Living   bool   `json:"living"`
 
 	LiveStatusChanged bool `json:"-"`
+	LiveTitleChanged  bool `json:"-"`
 }
 
 func (m *LiveInfo) Type() EventType {

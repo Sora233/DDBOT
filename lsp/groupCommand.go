@@ -13,6 +13,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/permission"
+	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/sliceutil"
@@ -635,6 +636,11 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 			Id     string `arg:"" help:"配置的主播id"`
 			Switch string `arg:"" default:"off" enum:"on,off" help:"on / off"`
 		} `cmd:"" help:"配置直播间标题发生变化时是否进行推送，默认不推送" name:"title_notify"`
+		OfflineNotify struct {
+			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Id     string `arg:"" help:"配置的主播id"`
+			Switch string `arg:"" default:"off" enum:"on,off," help:"on / off"`
+		} `cmd:"" help:"配置下播时是否进行推送，默认不推送" name:"offline_notify"`
 	}
 
 	kongCtx, output := lgc.parseCommandSyntax(&configCmd, ConfigCommand, kong.Description("管理BOT的配置，目前支持配置@成员和@全体成员"))
@@ -671,6 +677,21 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		var on = utils.Switch2Bool(configCmd.TitleNotify.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.TitleNotify.Id).WithField("on", on)
 		IConfigTitleNotifyCmd(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.TitleNotify.Id, site, ctype, on)
+	case "offline_notify":
+		site, ctype, err := lgc.ParseRawSiteAndType(configCmd.OfflineNotify.Site, "live")
+		if err != nil {
+			log.WithField("site", configCmd.OfflineNotify.Site).Errorf("ParseRawSiteAndType failed %v", err)
+			lgc.textSend(fmt.Sprintf("失败 - %v", err.Error()))
+			return
+		}
+		if site == youtube.Site {
+			log.WithField("site", configCmd.OfflineNotify.Site).Errorf("not supported")
+			lgc.textSend(fmt.Sprintf("失败 - %v", "暂不支持YTB"))
+			return
+		}
+		var on = utils.Switch2Bool(configCmd.OfflineNotify.Switch)
+		log = log.WithField("site", site).WithField("id", configCmd.OfflineNotify.Id).WithField("on", on)
+		IConfigOfflineNotifyCmd(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.OfflineNotify.Id, site, ctype, on)
 	default:
 		lgc.textSend("暂未支持，你可以催作者GKD")
 	}
