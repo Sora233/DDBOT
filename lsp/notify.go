@@ -31,7 +31,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 			hook := l.getConcernConfigHook(inotify.Type(), cfg)
 
 			if !hook.ShouldSendHook(inotify) {
-				log.Debug("hook ShouldSendHook filtered")
+				log.Debug("notify filtered by hook ShouldSendHook")
 				continue
 			}
 
