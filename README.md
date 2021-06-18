@@ -1,7 +1,7 @@
 # DDBOT
 
-[![.github/workflows/ci.yml](https://github.com/Sora233/DDBOT/actions/workflows/ci.yml/badge.svg)](https://github.com/Sora233/DDBOT/actions/workflows/ci.yml)
-[![Coverage Status](https://coveralls.io/repos/github/Sora233/DDBOT/badge.svg)](https://coveralls.io/github/Sora233/DDBOT)
+[<img src="https://github.com/Sora233/DDBOT/actions/workflows/ci.yml/badge.svg"/>](https://github.com/Sora233/DDBOT/actions/workflows/ci.yml)
+[<img src="https://coveralls.io/repos/github/Sora233/DDBOT/badge.svg?branch=master"/>](https://coveralls.io/github/Sora233/DDBOT)
 
 一个基于MiraiGO的多功能QQ群机器人。
 

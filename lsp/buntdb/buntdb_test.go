@@ -2,6 +2,7 @@ package buntdb
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/buntdb"
 	"os"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ func TestExpireOption(t *testing.T) {
 	assert.NotNil(t, e)
 	assert.EqualValues(t, time.Hour*60, e.TTL)
 	assert.True(t, e.Expires)
+	assert.Nil(t, ExpireOption(0))
 }
 
 func TestGetClient(t *testing.T) {
@@ -27,7 +29,16 @@ func TestGetClient(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotNil(t, db)
 	assert.NotNil(t, MustGetClient())
-	assert.Nil(t, db.Close())
+	assert.Nil(t, Close())
+}
+
+func TestGetClient2(t *testing.T) {
+	defer func() {
+		e := recover()
+		assert.NotNil(t, e)
+		assert.Equal(t, ErrNotInitialized, e)
+	}()
+	MustGetClient()
 }
 
 func TestNamedKey(t *testing.T) {
@@ -52,4 +63,35 @@ func TestNamedKey(t *testing.T) {
 	for i := 0; i < len(expected); i++ {
 		assert.Equal(t, expected[i], NamedKey(testName[i], testKey[i]))
 	}
+}
+
+func TestRTxCover(t *testing.T) {
+	err := RWTxCover(func(tx *buntdb.Tx) error {
+		return nil
+	})
+	assert.Equal(t, ErrNotInitialized, err)
+	err = RTxCover(func(tx *buntdb.Tx) error {
+		return nil
+	})
+	assert.Equal(t, ErrNotInitialized, err)
+
+	err = InitBuntDB(MEMORYDB)
+	assert.Nil(t, err)
+	defer Close()
+	err = RTxCover(func(tx *buntdb.Tx) error {
+		_, _, err := tx.Set("a", "b", nil)
+		return err
+	})
+	assert.Equal(t, buntdb.ErrTxNotWritable, err)
+	err = RWTxCover(func(tx *buntdb.Tx) error {
+		_, _, err := tx.Set("a", "b", nil)
+		return err
+	})
+	assert.Nil(t, err)
+	_ = RTxCover(func(tx *buntdb.Tx) error {
+		val, err := tx.Get("a")
+		assert.Equal(t, "b", val)
+		assert.Nil(t, err)
+		return nil
+	})
 }

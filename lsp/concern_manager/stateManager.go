@@ -351,15 +351,26 @@ func (c *StateManager) FreshCheck(id interface{}, setTTL bool) (result bool, err
 	return
 }
 
-func (c *StateManager) FreshIndex() {
+func (c *StateManager) FreshIndex(groups ...int64) {
 	db, err := localdb.GetClient()
 	if err != nil {
 		return
 	}
-	for _, groupInfo := range miraiBot.Instance.GroupList {
-		db.CreateIndex(c.GroupConcernStateKey(groupInfo.Code), c.GroupConcernStateKey(groupInfo.Code, "*"), buntdb.IndexString)
-		db.CreateIndex(c.GroupConcernConfigKey(groupInfo.Code), c.GroupConcernConfigKey(groupInfo.Code, "*"), buntdb.IndexString)
-		db.CreateIndex(c.GroupAtAllMarkKey(groupInfo.Code), c.GroupAtAllMarkKey(groupInfo.Code, "*"), buntdb.IndexString)
+	db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
+	if len(groups) == 0 {
+		for _, groupInfo := range miraiBot.Instance.GroupList {
+			db.CreateIndex(c.GroupConcernStateKey(groupInfo.Code), c.GroupConcernStateKey(groupInfo.Code, "*"), buntdb.IndexString)
+			db.CreateIndex(c.GroupConcernConfigKey(groupInfo.Code), c.GroupConcernConfigKey(groupInfo.Code, "*"), buntdb.IndexString)
+			db.CreateIndex(c.GroupAtAllMarkKey(groupInfo.Code), c.GroupAtAllMarkKey(groupInfo.Code, "*"), buntdb.IndexString)
+			db.CreateIndex(c.FreshKey(groupInfo.Code), c.FreshKey(groupInfo.Code, "*"), buntdb.IndexString)
+		}
+	} else {
+		for _, g := range groups {
+			db.CreateIndex(c.GroupConcernStateKey(g), c.GroupConcernStateKey(g, "*"), buntdb.IndexString)
+			db.CreateIndex(c.GroupConcernConfigKey(g), c.GroupConcernConfigKey(g, "*"), buntdb.IndexString)
+			db.CreateIndex(c.GroupAtAllMarkKey(g), c.GroupAtAllMarkKey(g, "*"), buntdb.IndexString)
+			db.CreateIndex(c.FreshKey(g), c.FreshKey(g, "*"), buntdb.IndexString)
+		}
 	}
 }
 
@@ -426,17 +437,17 @@ func (c *StateManager) upsertConcernType(key string, ctype concern.Type) (newCty
 }
 
 func (c *StateManager) Start() error {
-	_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-		return true
-	})
-	if err != nil {
-		return err
-	}
-	ids, types, err = c.GroupTypeById(ids, types)
-	if err != nil {
-		return err
-	}
 	if c.useEmit {
+		_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+			return true
+		})
+		if err != nil {
+			return err
+		}
+		ids, types, err = c.GroupTypeById(ids, types)
+		if err != nil {
+			return err
+		}
 		for index := range ids {
 			for _, t := range types[index].Split() {
 				c.emitQueue.Add(localutils.NewEmitE(ids[index], t), time.Now())

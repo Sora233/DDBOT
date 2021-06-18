@@ -7,7 +7,10 @@ import (
 )
 
 func TestGroupConcernAtConfig_CheckAtAll(t *testing.T) {
-	var g = &GroupConcernAtConfig{
+	var g *GroupConcernAtConfig
+	assert.False(t, g.CheckAtAll(concern.BibiliLive))
+
+	g = &GroupConcernAtConfig{
 		AtAll: concern.BilibiliNews,
 	}
 	assert.True(t, g.CheckAtAll(concern.BilibiliNews))
@@ -78,14 +81,24 @@ func TestGroupConcernAtConfig_GetAtSomeoneList(t *testing.T) {
 				},
 			},
 		},
+		{
+			GroupConcernAt: GroupConcernAtConfig{
+				AtAll:     concern.BibiliLive,
+				AtSomeone: nil,
+			},
+		},
 	}
 	var expected = [][]int64{
 		{1, 2, 3, 4, 5},
+		nil,
 	}
 	assert.Equal(t, len(testCase), len(expected))
 	for i := 0; i < len(testCase); i++ {
 		assert.EqualValues(t, expected[i], testCase[i].GroupConcernAt.GetAtSomeoneList(concern.BibiliLive))
 	}
+
+	var g *GroupConcernAtConfig
+	assert.Nil(t, g.GetAtSomeoneList(concern.BibiliLive))
 }
 
 func TestGroupConcernNotifyConfig_CheckTitleChangeNotify(t *testing.T) {

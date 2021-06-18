@@ -99,9 +99,12 @@ func TestType_ContainAll(t *testing.T) {
 		{
 			BibiliLive | BilibiliNews, YoutubeLive | YoutubeVideo,
 		},
+		{
+			0, 0,
+		},
 	}
 	var expected = []bool{
-		true, false, true, true, false,
+		true, false, true, true, false, false,
 	}
 	assert.Equal(t, len(expected), len(testCase))
 	for i := 0; i < len(expected); i++ {
@@ -126,9 +129,12 @@ func TestType_ContainAny(t *testing.T) {
 		{
 			BibiliLive | BilibiliNews, YoutubeLive | YoutubeVideo,
 		},
+		{
+			0, 0,
+		},
 	}
 	var expected = []bool{
-		true, true, true, true, false,
+		true, true, true, true, false, false,
 	}
 	assert.Equal(t, len(expected), len(testCase))
 	for i := 0; i < len(expected); i++ {
@@ -138,10 +144,10 @@ func TestType_ContainAny(t *testing.T) {
 
 func TestFromString(t *testing.T) {
 	var testCase = []string{
-		"1", "4", "3",
+		"1", "4", "3", "error",
 	}
 	var expected = []Type{
-		BibiliLive, DouyuLive, BibiliLive | BilibiliNews,
+		BibiliLive, DouyuLive, BibiliLive | BilibiliNews, 0,
 	}
 	assert.Equal(t, len(expected), len(testCase))
 	for i := 0; i < len(expected); i++ {
