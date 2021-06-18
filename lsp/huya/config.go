@@ -10,9 +10,9 @@ type GroupConcernConfig struct {
 }
 
 func (g *GroupConcernConfig) AtAllBeforeHook(notify concern.Notify) bool {
-	switch notify.Type() {
-	case concern.HuyaLive:
-		return notify.(*ConcernLiveNotify).LiveStatusChanged
+	switch e := notify.(type) {
+	case *ConcernLiveNotify:
+		return e.Living && notify.(*ConcernLiveNotify).LiveStatusChanged
 	default:
 		return false
 	}

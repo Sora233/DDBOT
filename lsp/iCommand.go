@@ -440,7 +440,6 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 	if !configCmdCommon(c, groupCode) {
 		return
 	}
-
 	var err error
 	switch site {
 	case bilibili.Site:
@@ -457,6 +456,11 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 			return
 		}
 		err = c.Lsp.bilibiliConcern.OperateGroupConcernConfig(groupCode, mid, f)
+		if err != nil {
+			break
+		}
+		userInfo, _ := c.Lsp.bilibiliConcern.GetUserInfo(mid)
+		c.TextReply(fmt.Sprintf("成功 - Bilibili用户 %v", userInfo.GetName()))
 	case douyu.Site:
 		var uid int64
 		uid, err = douyu.ParseUid(id)
@@ -471,6 +475,11 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 			return
 		}
 		err = c.Lsp.douyuConcern.OperateGroupConcernConfig(groupCode, uid, f)
+		if err != nil {
+			break
+		}
+		userInfo, _ := c.Lsp.douyuConcern.FindRoom(uid, false)
+		c.TextReply(fmt.Sprintf("成功 - 斗鱼用户 %v", userInfo.GetNickname()))
 	case youtube.Site:
 		err = c.Lsp.youtubeConcern.CheckGroupConcern(groupCode, id, ctype)
 		if err != concern_manager.ErrAlreadyExists {
@@ -478,6 +487,11 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 			return
 		}
 		err = c.Lsp.youtubeConcern.OperateGroupConcernConfig(groupCode, id, f)
+		if err != nil {
+			break
+		}
+		userInfo, _ := c.Lsp.youtubeConcern.FindInfo(id, false)
+		c.TextReply(fmt.Sprintf("成功 - YTB用户 %v", userInfo.GetChannelName()))
 	case huya.Site:
 		err = c.Lsp.huyaConcern.CheckGroupConcern(groupCode, id, ctype)
 		if err != concern_manager.ErrAlreadyExists {
@@ -485,11 +499,13 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 			return
 		}
 		err = c.Lsp.huyaConcern.OperateGroupConcernConfig(groupCode, id, f)
+		if err != nil {
+			break
+		}
+		userInfo, _ := c.Lsp.huyaConcern.FindRoom(id, false)
+		c.TextReply(fmt.Sprintf("成功 - 虎牙用户 %v", userInfo.GetName()))
 	}
-	if err == nil {
-		log.Debug("config success")
-		c.TextReply("成功")
-	} else if !localdb.IsRollback(err) {
+	if err != nil && !localdb.IsRollback(err) {
 		log.Errorf("OperateGroupConcernConfig failed %v", err)
 		c.TextReply("失败 - 内部错误")
 		return

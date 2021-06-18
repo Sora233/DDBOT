@@ -14,6 +14,13 @@ type LiveInfo struct {
 	LiveTitleChanged  bool `json:"-"`
 }
 
+func (m *LiveInfo) GetName() string {
+	if m == nil {
+		return ""
+	}
+	return m.Name
+}
+
 func (m *LiveInfo) Type() EventType {
 	return Live
 }

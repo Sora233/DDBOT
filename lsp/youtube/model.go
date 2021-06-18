@@ -13,6 +13,13 @@ type UserInfo struct {
 	ChannelName string `json:"channel_name"`
 }
 
+func (ui *UserInfo) GetChannelName() string {
+	if ui == nil {
+		return ""
+	}
+	return ui.ChannelName
+}
+
 type EventType int64
 
 const (

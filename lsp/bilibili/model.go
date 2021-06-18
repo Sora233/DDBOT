@@ -163,6 +163,13 @@ type UserInfo struct {
 	RoomUrl string `json:"room_url"`
 }
 
+func (ui *UserInfo) GetName() string {
+	if ui == nil {
+		return ""
+	}
+	return ui.Name
+}
+
 func (ui *UserInfo) ToString() string {
 	if ui == nil {
 		return ""
