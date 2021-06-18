@@ -104,7 +104,7 @@ func (c *LspPrivateCommand) Execute() {
 	case "/config":
 		c.ConfigCommand()
 	default:
-		c.textReply("阁下似乎输入了一个无法识别的命令，请注意BOT的大多数命令只能在群聊内生效。")
+		c.textReply("阁下似乎输入了一个无法识别的命令，请使用/help命令查看帮助。")
 		log.Debug("no command matched")
 	}
 }
