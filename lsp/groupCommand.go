@@ -664,12 +664,12 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 	case "title_notify":
 		site, ctype, err := lgc.ParseRawSiteAndType(configCmd.TitleNotify.Site, "live")
 		if err != nil {
-			log.WithField("site", configCmd.AtAll.Site).Errorf("ParseRawSiteAndType failed %v", err)
+			log.WithField("site", configCmd.TitleNotify.Site).Errorf("ParseRawSiteAndType failed %v", err)
 			lgc.textSend(fmt.Sprintf("失败 - %v", err.Error()))
 			return
 		}
 		var on = utils.Switch2Bool(configCmd.TitleNotify.Switch)
-		log = log.WithField("site", site).WithField("id", configCmd.AtAll.Id).WithField("on", on)
+		log = log.WithField("site", site).WithField("id", configCmd.TitleNotify.Id).WithField("on", on)
 		IConfigTitleNotifyCmd(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.TitleNotify.Id, site, ctype, on)
 	default:
 		lgc.textSend("暂未支持，你可以催作者GKD")
