@@ -214,6 +214,7 @@ DDBOT的命令格式皆遵守这个规则。
 
 - 配置启用@全体成员，默认不@
 - 配置启用直播间标题更新推送，默认不推送
+- 配置下播推送，默认不推送
 
 #### 配置@全体成员
 
@@ -237,6 +238,14 @@ DDBOT的命令格式皆遵守这个规则。
 
 ```shell
 /config title_notify --site bilibili 2 on
+```
+
+#### 配置下播推送
+
+- 推送b站UID为2的用户的直播信息时，当他下播时也进行推送。
+
+```shell
+/config offline_notify --site bilibili 2 on
 ```
 
 ### /config（私聊版本）
