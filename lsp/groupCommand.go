@@ -623,8 +623,8 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		At struct {
 			Site   string  `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
 			Id     string  `arg:"" help:"配置的主播id"`
-			Action string  `arg:"" enum:"add,remove,clear" help:"add / remove / clear"`
-			QQ     []int64 `arg:"" help:"需要@的成员QQ号码"`
+			Action string  `arg:"" enum:"add,remove,clear,show" help:"add / remove / clear / show"`
+			QQ     []int64 `arg:"" optional:"" help:"需要@的成员QQ号码"`
 		} `cmd:"" help:"配置推送时的@人员列表，默认为空" name:"at"`
 		AtAll struct {
 			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
@@ -655,8 +655,15 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 	log = log.WithField("sub_command", cmd)
 
 	switch cmd {
-	//case "at":
-	//	// TODO
+	case "at":
+		site, ctype, err := lgc.ParseRawSiteAndType(configCmd.At.Site, "live")
+		if err != nil {
+			log.WithField("site", configCmd.At.Site).Errorf("ParseRawSiteAndType failed %v", err)
+			lgc.textSend(fmt.Sprintf("失败 - %v", err.Error()))
+			return
+		}
+		log = log.WithField("site", site).WithField("id", configCmd.At.Id).WithField("action", configCmd.At.Action).WithField("QQ", configCmd.At.QQ)
+		IConfigAtCmd(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.At.Id, site, ctype, configCmd.At.Action, configCmd.At.QQ)
 	case "at_all":
 		site, ctype, err := lgc.ParseRawSiteAndType(configCmd.AtAll.Site, "live")
 		if err != nil {

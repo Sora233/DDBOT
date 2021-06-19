@@ -423,96 +423,157 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 	c.TextReply("成功")
 }
 
+func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, action string, QQ []int64) {
+	g := bot.Instance.FindGroup(groupCode)
+	if g == nil {
+		// 可能没找到吗
+		return
+	}
+	if action != "show" && action != "clear" && len(QQ) == 0 {
+		c.TextReply("失败 - 没有要操作的指定QQ号")
+		return
+	}
+	if action == "add" {
+		var failed []int64
+		for _, qq := range QQ {
+			member := g.FindMember(qq)
+			if member == nil {
+				failed = append(failed, qq)
+			}
+		}
+		if len(failed) != 0 {
+			c.TextReply(fmt.Sprintf("失败 - 没有找到QQ号：\n%v", utils.JoinInt64(failed, "\n")))
+			return
+		}
+	}
+	err := iConfigCmd(c, groupCode, id, site, ctype, operateAtConcernConfig(c, ctype, action, QQ))
+	if localdb.IsRollback(err) {
+		return
+	}
+	if err != nil {
+		c.TextReply(err.Error())
+	} else {
+		if action != "show" {
+			ReplyUserInfo(c, site, id)
+		}
+	}
+}
+
 func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
-	iConfigCmd(c, groupCode, id, site, ctype, on, operateAtAllConcernConfig(c, ctype, on))
+	err := iConfigCmd(c, groupCode, id, site, ctype, operateAtAllConcernConfig(c, ctype, on))
+	if localdb.IsRollback(err) {
+		return
+	}
+	if err != nil {
+		c.TextReply(err.Error())
+	} else {
+		ReplyUserInfo(c, site, id)
+	}
 }
 
 func IConfigTitleNotifyCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
-	iConfigCmd(c, groupCode, id, site, ctype, on, operateNotifyConcernConfig(c, ctype, on))
+	err := iConfigCmd(c, groupCode, id, site, ctype, operateNotifyConcernConfig(c, ctype, on))
+	if localdb.IsRollback(err) {
+		return
+	}
+	if err != nil {
+		c.TextReply(err.Error())
+	} else {
+		ReplyUserInfo(c, site, id)
+	}
 }
 
 func IConfigOfflineNotifyCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
-	iConfigCmd(c, groupCode, id, site, ctype, on, operateOfflineNotifyConcernConfig(c, ctype, on))
-}
-
-func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool, f func(*concern_manager.GroupConcernConfig) bool) {
-	log := c.Log
-	if !configCmdCommon(c, groupCode) {
+	err := iConfigCmd(c, groupCode, id, site, ctype, operateOfflineNotifyConcernConfig(c, ctype, on))
+	if localdb.IsRollback(err) {
 		return
 	}
-	var err error
+	if err != nil {
+		c.TextReply(err.Error())
+	} else {
+		ReplyUserInfo(c, site, id)
+	}
+}
+
+func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, f func(*concern_manager.GroupConcernConfig) bool) (err error) {
+	log := c.Log
+	if !configCmdGroupCommonCheck(c, groupCode) {
+		return
+	}
 	switch site {
 	case bilibili.Site:
 		var mid int64
 		mid, err = bilibili.ParseUid(id)
 		if err != nil {
 			log.WithField("id", id).Errorf("parse failed")
-			c.TextReply("失败 - bilibili uid格式错误")
+			err = errors.New("失败 - bilibili uid格式错误")
 			return
 		}
 		err = c.Lsp.bilibiliConcern.CheckGroupConcern(groupCode, mid, ctype)
 		if err != concern_manager.ErrAlreadyExists {
-			c.TextReply("失败 - 该id尚未watch")
-			return
+			return errors.New("失败 - 该id尚未watch")
 		}
 		err = c.Lsp.bilibiliConcern.OperateGroupConcernConfig(groupCode, mid, f)
-		if err != nil {
-			break
-		}
-		userInfo, _ := c.Lsp.bilibiliConcern.GetUserInfo(mid)
-		c.TextReply(fmt.Sprintf("成功 - Bilibili用户 %v", userInfo.GetName()))
 	case douyu.Site:
 		var uid int64
 		uid, err = douyu.ParseUid(id)
 		if err != nil {
 			log.WithField("id", id).Errorf("parse failed")
-			c.TextReply("失败 - douyu id格式错误")
-			return
+			return errors.New("失败 - 该id尚未watch")
 		}
 		err = c.Lsp.douyuConcern.CheckGroupConcern(groupCode, uid, ctype)
 		if err != concern_manager.ErrAlreadyExists {
-			c.TextReply("失败 - 该id尚未watch")
-			return
+			return errors.New("失败 - 该id尚未watch")
 		}
 		err = c.Lsp.douyuConcern.OperateGroupConcernConfig(groupCode, uid, f)
-		if err != nil {
-			break
-		}
-		userInfo, _ := c.Lsp.douyuConcern.FindRoom(uid, false)
-		c.TextReply(fmt.Sprintf("成功 - 斗鱼用户 %v", userInfo.GetNickname()))
 	case youtube.Site:
 		err = c.Lsp.youtubeConcern.CheckGroupConcern(groupCode, id, ctype)
 		if err != concern_manager.ErrAlreadyExists {
-			c.TextReply("失败 - 该id尚未watch")
-			return
+			return errors.New("失败 - 该id尚未watch")
 		}
 		err = c.Lsp.youtubeConcern.OperateGroupConcernConfig(groupCode, id, f)
-		if err != nil {
-			break
-		}
-		userInfo, _ := c.Lsp.youtubeConcern.FindInfo(id, false)
-		c.TextReply(fmt.Sprintf("成功 - YTB用户 %v", userInfo.GetChannelName()))
 	case huya.Site:
 		err = c.Lsp.huyaConcern.CheckGroupConcern(groupCode, id, ctype)
 		if err != concern_manager.ErrAlreadyExists {
-			c.TextReply("失败 - 该id尚未watch")
-			return
+			return errors.New("失败 - 该id尚未watch")
 		}
 		err = c.Lsp.huyaConcern.OperateGroupConcernConfig(groupCode, id, f)
-		if err != nil {
-			break
-		}
-		userInfo, _ := c.Lsp.huyaConcern.FindRoom(id, false)
-		c.TextReply(fmt.Sprintf("成功 - 虎牙用户 %v", userInfo.GetName()))
 	}
 	if err != nil && !localdb.IsRollback(err) {
 		log.Errorf("OperateGroupConcernConfig failed %v", err)
-		c.TextReply("失败 - 内部错误")
-		return
+		err = errors.New("失败 - 内部错误")
+	}
+	return
+}
+
+func ReplyUserInfo(c *MessageContext, site string, id string) {
+	switch site {
+	case bilibili.Site:
+		mid, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			c.Log.Errorf("ReplyUserInfo bilibili got wrong id %v", id)
+			return
+		}
+		userInfo, _ := c.Lsp.bilibiliConcern.GetUserInfo(mid)
+		c.TextReply(fmt.Sprintf("成功 - Bilibili用户 %v", userInfo.GetName()))
+	case douyu.Site:
+		mid, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			c.Log.Errorf("ReplyUserInfo douyu got wrong id %v", id)
+			return
+		}
+		userInfo, _ := c.Lsp.douyuConcern.FindRoom(mid, false)
+		c.TextReply(fmt.Sprintf("成功 - 斗鱼用户 %v", userInfo.GetNickname()))
+	case youtube.Site:
+		userInfo, _ := c.Lsp.youtubeConcern.FindInfo(id, false)
+		c.TextReply(fmt.Sprintf("成功 - YTB用户 %v", userInfo.GetChannelName()))
+	case huya.Site:
+		userInfo, _ := c.Lsp.huyaConcern.FindRoom(id, false)
+		c.TextReply(fmt.Sprintf("成功 - 虎牙用户 %v", userInfo.GetName()))
 	}
 }
 
-func configCmdCommon(c *MessageContext, groupCode int64) bool {
+func configCmdGroupCommonCheck(c *MessageContext, groupCode int64) bool {
 	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ConfigCommand) {
 		c.DisabledReply()
 		return false
@@ -528,6 +589,33 @@ func configCmdCommon(c *MessageContext, groupCode int64) bool {
 		return false
 	}
 	return true
+}
+
+func operateAtConcernConfig(c *MessageContext, ctype concern.Type, action string, QQ []int64) func(concernConfig *concern_manager.GroupConcernConfig) bool {
+	return func(concernConfig *concern_manager.GroupConcernConfig) bool {
+		switch action {
+		case "add":
+			concernConfig.GroupConcernAt.MergeAtSomeoneList(ctype, QQ)
+			return true
+		case "remove":
+			concernConfig.GroupConcernAt.RemoveAtSomeoneList(ctype, QQ)
+			return true
+		case "clear":
+			concernConfig.GroupConcernAt.ClearAtSomeoneList(ctype)
+			return true
+		case "show":
+			qqList := concernConfig.GroupConcernAt.GetAtSomeoneList(ctype)
+			if len(qqList) == 0 {
+				c.TextReply("当前配置为空")
+				return false
+			}
+			c.TextReply(fmt.Sprintf("当前配置：\n%v", utils.JoinInt64(qqList, "\n")))
+			return false
+		default:
+			c.Log.Errorf("unknown action")
+			return false
+		}
+	}
 }
 
 func operateAtAllConcernConfig(c *MessageContext, ctype concern.Type, on bool) func(concernConfig *concern_manager.GroupConcernConfig) bool {

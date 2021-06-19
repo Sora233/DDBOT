@@ -150,7 +150,7 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		At struct {
 			Site   string  `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
 			Id     string  `arg:"" help:"配置的主播id"`
-			Action string  `arg:"" enum:"add,remove,clear" help:"add / remove / clear"`
+			Action string  `arg:"" enum:"add,remove,clear,show" help:"add / remove / clear / show"`
 			QQ     []int64 `arg:"" optional:"" help:"需要@的成员QQ号码"`
 		} `cmd:"" help:"配置推送时的@人员列表" name:"at"`
 		AtAll struct {
@@ -190,6 +190,15 @@ func (c *LspPrivateCommand) ConfigCommand() {
 	log = log.WithFields(localutils.GroupLogFields(groupCode)).WithField("sub_command", cmd)
 
 	switch cmd {
+	case "at":
+		site, ctype, err := c.ParseRawSiteAndType(configCmd.At.Site, "live")
+		if err != nil {
+			log.WithField("site", configCmd.At.Site).Errorf("ParseRawSiteAndType failed %v", err)
+			c.textSend(fmt.Sprintf("失败 - %v", err.Error()))
+			return
+		}
+		log = log.WithField("site", site).WithField("id", configCmd.At.Id).WithField("action", configCmd.At.Action).WithField("QQ", configCmd.At.QQ)
+		IConfigAtCmd(c.NewMessageContext(log), groupCode, configCmd.At.Id, site, ctype, configCmd.At.Action, configCmd.At.QQ)
 	case "at_all":
 		site, ctype, err := c.ParseRawSiteAndType(configCmd.AtAll.Site, "live")
 		if err != nil {
@@ -200,8 +209,6 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		var on = localutils.Switch2Bool(configCmd.AtAll.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.AtAll.Id).WithField("on", on)
 		IConfigAtAllCmd(c.NewMessageContext(log), groupCode, configCmd.AtAll.Id, site, ctype, on)
-		//case "at":
-		//	TODO
 	case "title_notify":
 		site, ctype, err := c.ParseRawSiteAndType(configCmd.TitleNotify.Site, "live")
 		if err != nil {

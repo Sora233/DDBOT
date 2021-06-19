@@ -38,30 +38,51 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 			chainMsg = append(chainMsg, l.NotifyMessage(inotify))
 
 			// atConfig
-			{
-				var atAllBefore = hook.AtAllBeforeHook(inotify)
-				var qqadmin = atAllBefore && checkGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
-				var checkAtAll = qqadmin && cfg.GroupConcernAt.CheckAtAll(inotify.Type())
-				var atAllMark = checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
-				log.WithField("atAllBefore", atAllBefore).
-					WithField("qqadmin", qqadmin).
-					WithField("checkAtAll", checkAtAll).
-					WithField("atMark", atAllMark).
-					Trace("at_all")
-				if atAllBefore && qqadmin && checkAtAll && atAllMark {
-					log = log.WithField("at_all", true)
-					chainMsg = append(chainMsg, newAtAllMsg())
-				} else {
-					ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
-					log.WithField("at_ids", ids).Trace("at someone")
-					if len(ids) != 0 {
-						log = log.WithField("at_ids", ids)
-						chainMsg = append(chainMsg, newAtIdsMsg(ids))
-					}
+			var atAllBefore = hook.AtAllBeforeHook(inotify)
+			var qqadmin = atAllBefore && checkGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
+			var checkAtAll = qqadmin && cfg.GroupConcernAt.CheckAtAll(inotify.Type())
+			var atAllMark = checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
+			log.WithField("atAllBefore", atAllBefore).
+				WithField("qqadmin", qqadmin).
+				WithField("checkAtAll", checkAtAll).
+				WithField("atMark", atAllMark).
+				Trace("at_all")
+			if atAllBefore && qqadmin && checkAtAll && atAllMark {
+				log = log.WithField("at_all", true)
+				chainMsg = append(chainMsg, newAtAllMsg())
+			} else {
+				ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
+				if len(ids) != 0 {
+					log = log.WithField("at_QQ", ids)
+					chainMsg = append(chainMsg, newAtIdsMsg(ids))
 				}
 			}
+
 			log.Info("notify")
-			go l.sendChainGroupMessage(inotify.GetGroupCode(), chainMsg)
+
+			go func() {
+				msgs := l.sendChainGroupMessage(inotify.GetGroupCode(), chainMsg)
+				for _, msg := range msgs {
+					if msg.Id == -1 {
+						// 检查有没有@全体成员
+						e := utils.MessageFilter(msg.Elements, func(element message.IMessageElement) bool {
+							return element.Type() == message.At && element.(*message.AtElement).Target == 0
+						})
+						if len(e) == 0 {
+							continue
+						}
+						// @全体成员失败了，可能是次数到了，尝试@列表
+						ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
+						if len(ids) != 0 {
+							log = log.WithField("at_QQ", ids)
+							log.Errorf("atAll failed, try at someone")
+							l.sendGroupMessage(inotify.GetGroupCode(), newAtIdsMsg(ids))
+						} else {
+							log.Errorf("atAll failed, at someone not config")
+						}
+					}
+				}
+			}()
 		}
 	}
 }

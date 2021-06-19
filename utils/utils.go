@@ -237,3 +237,11 @@ func CompareId(number json.Number, _id interface{}) bool {
 func Switch2Bool(_s string) bool {
 	return _s == "on"
 }
+
+func JoinInt64(ele []int64, sep string) string {
+	var s []string
+	for _, e := range ele {
+		s = append(s, strconv.FormatInt(e, 10))
+	}
+	return strings.Join(s, sep)
+}
