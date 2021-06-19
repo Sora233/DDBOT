@@ -199,7 +199,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 				defer c.Lsp.bilibiliConcern.GroupWatchNotify(groupCode, mid, watchType)
 			}
 			if c.IsFromPrivate() {
-				defer c.TextReply("检测到该用户正在直播，但由于您目前是从私聊操作，因此不会在群内推送本次直播，将在该用户下次直播时推送")
+				defer c.TextReply("检测到该用户正在直播，但由于您目前处于私聊模式，因此不会在群内推送本次直播，将在该用户下次直播时推送")
 			}
 		}
 		log = log.WithField("name", userInfo.Name)

@@ -144,16 +144,17 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 		return concern.Empty, err
 	}
 
-	{
-		// inner err is not outer err
-		state, err := c.GetConcern(mid)
-		if err != nil {
-			logger.WithField("mid", mid).Errorf("GetConcern error %v", err)
-		} else if state.Empty() {
-			logger.WithField("mid", mid).Debug("empty state, unsub")
-			c.ModifyUserRelation(mid, ActUnsub)
-		}
-	}
+	// 如果取消关注了，可能导致它的状态一直保持在直播无法更新，那下次关注的时候，第一次就会错误推送
+	//{
+	//	// inner err is not outer err
+	//	state, err := c.GetConcern(mid)
+	//	if err != nil {
+	//		logger.WithField("mid", mid).Errorf("GetConcern error %v", err)
+	//	} else if state.Empty() {
+	//		logger.WithField("mid", mid).Debug("empty state, unsub")
+	//		c.ModifyUserRelation(mid, ActUnsub)
+	//	}
+	//}
 	return newCtype, err
 }
 
@@ -294,8 +295,8 @@ func (c *Concern) watchCore() {
 
 			for _, id := range ids {
 				mid := id.(int64)
-				oldInfo, err := c.GetLiveInfo(mid)
-				if err == buntdb.ErrNotFound || oldInfo == nil {
+				oldInfo, _ := c.GetLiveInfo(mid)
+				if oldInfo == nil {
 					// first live info
 					if newInfo, found := liveInfoMap[mid]; found {
 						newInfo.LiveStatusChanged = true

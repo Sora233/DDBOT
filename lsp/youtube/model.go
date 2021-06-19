@@ -40,6 +40,8 @@ type VideoInfo struct {
 	VideoType      VideoType   `json:"video_type"`
 	VideoStatus    VideoStatus `json:"video_status"`
 	VideoTimestamp int64       `json:"video_timestamp"`
+
+	LiveStatusChanged bool `json:"-"`
 }
 
 func (v *VideoInfo) Type() EventType {

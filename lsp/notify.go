@@ -30,28 +30,29 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 			cfg := l.getConcernConfig(inotify.GetGroupCode(), inotify.GetUid(), inotify.Type())
 			hook := l.getConcernConfigHook(inotify.Type(), cfg)
 
-			if !hook.ShouldSendHook(inotify) {
-				log.Debug("notify filtered by hook ShouldSendHook")
+			sendHookResult := hook.ShouldSendHook(inotify)
+			if !sendHookResult.Pass {
+				log.WithField("Reason", sendHookResult.Reason).Debug("notify filtered by hook ShouldSendHook")
 				continue
 			}
 
 			chainMsg = append(chainMsg, l.NotifyMessage(inotify))
 
 			// atConfig
-			var atBefore = hook.AtBeforeHook(inotify)
-			if !atBefore {
-				log.Trace("skip at by hook AtBeforeHook")
+			var atBeforeHook = hook.AtBeforeHook(inotify)
+			if !atBeforeHook.Pass {
+				log.WithField("Reason", atBeforeHook.Reason).Debug("skip @at by hook AtBeforeHook")
 			} else {
 				// 有@全体成员 或者 @Someone
-				var qqadmin = atBefore && checkGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
+				var qqadmin = atBeforeHook.Pass && checkGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
 				var checkAtAll = qqadmin && cfg.GroupConcernAt.CheckAtAll(inotify.Type())
 				var atAllMark = checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
-				log.WithField("atBefore", atBefore).
+				log.WithField("atBeforeHook", atBeforeHook).
 					WithField("qqadmin", qqadmin).
 					WithField("checkAtAll", checkAtAll).
 					WithField("atMark", atAllMark).
 					Trace("at_all")
-				if atBefore && qqadmin && checkAtAll && atAllMark {
+				if atBeforeHook.Pass && qqadmin && checkAtAll && atAllMark {
 					log = log.WithField("at_all", true)
 					chainMsg = append(chainMsg, newAtAllMsg())
 				} else {
@@ -67,7 +68,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 
 			go func() {
 				msgs := l.sendChainGroupMessage(inotify.GetGroupCode(), chainMsg)
-				if atBefore {
+				if atBeforeHook.Pass {
 					for _, msg := range msgs {
 						if msg.Id == -1 {
 							// 检查有没有@全体成员

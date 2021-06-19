@@ -171,6 +171,7 @@ func (c *Concern) freshInfo(channelId string) {
 							log.Debugf("live time change notify")
 						} else if newV.IsLiving() && oldV.IsWaiting() {
 							// live begin
+							newV.LiveStatusChanged = true
 							c.eventChan <- newV
 							log.Debugf("live begin notify")
 						}

@@ -9,35 +9,47 @@ type GroupConcernConfig struct {
 	concern_manager.GroupConcernConfig
 }
 
-func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) bool {
+func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern_manager.HookResult) {
+	hook = new(concern_manager.HookResult)
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
-		return e.Living() && notify.(*ConcernLiveNotify).LiveStatusChanged
+		if !e.Living() {
+			hook.Reason = "Living() is false"
+		} else if !notify.(*ConcernLiveNotify).LiveStatusChanged {
+			hook.Reason = "Living() ok but LiveStatusChanged is false"
+		} else {
+			hook.Pass = true
+		}
 	default:
-		return false
+		hook.Reason = "default"
 	}
+	return
 }
 
-func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) bool {
+func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concern_manager.HookResult) {
+	hook = new(concern_manager.HookResult)
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
-		if e.LiveStatusChanged {
-			if !e.Living() {
+		if e.Living() {
+			if e.LiveStatusChanged {
+				// 上播了
+				hook.Pass = true
+				return
+			}
+			if e.LiveTitleChanged {
+				// 直播间标题改了，检查改标题推送配置
+				hook.PassOrReason(g.GroupConcernNotify.CheckTitleChangeNotify(notify.Type()), "CheckTitleChangeNotify is false")
+				return
+			}
+		} else {
+			if e.LiveStatusChanged {
 				// 下播了，检查下播推送配置
-				return g.GroupConcernNotify.CheckOfflineNotify(notify.Type())
-			} else {
-				// 上播了，推
-				return true
+				hook.PassOrReason(g.GroupConcernNotify.CheckOfflineNotify(notify.Type()), "CheckOfflineNotify is false")
+				return
 			}
 		}
-		if e.LiveTitleChanged {
-			// 直播间标题改了，检查改标题推送配置
-			return g.GroupConcernNotify.CheckTitleChangeNotify(notify.Type())
-		}
-		return g.GroupConcernConfig.ShouldSendHook(notify)
-	default:
-		return false
 	}
+	return g.GroupConcernConfig.ShouldSendHook(notify)
 }
 
 func NewGroupConcernConfig(g *concern_manager.GroupConcernConfig) *GroupConcernConfig {

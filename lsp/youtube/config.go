@@ -9,24 +9,33 @@ type GroupConcernConfig struct {
 	concern_manager.GroupConcernConfig
 }
 
-func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) bool {
+func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern_manager.HookResult) {
+	hook = new(concern_manager.HookResult)
 	switch notify.Type() {
 	case concern.YoutubeLive:
-		return notify.(*ConcernNotify).IsLiving()
+		e := notify.(*ConcernNotify)
+		if !e.IsLiving() {
+			hook.Reason = "IsLiving() is false"
+			return
+		} else {
+			hook.PassOrReason(e.LiveStatusChanged, "LiveStatusChanged is false")
+			return
+		}
 	case concern.YoutubeVideo:
-		return true
-	default:
-		return false
+		hook.Pass = true
+		return
 	}
+	return g.GroupConcernConfig.AtBeforeHook(notify)
 }
 
-func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) bool {
+func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concern_manager.HookResult) {
+	hook = new(concern_manager.HookResult)
 	switch notify.(type) {
 	case *ConcernNotify:
-		return true
-	default:
-		return false
+		hook.Pass = true
+		return
 	}
+	return g.GroupConcernConfig.ShouldSendHook(notify)
 }
 
 func NewGroupConcernConfig(g *concern_manager.GroupConcernConfig) *GroupConcernConfig {

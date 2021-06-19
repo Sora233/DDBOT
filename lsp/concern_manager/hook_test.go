@@ -7,6 +7,8 @@ import (
 
 func TestHook(t *testing.T) {
 	var d defaultHook
-	assert.False(t, d.ShouldSendHook(nil))
-	assert.False(t, d.AtBeforeHook(nil))
+	r1 := d.ShouldSendHook(nil)
+	assert.False(t, r1.Pass)
+	r2 := d.AtBeforeHook(nil)
+	assert.False(t, r2.Pass)
 }

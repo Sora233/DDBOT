@@ -102,6 +102,10 @@ func (c *Concern) Start() {
 			if err != nil {
 				return fmt.Errorf("load liveinfo failed %v", err)
 			}
+			// first load
+			if oldInfo == nil {
+				liveInfo.LiveStatusChanged = true
+			}
 			if oldInfo != nil && oldInfo.Living != liveInfo.Living {
 				liveInfo.LiveStatusChanged = true
 			}
