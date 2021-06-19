@@ -56,13 +56,13 @@ func TestStateManager_GroupConcernConfig(t *testing.T) {
 
 	sm := newStateManager(t)
 
-	c := sm.GetGroupConcernConfig(test.G1, test.UID)
+	c := sm.GetGroupConcernConfig(test.G1, test.UID1)
 	assert.NotNil(t, c)
 
 	assert.Nil(t, c.GroupConcernAt.AtSomeone)
 	assert.EqualValues(t, c, new(GroupConcernConfig))
 
-	err := sm.OperateGroupConcernConfig(test.G1, test.UID, func(concernConfig *GroupConcernConfig) bool {
+	err := sm.OperateGroupConcernConfig(test.G1, test.UID1, func(concernConfig *GroupConcernConfig) bool {
 		concernConfig.GroupConcernNotify.TitleChangeNotify = concern.BibiliLive
 		concernConfig.GroupConcernAt.AtSomeone = []*AtSomeone{
 			{
@@ -75,7 +75,7 @@ func TestStateManager_GroupConcernConfig(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	c = sm.GetGroupConcernConfig(test.G1, test.UID)
+	c = sm.GetGroupConcernConfig(test.G1, test.UID1)
 	assert.NotNil(t, c)
 	assert.EqualValues(t, c.GroupConcernNotify.TitleChangeNotify, concern.BibiliLive)
 	assert.EqualValues(t, c.GroupConcernAt.AtAll, concern.YoutubeLive)
@@ -86,13 +86,13 @@ func TestStateManager_GroupConcernConfig(t *testing.T) {
 		},
 	})
 
-	err = sm.OperateGroupConcernConfig(test.G1, test.UID, func(concernConfig *GroupConcernConfig) bool {
+	err = sm.OperateGroupConcernConfig(test.G1, test.UID1, func(concernConfig *GroupConcernConfig) bool {
 		concernConfig.GroupConcernNotify.TitleChangeNotify = 0
 		return false
 	})
 	assert.EqualValues(t, localdb.ErrRollback, err)
 
-	c = sm.GetGroupConcernConfig(test.G1, test.UID)
+	c = sm.GetGroupConcernConfig(test.G1, test.UID1)
 	assert.NotNil(t, c)
 	assert.EqualValues(t, c.GroupConcernNotify.TitleChangeNotify, concern.BibiliLive)
 }
@@ -103,8 +103,8 @@ func TestStateManager_CheckAndSetAtAllMark(t *testing.T) {
 
 	sm := newStateManager(t)
 
-	assert.True(t, sm.CheckAndSetAtAllMark(test.G1, test.UID))
-	assert.False(t, sm.CheckAndSetAtAllMark(test.G1, test.UID))
+	assert.True(t, sm.CheckAndSetAtAllMark(test.G1, test.UID1))
+	assert.False(t, sm.CheckAndSetAtAllMark(test.G1, test.UID1))
 }
 
 func TestStateManager_FreshCheck(t *testing.T) {
@@ -113,13 +113,13 @@ func TestStateManager_FreshCheck(t *testing.T) {
 
 	sm := newStateManager(t)
 
-	result, err := sm.FreshCheck(test.UID, false)
+	result, err := sm.FreshCheck(test.UID1, false)
 	assert.True(t, result)
 	assert.Nil(t, err)
-	result, err = sm.FreshCheck(test.UID, true)
+	result, err = sm.FreshCheck(test.UID1, true)
 	assert.True(t, result)
 	assert.Nil(t, err)
-	result, err = sm.FreshCheck(test.UID, true)
+	result, err = sm.FreshCheck(test.UID1, true)
 	assert.False(t, result)
 	assert.Nil(t, err)
 
@@ -131,11 +131,11 @@ func TestStateManager_GroupConcern(t *testing.T) {
 
 	sm := newStateManager(t)
 
-	assert.Nil(t, sm.CheckGroupConcern(test.G1, test.UID, concern.BibiliLive))
+	assert.Nil(t, sm.CheckGroupConcern(test.G1, test.UID1, concern.BibiliLive))
 
-	_, err := sm.AddGroupConcern(test.G1, test.UID, concern.BibiliLive|concern.YoutubeLive)
+	_, err := sm.AddGroupConcern(test.G1, test.UID1, concern.BibiliLive|concern.YoutubeLive)
 	assert.Nil(t, err)
-	_, err = sm.AddGroupConcern(test.G2, test.UID, concern.HuyaLive)
+	_, err = sm.AddGroupConcern(test.G2, test.UID1, concern.HuyaLive)
 	assert.Nil(t, err)
 
 	_, err = sm.AddGroupConcern(test.G1, test.UID2, concern.DouyuLive)
@@ -143,19 +143,19 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	_, err = sm.AddGroupConcern(test.G2, test.UID2, concern.DouyuLive)
 	assert.Nil(t, err)
 
-	// G1 UID: blive|ylive , UID2: dlive
-	// G2 UID: hlive       , UID2  dlive
+	// G1 UID1: blive|ylive , UID2: dlive
+	// G2 UID1: hlive       , UID2  dlive
 
 	// 检查UID在G1中有 blive和ylive
-	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G1, test.UID, concern.BibiliLive))
-	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G1, test.UID, concern.YoutubeLive))
+	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G1, test.UID1, concern.BibiliLive))
+	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G1, test.UID1, concern.YoutubeLive))
 
 	// 检查UID在G1没有 hlive和dlive
-	assert.EqualValues(t, nil, sm.CheckGroupConcern(test.G1, test.UID, concern.DouyuLive))
-	assert.EqualValues(t, nil, sm.CheckGroupConcern(test.G1, test.UID, concern.HuyaLive))
+	assert.EqualValues(t, nil, sm.CheckGroupConcern(test.G1, test.UID1, concern.DouyuLive))
+	assert.EqualValues(t, nil, sm.CheckGroupConcern(test.G1, test.UID1, concern.HuyaLive))
 
 	// 检查UID在G2中有hlive
-	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G2, test.UID, concern.HuyaLive))
+	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G2, test.UID1, concern.HuyaLive))
 
 	// 检查UID2 在G1和G2中有dlive
 	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G1, test.UID2, concern.DouyuLive))
@@ -166,25 +166,25 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.EqualValues(t, nil, sm.CheckGroupConcern(test.G1, test.UID2, concern.YoutubeLive))
 
 	// 添加已有的状态不会报错
-	_, err = sm.AddGroupConcern(test.G1, test.UID, concern.BibiliLive)
+	_, err = sm.AddGroupConcern(test.G1, test.UID1, concern.BibiliLive)
 	assert.Nil(t, err)
 
 	// 检查UID在所有G中有blive和ylive和hlive
-	assert.EqualValues(t, ErrAlreadyExists, sm.CheckConcern(test.UID, concern.BibiliLive|concern.YoutubeLive|concern.HuyaLive))
+	assert.EqualValues(t, ErrAlreadyExists, sm.CheckConcern(test.UID1, concern.BibiliLive|concern.YoutubeLive|concern.HuyaLive))
 	// 检查UID在所有G中有没有dlive
-	assert.Nil(t, sm.CheckConcern(test.UID, concern.DouyuLive))
+	assert.Nil(t, sm.CheckConcern(test.UID1, concern.DouyuLive))
 
 	// 删除UID在G1中的ylive
-	_, err = sm.RemoveGroupConcern(test.G1, test.UID, concern.YoutubeLive)
+	_, err = sm.RemoveGroupConcern(test.G1, test.UID1, concern.YoutubeLive)
 	assert.Nil(t, err)
 	// 检查UID在所有G中没有ylive
-	assert.Nil(t, sm.CheckConcern(test.UID, concern.YoutubeLive))
+	assert.Nil(t, sm.CheckConcern(test.UID1, concern.YoutubeLive))
 	// 检查UID在所有G中有blive和hlive
-	assert.EqualValues(t, ErrAlreadyExists, sm.CheckConcern(test.UID, concern.BibiliLive|concern.HuyaLive))
+	assert.EqualValues(t, ErrAlreadyExists, sm.CheckConcern(test.UID1, concern.BibiliLive|concern.HuyaLive))
 	// 检查UID在G1中有blive
-	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G1, test.UID, concern.BibiliLive))
+	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G1, test.UID1, concern.BibiliLive))
 	// 检查UID在G2中有hlive
-	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G2, test.UID, concern.HuyaLive))
+	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G2, test.UID1, concern.HuyaLive))
 
 	// 列出所有有hlive的记录，应该只有UID G2
 	groups, ids, ctypes, err := sm.List(func(groupCode int64, id interface{}, p concern.Type) bool {
@@ -195,14 +195,14 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.Equal(t, 1, len(ids))
 	assert.Equal(t, 1, len(ctypes))
 	assert.Equal(t, test.G2, groups[0])
-	assert.Equal(t, test.UID, ids[0])
+	assert.Equal(t, test.UID1, ids[0])
 	assert.Equal(t, concern.HuyaLive, ctypes[0])
 
 	ctype, err := sm.GetGroupConcern(test.G2, test.UID2)
 	assert.Nil(t, err)
 	assert.EqualValues(t, concern.DouyuLive, ctype)
 
-	// G1中有 UID:blive UID2:dlive
+	// G1中有 UID1:blive UID2:dlive
 	ids, ctypes, err = sm.ListByGroup(test.G1, func(id interface{}, p concern.Type) bool {
 		return true
 	})
@@ -210,14 +210,14 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.EqualValues(t, 2, len(ids))
 	assert.EqualValues(t, len(ids), len(ctypes))
 	for index := range ids {
-		if ids[index] == test.UID {
+		if ids[index] == test.UID1 {
 			assert.EqualValues(t, concern.BibiliLive, ctypes[index])
 		} else {
 			assert.EqualValues(t, concern.DouyuLive, ctypes[index])
 		}
 	}
 
-	_, _, err = sm.GroupTypeById([]interface{}{test.UID}, nil)
+	_, _, err = sm.GroupTypeById([]interface{}{test.UID1}, nil)
 	assert.EqualValues(t, ErrLengthMismatch, err)
 
 	ids, ctypes, err = sm.GroupTypeById(ids, ctypes)
@@ -226,12 +226,12 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	ids, err = sm.ListIds()
 	assert.Nil(t, err)
 	assert.EqualValues(t, 2, len(ids))
-	assert.Contains(t, ids, test.UID)
+	assert.Contains(t, ids, test.UID1)
 	assert.Contains(t, ids, test.UID2)
 
-	err = sm.RemoveAllById(test.UID)
+	err = sm.RemoveAllById(test.UID1)
 	assert.Nil(t, err)
-	ctype, err = sm.GetConcern(test.UID)
+	ctype, err = sm.GetConcern(test.UID1)
 	assert.Nil(t, err)
 	assert.EqualValues(t, 0, ctype)
 

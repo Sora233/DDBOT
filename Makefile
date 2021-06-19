@@ -14,7 +14,7 @@ build: $(TARGET)
 test: $(COV)
 
 coverage: $(COV)
-	go tool cover -func=$(COV)
+	go tool cover -func=$(COV) | grep -v 'pb.go'
 
 report: $(COV)
 	go tool cover -html=$(COV)

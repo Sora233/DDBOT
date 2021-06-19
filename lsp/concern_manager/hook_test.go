@@ -11,4 +11,14 @@ func TestHook(t *testing.T) {
 	assert.False(t, r1.Pass)
 	r2 := d.AtBeforeHook(nil)
 	assert.False(t, r2.Pass)
+
+	var hook = new(HookResult)
+	hook.PassOrReason(true, "111")
+	assert.True(t, hook.Pass)
+
+	hook = new(HookResult)
+	hook.PassOrReason(false, "222")
+	assert.False(t, hook.Pass)
+	assert.Equal(t, "222", hook.Reason)
+
 }

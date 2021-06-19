@@ -26,24 +26,29 @@ func newLiveInfo(uid int64, living bool, liveStatusChanged bool, liveTitleChange
 	return notify
 }
 
+func TestNewGroupConcernConfig(t *testing.T) {
+	g := NewGroupConcernConfig(new(concern_manager.GroupConcernConfig))
+	assert.NotNil(t, g)
+}
+
 func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 	var liveInfos = []*ConcernLiveNotify{
 		// 下播状态 什么也没变 不推
-		newLiveInfo(test.UID, false, false, false),
+		newLiveInfo(test.UID1, false, false, false),
 		// 下播状态 标题变了 不推
-		newLiveInfo(test.UID, false, false, true),
+		newLiveInfo(test.UID1, false, false, true),
 		// 下播了 检查配置
-		newLiveInfo(test.UID, false, true, false),
+		newLiveInfo(test.UID1, false, true, false),
 		// 下播了 检查配置
-		newLiveInfo(test.UID, false, true, true),
+		newLiveInfo(test.UID1, false, true, true),
 		// 直播状态 什么也没变 不推
-		newLiveInfo(test.UID, true, false, false),
+		newLiveInfo(test.UID1, true, false, false),
 		// 直播状态 改了标题 检查配置
-		newLiveInfo(test.UID, true, false, true),
+		newLiveInfo(test.UID1, true, false, true),
 		// 开播了 推
-		newLiveInfo(test.UID, true, true, false),
+		newLiveInfo(test.UID1, true, true, false),
 		// 开播了改了标题 推
-		newLiveInfo(test.UID, true, true, true),
+		newLiveInfo(test.UID1, true, true, true),
 	}
 	var testCase = []*GroupConcernConfig{
 		{},
@@ -102,21 +107,21 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 	var liveInfos = []*ConcernLiveNotify{
 		// 下播状态 什么也没变 不推
-		newLiveInfo(test.UID, false, false, false),
+		newLiveInfo(test.UID1, false, false, false),
 		// 下播状态 标题变了 不推
-		newLiveInfo(test.UID, false, false, true),
+		newLiveInfo(test.UID1, false, false, true),
 		// 下播了 检查配置
-		newLiveInfo(test.UID, false, true, false),
+		newLiveInfo(test.UID1, false, true, false),
 		// 下播了 检查配置
-		newLiveInfo(test.UID, false, true, true),
+		newLiveInfo(test.UID1, false, true, true),
 		// 直播状态 什么也没变 不推
-		newLiveInfo(test.UID, true, false, false),
+		newLiveInfo(test.UID1, true, false, false),
 		// 直播状态 改了标题 检查配置
-		newLiveInfo(test.UID, true, false, true),
+		newLiveInfo(test.UID1, true, false, true),
 		// 开播了 推
-		newLiveInfo(test.UID, true, true, false),
+		newLiveInfo(test.UID1, true, true, false),
 		// 开播了改了标题 推
-		newLiveInfo(test.UID, true, true, true),
+		newLiveInfo(test.UID1, true, true, true),
 	}
 	var g = new(GroupConcernConfig)
 	var expected = []bool{
