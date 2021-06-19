@@ -110,3 +110,87 @@ func TestGroupConcernNotifyConfig_CheckTitleChangeNotify(t *testing.T) {
 	assert.True(t, g.CheckTitleChangeNotify(concern.DouyuLive))
 	assert.False(t, g.CheckTitleChangeNotify(concern.HuyaLive))
 }
+
+func TestGroupConcernAtConfig_ClearAtSomeoneList(t *testing.T) {
+	var g = &GroupConcernAtConfig{
+		AtAll: 0,
+		AtSomeone: []*AtSomeone{
+			{
+				Ctype:  concern.BibiliLive,
+				AtList: []int64{1, 2, 3, 4},
+			},
+		},
+	}
+	g.ClearAtSomeoneList(concern.DouyuLive)
+	for i := 1; i <= 4; i++ {
+		assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
+	}
+	g.ClearAtSomeoneList(concern.BibiliLive)
+	assert.Equal(t, 0, len(g.GetAtSomeoneList(concern.BibiliLive)))
+}
+
+func TestGroupConcernAtConfig_RemoveAtSomeoneList(t *testing.T) {
+	var g = &GroupConcernAtConfig{
+		AtAll: 0,
+		AtSomeone: []*AtSomeone{
+			{
+				Ctype:  concern.BibiliLive,
+				AtList: []int64{1, 2, 3, 4},
+			},
+		},
+	}
+	g.RemoveAtSomeoneList(concern.DouyuLive, []int64{1, 2, 3, 4})
+	assert.EqualValues(t, []int64{1, 2, 3, 4}, g.GetAtSomeoneList(concern.BibiliLive))
+	g.RemoveAtSomeoneList(concern.BibiliLive, []int64{3})
+	for i := 1; i <= 4; i++ {
+		if i != 3 {
+			assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
+		}
+	}
+	assert.NotContains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(3))
+}
+
+func TestGroupConcernAtConfig_MergeAtSomeoneList(t *testing.T) {
+	var g = &GroupConcernAtConfig{
+		AtAll: 0,
+		AtSomeone: []*AtSomeone{
+			{
+				Ctype:  concern.BibiliLive,
+				AtList: []int64{1, 2, 3, 4},
+			},
+		},
+	}
+	g.MergeAtSomeoneList(concern.BibiliLive, []int64{3, 4, 5})
+	assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(5))
+	assert.EqualValues(t, 0, len(g.GetAtSomeoneList(concern.DouyuLive)))
+}
+
+func TestGroupConcernAtConfig_SetAtSomeoneList(t *testing.T) {
+	var g = &GroupConcernAtConfig{
+		AtAll: 0,
+		AtSomeone: []*AtSomeone{
+			{
+				Ctype:  concern.BibiliLive,
+				AtList: []int64{1, 2, 3, 4},
+			},
+		},
+	}
+	g.SetAtSomeoneList(concern.BibiliLive, []int64{5, 6})
+	for i := 1; i <= 6; i++ {
+		if i <= 4 {
+			assert.NotContains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
+		} else {
+			assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
+		}
+	}
+}
+
+func TestGroupConcernNotifyConfig_CheckOfflineNotify(t *testing.T) {
+	var g = &GroupConcernNotifyConfig{
+		OfflineNotify: concern.BibiliLive | concern.DouyuLive,
+	}
+	assert.True(t, g.CheckOfflineNotify(concern.BibiliLive))
+	assert.True(t, g.CheckOfflineNotify(concern.DouyuLive))
+	assert.False(t, g.CheckOfflineNotify(concern.HuyaLive))
+
+}
