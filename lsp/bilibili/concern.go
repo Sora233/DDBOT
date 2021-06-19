@@ -298,6 +298,7 @@ func (c *Concern) watchCore() {
 				if err == buntdb.ErrNotFound || oldInfo == nil {
 					// first live info
 					if newInfo, found := liveInfoMap[mid]; found {
+						newInfo.LiveStatusChanged = true
 						c.eventChan <- newInfo
 						c.AddLiveInfo(newInfo)
 					}
