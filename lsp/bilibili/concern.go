@@ -593,11 +593,14 @@ func (c *Concern) FindUserNews(mid int64, load bool) (*NewsInfo, error) {
 func (c *Concern) GroupWatchNotify(groupCode, mid int64, ctype concern.Type) {
 	if ctype.ContainAny(concern.BibiliLive) {
 		liveInfo, _ := c.GetLiveInfo(mid)
-		if liveInfo != nil {
+		if liveInfo == nil {
+			return
+		}
+		if liveInfo.Living() {
+			liveInfo.LiveStatusChanged = true
 			c.notify <- NewConcernLiveNotify(groupCode, liveInfo)
 		}
 	}
-
 }
 
 func (c *Concern) ClearUserNews(mid int64) error {

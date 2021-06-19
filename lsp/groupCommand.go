@@ -1023,6 +1023,7 @@ func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {
 
 func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
 	ctx := NewMessageContext()
+	ctx.Source = SourceTypeGroup
 	ctx.Lsp = lgc.l
 	ctx.Log = log
 	ctx.TextReply = func(text string) interface{} {

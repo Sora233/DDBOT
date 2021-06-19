@@ -188,6 +188,13 @@ type LiveInfo struct {
 	LiveTitleChanged  bool `json:"-"`
 }
 
+func (l *LiveInfo) Living() bool {
+	if l == nil {
+		return false
+	}
+	return l.Status == LiveStatus_Living
+}
+
 func (l *LiveInfo) Type() EventType {
 	return Live
 }

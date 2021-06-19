@@ -12,7 +12,7 @@ type GroupConcernConfig struct {
 func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) bool {
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
-		return e.Status == LiveStatus_Living && notify.(*ConcernLiveNotify).LiveStatusChanged
+		return e.Living() && notify.(*ConcernLiveNotify).LiveStatusChanged
 	case *ConcernNewsNotify:
 		return true
 	default:
@@ -24,7 +24,7 @@ func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) bool {
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
 		if e.LiveStatusChanged {
-			if e.Status != LiveStatus_Living {
+			if !e.Living() {
 				// 下播了，检查下播推送配置
 				return g.GroupConcernNotify.CheckOfflineNotify(notify.Type())
 			} else {

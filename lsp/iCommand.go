@@ -21,6 +21,13 @@ import (
 
 var errNilParam = errors.New("内部参数错误")
 
+type SourceType int
+
+const (
+	SourceTypeGroup SourceType = iota
+	SourceTypePrivate
+)
+
 type MessageContext struct {
 	TextReply         func(text string) interface{}
 	Reply             func(sendingMessage *message.SendingMessage) interface{}
@@ -30,6 +37,15 @@ type MessageContext struct {
 	Lsp               *Lsp
 	Log               *logrus.Entry
 	Sender            *message.Sender
+	Source            SourceType
+}
+
+func (c *MessageContext) IsFromPrivate() bool {
+	return c.Source == SourceTypePrivate
+}
+
+func (c *MessageContext) IsFromGroup() bool {
+	return c.Source == SourceTypeGroup
 }
 
 func NewMessageContext() *MessageContext {
@@ -177,7 +193,15 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			return
 		}
 		// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
-		//defer c.Lsp.bilibiliConcern.GroupWatchNotify(groupCode, mid, watchType)
+		liveInfo, _ := c.Lsp.bilibiliConcern.GetLiveInfo(mid)
+		if liveInfo != nil && liveInfo.Living() {
+			if c.IsFromGroup() {
+				defer c.Lsp.bilibiliConcern.GroupWatchNotify(groupCode, mid, watchType)
+			}
+			if c.IsFromPrivate() {
+				defer c.TextReply("检测到该用户正在直播，但由于您目前是从私聊操作，因此不会在群内推送本次直播，将在该用户下次直播时推送")
+			}
+		}
 		log = log.WithField("name", userInfo.Name)
 		log.Debugf("watch success")
 		c.TextReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", userInfo.Name))

@@ -661,6 +661,7 @@ func (c *LspPrivateCommand) name() string {
 
 func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
 	ctx := NewMessageContext()
+	ctx.Source = SourceTypePrivate
 	ctx.Lsp = c.l
 	ctx.Log = log
 	ctx.TextReply = func(text string) interface{} {
