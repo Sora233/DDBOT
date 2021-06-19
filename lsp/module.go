@@ -310,10 +310,9 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if Debug {
 			cmd.Debug()
 		}
-		if l.LspStateManager.IsMuted(msg.GroupCode, bot.Uin) {
-			logger.Debug("muted, skip")
+		if !l.LspStateManager.IsMuted(msg.GroupCode, bot.Uin) {
+			go cmd.Execute()
 		}
-		go cmd.Execute()
 	})
 
 	bot.OnSelfGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {
