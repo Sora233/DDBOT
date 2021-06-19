@@ -9,7 +9,7 @@ type GroupConcernConfig struct {
 	concern_manager.GroupConcernConfig
 }
 
-func (g *GroupConcernConfig) AtAllBeforeHook(notify concern.Notify) bool {
+func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) bool {
 	switch notify.Type() {
 	case concern.YoutubeLive:
 		return notify.(*ConcernNotify).IsLiving()

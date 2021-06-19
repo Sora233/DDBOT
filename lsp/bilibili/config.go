@@ -9,7 +9,7 @@ type GroupConcernConfig struct {
 	concern_manager.GroupConcernConfig
 }
 
-func (g *GroupConcernConfig) AtAllBeforeHook(notify concern.Notify) bool {
+func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) bool {
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
 		return e.Status == LiveStatus_Living && notify.(*ConcernLiveNotify).LiveStatusChanged
