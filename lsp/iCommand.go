@@ -15,6 +15,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
+	"github.com/tidwall/buntdb"
 	"strconv"
 	"time"
 )
@@ -173,7 +174,12 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			// unwatch
 			userInfo, _ := c.Lsp.bilibiliConcern.FindUser(mid, false)
 			if _, err := c.Lsp.bilibiliConcern.Remove(groupCode, mid, watchType); err != nil {
-				c.TextReply(fmt.Sprintf("unwatch失败 - %v", err))
+				if err == buntdb.ErrNotFound {
+					c.TextReply(fmt.Sprintf("unwatch失败 - 未找到该用户"))
+				} else {
+					log.Errorf("concern remove failed %v", err)
+					c.TextReply(fmt.Sprintf("unwatch失败 - 内部错误"))
+				}
 			} else {
 				if userInfo == nil {
 					c.TextReply("unwatch成功")
@@ -217,7 +223,12 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			// unwatch
 			info, _ := c.Lsp.douyuConcern.FindRoom(mid, false)
 			if _, err := c.Lsp.douyuConcern.RemoveGroupConcern(groupCode, mid, watchType); err != nil {
-				c.TextReply(fmt.Sprintf("unwatch失败 - %v", err))
+				if err == buntdb.ErrNotFound {
+					c.TextReply(fmt.Sprintf("unwatch失败 - 未找到该用户"))
+				} else {
+					log.Errorf("concern remove failed %v", err)
+					c.TextReply(fmt.Sprintf("unwatch失败 - 内部错误"))
+				}
 			} else {
 				if info == nil {
 					c.TextReply("unwatch成功")
@@ -245,7 +256,12 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			// unwatch
 			info, _ := c.Lsp.youtubeConcern.FindInfo(id, false)
 			if _, err := c.Lsp.youtubeConcern.RemoveGroupConcern(groupCode, id, watchType); err != nil {
-				c.TextReply(fmt.Sprintf("unwatch失败 - %v", err))
+				if err == buntdb.ErrNotFound {
+					c.TextReply(fmt.Sprintf("unwatch失败 - 未找到该用户"))
+				} else {
+					log.Errorf("concern remove failed %v", err)
+					c.TextReply(fmt.Sprintf("unwatch失败 - 内部错误"))
+				}
 			} else {
 				if info == nil {
 					c.TextReply("unwatch成功")
@@ -276,7 +292,12 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			// unwatch
 			info, _ := c.Lsp.huyaConcern.FindRoom(id, false)
 			if _, err := c.Lsp.huyaConcern.RemoveGroupConcern(groupCode, id, watchType); err != nil {
-				c.TextReply(fmt.Sprintf("unwatch失败 - %v", err))
+				if err == buntdb.ErrNotFound {
+					c.TextReply(fmt.Sprintf("unwatch失败 - 未找到该用户"))
+				} else {
+					log.Errorf("concern remove failed %v", err)
+					c.TextReply(fmt.Sprintf("unwatch失败 - 内部错误"))
+				}
 			} else {
 				if info == nil {
 					c.TextReply("unwatch成功")
