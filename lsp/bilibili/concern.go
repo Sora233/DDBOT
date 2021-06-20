@@ -144,17 +144,20 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 		return concern.Empty, err
 	}
 
-	// 如果取消关注了，可能导致它的状态一直保持在直播无法更新，那下次关注的时候，第一次就会错误推送
-	//{
-	//	// inner err is not outer err
-	//	state, err := c.GetConcern(mid)
-	//	if err != nil {
-	//		logger.WithField("mid", mid).Errorf("GetConcern error %v", err)
-	//	} else if state.Empty() {
-	//		logger.WithField("mid", mid).Debug("empty state, unsub")
-	//		c.ModifyUserRelation(mid, ActUnsub)
-	//	}
-	//}
+	{
+		// inner err is not outer err
+		var err error
+		state, err := c.GetConcern(mid)
+		if err != nil {
+			logger.WithField("mid", mid).Errorf("GetConcern error %v", err)
+		} else if state.Empty() {
+			logger.WithField("mid", mid).Debug("empty state, unsub")
+			c.ModifyUserRelation(mid, ActUnsub)
+			if err := c.ClearByMid(mid); err != nil {
+				logger.WithField("mid", mid).Errorf("ClearByMid failed %v", err)
+			}
+		}
+	}
 	return newCtype, err
 }
 
@@ -603,12 +606,4 @@ func (c *Concern) GroupWatchNotify(groupCode, mid int64, ctype concern.Type) {
 			c.notify <- NewConcernLiveNotify(groupCode, liveInfo)
 		}
 	}
-}
-
-func (c *Concern) ClearUserNews(mid int64) error {
-	newsInfo, err := c.FindUserNews(mid, false)
-	if err != nil {
-		return err
-	}
-	return c.StateManager.DeleteNewsInfo(newsInfo)
 }

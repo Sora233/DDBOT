@@ -66,6 +66,13 @@ func TestStateManager_GetLiveInfo(t *testing.T) {
 	assert.Equal(t, buntdb.ErrNotFound, err)
 	assert.Nil(t, liveInfo)
 
+	err = c.DeleteLiveInfo(test.UID1)
+	assert.Nil(t, err)
+
+	liveInfo, err = c.GetLiveInfo(test.UID1)
+	assert.Equal(t, buntdb.ErrNotFound, err)
+	assert.Nil(t, liveInfo)
+
 	assert.NotNil(t, c.AddLiveInfo(nil))
 }
 
@@ -95,7 +102,7 @@ func TestStateManager_GetNewsInfo(t *testing.T) {
 	assert.Equal(t, buntdb.ErrNotFound, err)
 	assert.Nil(t, newsInfo)
 
-	err = c.DeleteNewsInfo(origNewsInfo)
+	err = c.DeleteNewsInfo(test.UID1)
 	assert.Nil(t, err)
 
 	newsInfo, err = c.GetNewsInfo(test.UID1)
@@ -103,7 +110,31 @@ func TestStateManager_GetNewsInfo(t *testing.T) {
 	assert.Nil(t, newsInfo)
 
 	assert.NotNil(t, c.AddNewsInfo(nil))
-	assert.NotNil(t, c.DeleteNewsInfo(nil))
+}
+
+func TestStateManager_DeleteNewsAndLiveInfo(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	c := initStateManager(t)
+
+	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
+	origNewsInfo := NewNewsInfo(origUserInfo, test.DynamicID1, test.TIMESTAMP1)
+	origLiveInfo := NewLiveInfo(origUserInfo, "", "", LiveStatus_Living)
+	assert.NotNil(t, origNewsInfo)
+	assert.NotNil(t, origLiveInfo)
+
+	assert.Nil(t, c.AddLiveInfo(origLiveInfo))
+	assert.Nil(t, c.AddNewsInfo(origNewsInfo))
+
+	assert.Nil(t, c.DeleteNewsAndLiveInfo(test.UID1))
+
+	liveInfo, err := c.GetLiveInfo(test.UID1)
+	assert.Nil(t, liveInfo)
+	assert.NotNil(t, err)
+	newsInfo, err := c.GetNewsInfo(test.UID1)
+	assert.Nil(t, newsInfo)
+	assert.NotNil(t, err)
 }
 
 func TestStateManager_CheckDynamicId(t *testing.T) {
@@ -167,4 +198,41 @@ func TestStateManager_SetUidFirstTimestampIfNotExist(t *testing.T) {
 
 	ts1, err = c.GetUidFirstTimestamp(test.UID1)
 	assert.Equal(t, buntdb.ErrNotFound, err)
+}
+
+func TestStateManager_ClearByMid(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	c := initStateManager(t)
+
+	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
+	origNewsInfo := NewNewsInfo(origUserInfo, test.DynamicID1, test.TIMESTAMP1)
+	origLiveInfo := NewLiveInfo(origUserInfo, "", "", LiveStatus_Living)
+	assert.NotNil(t, origNewsInfo)
+	assert.NotNil(t, origLiveInfo)
+
+	assert.Nil(t, c.AddLiveInfo(origLiveInfo))
+	assert.Nil(t, c.AddNewsInfo(origNewsInfo))
+	assert.Nil(t, c.SetUidFirstTimestampIfNotExist(test.UID1, test.TIMESTAMP1))
+	assert.Equal(t, 1, c.IncNotLiveCount(test.UID1))
+
+	assert.Nil(t, c.ClearByMid(test.UID1))
+
+	userInfo, err := c.GetUserInfo(test.UID1)
+	assert.NotNil(t, err)
+	assert.Nil(t, userInfo)
+
+	newsInfo, err := c.GetNewsInfo(test.UID1)
+	assert.NotNil(t, err)
+	assert.Nil(t, newsInfo)
+
+	liveInfo, err := c.GetLiveInfo(test.UID1)
+	assert.NotNil(t, err)
+	assert.Nil(t, liveInfo)
+
+	_, err = c.GetUidFirstTimestamp(test.UID1)
+	assert.NotNil(t, err)
+	assert.Equal(t, 1, c.IncNotLiveCount(test.UID1))
+
 }

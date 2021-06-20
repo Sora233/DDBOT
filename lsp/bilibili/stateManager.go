@@ -97,14 +97,50 @@ func (c *StateManager) AddNewsInfo(newsInfo *NewsInfo) error {
 	})
 }
 
-func (c *StateManager) DeleteNewsInfo(newsInfo *NewsInfo) error {
-	if newsInfo == nil {
-		return errors.New("nil NewsInfo")
-	}
+func (c *StateManager) DeleteNewsInfo(mid int64) error {
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
-		_, err := tx.Delete(c.CurrentNewsKey(newsInfo.Mid))
+		_, err := tx.Delete(c.CurrentNewsKey(mid))
 		return err
+	})
+}
 
+func (c *StateManager) DeleteLiveInfo(mid int64) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
+		_, err := tx.Delete(c.CurrentLiveKey(mid))
+		return err
+	})
+}
+
+func (c *StateManager) DeleteNewsAndLiveInfo(mid int64) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
+		_, err := tx.Delete(c.CurrentLiveKey(mid))
+		if err != nil && err != buntdb.ErrNotFound {
+			return err
+		}
+		_, err = tx.Delete(c.CurrentNewsKey(mid))
+		return err
+	})
+}
+
+func (c *StateManager) ClearByMid(mid int64) error {
+	return c.RWTxCover(func(tx *buntdb.Tx) error {
+		var errs []error
+		_, err := tx.Delete(c.CurrentLiveKey(mid))
+		errs = append(errs, err)
+		_, err = tx.Delete(c.CurrentNewsKey(mid))
+		errs = append(errs, err)
+		_, err = tx.Delete(c.UidFirstTimestamp(mid))
+		errs = append(errs, err)
+		_, err = tx.Delete(c.UserInfoKey(mid))
+		errs = append(errs, err)
+		_, err = tx.Delete(c.NotLiveKey(mid))
+		errs = append(errs, err)
+		for _, e := range errs {
+			if e != nil && e != buntdb.ErrNotFound {
+				return e
+			}
+		}
+		return nil
 	})
 }
 

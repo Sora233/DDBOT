@@ -112,7 +112,4 @@ func TestConcern_FindUserNews(t *testing.T) {
 	newsInfo, err = c.FindUserNews(test.UID2, false)
 	assert.NotNil(t, err)
 	assert.Nil(t, newsInfo)
-
-	assert.Nil(t, c.ClearUserNews(test.UID1))
-	assert.NotNil(t, c.ClearUserNews(test.UID2))
 }
