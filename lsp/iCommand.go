@@ -492,7 +492,7 @@ func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ct
 		}
 	}
 	err := iConfigCmd(c, groupCode, id, site, ctype, operateAtConcernConfig(c, ctype, action, QQ))
-	if localdb.IsRollback(err) {
+	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
 	}
 	if err != nil {
@@ -506,7 +506,7 @@ func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ct
 
 func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
 	err := iConfigCmd(c, groupCode, id, site, ctype, operateAtAllConcernConfig(c, ctype, on))
-	if localdb.IsRollback(err) {
+	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
 	}
 	if err != nil {
@@ -518,7 +518,7 @@ func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string,
 
 func IConfigTitleNotifyCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
 	err := iConfigCmd(c, groupCode, id, site, ctype, operateNotifyConcernConfig(c, ctype, on))
-	if localdb.IsRollback(err) {
+	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
 	}
 	if err != nil {
@@ -530,7 +530,7 @@ func IConfigTitleNotifyCmd(c *MessageContext, groupCode int64, id string, site s
 
 func IConfigOfflineNotifyCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
 	err := iConfigCmd(c, groupCode, id, site, ctype, operateOfflineNotifyConcernConfig(c, ctype, on))
-	if localdb.IsRollback(err) {
+	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
 	}
 	if err != nil {
@@ -542,8 +542,8 @@ func IConfigOfflineNotifyCmd(c *MessageContext, groupCode int64, id string, site
 
 func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, f func(*concern_manager.GroupConcernConfig) bool) (err error) {
 	log := c.Log
-	if !configCmdGroupCommonCheck(c, groupCode) {
-		return
+	if err := configCmdGroupCommonCheck(c, groupCode); err != nil {
+		return err
 	}
 	switch site {
 	case bilibili.Site:
@@ -564,7 +564,7 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 		uid, err = douyu.ParseUid(id)
 		if err != nil {
 			log.WithField("id", id).Errorf("parse failed")
-			return errors.New("失败 - 该id尚未watch")
+			return errors.New("失败 - douyu id格式错误")
 		}
 		err = c.Lsp.douyuConcern.CheckGroupConcern(groupCode, uid, ctype)
 		if err != concern_manager.ErrAlreadyExists {
@@ -618,10 +618,10 @@ func ReplyUserInfo(c *MessageContext, site string, id string) {
 	}
 }
 
-func configCmdGroupCommonCheck(c *MessageContext, groupCode int64) bool {
+func configCmdGroupCommonCheck(c *MessageContext, groupCode int64) error {
 	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ConfigCommand) {
 		c.DisabledReply()
-		return false
+		return permission.ErrDisabled
 	}
 
 	if !c.Lsp.PermissionStateManager.RequireAny(
@@ -631,9 +631,9 @@ func configCmdGroupCommonCheck(c *MessageContext, groupCode int64) bool {
 		permission.GroupCommandRequireOption(groupCode, c.Sender.Uin, ConfigCommand),
 	) {
 		c.NoPermissionReply()
-		return false
+		return permission.ErrPermissionDenied
 	}
-	return true
+	return nil
 }
 
 func operateAtConcernConfig(c *MessageContext, ctype concern.Type, action string, QQ []int64) func(concernConfig *concern_manager.GroupConcernConfig) bool {

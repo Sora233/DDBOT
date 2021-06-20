@@ -50,7 +50,7 @@ func (lgc *LspGroupCommand) DebugCheck() bool {
 		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.group"), strconv.FormatInt(lgc.groupCode(), 10)) {
 			ok = true
 		}
-		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.uin"), strconv.FormatInt(lgc.msg.Sender.Uin, 10)) {
+		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.uin"), strconv.FormatInt(lgc.uin(), 10)) {
 			ok = true
 		}
 	} else {
