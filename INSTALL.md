@@ -44,7 +44,7 @@ device.json是运行时使用的设备信息，应尽量使用同一个，否则
 ./DDBOT --generate-device
 ```
 
-### aplication.json
+### application.json
 
 DDBOT运行时的配置文件， 配置完成后将文件改名为application.yaml，和DDBOT放在一起。
 
