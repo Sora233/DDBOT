@@ -62,9 +62,22 @@
 
 详细介绍及示例请查看：[详细示例](/EXAMPLE.md)
 
-阁下可添加Demo机器人体验，QQ：1561991863
+阁下可添加Demo机器人体验，QQ号：
 
+- 368236249 （二号机）
+- 1561991863 （初号机）
+
+<details>
+<summary>点此扫码二号机</summary>
+<img src="https://user-images.githubusercontent.com/11474360/122684719-a8afe280-d239-11eb-9089-b8ce6613c819.jpg" width="300" height="450">
+</details>
+
+<details>
+<summary>点此扫码初号机</summary>
 <img src="https://user-images.githubusercontent.com/11474360/108590360-150afa00-739e-11eb-86f7-77f68d845505.jpeg" width="300" height="450">
+</details>
+
+推荐您优先选择二号机，由于目前初号机负载较高。
 
 ## 使用与部署
 

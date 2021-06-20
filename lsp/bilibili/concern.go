@@ -144,20 +144,20 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 		return concern.Empty, err
 	}
 
-	{
-		// inner err is not outer err
-		var err error
-		state, err := c.GetConcern(mid)
-		if err != nil {
-			logger.WithField("mid", mid).Errorf("GetConcern error %v", err)
-		} else if state.Empty() {
-			logger.WithField("mid", mid).Debug("empty state, unsub")
-			c.ModifyUserRelation(mid, ActUnsub)
-			if err := c.ClearByMid(mid); err != nil {
-				logger.WithField("mid", mid).Errorf("ClearByMid failed %v", err)
-			}
-		}
-	}
+	//{
+	//	// inner err is not outer err
+	//	var err error
+	//	state, err := c.GetConcern(mid)
+	//	if err != nil {
+	//		logger.WithField("mid", mid).Errorf("GetConcern error %v", err)
+	//	} else if state.Empty() {
+	//		logger.WithField("mid", mid).Debug("empty state, unsub")
+	//		c.ModifyUserRelation(mid, ActUnsub)
+	//		if err := c.ClearByMid(mid); err != nil {
+	//			logger.WithField("mid", mid).Errorf("ClearByMid failed %v", err)
+	//		}
+	//	}
+	//}
 	return newCtype, err
 }
 
