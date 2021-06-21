@@ -7,6 +7,7 @@ import (
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"io/ioutil"
 	"strings"
 )
 
@@ -300,17 +301,39 @@ func (notify *ConcernNewsNotify) ToMessage() []message.IMessageElement {
 					continue
 				}
 				result = append(result, localutils.MessageTextf("%v\n", origin.GetItem().GetDescription()))
-				for _, pic := range origin.GetItem().GetPictures() {
-					var isNorm = false
-					if pic.GetImgHeight() > 1200 && pic.GetImgWidth() > 1200 {
-						isNorm = true
+				var skip = false
+				if len(origin.GetItem().GetPictures()) == 9 {
+					var urls = make([]string, 9)
+					for index, pic := range origin.GetItem().GetPictures() {
+						urls[index] = pic.GetImgSrc()
 					}
-					groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), isNorm, proxy_pool.PreferNone)
+					resultByte, err := urlsTo9ImageMode(urls)
 					if err != nil {
-						log.WithField("pic", pic).Errorf("upload group image %v", err)
-						continue
+						log.Errorf("urlsTo9ImageMode failed %v", err)
+					} else {
+						ioutil.WriteFile(card.GetDesc().GetDynamicIdStr()+".png", resultByte, 0766)
+						groupImage, err := localutils.UploadGroupImage(notify.GroupCode, resultByte, false)
+						if err != nil {
+							log.Errorf("upload 9Image group image %v", err)
+						} else {
+							result = append(result, groupImage)
+							skip = true
+						}
 					}
-					result = append(result, groupImage)
+				}
+				if !skip {
+					for _, pic := range origin.GetItem().GetPictures() {
+						var isNorm = false
+						if pic.GetImgHeight() > 1200 && pic.GetImgWidth() > 1200 {
+							isNorm = true
+						}
+						groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), isNorm, proxy_pool.PreferNone)
+						if err != nil {
+							log.WithField("pic", pic).Errorf("upload group image %v", err)
+							continue
+						}
+						result = append(result, groupImage)
+					}
 				}
 			case DynamicDescType_TextOnly:
 				result = append(result, localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n\n原动态：\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
@@ -457,18 +480,41 @@ func (notify *ConcernNewsNotify) ToMessage() []message.IMessageElement {
 				continue
 			}
 			result = append(result, localutils.MessageTextf("%v发布了新动态：\n%v\n%v\n", notify.Name, date, cardImage.GetItem().GetDescription()))
-			for _, pic := range cardImage.GetItem().GetPictures() {
-				var isNorm = false
-				if pic.GetImgHeight() > 1200 && pic.GetImgWidth() > 1200 {
-					isNorm = true
+			var skip = false
+			if len(cardImage.GetItem().GetPictures()) == 9 {
+				var urls = make([]string, 9)
+				for index, pic := range cardImage.GetItem().GetPictures() {
+					urls[index] = pic.GetImgSrc()
 				}
-				groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), isNorm, proxy_pool.PreferNone)
+				resultByte, err := urlsTo9ImageMode(urls)
 				if err != nil {
-					log.WithField("pic", pic.GetImgSrc()).Errorf("upload image failed %v", err)
-					continue
+					log.Errorf("urlsTo9ImageMode failed %v", err)
+				} else {
+					ioutil.WriteFile(card.GetDesc().GetDynamicIdStr()+".png", resultByte, 0766)
+					groupImage, err := localutils.UploadGroupImage(notify.GroupCode, resultByte, false)
+					if err != nil {
+						log.Errorf("upload 9Image group image %v", err)
+					} else {
+						result = append(result, groupImage)
+						skip = true
+					}
 				}
-				result = append(result, groupImage)
 			}
+			if !skip {
+				for _, pic := range cardImage.GetItem().GetPictures() {
+					var isNorm = false
+					if pic.GetImgHeight() > 1200 && pic.GetImgWidth() > 1200 {
+						isNorm = true
+					}
+					groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), isNorm, proxy_pool.PreferNone)
+					if err != nil {
+						log.WithField("pic", pic.GetImgSrc()).Errorf("upload image failed %v", err)
+						continue
+					}
+					result = append(result, groupImage)
+				}
+			}
+
 		case DynamicDescType_TextOnly:
 			cardText, err := notify.GetCardTextOnly(index)
 			if err != nil {
@@ -713,4 +759,19 @@ func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 }
 func (notify *ConcernLiveNotify) GetUid() interface{} {
 	return notify.Mid
+}
+
+func urlsTo9ImageMode(urls []string) ([]byte, error) {
+	if len(urls) != 9 {
+		return nil, errors.New("the number of image must be 9")
+	}
+	var imgBytes = make([][]byte, 9)
+	var err error
+	for index, url := range urls {
+		imgBytes[index], err = localutils.ImageGet(url, proxy_pool.PreferNone)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return localutils.Merge9Images(imgBytes)
 }

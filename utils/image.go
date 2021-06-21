@@ -173,3 +173,49 @@ func ImageSuffix(name string) bool {
 	}
 	return false
 }
+
+func Merge9Images(images [][]byte) ([]byte, error) {
+	const TotalSize = 1440
+	const subImageSize = TotalSize / 3
+	if len(images) != 9 {
+		return nil, errors.New("the number of images must be exactly 9")
+	}
+	for _, img := range images {
+		if len(img) == 0 {
+			return nil, errors.New("empty image exists")
+		}
+	}
+	var bg = image.NewNRGBA(image.Rect(0, 0, TotalSize, TotalSize))
+	for i, imgBytes := range images {
+		cfg, _, err := image.DecodeConfig(bytes.NewReader(imgBytes))
+		if err != nil {
+			return nil, fmt.Errorf("DecodeConfig failed %v", err)
+		}
+		minSize := cfg.Width
+		if minSize > cfg.Height {
+			minSize = cfg.Height
+		}
+		img, _, err := image.Decode(bytes.NewReader(imgBytes))
+		if err != nil {
+			return nil, fmt.Errorf("Decode failed %v", err)
+		}
+		img = resize.Resize(subImageSize, subImageSize, SubImage(img, image.Rect(0, 0, minSize, minSize)), resize.Lanczos3)
+		si := i / 3
+		sj := i % 3
+		draw.Draw(bg, img.Bounds().Add(image.Point{X: sj * subImageSize, Y: si * subImageSize}), img, image.Point{}, draw.Src)
+	}
+	var result = new(bytes.Buffer)
+	err := png.Encode(result, bg)
+	if err != nil {
+		return nil, err
+	}
+	resBytes := result.Bytes()
+	return resBytes, nil
+}
+
+func SubImage(img image.Image, r image.Rectangle) image.Image {
+	var bgSize = image.Rect(0, 0, r.Dx(), r.Dy())
+	var bg = image.NewNRGBA(bgSize)
+	draw.Draw(bg, bg.Bounds(), img, r.Min, draw.Src)
+	return bg
+}
