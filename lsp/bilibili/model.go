@@ -7,7 +7,6 @@ import (
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
-	"io/ioutil"
 	"strings"
 )
 
@@ -311,7 +310,6 @@ func (notify *ConcernNewsNotify) ToMessage() []message.IMessageElement {
 					if err != nil {
 						log.Errorf("urlsTo9ImageMode failed %v", err)
 					} else {
-						ioutil.WriteFile(card.GetDesc().GetDynamicIdStr()+".png", resultByte, 0766)
 						groupImage, err := localutils.UploadGroupImage(notify.GroupCode, resultByte, false)
 						if err != nil {
 							log.Errorf("upload 9Image group image %v", err)
@@ -490,7 +488,6 @@ func (notify *ConcernNewsNotify) ToMessage() []message.IMessageElement {
 				if err != nil {
 					log.Errorf("urlsTo9ImageMode failed %v", err)
 				} else {
-					ioutil.WriteFile(card.GetDesc().GetDynamicIdStr()+".png", resultByte, 0766)
 					groupImage, err := localutils.UploadGroupImage(notify.GroupCode, resultByte, false)
 					if err != nil {
 						log.Errorf("upload 9Image group image %v", err)
