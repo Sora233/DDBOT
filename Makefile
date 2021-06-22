@@ -1,3 +1,8 @@
+BUILD_TIME := $(shell date --rfc-3339=seconds)
+COMMIT_ID := $(shell git rev-parse HEAD)
+
+LDFLAGS = -X "main.BuildTime='"$(BUILD_TIME)"'" -X "main.CommitId='"$(COMMIT_ID)"'"
+
 SRC := $(shell find . -type f -name '*.go')
 COV := .coverage.out
 TARGET := DDBOT
@@ -7,7 +12,13 @@ $(COV): $(SRC)
 
 
 $(TARGET): $(SRC)
-	go build -o $(TARGET)
+ifdef NOCV
+	echo 'build without opencv'
+	go build -tags nocv -ldflags '$(LDFLAGS)' -o $(TARGET)
+else
+	echo 'build with opencv'
+	go build -ldflags '$(LDFLAGS)' -o $(TARGET)
+endif
 
 build: $(TARGET)
 

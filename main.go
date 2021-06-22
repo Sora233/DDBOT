@@ -27,10 +27,17 @@ func main() {
 	var cli struct {
 		Play           bool  `optional:"" help:"run the play function"`
 		Debug          bool  `optional:"" help:"enable debug mode"`
-		GenerateDevice bool  `optional:"" help:"generate device.json"`
-		SetAdmin       int64 `optional:"" help:"set QQ number to Admin"`
+		GenerateDevice bool  `optional:"" xor:"c" help:"generate device.json"`
+		SetAdmin       int64 `optional:"" xor:"c" help:"set QQ number to Admin"`
+		Version        bool  `optional:"" xor:"c" short:"v" help:"print the version info"`
 	}
 	kong.Parse(&cli)
+
+	if cli.Version {
+		fmt.Printf("COMMIT_ID: %v\n", CommitId)
+		fmt.Printf("BUILD_TIME: %v\n", BuildTime)
+		os.Exit(0)
+	}
 
 	if cli.GenerateDevice {
 		bot.GenRandomDevice()
