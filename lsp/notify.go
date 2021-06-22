@@ -41,7 +41,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 			// atConfig
 			var atBeforeHook = hook.AtBeforeHook(inotify)
 			if !atBeforeHook.Pass {
-				log.WithField("Reason", atBeforeHook.Reason).Debug("skip @at by hook AtBeforeHook")
+				log.WithField("Reason", atBeforeHook.Reason).Debug("notify @at filtered by hook AtBeforeHook")
 			} else {
 				// 有@全体成员 或者 @Someone
 				var qqadmin = atBeforeHook.Pass && checkGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
@@ -57,8 +57,8 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					chainMsg = append(chainMsg, newAtAllMsg())
 				} else {
 					ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
+					log = log.WithField("at_QQ", ids)
 					if len(ids) != 0 {
-						log = log.WithField("at_QQ", ids)
 						chainMsg = append(chainMsg, newAtIdsMsg(ids))
 					}
 				}
@@ -82,10 +82,10 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 							ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
 							if len(ids) != 0 {
 								log = log.WithField("at_QQ", ids)
-								log.Errorf("atAll failed, try at someone")
+								log.Errorf("notify atAll failed, try at someone")
 								l.sendGroupMessage(inotify.GetGroupCode(), newAtIdsMsg(ids))
 							} else {
-								log.Errorf("atAll failed, at someone not config")
+								log.Errorf("notify atAll failed, at someone not config")
 							}
 						}
 					}
