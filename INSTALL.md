@@ -21,6 +21,9 @@ go >= 1.16
 请先安装 [gocv](https://github.com/hybridgroup/gocv)
 
 ```
+make build
+
+# 如果没有安装make程序，则用下面的命令编译
 go build
 ```
 
@@ -29,10 +32,23 @@ go build
 禁用gocv将导致face命令无法正常工作
 
 ```
+NOCV=1 make build
+
+# 如果没有安装make程序，则用下面的命令编译
 go build -tags nocv
 ```
 
 ## 配置
+
+### 设置管理员
+
+初次运行之前推荐设置一个管理员帐号，否则您可能会失去对bot的控制权。
+
+使用下面的命令设置：
+
+```shell
+./DDBOT --set-admin 你的QQ号码
+```
 
 ### device.json
 
@@ -116,14 +132,4 @@ debug: # debug模式，只有以下群或qq号可以触发命令
     - 0
 
 logLevel: info # 日志等级
-```
-
-### 设置管理员
-
-初次运行之前推荐设置一个管理员帐号，否则您可能会失去对bot的控制权。
-
-使用下面的命令设置：
-
-```shell
-./DDBOT --set-admin 你的QQ号码
 ```
