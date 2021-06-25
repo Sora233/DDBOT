@@ -64,6 +64,43 @@ device.json是运行时使用的设备信息，应尽量使用同一个，否则
 
 DDBOT运行时的配置文件， 配置完成后将文件改名为application.yaml，和DDBOT放在一起。
 
+#### 最小配置
+
+最小配置可以正常使用斗鱼、虎牙订阅功能。
+
+如果可以直连油管，那也可以正常使用YTB订阅，如果无法直连油管，则需要配置代理功能，YTB订阅才能正常工作。
+
+如果要使用b站订阅功能，需要填入下面bilibili的SESSDATA和bili_jct两个配置，请参考下面的说明。
+
+```yaml
+bot:
+  account:  # 你的qq号
+  password: # 你的qq密码
+
+# b站登陆后的cookie字段，从cookie中找到这两个填进去，如果不会请百度搜索如何查看网站cookies
+# 请注意，bot将使用您b站帐号的以下功能，建议使用新注册的小号：
+# 关注用户 / 取消关注用户 / 查看关注列表
+# 警告：
+# SESSDATA和bili_jct等价于您的帐号凭证
+# 请绝对不要透露给他人，更不能上传至Github等公开平台
+# 否则将导致您的帐号被盗
+bilibili:
+  SESSDATA:
+  bili_jct:
+  interval: 15s
+
+concern:
+  emitInterval: 5s
+
+logLevel: info
+
+```
+
+#### 完整配置
+
+<details>
+<summary> 点此查看全部配置 （仅供高级用户参考） </summary>
+
 ```yaml
 bot:
   account: # bot账号
@@ -83,9 +120,7 @@ bilibili:
   interval: 30s # 直播状态和动态检测间隔，过快可能导致ip被暂时封禁
 
 
-moderatecontent:
-  apikey: # 已弃用
-
+# 用于涩图鉴定功能
 # https://api.aliyun.com/#/?product=imageaudit
 aliyun: # 阿里云鉴权，用于图片识别，如果为空则图片识别功能无法工作
   accessKeyID: # 鉴权的账号应该开通内容审核功能（该服务2021年3月25日开始收费）
@@ -133,3 +168,5 @@ debug: # debug模式，只有以下群或qq号可以触发命令
 
 logLevel: info # 日志等级
 ```
+
+</details>
