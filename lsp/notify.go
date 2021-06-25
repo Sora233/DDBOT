@@ -2,7 +2,6 @@ package lsp
 
 import (
 	"github.com/Logiase/MiraiGo-Template/bot"
-	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
@@ -44,7 +43,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				log.WithField("Reason", atBeforeHook.Reason).Debug("notify @at filtered by hook AtBeforeHook")
 			} else {
 				// 有@全体成员 或者 @Someone
-				var qqadmin = atBeforeHook.Pass && checkGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
+				var qqadmin = atBeforeHook.Pass && utils.CheckGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
 				var checkAtAll = qqadmin && cfg.GroupConcernAt.CheckAtAll(inotify.Type())
 				var atAllMark = checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
 				log.WithField("atBeforeHook", atBeforeHook).
@@ -171,16 +170,4 @@ func newAtIdsMsg(ids []int64) *message.SendingMessage {
 		msg.Append(message.NewAt(id))
 	}
 	return msg
-}
-
-func checkGroupQQAdministrator(groupCode int64, uin int64) bool {
-	g := bot.Instance.FindGroup(groupCode)
-	if g == nil {
-		return false
-	}
-	m := g.FindMember(uin)
-	if m == nil {
-		return false
-	}
-	return m.Permission == client.Administrator || m.Permission == client.Owner
 }
