@@ -292,9 +292,17 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
+		bilibiliIds, _, _ := l.bilibiliConcern.ListByGroup(event.Group.Code, nil)
+		douyuIds, _, _ := l.douyuConcern.ListByGroup(event.Group.Code, nil)
+		huyaIds, _, _ := l.huyaConcern.ListByGroup(event.Group.Code, nil)
+		ytbIds, _, _ := l.youtubeConcern.ListByGroup(event.Group.Code, nil)
 		logger.WithField("group_code", event.Group.Code).
 			WithField("group_name", event.Group.Name).
 			WithField("member_count", event.Group.MemberCount).
+			WithField("bilibili_watch_size", len(bilibiliIds)).
+			WithField("douyu_watch_size", len(douyuIds)).
+			WithField("huya_watch_size", len(huyaIds)).
+			WithField("ytb_watch_size", len(ytbIds)).
 			Info("leave group")
 		l.RemoveAllByGroup(event.Group.Code)
 	})

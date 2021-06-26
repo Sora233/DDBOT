@@ -270,7 +270,7 @@ func (c *StateManager) ListByGroup(groupCode int64, filter func(id interface{}, 
 				return false
 			}
 			ctype := concern.FromString(value)
-			if filter(id, ctype) == true {
+			if filter == nil || filter(id, ctype) == true {
 				ids = append(ids, id)
 				idTypes = append(idTypes, ctype)
 			}
