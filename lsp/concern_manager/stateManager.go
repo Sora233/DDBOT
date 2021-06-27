@@ -61,7 +61,7 @@ func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}
 			return err
 		}
 		if !f(concernConfig) {
-			return errors.New("rollback")
+			return localdb.ErrRollback
 		}
 		_, _, err = tx.Set(configKey, concernConfig.ToString(), nil)
 		return err
