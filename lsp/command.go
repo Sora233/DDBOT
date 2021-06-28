@@ -2,6 +2,8 @@ package lsp
 
 import "github.com/Sora233/sliceutil"
 
+// TODO command需要重构成注册模式，然后把这个文件废弃
+
 const (
 	RollCommand         = "roll"
 	CheckinCommand      = "签到"
@@ -15,7 +17,7 @@ const (
 	EnableCommand       = "enable"
 	DisableCommand      = "disable"
 	FaceCommand         = "face"
-	ReverseCommand      = "reverse"
+	ReverseCommand      = "倒放"
 	ImageContentCommand = "ic"
 	HelpCommand         = "help"
 	ConfigCommand       = "config"
@@ -34,7 +36,8 @@ var allGroupCommand = [...]string{
 	LspCommand, WatchCommand, UnwatchCommand,
 	ListCommand, SetuCommand, HuangtuCommand,
 	EnableCommand, DisableCommand, ImageContentCommand,
-	FaceCommand, ConfigCommand,
+	FaceCommand, ReverseCommand, ConfigCommand,
+	HelpCommand,
 }
 
 var allPrivateOperate = [...]string{
@@ -45,7 +48,7 @@ var allPrivateOperate = [...]string{
 }
 
 var nonOprateable = [...]string{
-	EnableCommand, DisableCommand, GrantCommand, HelpCommand,
+	EnableCommand, DisableCommand, GrantCommand,
 	BlockCommand, LogCommand, PingCommand,
 }
 
