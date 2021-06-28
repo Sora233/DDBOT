@@ -151,7 +151,9 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.ReverseCommand()
 		}
 	case "/help":
-		lgc.HelpCommand()
+		if lgc.requireNotDisable(HelpCommand) {
+			lgc.HelpCommand()
+		}
 	default:
 		log.Debug("no command matched")
 	}
