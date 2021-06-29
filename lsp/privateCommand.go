@@ -538,7 +538,9 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"开启watch命令：/enable watch\n" +
 		"禁用watch命令，调用watch命令将不再有任何反应：/disable watch\n" +
 		"/config 用于配置BOT，例如：\n" +
-		"/config at_all 97505 on / off 用于设置推送作者的直播时自动@全体成员，on表示开启，off表示关闭\n" +
+		"/config at 97505 add 123456 用于设置推送直播时自动@qq号为123456的成员\n" +
+		"/config at_all 97505 on / off 用于设置推送直播时自动@全体成员，on表示开启，off表示关闭\n" +
+		"配置@全体成员只推荐在私人bot上使用，如果是公开bot请配置使用@QQ号\n" +
 		"其他更多命令及配置请看样例文档\n" +
 		"使用时请把作者的UID换成你需要的主播的UID\n" +
 		"以上命令可以通过私聊操作以避免在群内刷屏"
