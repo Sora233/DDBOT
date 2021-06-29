@@ -16,7 +16,6 @@ import (
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
-	"strconv"
 	"time"
 )
 
@@ -212,7 +211,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		log.Debugf("watch success")
 		c.TextReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", userInfo.Name))
 	case douyu.Site:
-		mid, err := strconv.ParseInt(id, 10, 64)
+		mid, err := douyu.ParseUid(id)
 		if err != nil {
 			log.WithField("id", id).Errorf("not a int")
 			c.TextReply("失败 - douyu id格式错误")
@@ -594,7 +593,7 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 func ReplyUserInfo(c *MessageContext, site string, id string) {
 	switch site {
 	case bilibili.Site:
-		mid, err := strconv.ParseInt(id, 10, 64)
+		mid, err := bilibili.ParseUid(id)
 		if err != nil {
 			c.Log.Errorf("ReplyUserInfo bilibili got wrong id %v", id)
 			return
@@ -602,7 +601,7 @@ func ReplyUserInfo(c *MessageContext, site string, id string) {
 		userInfo, _ := c.Lsp.bilibiliConcern.GetUserInfo(mid)
 		c.TextReply(fmt.Sprintf("成功 - Bilibili用户 %v", userInfo.GetName()))
 	case douyu.Site:
-		mid, err := strconv.ParseInt(id, 10, 64)
+		mid, err := douyu.ParseUid(id)
 		if err != nil {
 			c.Log.Errorf("ReplyUserInfo douyu got wrong id %v", id)
 			return
