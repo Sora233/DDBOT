@@ -24,6 +24,9 @@ const (
 
 	NAME1 = "name1"
 	NAME2 = "name2"
+
+	CMD1 = "command1"
+	CMD2 = "command2"
 )
 
 func InitBuntdb(t *testing.T) {
