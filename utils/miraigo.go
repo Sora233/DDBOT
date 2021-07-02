@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
-	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/proxy_pool"
 )
@@ -44,16 +43,4 @@ func UploadGroupImage(groupCode int64, img []byte, isNorm bool) (image *message.
 	}
 	return image, nil
 
-}
-
-func CheckGroupQQAdministrator(groupCode int64, uin int64) bool {
-	g := bot.Instance.FindGroup(groupCode)
-	if g == nil {
-		return false
-	}
-	m := g.FindMember(uin)
-	if m == nil {
-		return false
-	}
-	return m.Permission == client.Administrator || m.Permission == client.Owner
 }

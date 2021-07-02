@@ -43,7 +43,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				log.WithField("Reason", atBeforeHook.Reason).Debug("notify @at filtered by hook AtBeforeHook")
 			} else {
 				// 有@全体成员 或者 @Someone
-				var qqadmin = atBeforeHook.Pass && utils.CheckGroupQQAdministrator(inotify.GetGroupCode(), bot.Uin)
+				var qqadmin = atBeforeHook.Pass && l.PermissionStateManager.CheckGroupAdministrator(inotify.GetGroupCode(), bot.Uin)
 				var checkAtAll = qqadmin && cfg.GroupConcernAt.CheckAtAll(inotify.Type())
 				var atAllMark = checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
 				log.WithField("atBeforeHook", atBeforeHook).
