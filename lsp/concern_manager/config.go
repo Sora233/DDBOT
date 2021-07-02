@@ -143,7 +143,7 @@ type GroupConcernConfig struct {
 	defaultHook
 	GroupConcernAt     GroupConcernAtConfig     `json:"group_concern_at"`
 	GroupConcernNotify GroupConcernNotifyConfig `json:"group_concern_notify"`
-	GroupConcernFilter GroupConcernFilterConfig `json:"group_concern_filter"`
+	//GroupConcernFilter GroupConcernFilterConfig `json:"group_concern_filter"`
 }
 
 func NewGroupConcernConfigFromString(s string) (*GroupConcernConfig, error) {

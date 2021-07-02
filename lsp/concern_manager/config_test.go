@@ -61,7 +61,15 @@ func TestGroupConcernConfig_ToString(t *testing.T) {
 		},
 	}
 	var expected = []string{
-		`{"group_concern_at":{"at_all":1,"at_someone":[{"ctype":1, "at_list":[1,2,3,4,5]}]},"group_concern_notify":{"title_change_notify": 1, "offline_notify": 4}}`,
+		`{
+			"group_concern_at":{
+				"at_all":1,
+				"at_someone":[{"ctype":1, "at_list":[1,2,3,4,5]}]
+			},
+			"group_concern_notify":{
+				"title_change_notify": 1, "offline_notify": 4
+			}
+		}`,
 	}
 	assert.Equal(t, len(testCase), len(expected))
 	for i := 0; i < len(testCase); i++ {
