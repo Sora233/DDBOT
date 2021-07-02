@@ -201,6 +201,10 @@ func (c *StateManager) CheckGroupCommandFunc(groupCode int64, command string, f 
 
 func (c *StateManager) CheckGroupAdministrator(groupCode int64, caller int64) bool {
 	b := bot.Instance
+	if b == nil {
+		logger.Errorf("bot not init")
+		return false
+	}
 	groupInfo := b.FindGroup(groupCode)
 	if groupInfo == nil {
 		logger.Errorf("nil group info")

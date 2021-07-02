@@ -43,11 +43,13 @@ func TestStateManager_CheckGroupCommandFunc(t *testing.T) {
 	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
 	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
 	assert.Nil(t, c.EnableGroupCommand(test.G1, test.CMD1))
+	assert.NotNil(t, c.EnableGroupCommand(test.G1, test.CMD1))
 
 	assert.True(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
 	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
 
 	assert.Nil(t, c.DisableGroupCommand(test.G1, test.CMD1))
+	assert.NotNil(t, c.DisableGroupCommand(test.G1, test.CMD1))
 
 	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
 	assert.True(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
@@ -55,6 +57,14 @@ func TestStateManager_CheckGroupCommandFunc(t *testing.T) {
 	c.EnableGroupCommand(test.G1, test.CMD1, ExpireOption(time.Millisecond*100))
 	assert.True(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
 	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
+
+	time.Sleep(time.Millisecond * 150)
+	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
+	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
+
+	c.DisableGroupCommand(test.G1, test.CMD1, ExpireOption(time.Millisecond*100))
+	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
+	assert.True(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
 
 	time.Sleep(time.Millisecond * 150)
 	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
@@ -118,6 +128,9 @@ func TestStateManager_CheckGroupCommandPermission(t *testing.T) {
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 	c := initStateManager(t)
+
+	opt := QQAdminRequireOption(test.G1, test.UID1)
+	assert.False(t, opt.Validate(c))
 
 	gcadminOpt1 := GroupCommandRequireOption(test.G1, test.UID1, test.CMD1)
 	gcadminOpt2 := GroupCommandRequireOption(test.G1, test.UID1, test.CMD2)
