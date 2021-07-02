@@ -643,6 +643,27 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 			Id     string `arg:"" help:"配置的主播id"`
 			Switch string `arg:"" default:"off" enum:"on,off," help:"on / off"`
 		} `cmd:"" help:"配置下播时是否进行推送，默认不推送" name:"offline_notify"`
+		Filter struct {
+			Site string `optional:"" short:"s" default:"bilibili" help:"bilibili"`
+			Only struct {
+				Id   string   `arg:"" help:"配置的主播id"`
+				Type []string `arg:"" optional:"" help:"指定的种类"`
+			} `cmd:"" help:"只推送指定种类的动态" name:"only"`
+			Not struct {
+				Id   string   `arg:"" help:"配置的主播id"`
+				Type []string `arg:"" optional:"" help:"指定的种类"`
+			} `cmd:"" help:"不推送指定种类的动态" name:"not"`
+			TextOnly struct {
+				Id      string   `arg:"" help:"配置的主播id"`
+				Keyword []string `arg:"" optional:"" help:"指定的关键字"`
+			} `cmd:"" help:"当动态内容里出现关键字时进行推送" name:"text_only"`
+			Clear struct {
+				Id string `arg:"" help:"配置的主播id"`
+			} `cmd:"" help:"清除过滤器" name:"clear"`
+			Show struct {
+				Id string `arg:"" help:"配置的主播id"`
+			} `cmd:"" help:"查看当前过滤器" name:"show"`
+		} `cmd:"" help:"配置动态过滤器，目前只支持b站动态" name:"filter"`
 	}
 
 	kongCtx, output := lgc.parseCommandSyntax(&configCmd, ConfigCommand, kong.Description("管理BOT的配置，目前支持配置@成员和@全体成员"))

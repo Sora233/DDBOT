@@ -11,6 +11,7 @@ type AtSomeone struct {
 	AtList []int64      `json:"at_list"`
 }
 
+// GroupConcernAtConfig @配置
 type GroupConcernAtConfig struct {
 	AtAll     concern.Type `json:"at_all"`
 	AtSomeone []*AtSomeone `json:"at_someone"`
@@ -118,6 +119,7 @@ func (g *GroupConcernAtConfig) ClearAtSomeoneList(ctype concern.Type) {
 	g.AtSomeone = newList
 }
 
+// GroupConcernNotifyConfig 推送配置
 type GroupConcernNotifyConfig struct {
 	TitleChangeNotify concern.Type `json:"title_change_notify"`
 	OfflineNotify     concern.Type `json:"offline_notify"`
@@ -131,10 +133,17 @@ func (g *GroupConcernNotifyConfig) CheckOfflineNotify(ctype concern.Type) bool {
 	return g.OfflineNotify.ContainAll(ctype)
 }
 
+// GroupConcernFilterConfig 过滤器配置
+type GroupConcernFilterConfig struct {
+	Type   string `json:"type"`
+	Config string `json:"config"`
+}
+
 type GroupConcernConfig struct {
 	defaultHook
 	GroupConcernAt     GroupConcernAtConfig     `json:"group_concern_at"`
 	GroupConcernNotify GroupConcernNotifyConfig `json:"group_concern_notify"`
+	GroupConcernFilter GroupConcernFilterConfig `json:"group_concern_filter"`
 }
 
 func NewGroupConcernConfigFromString(s string) (*GroupConcernConfig, error) {
