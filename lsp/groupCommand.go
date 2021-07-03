@@ -72,7 +72,7 @@ func (lgc *LspGroupCommand) Execute() {
 		return
 	}
 
-	log := lgc.DefaultLogger().WithField("cmd", lgc.GetCmd()).WithField("args", lgc.GetArgs())
+	log := lgc.DefaultLogger().WithField("cmd", lgc.GetCmdArgs())
 
 	if lgc.l.PermissionStateManager.CheckBlockList(lgc.uin()) {
 		log.Debug("blocked")

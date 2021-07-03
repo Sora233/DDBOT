@@ -51,7 +51,7 @@ func (c *LspPrivateCommand) Execute() {
 		return
 	}
 
-	log := c.DefaultLogger().WithField("cmd", c.GetCmd()).WithField("args", c.GetArgs())
+	log := c.DefaultLogger().WithField("cmd", c.GetCmdArgs())
 
 	if c.l.PermissionStateManager.CheckBlockList(c.uin()) {
 		log.Debug("blocked")

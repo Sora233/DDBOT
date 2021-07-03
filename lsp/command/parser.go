@@ -38,6 +38,12 @@ func (p *Parser) GetArgs() []string {
 	return p.Args
 }
 
+func (p *Parser) GetCmdArgs() []string {
+	result := []string{p.Command}
+	result = append(result, p.Args...)
+	return result
+}
+
 func NewParser() *Parser {
 	return &Parser{
 		Command: "",
