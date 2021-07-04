@@ -600,6 +600,7 @@ func ReplyUserInfo(c *MessageContext, site string, id string) {
 		}
 		userInfo, _ := c.Lsp.bilibiliConcern.GetUserInfo(mid)
 		c.TextReply(fmt.Sprintf("成功 - Bilibili用户 %v", userInfo.GetName()))
+		c.Log.WithField("name", userInfo.GetName()).Debug("reply user info")
 	case douyu.Site:
 		mid, err := douyu.ParseUid(id)
 		if err != nil {
@@ -608,12 +609,15 @@ func ReplyUserInfo(c *MessageContext, site string, id string) {
 		}
 		userInfo, _ := c.Lsp.douyuConcern.FindRoom(mid, false)
 		c.TextReply(fmt.Sprintf("成功 - 斗鱼用户 %v", userInfo.GetNickname()))
+		c.Log.WithField("name", userInfo.GetNickname()).Debug("reply user info")
 	case youtube.Site:
 		userInfo, _ := c.Lsp.youtubeConcern.FindInfo(id, false)
 		c.TextReply(fmt.Sprintf("成功 - YTB用户 %v", userInfo.GetChannelName()))
+		c.Log.WithField("name", userInfo.GetChannelName()).Debug("reply user info")
 	case huya.Site:
 		userInfo, _ := c.Lsp.huyaConcern.FindRoom(id, false)
 		c.TextReply(fmt.Sprintf("成功 - 虎牙用户 %v", userInfo.GetName()))
+		c.Log.WithField("name", userInfo.GetName()).Debug("reply user info")
 	}
 }
 
