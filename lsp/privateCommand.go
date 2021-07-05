@@ -476,24 +476,27 @@ func (c *LspPrivateCommand) LogCommand() {
 	for sc.Scan() {
 		lines = append(lines, sc.Text())
 	}
-	if logCmd.N > len(lines) {
-		logCmd.N = len(lines)
-	}
-	lines = lines[len(lines)-logCmd.N:]
-	var filteredLines []string
+
 	if len(logCmd.Keyword) != 0 {
+		var filteredLines []string
 		for _, line := range lines {
 			if strings.Contains(line, logCmd.Keyword) {
 				filteredLines = append(filteredLines, line)
 			}
 		}
-	} else {
-		filteredLines = lines[:]
+		lines = filteredLines
 	}
-	if len(filteredLines) == 0 {
+
+	if logCmd.N > len(lines) {
+		logCmd.N = len(lines)
+	}
+
+	lines = lines[len(lines)-logCmd.N:]
+
+	if len(lines) == 0 {
 		c.textSend("无结果")
 	} else {
-		c.textSend(strings.Join(filteredLines, "\n"))
+		c.textSend(strings.Join(lines, "\n"))
 	}
 }
 
