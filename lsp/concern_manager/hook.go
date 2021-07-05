@@ -17,6 +17,7 @@ func (h *HookResult) PassOrReason(pass bool, reason string) {
 }
 
 type Hook interface {
+	NewsFilterHook(notify concern.Notify) *HookResult
 	AtBeforeHook(notify concern.Notify) *HookResult
 	ShouldSendHook(notify concern.Notify) *HookResult
 }
@@ -24,16 +25,28 @@ type Hook interface {
 type defaultHook struct {
 }
 
-func (d defaultHook) AtBeforeHook(notify concern.Notify) *HookResult {
-	return &HookResult{
-		Pass:   false,
-		Reason: "default hook",
+func (d defaultHook) NewsFilterHook(notify concern.Notify) *HookResult {
+	switch notify.Type() {
+	case concern.BilibiliNews:
+		return defaultHookResult
+	default:
+		return HookResultPass
 	}
 }
 
+func (d defaultHook) AtBeforeHook(notify concern.Notify) *HookResult {
+	return defaultHookResult
+}
+
 func (d defaultHook) ShouldSendHook(notify concern.Notify) *HookResult {
-	return &HookResult{
-		Pass:   false,
-		Reason: "default hook",
-	}
+	return defaultHookResult
+}
+
+var defaultHookResult = &HookResult{
+	Pass:   false,
+	Reason: "default hook",
+}
+
+var HookResultPass = &HookResult{
+	Pass: true,
 }

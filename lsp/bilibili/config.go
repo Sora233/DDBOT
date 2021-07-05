@@ -58,6 +58,28 @@ func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concer
 	return g.GroupConcernConfig.ShouldSendHook(notify)
 }
 
+func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concern_manager.HookResult) {
+	hook = new(concern_manager.HookResult)
+	switch notify.(type) {
+	case *ConcernLiveNotify:
+		hook.Pass = true
+		return
+	case *ConcernNewsNotify:
+		switch g.GroupConcernFilter.Type {
+		case concern_manager.FilterTypeText:
+			hook.Pass = true
+		case concern_manager.FilterTypeType, concern_manager.FilterTypeNotType:
+			hook.Pass = true
+		default:
+			hook.Reason = "unknown filter type"
+		}
+		return
+	default:
+		hook.Reason = "unknown notify type"
+		return
+	}
+}
+
 func NewGroupConcernConfig(g *concern_manager.GroupConcernConfig) *GroupConcernConfig {
 	return &GroupConcernConfig{*g}
 }

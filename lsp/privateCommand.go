@@ -171,7 +171,7 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		Group int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
 	}
 
-	kongCtx, output := c.parseCommandSyntax(&configCmd, ConfigCommand)
+	kongCtx, output := c.parseCommandSyntax(&configCmd, ConfigCommand, kong.Description("管理BOT的配置，目前支持配置@成员、@全体成员、开启下播推送、开启标题推送"))
 	if output != "" {
 		c.textReply(output)
 	}

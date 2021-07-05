@@ -1,0 +1,44 @@
+package concern_manager
+
+import (
+	"encoding/json"
+	"errors"
+)
+
+const (
+	FilterTypeType    = "type"
+	FilterTypeNotType = "not_type"
+	FilterTypeText    = "text"
+)
+
+type GroupConcernFilterConfigByType struct {
+	Type []string `json:"type"`
+}
+
+type GroupConcernFilterConfigByText struct {
+	Text []string `json:"text"`
+}
+
+// GroupConcernFilterConfig 过滤器配置
+type GroupConcernFilterConfig struct {
+	Type   string `json:"type"`
+	Config string `json:"config"`
+}
+
+func (c *GroupConcernFilterConfig) GetFilterByType() (*GroupConcernFilterConfigByType, error) {
+	if c.Type != FilterTypeType && c.Type != FilterTypeNotType {
+		return nil, errors.New("filter type mismatched")
+	}
+	var result = new(GroupConcernFilterConfigByType)
+	err := json.Unmarshal([]byte(c.Config), result)
+	return result, err
+}
+
+func (c *GroupConcernFilterConfig) GetFilterByText() (*GroupConcernFilterConfigByText, error) {
+	if c.Type != FilterTypeText {
+		return nil, errors.New("filter type mismatched")
+	}
+	var result = new(GroupConcernFilterConfigByText)
+	err := json.Unmarshal([]byte(c.Config), result)
+	return result, err
+}

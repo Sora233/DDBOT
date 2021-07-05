@@ -68,6 +68,9 @@ func TestGroupConcernConfig_ToString(t *testing.T) {
 			},
 			"group_concern_notify":{
 				"title_change_notify": 1, "offline_notify": 4
+			},
+			"group_concern_filter": {
+				"type": "", "config":""
 			}
 		}`,
 	}
