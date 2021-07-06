@@ -141,6 +141,9 @@ func (n *NewsInfo) ToString() string {
 type ConcernNewsNotify struct {
 	GroupCode int64 `json:"group_code"`
 	NewsInfo
+
+	// messageCache 导致ConcernNewsNotify的ToMessage()变得线程不安全
+	messageCache []message.IMessageElement
 }
 
 func (notify *ConcernNewsNotify) Type() concern.Type {
@@ -275,6 +278,9 @@ func NewConcernLiveNotify(groupCode int64, liveInfo *LiveInfo) *ConcernLiveNotif
 }
 
 func (notify *ConcernNewsNotify) ToMessage() []message.IMessageElement {
+	if notify.messageCache != nil {
+		return notify.messageCache
+	}
 	var results []message.IMessageElement
 	for index, card := range notify.Cards {
 		var result []message.IMessageElement
@@ -724,6 +730,7 @@ func (notify *ConcernNewsNotify) ToMessage() []message.IMessageElement {
 		result = append(result, message.NewText(dynamicUrl+"\n"))
 		results = append(results, result...)
 	}
+	notify.messageCache = results
 	return results
 }
 func (notify *ConcernNewsNotify) GetGroupCode() int64 {

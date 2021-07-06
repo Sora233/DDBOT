@@ -508,6 +508,10 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 	msg.Elements = localutils.MessageFilter(msg.Elements, func(element message.IMessageElement) bool {
 		return element != nil
 	})
+	if len(msg.Elements) == 0 {
+		logger.WithField("GroupCode", groupCode).Debug("send with empty message")
+		return &message.GroupMessage{Id: -1}
+	}
 	// don't know why
 	// msg.Elements = l.compactTextElements(msg.Elements)
 	var res *message.GroupMessage

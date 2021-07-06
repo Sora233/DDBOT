@@ -1,8 +1,12 @@
 package bilibili
 
 import (
+	"fmt"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/utils"
+	"strconv"
+	"strings"
 )
 
 type GroupConcernConfig struct {
@@ -60,16 +64,68 @@ func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concer
 
 func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concern_manager.HookResult) {
 	hook = new(concern_manager.HookResult)
-	switch notify.(type) {
+	switch n := notify.(type) {
 	case *ConcernLiveNotify:
 		hook.Pass = true
 		return
 	case *ConcernNewsNotify:
 		switch g.GroupConcernFilter.Type {
 		case concern_manager.FilterTypeText:
-			hook.Pass = true
+			textFilter, err := g.GroupConcernFilter.GetFilterByText()
+			if err != nil {
+				logger.WithField("GroupConcernTextFilter", g.GroupConcernFilter.Config).
+					Errorf("get text filter error %v", err)
+				hook.Pass = true
+			} else {
+				for _, text := range textFilter.Text {
+					if strings.Contains(utils.MsgToString(notify.ToMessage()), text) {
+						hook.Pass = true
+						break
+					}
+				}
+				if !hook.Pass {
+					hook.Reason = "TextFilter All pattern match failed"
+				}
+			}
 		case concern_manager.FilterTypeType, concern_manager.FilterTypeNotType:
-			hook.Pass = true
+			typeFilter, err := g.GroupConcernFilter.GetFilterByType()
+			if err != nil {
+				logger.WithField("GroupConcernFilterConfig", g.GroupConcernFilter.Config).
+					Errorf("get type filter error %v", err)
+				hook.Pass = true
+			} else {
+				var originSize = len(n.Cards)
+				var convTypes []DynamicDescType
+				var filteredCards []*Card
+				for _, tp := range typeFilter.Type {
+					if types, _ := PredefinedType[tp]; types != nil {
+						convTypes = append(convTypes, types...)
+					} else {
+						if t, err := strconv.ParseInt(tp, 10, 64); err == nil {
+							convTypes = append(convTypes, DynamicDescType(t))
+						}
+					}
+				}
+
+			CardLoop:
+				for _, card := range n.Cards {
+					for _, tp := range convTypes {
+						if card.GetDesc().GetType() == tp {
+							filteredCards = append(filteredCards, card)
+							continue CardLoop
+						}
+					}
+					logger.WithField("CardType", card.GetDesc().GetType()).
+						WithField("DynamicId", card.GetDesc().GetDynamicIdStr()).
+						WithField("TypeFilter", convTypes).
+						Debug("Card Filtered by typeFilter")
+				}
+				n.Cards = filteredCards
+				hook.PassOrReason(len(n.Cards) > 0, fmt.Sprintf("All %v cards are filtered", originSize))
+				if hook.Pass {
+					logger.Debugf("NewsFilterHook done, size %v -> %v", originSize, len(n.Cards))
+				}
+			}
 		default:
 			hook.Reason = "unknown filter type"
 		}
@@ -82,4 +138,14 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 
 func NewGroupConcernConfig(g *concern_manager.GroupConcernConfig) *GroupConcernConfig {
 	return &GroupConcernConfig{*g}
+}
+
+var PredefinedType = map[string][]DynamicDescType{
+	"专栏":   {DynamicDescType_WithPost},
+	"转发":   {DynamicDescType_WithOrigin},
+	"投稿":   {DynamicDescType_WithVideo},
+	"文字":   {DynamicDescType_TextOnly},
+	"图片":   {DynamicDescType_WithImage},
+	"音频":   {DynamicDescType_WithMusic},
+	"直播分享": {DynamicDescType_WithLive, DynamicDescType_WithLiveV2},
 }
