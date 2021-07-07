@@ -357,6 +357,9 @@ func (c *StateManager) FreshIndex(groups ...int64) {
 		return
 	}
 	db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
+	db.CreateIndex(c.GroupConcernConfigKey(), c.GroupConcernConfigKey("*"), buntdb.IndexString)
+	db.CreateIndex(c.GroupAtAllMarkKey(), c.GroupAtAllMarkKey("*"), buntdb.IndexString)
+	db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
 	if len(groups) == 0 {
 		for _, groupInfo := range miraiBot.Instance.GroupList {
 			db.CreateIndex(c.GroupConcernStateKey(groupInfo.Code), c.GroupConcernStateKey(groupInfo.Code, "*"), buntdb.IndexString)
