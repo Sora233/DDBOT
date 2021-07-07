@@ -15,8 +15,18 @@ type GroupConcernFilterConfigByType struct {
 	Type []string `json:"type"`
 }
 
+func (g *GroupConcernFilterConfigByType) ToString() string {
+	b, _ := json.Marshal(g)
+	return string(b)
+}
+
 type GroupConcernFilterConfigByText struct {
 	Text []string `json:"text"`
+}
+
+func (g *GroupConcernFilterConfigByText) ToString() string {
+	b, _ := json.Marshal(g)
+	return string(b)
 }
 
 // GroupConcernFilterConfig 过滤器配置

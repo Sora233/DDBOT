@@ -26,13 +26,31 @@ func newLiveInfo(uid int64, living bool, liveStatusChanged bool, liveTitleChange
 	return notify
 }
 
+func newNewsInfo(uid int64, cardTypes ...DynamicDescType) *ConcernNewsNotify {
+	notify := &ConcernNewsNotify{
+		NewsInfo: NewsInfo{
+			UserInfo: UserInfo{
+				Mid: uid,
+			},
+		},
+	}
+	for _, t := range cardTypes {
+		notify.Cards = append(notify.Cards, &Card{
+			Desc: &Card_Desc{
+				Type: t,
+			},
+		})
+	}
+	return notify
+}
+
 func TestNewGroupConcernConfig(t *testing.T) {
 	g := NewGroupConcernConfig(new(concern_manager.GroupConcernConfig))
 	assert.NotNil(t, g)
 }
 
 func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
-	var liveInfos = []*ConcernLiveNotify{
+	var notify = []concern.Notify{
 		// 下播状态 什么也没变 不推
 		newLiveInfo(test.UID1, false, false, false),
 		// 下播状态 标题变了 不推
@@ -49,6 +67,8 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 		newLiveInfo(test.UID1, true, true, false),
 		// 开播了改了标题 推
 		newLiveInfo(test.UID1, true, true, true),
+		// 无法处理news，应该pass
+		newNewsInfo(test.UID1, DynamicDescType_TextOnly),
 	}
 	var testCase = []*GroupConcernConfig{
 		{},
@@ -79,24 +99,28 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 		{
 			false, false, false, false,
 			false, false, true, true,
+			true,
 		},
 		{
 			false, false, false, false,
 			false, true, true, true,
+			true,
 		},
 		{
 			false, false, true, true,
 			false, false, true, true,
+			true,
 		},
 		{
 			false, false, true, true,
 			false, true, true, true,
+			true,
 		},
 	}
 	assert.Equal(t, len(expected), len(testCase))
 	for index1, g := range testCase {
-		assert.Equal(t, len(expected[index1]), len(liveInfos))
-		for index2, liveInfo := range liveInfos {
+		assert.Equal(t, len(expected[index1]), len(notify))
+		for index2, liveInfo := range notify {
 			result := g.ShouldSendHook(liveInfo)
 			assert.NotNil(t, result)
 			assert.Equal(t, expected[index1][index2], result.Pass)
@@ -132,5 +156,89 @@ func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 	for index, liveInfo := range liveInfos {
 		result := g.AtBeforeHook(liveInfo)
 		assert.Equal(t, expected[index], result.Pass)
+	}
+}
+
+func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
+	var notify = newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
+	var g = new(GroupConcernConfig)
+
+	assert.False(t, g.NewsFilterHook(notify).Pass)
+	g.GroupConcernFilter.GetFilterByText()
+
+	var typeFilter = []*concern_manager.GroupConcernFilterConfigByType{
+		{
+			Type: []string{
+				Zhuanfa,
+			},
+		},
+		{
+			Type: []string{
+				Tupian,
+			},
+		},
+		{
+			Type: []string{
+				Tupian, Wenzi,
+			},
+		},
+		{
+			Type: []string{
+				Yinpin,
+			},
+		},
+	}
+
+	var expectedType = [][]DynamicDescType{
+		{
+			DynamicDescType_WithOrigin,
+		},
+		{
+			DynamicDescType_WithImage,
+		},
+		{
+			DynamicDescType_WithImage, DynamicDescType_TextOnly,
+		},
+		nil,
+	}
+
+	var expectedNotType = [][]DynamicDescType{
+		{
+			DynamicDescType_WithImage, DynamicDescType_TextOnly,
+		},
+		{
+			DynamicDescType_WithOrigin, DynamicDescType_TextOnly,
+		},
+		{
+			DynamicDescType_WithOrigin,
+		},
+		{
+			DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly,
+		},
+	}
+
+	testFn := func(index int, tp string, expected []DynamicDescType) {
+		notify := newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
+		var g = new(GroupConcernConfig)
+		g.GroupConcernFilter = concern_manager.GroupConcernFilterConfig{
+			Type:   tp,
+			Config: typeFilter[index].ToString(),
+		}
+		hookResult := g.NewsFilterHook(notify)
+		var resultType []DynamicDescType
+		for _, card := range notify.Cards {
+			resultType = append(resultType, card.GetDesc().GetType())
+		}
+		if len(resultType) == 0 {
+			assert.False(t, hookResult.Pass)
+		} else {
+			assert.True(t, hookResult.Pass)
+			assert.EqualValues(t, expected, resultType)
+		}
+	}
+
+	for index := range typeFilter {
+		testFn(index, concern_manager.FilterTypeType, expectedType[index])
+		testFn(index, concern_manager.FilterTypeNotType, expectedNotType[index])
 	}
 }

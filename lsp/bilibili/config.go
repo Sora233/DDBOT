@@ -156,12 +156,22 @@ func NewGroupConcernConfig(g *concern_manager.GroupConcernConfig) *GroupConcernC
 	return &GroupConcernConfig{*g}
 }
 
+const (
+	Zhuanlan      = "专栏"
+	Zhuanfa       = "转发"
+	Tougao        = "投稿"
+	Wenzi         = "文字"
+	Tupian        = "图片"
+	Yinpin        = "音频"
+	Zhibofenxiang = "直播分享"
+)
+
 var PredefinedType = map[string][]DynamicDescType{
-	"专栏":   {DynamicDescType_WithPost},
-	"转发":   {DynamicDescType_WithOrigin},
-	"投稿":   {DynamicDescType_WithVideo},
-	"文字":   {DynamicDescType_TextOnly},
-	"图片":   {DynamicDescType_WithImage},
-	"音频":   {DynamicDescType_WithMusic},
-	"直播分享": {DynamicDescType_WithLive, DynamicDescType_WithLiveV2},
+	Zhuanlan:      {DynamicDescType_WithPost},
+	Zhuanfa:       {DynamicDescType_WithOrigin},
+	Tougao:        {DynamicDescType_WithVideo},
+	Wenzi:         {DynamicDescType_TextOnly},
+	Tupian:        {DynamicDescType_WithImage},
+	Yinpin:        {DynamicDescType_WithMusic},
+	Zhibofenxiang: {DynamicDescType_WithLive, DynamicDescType_WithLiveV2},
 }
