@@ -107,18 +107,34 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 					}
 				}
 
-			CardLoop:
 				for _, card := range n.Cards {
-					for _, tp := range convTypes {
-						if card.GetDesc().GetType() == tp {
-							filteredCards = append(filteredCards, card)
-							continue CardLoop
+					var ok bool
+					switch g.GroupConcernFilter.Type {
+					case concern_manager.FilterTypeType:
+						ok = false
+						for _, tp := range convTypes {
+							if card.GetDesc().GetType() == tp {
+								ok = true
+								break
+							}
+						}
+					case concern_manager.FilterTypeNotType:
+						ok = true
+						for _, tp := range convTypes {
+							if card.GetDesc().GetType() == tp {
+								ok = false
+								break
+							}
 						}
 					}
-					logger.WithField("CardType", card.GetDesc().GetType()).
-						WithField("DynamicId", card.GetDesc().GetDynamicIdStr()).
-						WithField("TypeFilter", convTypes).
-						Debug("Card Filtered by typeFilter")
+					if ok {
+						filteredCards = append(filteredCards, card)
+					} else {
+						logger.WithField("CardType", card.GetDesc().GetType()).
+							WithField("DynamicId", card.GetDesc().GetDynamicIdStr()).
+							WithField("TypeFilter", convTypes).
+							Debug("Card Filtered by typeFilter")
+					}
 				}
 				n.Cards = filteredCards
 				hook.PassOrReason(len(n.Cards) > 0, fmt.Sprintf("All %v cards are filtered", originSize))
