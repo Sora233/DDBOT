@@ -168,6 +168,27 @@ func (c *LspPrivateCommand) ConfigCommand() {
 			Id     string `arg:"" help:"配置的主播id"`
 			Switch string `arg:"" default:"off" enum:"on,off," help:"on / off"`
 		} `cmd:"" help:"配置下播时是否进行推送，默认不推送" name:"offline_notify"`
+		Filter struct {
+			Site string `optional:"" short:"s" default:"bilibili" help:"bilibili"`
+			Type struct {
+				Id   string   `arg:"" help:"配置的主播id"`
+				Type []string `arg:"" optional:"" help:"指定的种类"`
+			} `cmd:"" help:"只推送指定种类的动态" name:"type" group:"filter"`
+			NotType struct {
+				Id   string   `arg:"" help:"配置的主播id"`
+				Type []string `arg:"" optional:"" help:"指定不推送的种类"`
+			} `cmd:"" help:"不推送指定种类的动态" name:"not_type" group:"filter"`
+			Text struct {
+				Id      string   `arg:"" help:"配置的主播id"`
+				Keyword []string `arg:"" optional:"" help:"指定的关键字"`
+			} `cmd:"" help:"当动态内容里出现关键字时进行推送" name:"text" group:"filter"`
+			Clear struct {
+				Id string `arg:"" help:"配置的主播id"`
+			} `cmd:"" help:"清除过滤器" name:"clear" group:"filter"`
+			Show struct {
+				Id string `arg:"" help:"配置的主播id"`
+			} `cmd:"" help:"查看当前过滤器" name:"show" group:"filter"`
+		} `cmd:"" help:"配置动态过滤器，目前只支持b站动态" name:"filter"`
 		Group int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
 	}
 
@@ -185,8 +206,9 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		return
 	}
 
-	cmd := strings.Split(kongCtx.Command(), " ")[0]
+	kongPath := strings.Split(kongCtx.Command(), " ")
 
+	cmd := kongPath[0]
 	log = log.WithFields(localutils.GroupLogFields(groupCode)).WithField("sub_command", cmd)
 
 	switch cmd {
@@ -234,6 +256,29 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		var on = localutils.Switch2Bool(configCmd.OfflineNotify.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.OfflineNotify.Id).WithField("on", on)
 		IConfigOfflineNotifyCmd(c.NewMessageContext(log), groupCode, configCmd.OfflineNotify.Id, site, ctype, on)
+	case "filter":
+		filterCmd := kongPath[1]
+		site, ctype, err := c.ParseRawSiteAndType(configCmd.Filter.Site, "news")
+		if err != nil {
+			log.WithField("site", configCmd.Filter.Site).Errorf("ParseRawSiteAndType failed %v", err)
+			c.textSend(fmt.Sprintf("失败 - %v", err.Error()))
+			return
+		}
+		switch filterCmd {
+		case "type":
+			IConfigFilterCmdType(c.NewMessageContext(log), groupCode, configCmd.Filter.Type.Id, site, ctype, configCmd.Filter.Type.Type)
+		case "not_type":
+			IConfigFilterCmdNotType(c.NewMessageContext(log), groupCode, configCmd.Filter.NotType.Id, site, ctype, configCmd.Filter.NotType.Type)
+		case "text":
+			IConfigFilterCmdText(c.NewMessageContext(log), groupCode, configCmd.Filter.Text.Id, site, ctype, configCmd.Filter.Text.Keyword)
+		case "clear":
+			IConfigFilterCmdClear(c.NewMessageContext(log), groupCode, configCmd.Filter.Clear.Id, site, ctype)
+		case "show":
+			IConfigFilterCmdShow(c.NewMessageContext(log), groupCode, configCmd.Filter.Show.Id, site, ctype)
+		default:
+			log.WithField("filter_cmd", filterCmd).Errorf("unknown filter command")
+			c.textSend("未知的filter子命令")
+		}
 	default:
 		c.textSend("暂未支持，你可以催作者GKD")
 	}

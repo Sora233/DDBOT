@@ -163,8 +163,9 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 	var notify = newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
 	var g = new(GroupConcernConfig)
 
-	assert.False(t, g.NewsFilterHook(notify).Pass)
-	g.GroupConcernFilter.GetFilterByText()
+	// 默认应该不过滤
+	assert.True(t, g.NewsFilterHook(notify).Pass)
+	assert.Len(t, notify.Cards, 3)
 
 	var typeFilter = []*concern_manager.GroupConcernFilterConfigByType{
 		{

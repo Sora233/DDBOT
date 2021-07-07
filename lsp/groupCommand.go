@@ -674,7 +674,9 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		return
 	}
 
-	cmd := strings.Split(kongCtx.Command(), " ")[0]
+	kongPath := strings.Split(kongCtx.Command(), " ")
+
+	cmd := kongPath[0]
 	log = log.WithField("sub_command", cmd)
 
 	switch cmd {
@@ -722,6 +724,29 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		var on = utils.Switch2Bool(configCmd.OfflineNotify.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.OfflineNotify.Id).WithField("on", on)
 		IConfigOfflineNotifyCmd(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.OfflineNotify.Id, site, ctype, on)
+	case "filter":
+		filterCmd := kongPath[1]
+		site, ctype, err := lgc.ParseRawSiteAndType(configCmd.Filter.Site, "news")
+		if err != nil {
+			log.WithField("site", configCmd.Filter.Site).Errorf("ParseRawSiteAndType failed %v", err)
+			lgc.textSend(fmt.Sprintf("失败 - %v", err.Error()))
+			return
+		}
+		switch filterCmd {
+		case "type":
+			IConfigFilterCmdType(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.Filter.Type.Id, site, ctype, configCmd.Filter.Type.Type)
+		case "not_type":
+			IConfigFilterCmdNotType(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.Filter.NotType.Id, site, ctype, configCmd.Filter.NotType.Type)
+		case "text":
+			IConfigFilterCmdText(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.Filter.Text.Id, site, ctype, configCmd.Filter.Text.Keyword)
+		case "clear":
+			IConfigFilterCmdClear(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.Filter.Clear.Id, site, ctype)
+		case "show":
+			IConfigFilterCmdShow(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.Filter.Show.Id, site, ctype)
+		default:
+			log.WithField("filter_cmd", filterCmd).Errorf("unknown filter command")
+			lgc.textSend("未知的filter子命令")
+		}
 	default:
 		lgc.textSend("暂未支持，你可以催作者GKD")
 	}

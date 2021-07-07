@@ -16,6 +16,7 @@ import (
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
+	"strings"
 	"time"
 )
 
@@ -537,6 +538,128 @@ func IConfigOfflineNotifyCmd(c *MessageContext, groupCode int64, id string, site
 	} else {
 		ReplyUserInfo(c, site, id)
 	}
+}
+
+func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, types []string) {
+	if len(types) == 0 {
+		c.TextReply("没有指定过滤类型")
+		return
+	}
+	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
+		config.GroupConcernFilter.Type = concern_manager.FilterTypeType
+		filterConfig := &concern_manager.GroupConcernFilterConfigByType{Type: types}
+		config.GroupConcernFilter.Config = filterConfig.ToString()
+		return true
+	})
+	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
+		return
+	}
+	if err != nil {
+		c.TextReply(err.Error())
+	} else {
+		ReplyUserInfo(c, site, id)
+	}
+}
+
+func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, types []string) {
+	if len(types) == 0 {
+		c.TextReply("没有指定过滤类型")
+		return
+	}
+	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
+		config.GroupConcernFilter.Type = concern_manager.FilterTypeNotType
+		filterConfig := &concern_manager.GroupConcernFilterConfigByType{Type: types}
+		config.GroupConcernFilter.Config = filterConfig.ToString()
+		return true
+	})
+	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
+		return
+	}
+	if err != nil {
+		c.TextReply(err.Error())
+	} else {
+		ReplyUserInfo(c, site, id)
+	}
+}
+
+func IConfigFilterCmdText(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, keywords []string) {
+	if len(keywords) == 0 {
+		c.TextReply("没有指定过滤关键字")
+		return
+	}
+	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
+		config.GroupConcernFilter.Type = concern_manager.FilterTypeText
+		filterConfig := &concern_manager.GroupConcernFilterConfigByText{Text: keywords}
+		config.GroupConcernFilter.Config = filterConfig.ToString()
+		return true
+	})
+	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
+		return
+	}
+	if err != nil {
+		c.TextReply(err.Error())
+	} else {
+		ReplyUserInfo(c, site, id)
+	}
+}
+
+func IConfigFilterCmdClear(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type) {
+	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
+		config.GroupConcernFilter = concern_manager.GroupConcernFilterConfig{}
+		return true
+	})
+	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
+		return
+	}
+	if err != nil {
+		c.TextReply(err.Error())
+	} else {
+		ReplyUserInfo(c, site, id)
+	}
+
+}
+
+func IConfigFilterCmdShow(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type) {
+	_ = iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
+		if config.GroupConcernFilter.Empty() {
+			c.TextReply("当前配置为空")
+			return false
+		}
+		sb := strings.Builder{}
+		sb.WriteString("当前配置：\n")
+		switch config.GroupConcernFilter.Type {
+		case concern_manager.FilterTypeText:
+			sb.WriteString("关键字过滤模式：\n")
+			filter, err := config.GroupConcernFilter.GetFilterByText()
+			if err != nil {
+				logger.WithField("filter_config", config.GroupConcernFilter.Config).Errorf("get filter failed %v", err)
+				c.TextReply("查询失败 - 内部错误")
+				return false
+			}
+			for _, kw := range filter.Text {
+				sb.WriteString(kw)
+				sb.WriteRune('\n')
+			}
+		case concern_manager.FilterTypeType, concern_manager.FilterTypeNotType:
+			filter, err := config.GroupConcernFilter.GetFilterByType()
+			if err != nil {
+				logger.WithField("filter_config", config.GroupConcernFilter.Config).Errorf("get filter failed %v", err)
+				c.TextReply("查询失败 - 内部错误")
+				return false
+			}
+			if config.GroupConcernFilter.Type == concern_manager.FilterTypeType {
+				sb.WriteString("动态类型过滤模式 - 只推送以下种类的动态：\n")
+			} else if config.GroupConcernFilter.Type == concern_manager.FilterTypeNotType {
+				sb.WriteString("动态类型过滤模式 - 不推送以下种类的动态：\n")
+			}
+			for _, tp := range filter.Type {
+				sb.WriteString(tp)
+				sb.WriteRune('\n')
+			}
+		}
+		c.TextReply(sb.String())
+		return false
+	})
 }
 
 func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, f func(*concern_manager.GroupConcernConfig) bool) (err error) {

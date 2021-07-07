@@ -35,6 +35,10 @@ type GroupConcernFilterConfig struct {
 	Config string `json:"config"`
 }
 
+func (g *GroupConcernFilterConfig) Empty() bool {
+	return g.Type == "" || g.Config == ""
+}
+
 func (c *GroupConcernFilterConfig) GetFilterByType() (*GroupConcernFilterConfigByType, error) {
 	if c.Type != FilterTypeType && c.Type != FilterTypeNotType {
 		return nil, errors.New("filter type mismatched")
