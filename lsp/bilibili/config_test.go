@@ -185,7 +185,7 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 		},
 		{
 			Type: []string{
-				Yinpin,
+				Zhibofenxiang,
 			},
 		},
 	}

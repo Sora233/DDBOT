@@ -167,16 +167,14 @@ const (
 	Tougao        = "投稿"
 	Wenzi         = "文字"
 	Tupian        = "图片"
-	Yinpin        = "音频"
 	Zhibofenxiang = "直播分享"
 )
 
 var PredefinedType = map[string][]DynamicDescType{
 	Zhuanlan:      {DynamicDescType_WithPost},
 	Zhuanfa:       {DynamicDescType_WithOrigin},
-	Tougao:        {DynamicDescType_WithVideo},
+	Tougao:        {DynamicDescType_WithVideo, DynamicDescType_WithMusic, DynamicDescType_WithPost},
 	Wenzi:         {DynamicDescType_TextOnly},
 	Tupian:        {DynamicDescType_WithImage},
-	Yinpin:        {DynamicDescType_WithMusic},
 	Zhibofenxiang: {DynamicDescType_WithLive, DynamicDescType_WithLiveV2},
 }
