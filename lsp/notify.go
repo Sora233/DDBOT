@@ -35,6 +35,12 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				continue
 			}
 
+			newsFilterHook := hook.NewsFilterHook(inotify)
+			if !newsFilterHook.Pass {
+				log.WithField("Reason", newsFilterHook.Reason).Debug("notify filtered by hook NewsFilterHook")
+				continue
+			}
+
 			chainMsg = append(chainMsg, l.NotifyMessage(inotify))
 
 			// atConfig
