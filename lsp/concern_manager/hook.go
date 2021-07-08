@@ -26,6 +26,9 @@ type defaultHook struct {
 }
 
 func (d defaultHook) NewsFilterHook(notify concern.Notify) *HookResult {
+	if notify == nil {
+		return defaultHookResult
+	}
 	switch notify.Type() {
 	case concern.BilibiliNews:
 		return defaultHookResult

@@ -163,29 +163,32 @@ func TestGroupConcernAtConfig_RemoveAtSomeoneList(t *testing.T) {
 
 func TestGroupConcernAtConfig_MergeAtSomeoneList(t *testing.T) {
 	var g = &GroupConcernAtConfig{
-		AtAll: 0,
-		AtSomeone: []*AtSomeone{
-			{
-				Ctype:  concern.BibiliLive,
-				AtList: []int64{1, 2, 3, 4},
-			},
-		},
+		AtAll:     0,
+		AtSomeone: nil,
+	}
+
+	g.MergeAtSomeoneList(concern.BibiliLive, []int64{1, 2, 3, 4})
+	for i := 1; i <= 4; i++ {
+		assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
 	}
 	g.MergeAtSomeoneList(concern.BibiliLive, []int64{3, 4, 5})
-	assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(5))
+	for i := 1; i <= 5; i++ {
+		assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
+	}
 	assert.EqualValues(t, 0, len(g.GetAtSomeoneList(concern.DouyuLive)))
 }
 
 func TestGroupConcernAtConfig_SetAtSomeoneList(t *testing.T) {
 	var g = &GroupConcernAtConfig{
-		AtAll: 0,
-		AtSomeone: []*AtSomeone{
-			{
-				Ctype:  concern.BibiliLive,
-				AtList: []int64{1, 2, 3, 4},
-			},
-		},
+		AtAll:     0,
+		AtSomeone: nil,
 	}
+
+	g.SetAtSomeoneList(concern.BibiliLive, []int64{1, 2, 3, 4})
+	for i := 1; i <= 4; i++ {
+		assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
+	}
+
 	g.SetAtSomeoneList(concern.BibiliLive, []int64{5, 6})
 	for i := 1; i <= 6; i++ {
 		if i <= 4 {
@@ -203,5 +206,35 @@ func TestGroupConcernNotifyConfig_CheckOfflineNotify(t *testing.T) {
 	assert.True(t, g.CheckOfflineNotify(concern.BibiliLive))
 	assert.True(t, g.CheckOfflineNotify(concern.DouyuLive))
 	assert.False(t, g.CheckOfflineNotify(concern.HuyaLive))
+}
+
+func TestGroupConcernFilterConfig_GetFilter(t *testing.T) {
+	var g GroupConcernConfig
+	_, err := g.GroupConcernFilter.GetFilterByType()
+	assert.NotNil(t, err)
+
+	assert.True(t, g.GroupConcernFilter.Empty())
+
+	g.GroupConcernFilter.Type = FilterTypeType
+	g.GroupConcernFilter.Config = new(GroupConcernFilterConfigByType).ToString()
+
+	_, err = g.GroupConcernFilter.GetFilterByType()
+	assert.Nil(t, err)
+
+	_, err = g.GroupConcernFilter.GetFilterByText()
+	assert.NotNil(t, err)
+
+	assert.False(t, g.GroupConcernFilter.Empty())
+
+	g.GroupConcernFilter.Type = FilterTypeText
+	g.GroupConcernFilter.Config = new(GroupConcernFilterConfigByText).ToString()
+
+	_, err = g.GroupConcernFilter.GetFilterByText()
+	assert.Nil(t, err)
+
+	_, err = g.GroupConcernFilter.GetFilterByType()
+	assert.NotNil(t, err)
+
+	assert.False(t, g.GroupConcernFilter.Empty())
 
 }

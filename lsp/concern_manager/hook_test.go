@@ -21,4 +21,6 @@ func TestHook(t *testing.T) {
 	assert.False(t, hook.Pass)
 	assert.Equal(t, "222", hook.Reason)
 
+	r := d.NewsFilterHook(nil)
+	assert.False(t, r.Pass)
 }
