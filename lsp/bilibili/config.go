@@ -178,3 +178,21 @@ var PredefinedType = map[string][]DynamicDescType{
 	Tupian:        {DynamicDescType_WithImage},
 	Zhibofenxiang: {DynamicDescType_WithLive, DynamicDescType_WithLiveV2},
 }
+
+func CheckTypeDefine(types []string) (invalid []string) {
+	for _, t := range types {
+		if PredefinedType[t] != nil {
+			continue
+		}
+		tp, err := strconv.ParseInt(t, 10, 32)
+		if err != nil {
+			invalid = append(invalid, t)
+			continue
+		}
+		if _, found := DynamicDescType_name[int32(tp)]; tp != 0 && found {
+			continue
+		}
+		invalid = append(invalid, t)
+	}
+	return
+}

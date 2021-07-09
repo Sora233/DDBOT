@@ -243,3 +243,9 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 		testFn(index, concern_manager.FilterTypeNotType, expectedNotType[index])
 	}
 }
+
+func TestCheckTypeDefine(t *testing.T) {
+	result := CheckTypeDefine([]string{"invalid", Zhuanlan, "1024", "0", "9"})
+	assert.Len(t, result, 3)
+	assert.EqualValues(t, []string{"invalid", "0", "9"}, result)
+}

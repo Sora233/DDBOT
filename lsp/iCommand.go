@@ -542,7 +542,16 @@ func IConfigOfflineNotifyCmd(c *MessageContext, groupCode int64, id string, site
 
 func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, types []string) {
 	if len(types) == 0 {
-		c.TextReply("没有指定过滤类型")
+		c.TextReply("失败 - 没有指定过滤类型")
+		return
+	}
+	if ctype != concern.BilibiliNews {
+		c.TextReply("失败 - 暂不支持")
+		return
+	}
+	var invalid = bilibili.CheckTypeDefine(types)
+	if len(invalid) != 0 {
+		c.TextReply(fmt.Sprintf("失败 - 未定义的类型：\n%v", strings.Join(invalid, " ")))
 		return
 	}
 	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
@@ -563,9 +572,19 @@ func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site st
 
 func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, types []string) {
 	if len(types) == 0 {
-		c.TextReply("没有指定过滤类型")
+		c.TextReply("失败 - 没有指定过滤类型")
 		return
 	}
+	if ctype != concern.BilibiliNews {
+		c.TextReply("失败 - 暂不支持")
+		return
+	}
+	var invalid = bilibili.CheckTypeDefine(types)
+	if len(invalid) != 0 {
+		c.TextReply(fmt.Sprintf("失败 - 未定义的类型：\n%v", strings.Join(invalid, " ")))
+		return
+	}
+
 	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
 		config.GroupConcernFilter.Type = concern_manager.FilterTypeNotType
 		filterConfig := &concern_manager.GroupConcernFilterConfigByType{Type: types}
@@ -584,7 +603,7 @@ func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site
 
 func IConfigFilterCmdText(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, keywords []string) {
 	if len(keywords) == 0 {
-		c.TextReply("没有指定过滤关键字")
+		c.TextReply("失败 - 没有指定过滤关键字")
 		return
 	}
 	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
