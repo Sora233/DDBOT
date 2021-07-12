@@ -27,4 +27,4 @@ require (
 	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
 )
 
-replace github.com/Logiase/MiraiGo-Template => github.com/Sora233/MiraiGo-Template v0.0.0-20210702144820-42ff097050f0
+replace github.com/Logiase/MiraiGo-Template => github.com/Sora233/MiraiGo-Template v0.0.0-20210712123458-dea21fc94120

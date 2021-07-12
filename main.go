@@ -9,6 +9,7 @@ import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/alecthomas/kong"
+	"io/ioutil"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -25,11 +26,10 @@ func init() {
 
 func main() {
 	var cli struct {
-		Play           bool  `optional:"" help:"run the play function"`
-		Debug          bool  `optional:"" help:"enable debug mode"`
-		GenerateDevice bool  `optional:"" xor:"c" help:"generate device.json"`
-		SetAdmin       int64 `optional:"" xor:"c" help:"set QQ number to Admin"`
-		Version        bool  `optional:"" xor:"c" short:"v" help:"print the version info"`
+		Play     bool  `optional:"" help:"run the play function"`
+		Debug    bool  `optional:"" help:"enable debug mode"`
+		SetAdmin int64 `optional:"" xor:"c" help:"set QQ number to Admin"`
+		Version  bool  `optional:"" xor:"c" short:"v" help:"print the version info"`
 	}
 	kong.Parse(&cli)
 
@@ -39,9 +39,20 @@ func main() {
 		os.Exit(0)
 	}
 
-	if cli.GenerateDevice {
+	if b, _ := utils.FileExist("device.json"); !b {
+		fmt.Println("警告：没有检测到device.json，正在生成，如果是第一次运行，可忽略")
 		bot.GenRandomDevice()
-		os.Exit(0)
+	} else {
+		fmt.Println("检测到device.json，使用存在的device.json")
+	}
+
+	if b, _ := utils.FileExist("application.yaml"); !b {
+		fmt.Println("警告：没有检测到配置文件application.yaml，正在生成，如果是第一次运行，可忽略")
+		if err := ioutil.WriteFile("application.yaml", []byte(exampleConfig), 0755); err != nil {
+			fmt.Printf("application.yaml生成失败 - %v\n", err)
+		} else {
+			fmt.Println("最小配置application.yaml已生成，请按需修改，如需高级配置请查看帮助文档")
+		}
 	}
 
 	if cli.SetAdmin != 0 {
@@ -95,3 +106,26 @@ func main() {
 	<-ch
 	bot.Stop()
 }
+
+var exampleConfig = `
+bot:
+  account:  # 你的qq号，不填则使用扫码登陆
+  password: # 你的qq密码
+
+# b站登陆后的cookie字段，从cookie中找到这两个填进去，如果不会请百度搜索如何查看网站cookies
+# 请注意，bot将使用您b站帐号的以下功能，建议使用新注册的小号：
+# 关注用户 / 取消关注用户 / 查看关注列表
+# 警告：
+# SESSDATA和bili_jct等价于您的帐号凭证
+# 请绝对不要透露给他人，更不能上传至Github等公开平台
+# 否则将导致您的帐号被盗
+bilibili:
+  SESSDATA:
+  bili_jct:
+  interval: 15s
+
+concern:
+  emitInterval: 5s
+
+logLevel: info
+`

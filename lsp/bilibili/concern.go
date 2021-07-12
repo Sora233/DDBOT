@@ -52,6 +52,11 @@ func (c *Concern) Start() {
 		logger.Errorf("state manager start err %v", err)
 	}
 
+	if !IsVerifyGiven() {
+		logger.Errorf("verify not given, module bilibili won't work")
+		return
+	}
+
 	if runtime.NumCPU() >= 3 {
 		for i := 0; i < 3; i++ {
 			go c.notifyLoop()

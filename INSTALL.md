@@ -52,19 +52,17 @@ go build -tags nocv
 
 ### device.json
 
-device.json是运行时使用的设备信息，应尽量使用同一个，否则可能会触发安全机制无法登陆。
+device.json是运行时使用的设备信息（可以理解为伪装的手机型号），应尽量使用同一个，否则可能会触发安全机制无法登陆。
 
-第一次运行时请运行下面的命令生成device.json。
-
-```
-./DDBOT --generate-device
-```
+如果检测到不存在，该文件会自动生成，正常情况无需关心。
 
 ### application.json
 
-DDBOT运行时的配置文件， 配置完成后将文件改名为application.yaml，和DDBOT放在一起。
+DDBOT运行时的配置文件，如果检测到不存在，会生成一个最小配置。
 
 #### 最小配置
+
+测试时推荐使用扫码登陆，即不指定帐号和密码（注意：掉线或重启后无法自动重连，仍需扫码，仅推荐测试使用）。
 
 最小配置可以正常使用斗鱼、虎牙订阅功能。
 
@@ -74,7 +72,7 @@ DDBOT运行时的配置文件， 配置完成后将文件改名为application.ya
 
 ```yaml
 bot:
-  account:  # 你的qq号
+  account:  # 你的qq号，不填则使用扫码登陆
   password: # 你的qq密码
 
 # b站登陆后的cookie字段，从cookie中找到这两个填进去，如果不会请百度搜索如何查看网站cookies

@@ -11,7 +11,7 @@ $(COV): $(SRC)
 	go test ./... -tags=nocv -p=1 -coverprofile=$(COV)
 
 
-$(TARGET): $(SRC)
+$(TARGET): $(SRC) go.mod go.sum
 ifdef NOCV
 	echo 'build without opencv'
 	go build -tags nocv -ldflags '$(LDFLAGS)' -o $(TARGET)
