@@ -90,15 +90,16 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 		if err == concern_manager.ErrAlreadyExists {
 			return nil, errors.New("已经watch过了")
 		}
+		log.Errorf("CheckGroupConcern error %v", err)
 		return nil, err
 	}
 	var userInfo *UserInfo
 
-	userInfo, err = c.GetUserInfo(mid)
+	userInfo, _ = c.GetUserInfo(mid)
 	if userInfo == nil {
 		infoResp, err := XSpaceAccInfo(mid)
 		if err != nil {
-			log.Error(err)
+			log.Errorf("XSpaceAccInfo error %v", err)
 			return nil, fmt.Errorf("查询用户信息失败 %v - %v", mid, err)
 		}
 		if infoResp.Code != 0 {
@@ -118,11 +119,17 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 
 	oldCtype, err := c.StateManager.GetConcern(mid)
 	if err != nil {
-		log.Errorf("get concern error %v", err)
+		log.Errorf("GetConcern error %v", err)
 	} else if oldCtype.Empty() {
 		resp, err := c.ModifyUserRelation(mid, ActSub)
 		if err != nil {
-			return nil, fmt.Errorf("关注用户失败 - 内部错误")
+			if err == ErrVerifyRequired {
+				log.Errorf("ModifyUserRelation error %v", err)
+				return nil, fmt.Errorf("关注用户失败 - 未配置B站")
+			} else {
+				log.WithField("action", ActSub).Errorf("ModifyUserRelation error %v", err)
+				return nil, fmt.Errorf("关注用户失败 - 内部错误")
+			}
 		}
 		if resp.Code != 0 {
 			return nil, fmt.Errorf("关注用户失败 - %v", resp.GetMessage())
