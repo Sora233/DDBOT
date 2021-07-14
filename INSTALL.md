@@ -56,7 +56,7 @@ device.json是运行时使用的设备信息（可以理解为伪装的手机型
 
 如果检测到不存在，该文件会自动生成，正常情况无需关心。
 
-### application.json
+### application.yaml
 
 DDBOT运行时的配置文件，如果检测到不存在，会生成一个最小配置。
 
