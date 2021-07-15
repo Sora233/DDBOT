@@ -7,6 +7,7 @@ var (
 	ErrPermissionNotExist = errors.New("not exist")
 	ErrPermissionDenied   = errors.New("permission denied")
 	ErrDisabled           = errors.New("disabled")
+	ErrGlobalDisabled     = errors.New("global disabled")
 )
 
 func IsPermissionError(err error) bool {

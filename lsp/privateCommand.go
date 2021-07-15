@@ -354,7 +354,8 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 
 	var enableCmd struct {
 		Group   int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
-		Command string `arg:"" help:"command name"`
+		Command string `arg:"" help:"命令名"`
+		Global  bool   `optional:"" help:"系统级操作，对所有群生效"`
 	}
 
 	_, output := c.parseCommandSyntax(&enableCmd, name)
@@ -365,16 +366,51 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 		return
 	}
 
-	groupCode := enableCmd.Group
-
-	if err := c.checkGroupCode(groupCode); err != nil {
-		c.textReply(err.Error())
+	command := CombineCommand(enableCmd.Command)
+	if !CheckOperateableCommand(command) {
+		log.Errorf("unknown command")
+		c.textReply("失败 - 命令名非法")
 		return
 	}
 
-	log = log.WithFields(localutils.GroupLogFields(groupCode))
+	if enableCmd.Global {
+		if !c.l.PermissionStateManager.CheckRole(c.uin(), permission.Admin) {
+			c.noPermission()
+			return
+		}
+		if enableCmd.Group != 0 {
+			c.textReply(fmt.Sprintf("--global模式，忽略参数-g %v", enableCmd.Group))
+		}
 
-	IEnable(c.NewMessageContext(log), groupCode, enableCmd.Command, disable)
+		if err := c.l.PermissionStateManager.GlobalDisableGroupCommand(command); err != nil {
+			if err == permission.ErrPermissionExist {
+				if disable {
+					c.textReply("失败 - 该命令已禁用")
+				} else {
+					c.textReply("失败 - 该命令已启用")
+				}
+			}
+		} else {
+			c.textReply("成功")
+		}
+	} else {
+		if c.l.PermissionStateManager.CheckGlobalCommandDisabled(command) {
+			c.textReply(fmt.Sprintf("失败 - 管理员已禁用该命令"))
+			return
+		}
+
+		groupCode := enableCmd.Group
+		if err := c.checkGroupCode(groupCode); err != nil {
+			c.textReply(err.Error())
+			return
+		}
+
+		log = log.WithFields(localutils.GroupLogFields(groupCode)).
+			WithField("global", enableCmd.Global).
+			WithField("targetCommand", enableCmd.Command)
+
+		IEnable(c.NewMessageContext(log), groupCode, command, disable)
+	}
 }
 
 func (c *LspPrivateCommand) GrantCommand() {
@@ -671,7 +707,7 @@ func (c *LspPrivateCommand) DefaultLogger() *logrus.Entry {
 }
 
 func (c *LspPrivateCommand) DefaultLoggerWithCommand(command string) *logrus.Entry {
-	return c.DefaultLogger().WithField("command", command)
+	return c.DefaultLogger().WithField("Command", command)
 }
 
 func (c *LspPrivateCommand) noPermission() *message.PrivateMessage {
@@ -728,6 +764,10 @@ func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	ctx.DisabledReply = func() interface{} {
 		ctx.Log.Debugf("disabled")
 		return c.disabledReply()
+	}
+	ctx.GlobalDisabledReply = func() interface{} {
+		ctx.Log.Debugf("global disabled")
+		return c.textReply("失败 - 无法操作该命令，该命令已被管理员禁用")
 	}
 	ctx.Sender = c.sender()
 	return ctx

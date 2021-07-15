@@ -7,6 +7,7 @@ const (
 
 	Admin RoleType = 1 << iota
 	GroupAdmin
+	User
 )
 
 const Enable = "enable"
@@ -18,6 +19,8 @@ func (t RoleType) String() string {
 		return "Admin"
 	case GroupAdmin:
 		return "GroupAdmin"
+	case User:
+		return "User"
 	default:
 		return ""
 	}
@@ -29,6 +32,8 @@ func FromString(s string) RoleType {
 		return Admin
 	case "GroupAdmin":
 		return GroupAdmin
+	case "User":
+		return User
 	default:
 		return Unknown
 	}

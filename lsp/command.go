@@ -59,3 +59,10 @@ func CheckValidCommand(command string) bool {
 func CheckOperateableCommand(command string) bool {
 	return sliceutil.Contains(allGroupCommand, command) && !sliceutil.Contains(nonOprateable, command)
 }
+
+func CombineCommand(command string) string {
+	if command == WatchCommand || command == UnwatchCommand {
+		return WatchCommand
+	}
+	return command
+}

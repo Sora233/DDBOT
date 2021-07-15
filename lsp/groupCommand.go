@@ -555,7 +555,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 
 func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 	groupCode := lgc.groupCode()
-	log := lgc.DefaultLoggerWithCommand(EnableCommand)
+	log := lgc.DefaultLoggerWithCommand(EnableCommand).WithField("disable", disable)
 	log.Infof("run enable command")
 	defer func() { log.Info("enable command end") }()
 
@@ -575,7 +575,7 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 		return
 	}
 
-	log = log.WithField("command", enableCmd.Command).WithField("disable", disable)
+	log = log.WithField("targetCommand", enableCmd.Command)
 
 	IEnable(lgc.NewMessageContext(log), groupCode, enableCmd.Command, disable)
 }
@@ -889,7 +889,7 @@ func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {
 }
 
 func (lgc *LspGroupCommand) DefaultLoggerWithCommand(command string) *logrus.Entry {
-	return lgc.DefaultLogger().WithField("command", command)
+	return lgc.DefaultLogger().WithField("Command", command)
 }
 
 func (lgc *LspGroupCommand) faceDetect(url string) {
@@ -1088,6 +1088,11 @@ func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	}
 	ctx.DisabledReply = func() interface{} {
 		ctx.Log.Debugf("disabled")
+		return nil
+	}
+	ctx.GlobalDisabledReply = func() interface{} {
+		ctx.Log.Debugf("global disabled")
+		return lgc.textReply("失败 - 无法操作该命令，该命令已被管理员禁用")
 		return nil
 	}
 	ctx.Sender = lgc.sender()

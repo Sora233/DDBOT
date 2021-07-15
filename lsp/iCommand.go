@@ -30,15 +30,16 @@ const (
 )
 
 type MessageContext struct {
-	TextReply         func(text string) interface{}
-	Reply             func(sendingMessage *message.SendingMessage) interface{}
-	Send              func(sendingMessage *message.SendingMessage) interface{}
-	NoPermissionReply func() interface{}
-	DisabledReply     func() interface{}
-	Lsp               *Lsp
-	Log               *logrus.Entry
-	Sender            *message.Sender
-	Source            SourceType
+	TextReply           func(text string) interface{}
+	Reply               func(sendingMessage *message.SendingMessage) interface{}
+	Send                func(sendingMessage *message.SendingMessage) interface{}
+	NoPermissionReply   func() interface{}
+	DisabledReply       func() interface{}
+	GlobalDisabledReply func() interface{}
+	Lsp                 *Lsp
+	Log                 *logrus.Entry
+	Sender              *message.Sender
+	Source              SourceType
 }
 
 func (c *MessageContext) IsFromPrivate() bool {
@@ -337,13 +338,11 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 		return
 	}
 
-	if command == UnwatchCommand {
-		command = WatchCommand
-	}
+	command = CombineCommand(command)
 
 	if !CheckOperateableCommand(command) {
-		log.Errorf("unknown command")
-		c.TextReply("失败 - invalid command name")
+		log.Errorf("non-operateable command")
+		c.TextReply("失败 - 命令名非法")
 		return
 	}
 	if disable {
@@ -357,7 +356,10 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 		}
 	}
 	if err != nil {
-		log.Errorf("err %v", err)
+		if err == permission.ErrGlobalDisabled {
+			c.GlobalDisabledReply()
+			return
+		}
 		if err == permission.ErrPermissionExist {
 			if disable {
 				c.TextReply("失败 - 该命令已禁用")
@@ -365,7 +367,8 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 				c.TextReply("失败 - 该命令已启用")
 			}
 		} else {
-			c.TextReply(fmt.Sprintf("失败 - %v", err))
+			log.Errorf("enable failed %v", err)
+			c.TextReply(fmt.Sprintf("失败 - 内部错误"))
 		}
 		return
 	}
@@ -885,7 +888,7 @@ func operateOfflineNotifyConcernConfig(c *MessageContext, ctype concern.Type, on
 	}
 }
 
-func (ic *MessageContext) requireNotNil(param ...interface{}) error {
+func (c *MessageContext) requireNotNil(param ...interface{}) error {
 	for _, p := range param {
 		if p == nil {
 			return errNilParam

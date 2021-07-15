@@ -131,6 +131,9 @@ func GroupPermissionKey(keys ...interface{}) string {
 func GroupEnabledKey(keys ...interface{}) string {
 	return NamedKey("GroupEnable", keys)
 }
+func GlobalEnabledKey(keys ...interface{}) string {
+	return NamedKey("GlobalEnable", keys)
+}
 func GroupMessageImageKey(keys ...interface{}) string {
 	return NamedKey("GroupMessageImage", keys)
 }

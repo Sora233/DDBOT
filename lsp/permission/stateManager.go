@@ -6,6 +6,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Mrs4s/MiraiGo/client"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
 	"time"
 )
@@ -130,54 +131,69 @@ func (c *StateManager) CheckGroupRole(groupCode int64, caller int64, role RoleTy
 }
 
 func (c *StateManager) EnableGroupCommand(groupCode int64, command string, opts ...CommandOption) error {
-	opt := new(commandOption)
-	for _, o := range opts {
-		o(opt)
+	if c.CheckGlobalCommandDisabled(command) {
+		return ErrGlobalDisabled
 	}
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
-		key := c.GroupEnabledKey(groupCode, command)
-		prev, replaced, err := tx.Set(key, Enable, localdb.ExpireOption(opt.duration))
-		if err != nil {
-			return err
-		}
-		if replaced && prev == Enable {
-			return ErrPermissionExist
-		}
-		return nil
-	})
+	return c.operatorEnableKey(c.GroupEnabledKey(groupCode, command), Enable, opts...)
 }
 
 func (c *StateManager) DisableGroupCommand(groupCode int64, command string, opts ...CommandOption) error {
+	if c.CheckGlobalCommandDisabled(command) {
+		return ErrGlobalDisabled
+	}
+	return c.operatorEnableKey(c.GroupEnabledKey(groupCode, command), Disable, opts...)
+}
+
+func (c *StateManager) GlobalEnableGroupCommand(command string, opts ...CommandOption) error {
+	return c.operatorEnableKey(c.GlobalEnabledKey(command), Enable, opts...)
+}
+
+func (c *StateManager) GlobalDisableGroupCommand(command string, opts ...CommandOption) error {
+	return c.operatorEnableKey(c.GlobalEnabledKey(command), Disable, opts...)
+}
+
+func (c *StateManager) operatorEnableKey(key string, status string, opts ...CommandOption) error {
 	opt := new(commandOption)
 	for _, o := range opts {
 		o(opt)
 	}
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
-		key := c.GroupEnabledKey(groupCode, command)
-		prev, replaced, err := tx.Set(key, Disable, localdb.ExpireOption(opt.duration))
+		prev, replaced, err := tx.Set(key, status, localdb.ExpireOption(opt.duration))
 		if err != nil {
 			return err
 		}
-		if replaced && prev == Disable {
+		if replaced && prev == status {
 			return ErrPermissionExist
 		}
 		return nil
 	})
 }
 
-// CheckGroupCommandEnabled check explicit enabled, must exist
+// CheckGroupCommandEnabled check global first, check explicit enabled, must exist
 func (c *StateManager) CheckGroupCommandEnabled(groupCode int64, command string) bool {
-	return c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
+	return !c.CheckGlobalCommandDisabled(command) && c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
 		return exist && val == Enable
 	})
 }
 
-// CheckGroupCommandDisabled check explicit disabled, must exist
+// CheckGroupCommandDisabled check global first, then check explicit disabled, must exist
 func (c *StateManager) CheckGroupCommandDisabled(groupCode int64, command string) bool {
-	return c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
+	return !c.CheckGlobalCommandDisabled(command) && c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
 		return exist && val == Disable
 	})
 }
+
+func (c *StateManager) CheckGlobalCommandDisabled(command string) bool {
+	return c.CheckGlobalCommandFunc(command, func(val string, exist bool) bool {
+		return exist && val == Disable
+	})
+}
+
+//func (c *StateManager) CheckGlobalCommandEnabled(command string) bool {
+//	return c.CheckGlobalCommandFunc(command, func(val string, exist bool) bool {
+//		return exist && val == Enable
+//	})
+//}
 
 func (c *StateManager) CheckGroupCommandFunc(groupCode int64, command string, f func(val string, exist bool) bool) bool {
 	var result bool
@@ -191,9 +207,28 @@ func (c *StateManager) CheckGroupCommandFunc(groupCode int64, command string, f 
 		return nil
 	})
 	if err != nil {
-		logger.WithField("group_code", groupCode).
+		logger.WithFields(localutils.GroupLogFields(groupCode)).
 			WithField("command", command).
 			Errorf("check group enable err %v", err)
+		result = false
+	}
+	return result
+}
+
+func (c *StateManager) CheckGlobalCommandFunc(command string, f func(val string, exist bool) bool) bool {
+	var result bool
+	err := c.RTxCover(func(tx *buntdb.Tx) error {
+		key := c.GlobalEnabledKey(command)
+		val, err := tx.Get(key)
+		if err != nil && err != buntdb.ErrNotFound {
+			return err
+		}
+		result = f(val, err == nil)
+		return nil
+	})
+	if err != nil {
+		logger.WithField("command", command).
+			Errorf("check global enable err %v", err)
 		result = false
 	}
 	return result
@@ -216,7 +251,7 @@ func (c *StateManager) CheckGroupAdministrator(groupCode int64, caller int64) bo
 		return false
 	}
 	logger.WithField("uin", caller).
-		WithField("group_code", groupCode).
+		WithFields(localutils.GroupLogFields(groupCode)).
 		WithField("permission", groupMemberInfo.Permission).
 		Debug("debug member permission")
 	return groupMemberInfo.Permission == client.Administrator || groupMemberInfo.Permission == client.Owner
@@ -239,7 +274,7 @@ func (c *StateManager) CheckGroupCommandPermission(groupCode int64, caller int64
 		return nil
 	})
 	if err != nil {
-		logger.WithField("group_code", groupCode).
+		logger.WithFields(localutils.GroupLogFields(groupCode)).
 			WithField("caller", caller).
 			WithField("command", command).
 			Errorf("check group command err %v", err)
