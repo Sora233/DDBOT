@@ -53,7 +53,7 @@ func (c *Concern) Start() {
 	}
 
 	if !IsVerifyGiven() {
-		logger.Errorf("verify not given, module bilibili won't work")
+		logger.Errorf("注意：B站Cookie配置不完整，B站相关功能无法使用！")
 		return
 	}
 
