@@ -336,6 +336,7 @@ func (c *StateManager) CheckNoAdmin() bool {
 		})
 	})
 	if err != nil {
+		result = false
 		logger.Errorf("CheckNoAdmin error %v", err)
 	}
 	return result
