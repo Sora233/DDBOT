@@ -214,3 +214,22 @@ func TestStateManager_RemoveAllByGroup(t *testing.T) {
 	//assert.False(t, gcadminOpt1.Validate(c))
 	assert.True(t, gcadminOpt2.Validate(c))
 }
+
+func TestStateManager_CheckNoAdmin(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+	c := initStateManager(t)
+
+	assert.True(t, c.CheckNoAdmin())
+
+	assert.Nil(t, c.GrantRole(test.UID1, Admin))
+	assert.False(t, c.CheckNoAdmin())
+	assert.Nil(t, c.UngrantRole(test.UID1, Admin))
+	assert.True(t, c.CheckNoAdmin())
+
+	assert.Nil(t, c.GrantGroupRole(test.G1, test.UID1, GroupAdmin))
+	assert.True(t, c.CheckNoAdmin())
+	assert.Nil(t, c.GrantRole(test.UID1, Admin))
+	assert.False(t, c.CheckNoAdmin())
+
+}

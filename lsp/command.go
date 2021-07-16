@@ -25,10 +25,11 @@ const (
 
 // private command
 const (
-	PingCommand    = "ping"
-	LogCommand     = "log"
-	BlockCommand   = "block"
-	SysinfoCommand = "sysinfo"
+	PingCommand          = "ping"
+	LogCommand           = "log"
+	BlockCommand         = "block"
+	SysinfoCommand       = "sysinfo"
+	WhosyourdaddyCommand = "whosyourdaddy"
 )
 
 var allGroupCommand = [...]string{
@@ -45,11 +46,12 @@ var allPrivateOperate = [...]string{
 	BlockCommand, SysinfoCommand, ListCommand,
 	WatchCommand, UnwatchCommand, DisableCommand,
 	EnableCommand, GrantCommand, ConfigCommand,
+	WhosyourdaddyCommand,
 }
 
 var nonOprateable = [...]string{
 	EnableCommand, DisableCommand, GrantCommand,
-	BlockCommand, LogCommand, PingCommand,
+	BlockCommand, LogCommand, PingCommand, WhosyourdaddyCommand,
 }
 
 func CheckValidCommand(command string) bool {

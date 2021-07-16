@@ -8,6 +8,7 @@ import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
+	"strings"
 	"time"
 )
 
@@ -317,6 +318,27 @@ func (c *StateManager) UngrantRole(target int64, role RoleType) error {
 			return err
 		}
 	})
+}
+
+func (c *StateManager) CheckNoAdmin() bool {
+	var result = true
+	err := c.RTxCover(func(tx *buntdb.Tx) error {
+		return tx.Ascend(c.PermissionKey(), func(key, value string) bool {
+			splits := strings.Split(key, ":")
+			if len(splits) != 3 {
+				return true
+			}
+			if NewRoleFromString(splits[2]) == Admin {
+				result = false
+				return false
+			}
+			return true
+		})
+	})
+	if err != nil {
+		logger.Errorf("CheckNoAdmin error %v", err)
+	}
+	return result
 }
 
 func (c *StateManager) GrantGroupRole(groupCode int64, target int64, role RoleType) error {

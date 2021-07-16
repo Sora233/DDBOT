@@ -612,7 +612,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 	if grantCmd.Command != "" {
 		IGrantCmd(lgc.NewMessageContext(log), lgc.groupCode(), grantCmd.Command, grantTo, del)
 	} else if grantCmd.Role != "" {
-		IGrantRole(lgc.NewMessageContext(log), lgc.groupCode(), permission.FromString(grantCmd.Role), grantTo, del)
+		IGrantRole(lgc.NewMessageContext(log), lgc.groupCode(), permission.NewRoleFromString(grantCmd.Role), grantTo, del)
 	}
 }
 

@@ -35,6 +35,6 @@ func TestFromString(t *testing.T) {
 	}
 	assert.Equal(t, len(expected), len(testCase))
 	for i := range expected {
-		assert.Equal(t, expected[i], FromString(testCase[i]))
+		assert.Equal(t, expected[i], NewRoleFromString(testCase[i]))
 	}
 }

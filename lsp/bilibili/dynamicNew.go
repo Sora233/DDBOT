@@ -48,7 +48,7 @@ func DynamicSrvDynamicNew() (*DynamicSvrDynamicNewResponse, error) {
 		requests.TimeoutOption(time.Second*3),
 	)
 	opts = append(opts, AddCookiesOption()...)
-	resp, err := requests.Get(ctx, url, params, 3, opts...)
+	resp, err := requests.Get(ctx, url, params, 1, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -26,7 +26,7 @@ func (t RoleType) String() string {
 	}
 }
 
-func FromString(s string) RoleType {
+func NewRoleFromString(s string) RoleType {
 	switch s {
 	case "Admin":
 		return Admin

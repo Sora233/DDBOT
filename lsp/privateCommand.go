@@ -97,9 +97,38 @@ func (c *LspPrivateCommand) Execute() {
 		c.SysinfoCommand()
 	case "/config":
 		c.ConfigCommand()
+	case "/whosyourdaddy":
+		c.WhosyourdaddyCommand()
 	default:
 		c.textReply("阁下似乎输入了一个无法识别的命令，请使用/help命令查看帮助。")
 		log.Debug("no command matched")
+	}
+}
+
+func (c *LspPrivateCommand) WhosyourdaddyCommand() {
+	log := c.DefaultLoggerWithCommand(WhosyourdaddyCommand)
+	log.Info("run whosyourdaddy command")
+	defer func() { log.Info("whosyourdaddy command end") }()
+
+	_, output := c.parseCommandSyntax(&struct{}{}, WhosyourdaddyCommand)
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	if c.l.PermissionStateManager.CheckNoAdmin() {
+		if err := c.l.PermissionStateManager.GrantRole(c.uin(), permission.Admin); err != nil {
+			log.WithField("permission", permission.Admin.String()).
+				Errorf("GrantRole error %v", err)
+			c.textReply("失败 - 内部错误")
+		} else {
+			c.textReply("成功 - 您已成为bot管理员")
+		}
+	} else {
+		log.Debug("someone is trying WhosyourdaddyCommand")
+		//c.textReply("失败 - bot已有管理员")
 	}
 }
 
@@ -453,7 +482,7 @@ func (c *LspPrivateCommand) GrantCommand() {
 		log = log.WithFields(localutils.GroupLogFields(groupCode))
 		IGrantCmd(c.NewMessageContext(log), groupCode, grantCmd.Command, grantTo, del)
 	} else if grantCmd.Role != "" {
-		role := permission.FromString(grantCmd.Role)
+		role := permission.NewRoleFromString(grantCmd.Role)
 		if role != permission.Admin {
 			if err := c.checkGroupCode(groupCode); err != nil {
 				c.textReply(err.Error())
