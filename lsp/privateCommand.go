@@ -124,6 +124,7 @@ func (c *LspPrivateCommand) WhosyourdaddyCommand() {
 				Errorf("GrantRole error %v", err)
 			c.textReply("失败 - 内部错误")
 		} else {
+			log.Info("you are the admin now, good luck!")
 			c.textReply("成功 - 您已成为bot管理员")
 		}
 	} else {
