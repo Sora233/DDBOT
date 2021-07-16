@@ -1069,6 +1069,10 @@ func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {
 	return lgc.textReply("权限不够")
 }
 
+func (lgc *LspGroupCommand) globalDisabledReply() *message.GroupMessage {
+	return lgc.textReply("无法操作该命令，该命令已被管理员禁用")
+}
+
 func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
 	ctx := NewMessageContext()
 	ctx.Source = SourceTypeGroup
@@ -1092,8 +1096,7 @@ func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	}
 	ctx.GlobalDisabledReply = func() interface{} {
 		ctx.Log.Debugf("global disabled")
-		return lgc.textReply("失败 - 无法操作该命令，该命令已被管理员禁用")
-		return nil
+		return lgc.globalDisabledReply()
 	}
 	ctx.Sender = lgc.sender()
 	return ctx

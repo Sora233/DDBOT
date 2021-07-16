@@ -379,7 +379,7 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 			return
 		}
 		if enableCmd.Group != 0 {
-			c.textReply(fmt.Sprintf("--global模式，忽略参数-g %v", enableCmd.Group))
+			c.textReply(fmt.Sprintf("注意：--global模式，忽略参数-g %v", enableCmd.Group))
 		}
 
 		if err := c.l.PermissionStateManager.GlobalDisableGroupCommand(command); err != nil {
@@ -395,7 +395,7 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 		}
 	} else {
 		if c.l.PermissionStateManager.CheckGlobalCommandDisabled(command) {
-			c.textReply(fmt.Sprintf("失败 - 管理员已禁用该命令"))
+			c.globalDisabledReply()
 			return
 		}
 
@@ -714,6 +714,10 @@ func (c *LspPrivateCommand) noPermission() *message.PrivateMessage {
 	return c.textReply("权限不够")
 }
 
+func (c *LspPrivateCommand) globalDisabledReply() *message.PrivateMessage {
+	return c.textReply("无法操作该命令，该命令已被管理员禁用")
+}
+
 func (c *LspPrivateCommand) disabledReply() *message.PrivateMessage {
 	return c.textSend("该命令已被设置为disable，请设置enable后重试")
 }
@@ -767,7 +771,7 @@ func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	}
 	ctx.GlobalDisabledReply = func() interface{} {
 		ctx.Log.Debugf("global disabled")
-		return c.textReply("失败 - 无法操作该命令，该命令已被管理员禁用")
+		return c.globalDisabledReply()
 	}
 	ctx.Sender = c.sender()
 	return ctx

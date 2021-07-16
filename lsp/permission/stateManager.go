@@ -356,6 +356,9 @@ func (c *StateManager) UngrantGroupRole(groupCode int64, target int64, role Role
 }
 
 func (c *StateManager) GrantPermission(groupCode int64, target int64, command string) error {
+	if c.CheckGlobalCommandDisabled(command) {
+		return ErrGlobalDisabled
+	}
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(groupCode, target, command)
 		_, err := tx.Get(key)
@@ -371,6 +374,9 @@ func (c *StateManager) GrantPermission(groupCode int64, target int64, command st
 }
 
 func (c *StateManager) UngrantPermission(groupCode int64, target int64, command string) error {
+	if c.CheckGlobalCommandDisabled(command) {
+		return ErrGlobalDisabled
+	}
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(groupCode, target, command)
 		_, err := tx.Get(key)

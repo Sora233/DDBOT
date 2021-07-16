@@ -356,6 +356,7 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 		}
 	}
 	if err != nil {
+		log.Errorf("enable failed %v", err)
 		if err == permission.ErrGlobalDisabled {
 			c.GlobalDisabledReply()
 			return
@@ -367,7 +368,6 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 				c.TextReply("失败 - 该命令已启用")
 			}
 		} else {
-			log.Errorf("enable failed %v", err)
 			c.TextReply(fmt.Sprintf("失败 - 内部错误"))
 		}
 		return
@@ -429,9 +429,7 @@ func IGrantRole(c *MessageContext, groupCode int64, grantRole permission.RoleTyp
 
 func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64, del bool) {
 	var err error
-	if command == UnwatchCommand {
-		command = WatchCommand
-	}
+	command = CombineCommand(command)
 	log := c.Log.WithField("command", command)
 	if !CheckOperateableCommand(command) {
 		log.Errorf("unknown command")
@@ -458,6 +456,10 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 	}
 	if err != nil {
 		log.Errorf("grant failed %v", err)
+		if err == permission.ErrGlobalDisabled {
+			c.GlobalDisabledReply()
+			return
+		}
 		if err == permission.ErrPermissionExist {
 			c.TextReply("失败 - 目标已有该权限")
 		} else if err == permission.ErrPermissionNotExist {
