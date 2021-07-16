@@ -90,12 +90,6 @@ func (c *LspPrivateCommand) Execute() {
 	case "/grant":
 		c.GrantCommand()
 	case "/log":
-		if !c.l.PermissionStateManager.RequireAny(
-			permission.AdminRoleRequireOption(c.uin()),
-		) {
-			c.noPermission()
-			return
-		}
 		c.LogCommand()
 	case "/list":
 		c.ListCommand()
@@ -545,6 +539,14 @@ func (c *LspPrivateCommand) LogCommand() {
 	if c.exit {
 		return
 	}
+
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
 	if logCmd.N == 0 {
 		logCmd.N = 10
 	}
