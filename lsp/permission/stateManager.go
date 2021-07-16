@@ -178,7 +178,7 @@ func (c *StateManager) CheckGroupCommandEnabled(groupCode int64, command string)
 
 // CheckGroupCommandDisabled check global first, then check explicit disabled, must exist
 func (c *StateManager) CheckGroupCommandDisabled(groupCode int64, command string) bool {
-	return !c.CheckGlobalCommandDisabled(command) && c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
+	return c.CheckGlobalCommandDisabled(command) || c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
 		return exist && val == Disable
 	})
 }

@@ -382,16 +382,21 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 			c.textReply(fmt.Sprintf("注意：--global模式，忽略参数-g %v", enableCmd.Group))
 		}
 
-		if err := c.l.PermissionStateManager.GlobalDisableGroupCommand(command); err != nil {
-			if err == permission.ErrPermissionExist {
-				if disable {
-					c.textReply("失败 - 该命令已禁用")
-				} else {
-					c.textReply("失败 - 该命令已启用")
-				}
-			}
+		var err error
+
+		if disable {
+			err = c.l.PermissionStateManager.GlobalDisableGroupCommand(command)
 		} else {
+			err = c.l.PermissionStateManager.GlobalEnableGroupCommand(command)
+		}
+		if err == nil {
 			c.textReply("成功")
+		} else if err == permission.ErrPermissionExist {
+			if disable {
+				c.textReply("失败 - 该命令已禁用")
+			} else {
+				c.textReply("失败 - 该命令已启用")
+			}
 		}
 	} else {
 		if c.l.PermissionStateManager.CheckGlobalCommandDisabled(command) {
