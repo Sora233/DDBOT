@@ -100,6 +100,8 @@ func TestStateManager_CheckGlobalCommandFunc(t *testing.T) {
 	assert.Nil(t, c.GlobalDisableGroupCommand(test.CMD1))
 	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
 	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
+	assert.Equal(t, ErrGlobalDisabled, c.GrantPermission(test.G1, test.UID1, test.CMD1))
+	assert.Equal(t, ErrGlobalDisabled, c.UngrantPermission(test.G1, test.UID1, test.CMD1))
 }
 
 func TestStateManager_CheckRole(t *testing.T) {
