@@ -40,15 +40,24 @@ go build -tags nocv
 
 ## 配置
 
-### 设置管理员
+### 设置BOT管理员
 
-初次运行之前推荐设置一个管理员帐号，否则您可能会失去对bot的控制权。
+**方法一**
 
-使用下面的命令设置：
+初次运行bot时，默认没有管理员，此时您可以对bot私聊发送`/whosyourdaddy`命令，成功后发送命令的账号将成为bot管理员。
+
+*请放心，只有当bot没有管理员时可以使用此命令，后续发送此命令将无法生效*
+
+<details>
+<summary>方法二（不推荐）</summary>
+
+bot未运行时，执行以下命令。
 
 ```shell
 ./DDBOT --set-admin 你的QQ号码
 ```
+
+</details>
 
 ### device.json
 
