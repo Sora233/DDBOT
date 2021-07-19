@@ -70,6 +70,8 @@ func main() {
 		return
 	}
 
+	fmt.Println("DDBOT唯一指定交流群：755612788")
+
 	config.Init()
 
 	// 快速初始化

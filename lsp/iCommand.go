@@ -342,7 +342,7 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 
 	if !CheckOperateableCommand(command) {
 		log.Errorf("non-operateable command")
-		c.TextReply("失败 - 命令名非法")
+		c.TextReply(fmt.Sprintf("失败 - 【%v】无效命令", command))
 		return
 	}
 	if disable {
@@ -433,7 +433,7 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 	log := c.Log.WithField("command", command)
 	if !CheckOperateableCommand(command) {
 		log.Errorf("unknown command")
-		c.TextReply("失败 - invalid command name")
+		c.TextReply(fmt.Sprintf("失败 - 【%v】无效命令", command))
 		return
 	}
 	if !c.Lsp.PermissionStateManager.RequireAny(

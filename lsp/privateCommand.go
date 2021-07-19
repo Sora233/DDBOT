@@ -667,12 +667,12 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"/config at 97505 add 123456 用于设置推送直播时自动@qq号为123456的成员\n" +
 		"/config at_all 97505 on / off 用于设置推送直播时自动@全体成员，on表示开启，off表示关闭\n" +
 		"配置@全体成员只推荐在私人bot上使用，如果是公开bot请配置使用@QQ号\n" +
-		"还支持配置下播推送，直播间标题推送，设置动态推送过滤条件等" +
-		"其他更多命令及配置请看样例文档\n" +
+		"还支持配置下播推送，直播间标题推送，设置动态推送过滤条件等\n" +
+		"详细使用介绍及样例，请查看https://github.com/Sora233/DDBOT/blob/master/EXAMPLE.md\n" +
 		"使用时请把作者的UID换成你需要的主播的UID\n" +
 		"以上命令可以通过私聊操作以避免在群内刷屏"
-	help2 := "详细使用介绍及样例，请查看https://github.com/Sora233/DDBOT/blob/master/EXAMPLE.md\n" +
-		"如果您觉得DDBOT缺少了必要功能，请反馈到：https://www.bilibili.com/read/cv10602230"
+	help2 := "B站专栏介绍：https://www.bilibili.com/read/cv10602230\n" +
+		"如果您有任何疑问或者建议，请反馈到唯一指定交流群：755612788"
 	c.textSend(help)
 	time.AfterFunc(time.Millisecond*500, func() {
 		c.textReply(help2)
