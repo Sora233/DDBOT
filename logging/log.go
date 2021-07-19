@@ -1,14 +1,19 @@
 package logging
 
 import (
+	"github.com/Logiase/MiraiGo-Template/utils"
 	localutils "github.com/Sora233/DDBOT/utils"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/rifflock/lfshook"
+	"github.com/sirupsen/logrus"
+	"path"
 	"sync"
+	"time"
 
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 
 	"github.com/Logiase/MiraiGo-Template/bot"
-	"github.com/Logiase/MiraiGo-Template/utils"
 )
 
 func init() {
@@ -64,7 +69,22 @@ func (m *logging) Stop(b *bot.Bot, wg *sync.WaitGroup) {
 
 var instance *logging
 
-var logger = utils.GetModuleLogger("internal.logging")
+var logger = func() *logrus.Entry {
+	// create a new logger for qq log
+	writer, err := rotatelogs.New(
+		path.Join("qq-logs", "%Y-%m-%d.log"),
+		rotatelogs.WithMaxAge(7*24*time.Hour),
+		rotatelogs.WithRotationTime(24*time.Hour),
+	)
+	if err != nil {
+		logrus.WithError(err).Error("unable to write logs")
+		return utils.GetModuleLogger("internal.logging")
+	}
+	qqlog := logrus.New()
+	qqlog.AddHook(lfshook.NewHook(writer, &logrus.JSONFormatter{}))
+	qqlog.SetLevel(logrus.DebugLevel)
+	return qqlog.WithField("module", "internal.logging")
+}()
 
 func logGroupMessage(msg *message.GroupMessage) {
 	logger.
