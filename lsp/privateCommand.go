@@ -118,6 +118,11 @@ func (c *LspPrivateCommand) WhosyourdaddyCommand() {
 		return
 	}
 
+	if c.l.PermissionStateManager.CheckRole(c.uin(), permission.Admin) {
+		c.textReply("您已经是管理员了，请不要重复使用此命令。")
+		return
+	}
+
 	if c.l.PermissionStateManager.CheckNoAdmin() {
 		if err := c.l.PermissionStateManager.GrantRole(c.uin(), permission.Admin); err != nil {
 			log.WithField("permission", permission.Admin.String()).
@@ -129,7 +134,7 @@ func (c *LspPrivateCommand) WhosyourdaddyCommand() {
 		}
 	} else {
 		log.Debug("someone is trying WhosyourdaddyCommand")
-		//c.textReply("失败 - bot已有管理员")
+		c.textReply("失败 - 该bot不属于你！")
 	}
 }
 
