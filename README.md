@@ -144,3 +144,7 @@
 特别感谢 [JetBrains](https://jb.gg/OpenSource) 为本项目提供免费的 [Goland](https://www.jetbrains.com/go/) 等一系列IDE的授权
 
 [<img src="https://user-images.githubusercontent.com/11474360/112592917-baa00600-8e41-11eb-9da4-ecb53bb3c2fa.png" width="200"/>](https://jb.gg/OpenSource)
+
+## DDBOT:star:趋势图
+
+[![Stargazers over time](https://starchart.cc/Sora233/DDBOT.svg)](https://starchart.cc/Sora233/DDBOT)
