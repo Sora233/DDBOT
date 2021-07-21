@@ -9,6 +9,7 @@ import (
 	"github.com/Sora233/requests"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/sirupsen/logrus"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -65,6 +66,9 @@ func toMap(data interface{}) (map[string]string, error) {
 				fillname = fillname[:pos]
 			}
 		}
+		if fillname == "-" {
+			continue
+		}
 		switch field.Type.Kind() {
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			params[fillname] = strconv.FormatInt(rg.Field(i).Int(), 10)
@@ -86,6 +90,14 @@ func ToParams(get interface{}) (requests.Params, error) {
 
 func ToDatas(data interface{}) (requests.Datas, error) {
 	return toMap(data)
+}
+
+func UrlEncode(data requests.Datas) string {
+	params := url.Values{}
+	for k, v := range data {
+		params.Add(k, v)
+	}
+	return params.Encode()
 }
 
 func toCamel(name string) string {

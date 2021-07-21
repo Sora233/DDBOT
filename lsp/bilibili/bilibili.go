@@ -15,6 +15,7 @@ const (
 	BaseVCHost   = "https://api.vc.bilibili.com"
 	VideoView    = "https://www.bilibili.com/video"
 	DynamicView  = "https://t.bilibili.com"
+	PassportHost = "https://passport.bilibili.com"
 )
 
 var BasePath = map[string]string{
@@ -26,6 +27,8 @@ var BasePath = map[string]string{
 	PathRelationModify:         BaseHost,
 	PathRelationFeedList:       BaseLiveHost,
 	PathGetAttentionList:       BaseVCHost,
+	PathOAuth2GetKey:           PassportHost,
+	PathV3OAuth2Login:          PassportHost,
 }
 
 var (
@@ -61,6 +64,13 @@ func AddCookiesOption() []requests.Option {
 
 func AddUAOption() requests.Option {
 	return requests.AddUAOption()
+}
+
+func AddReferOption(refer ...string) requests.Option {
+	if len(refer) == 0 {
+		return requests.HeaderOption("Referer", "https://www.bilibili.com/")
+	}
+	return requests.HeaderOption("Referer", refer[0])
 }
 
 func IsVerifyGiven() bool {

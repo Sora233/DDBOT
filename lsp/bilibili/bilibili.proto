@@ -141,6 +141,39 @@ message FeedListResponse {
   Data data = 3;
 }
 
+message GetKeyRequest {
+  string appkey = 1;
+  string sign = 2;
+}
+
+message GetKeyResponse {
+  int64 ts = 1;
+  int32 code = 2;
+  message Data {
+    string hash = 1;
+    string key = 2;
+  }
+  Data data = 3;
+}
+
+message LoginRequest {
+  string appkey = 1;
+  int32 build = 2;
+  //  string captcha = 3;
+  //  string challenge = 4;
+  string channel = 5;
+  string device = 6;
+  //  string mobi_app = 7;
+  string password = 8;
+  string permission = 9;
+  string platform = 10;
+  // string seccode = 11;
+  int32 subid = 12;
+  int32 ts = 13;
+  string username = 14;
+  //  string validate = 15;
+}
+
 message Card {
   message Desc {
     message UserProfile {
