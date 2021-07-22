@@ -14,7 +14,6 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/requests"
 	"github.com/Sora233/DDBOT/utils"
-	"github.com/davecgh/go-spew/spew"
 	"time"
 )
 
@@ -40,7 +39,13 @@ func NewLoginRequest(username string, encryptedPassword string) *LoginRequest {
 	}
 }
 
-func Login(username string, password string) {
+func Login(username string, password string) (*LoginResponse, error) {
+	if len(username) == 0 {
+		return nil, errors.New("empty username")
+	}
+	if len(password) == 0 {
+		return nil, errors.New("empty password")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	st := time.Now()
@@ -51,12 +56,12 @@ func Login(username string, password string) {
 	hash, pubKey, err := getHashAndKeyFromBilibili()
 	if err != nil {
 		logger.Errorf("getHashAndKeyFromBilibili error %v", err)
-		return
+		return nil, err
 	}
 	etext, err := rsa.EncryptPKCS1v15(rand.Reader, pubKey, []byte(hash+password))
 	if err != nil {
 		logger.Errorf("EncryptPKCS1v15 error %v", err)
-		return
+		return nil, err
 	}
 	encryptPassword := base64.StdEncoding.EncodeToString(etext)
 
@@ -64,7 +69,7 @@ func Login(username string, password string) {
 	formReq, err := utils.ToDatas(req)
 	if err != nil {
 		logger.Errorf("ToDatas error %v", err)
-		return
+		return nil, err
 	}
 
 	sign := Sign(utils.UrlEncode(formReq))
@@ -79,18 +84,18 @@ func Login(username string, password string) {
 		AddReferOption(),
 	)
 
-	loginResp, err := requests.Post(ctx, BPath(PathV3OAuth2Login), formReq, 3, opts...)
+	resp, err := requests.Post(ctx, BPath(PathV3OAuth2Login), formReq, 3, opts...)
 	if err != nil {
 		logger.Errorf("requests post error %v", err)
-		return
+		return nil, err
 	}
-	var g = make(map[string]interface{})
-	err = loginResp.Json(&g)
+	var loginResp = new(LoginResponse)
+	err = resp.Json(loginResp)
 	if err != nil {
 		logger.Errorf("loginResp json error %v", err)
-		return
+		return nil, err
 	}
-	spew.Dump(g)
+	return loginResp, err
 }
 
 func getHashAndKeyFromBilibili() (string, *rsa.PublicKey, error) {

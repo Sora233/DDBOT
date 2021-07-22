@@ -81,6 +81,7 @@ func (l *Lsp) Init() {
 	}
 
 	bilibili.SetVerify(config.GlobalConfig.GetString("bilibili.SESSDATA"), config.GlobalConfig.GetString("bilibili.bili_jct"))
+	bilibili.SetAccount(config.GlobalConfig.GetString("bilibili.account"), config.GlobalConfig.GetString("bilibili.password"))
 
 	keyId := config.GlobalConfig.GetString("aliyun.accessKeyID")
 	keySecret := config.GlobalConfig.GetString("aliyun.accessKeySecret")

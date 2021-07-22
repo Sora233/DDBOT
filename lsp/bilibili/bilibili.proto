@@ -174,6 +174,34 @@ message LoginRequest {
   //  string validate = 15;
 }
 
+message LoginResponse {
+  int32 ts = 1;
+  int32 code = 2;
+  message Data {
+    message TokenInfo {
+      int64 mid = 1;
+      string access_token = 2;
+      string refresh_token = 3;
+      int64 expires_in = 4;
+    }
+    message CookieInfo {
+      message Cookie {
+        string name = 1;
+        string value = 2;
+        int32 http_only = 3;
+        int64 expires = 4;
+      }
+      repeated Cookie cookies = 1;
+      repeated string domains = 2;
+    }
+    int32 status = 1;
+    TokenInfo token_info = 2;
+    CookieInfo cookie_info = 3;
+    repeated string sso = 4;
+  }
+  Data data = 3;
+}
+
 message Card {
   message Desc {
     message UserProfile {

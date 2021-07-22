@@ -47,6 +47,10 @@ func (k *extraKey) UidFirstTimestamp(keys ...interface{}) string {
 	return buntdb.BilibiliUidFirstTimestampKey(keys...)
 }
 
+func (k *extraKey) UserCookieInfo(keys ...interface{}) string {
+	return buntdb.BilibiliUserCookieInfoKey(keys...)
+}
+
 func (k *extraKey) NotLiveKey(keys ...interface{}) string {
 	return buntdb.BilibiliNotLiveCountKey(keys...)
 }

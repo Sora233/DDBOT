@@ -57,7 +57,7 @@ func RelationModify(fid int64, act int) (*RelationModifyResponse, error) {
 		requests.TimeoutOption(time.Second*5),
 		AddUAOption(),
 	)
-	opts = append(opts, AddCookiesOption()...)
+	opts = append(opts, AddVerifyOption()...)
 	resp, err := requests.Post(ctx, url, form, 1,
 		opts...,
 	)
