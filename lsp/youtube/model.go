@@ -6,6 +6,7 @@ import (
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/sirupsen/logrus"
 )
 
 type UserInfo struct {
@@ -137,6 +138,20 @@ func (notify *ConcernNotify) ToMessage() []message.IMessageElement {
 	}
 	result = append(result, message.NewText(VideoViewUrl(notify.VideoId)+"\n"))
 	return result
+}
+
+func (notify *ConcernNotify) Logger() *logrus.Entry {
+	if notify == nil {
+		return logger
+	}
+	return logger.WithField("site", Site).
+		WithFields(localutils.GroupLogFields(notify.GroupCode)).
+		WithField("ChannelName", notify.ChannelName).
+		WithField("ChannelID", notify.ChannelId).
+		WithField("VideoId", notify.VideoId).
+		WithField("VideoTitle", notify.VideoTitle).
+		WithField("VideoStatus", notify.VideoStatus.String()).
+		WithField("VideoType", notify.VideoType.String())
 }
 
 func (notify *ConcernNotify) Type() concern.Type {

@@ -9,6 +9,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/sirupsen/logrus"
 	"reflect"
 	"runtime"
 )
@@ -55,6 +56,17 @@ func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 		result = append(result, cover)
 	}
 	return result
+}
+
+func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
+	if notify == nil {
+		return logger
+	}
+	return logger.WithField("site", Site).
+		WithFields(localutils.GroupLogFields(notify.GroupCode)).
+		WithField("Name", notify.Nickname).
+		WithField("Title", notify.RoomName).
+		WithField("Status", notify.ShowStatus.String())
 }
 
 func NewConcernLiveNotify(groupCode int64, l *LiveInfo) *ConcernLiveNotify {

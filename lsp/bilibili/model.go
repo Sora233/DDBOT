@@ -7,6 +7,7 @@ import (
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -739,6 +740,18 @@ func (notify *ConcernNewsNotify) GetGroupCode() int64 {
 func (notify *ConcernNewsNotify) GetUid() interface{} {
 	return notify.Mid
 }
+
+func (notify *ConcernNewsNotify) Logger() *logrus.Entry {
+	if notify == nil {
+		return logger
+	}
+	return logger.WithField("site", Site).
+		WithFields(localutils.GroupLogFields(notify.GroupCode)).
+		WithField("Uid", notify.Mid).
+		WithField("Name", notify.Name).
+		WithField("NewsCount", len(notify.Cards))
+}
+
 func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 	var result []message.IMessageElement
 	switch notify.Status {
@@ -756,6 +769,18 @@ func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 		result = append(result, cover)
 	}
 	return result
+}
+
+func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
+	if notify == nil {
+		return logger
+	}
+	return logger.WithField("site", Site).
+		WithFields(localutils.GroupLogFields(notify.GroupCode)).
+		WithField("Uid", notify.Mid).
+		WithField("Name", notify.Name).
+		WithField("Title", notify.LiveTitle).
+		WithField("Status", notify.Status.String())
 }
 
 func (notify *ConcernLiveNotify) GetGroupCode() int64 {

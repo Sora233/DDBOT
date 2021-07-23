@@ -2,6 +2,7 @@ package concern
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 )
@@ -26,6 +27,7 @@ type Notify interface {
 	GetGroupCode() int64
 	GetUid() interface{}
 	ToMessage() []message.IMessageElement
+	Logger() *logrus.Entry
 }
 
 func (t Type) String() string {
