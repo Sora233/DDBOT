@@ -145,7 +145,7 @@ localPool: # 图片功能，使用本地图库
   imageDir: # 本地路径
 
 loliconPool: # 图片功能，使用api.lolicon.app图库
-  apikey: # 看api.lolicon.app网站内说明
+  apikey:    # 由于该图库更新，此字段不再需要了，留空即可
   cacheMin: 10
   cacheMax: 50
 

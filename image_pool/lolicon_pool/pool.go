@@ -2,7 +2,6 @@ package lolicon_pool
 
 import (
 	"container/list"
-	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/image_pool"
@@ -187,9 +186,10 @@ func (pool *LoliconPool) background() {
 }
 
 func NewLoliconPool(config *Config) (*LoliconPool, error) {
-	if config.ApiKey == "" {
-		return nil, errors.New("empty api key")
-	}
+	// 目前不再需要apikey了
+	//if config.ApiKey == "" {
+	//	return nil, errors.New("empty api key")
+	//}
 	if config.CacheMin == 0 {
 		config.CacheMin = 20
 	}
