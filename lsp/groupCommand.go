@@ -847,11 +847,9 @@ func (lgc *LspGroupCommand) HelpCommand() {
 		return
 	}
 
-	text := "一个多功能DD专用机器人，包括b站直播、动态推送，斗鱼直播推送，油管直播、视频推送，虎牙直播推送\n" +
+	text := "一个多功能单推专用推送机器人，支持b站、斗鱼、油管、虎牙推送\n" +
 		"只需添加bot好友，阁下也可为自己的群添加自动推送功能\n" +
-		"详细命令请添加好友后私聊发送/help\n" +
-		"如果有用法问题或者功能改进可以在此提出：https://www.bilibili.com/read/cv10602230\n" +
-		"本项目为开源项目，如果喜欢请点一个Star：https://github.com/Sora233/DDBOT"
+		"详细介绍请添加好友后私聊发送/help"
 	lgc.textReply(text)
 }
 
