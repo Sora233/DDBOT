@@ -72,6 +72,11 @@ func main() {
 		return
 	}
 
+	if CommitId == "UNKNOWN" {
+		fmt.Println("DDBOT版本：未知-自编译版本")
+	} else {
+		fmt.Printf("DDBOT版本：%v-%v\n", BuildTime, CommitId)
+	}
 	fmt.Println("DDBOT唯一指定交流群：755612788")
 
 	config.Init()
