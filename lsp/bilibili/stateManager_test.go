@@ -1,6 +1,7 @@
 package bilibili
 
 import (
+	"fmt"
 	"github.com/Sora233/DDBOT/lsp/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
@@ -235,4 +236,46 @@ func TestStateManager_ClearByMid(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, 1, c.IncNotLiveCount(test.UID1))
 
+}
+
+func TestGetCookieInfo(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	_ = initStateManager(t)
+
+	cookieInfo, err := GetCookieInfo(test.NAME1)
+	assert.EqualValues(t, buntdb.ErrNotFound, err)
+	assert.Nil(t, cookieInfo)
+
+	err = SetCookieInfo(test.NAME1, &LoginResponse_Data_CookieInfo{
+		Cookies: []*LoginResponse_Data_CookieInfo_Cookie{
+			{
+				Name:  "name1",
+				Value: "value1",
+			},
+			{
+				Name:  "name2",
+				Value: "value2",
+			},
+		},
+		Domains: []string{"1"},
+	})
+	assert.Nil(t, err)
+
+	cookieInfo, err = GetCookieInfo(test.NAME1)
+	assert.Nil(t, err)
+	assert.Len(t, cookieInfo.GetCookies(), 2)
+	for idx, cookie := range cookieInfo.GetCookies() {
+		assert.EqualValues(t, fmt.Sprintf("name%v", idx+1), cookie.GetName())
+		assert.EqualValues(t, fmt.Sprintf("value%v", idx+1), cookie.GetValue())
+	}
+	assert.Len(t, cookieInfo.GetDomains(), 1)
+	assert.Equal(t, "1", cookieInfo.GetDomains()[0])
+
+	_, err = GetCookieInfo(test.NAME2)
+	assert.NotNil(t, err)
+
+	err = SetCookieInfo(test.NAME2, nil)
+	assert.NotNil(t, err)
 }

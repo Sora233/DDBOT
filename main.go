@@ -114,16 +114,13 @@ bot:
   account:  # 你的qq号，不填则使用扫码登陆
   password: # 你的qq密码
 
-# b站登陆后的cookie字段，从cookie中找到这两个填进去，如果不会请百度搜索如何查看网站cookies
-# 请注意，bot将使用您b站帐号的以下功能，建议使用新注册的小号：
+# b站相关的功能需要一个b站账号，建议使用新注册的小号
+# bot将使用您b站帐号的以下功能：
 # 关注用户 / 取消关注用户 / 查看关注列表
-# 警告：
-# SESSDATA和bili_jct等价于您的帐号凭证
-# 请绝对不要透露给他人，更不能上传至Github等公开平台
-# 否则将导致您的帐号被盗
+# 请注意，订阅一个账号后，此处使用的b站账号将自动关注该账号
 bilibili:
-  SESSDATA:
-  bili_jct:
+  account:  # 你的b站账号 
+  password: # 你的b站密码
   interval: 15s
 
 concern:

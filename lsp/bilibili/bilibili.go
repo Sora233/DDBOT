@@ -6,6 +6,7 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool/requests"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 const (
@@ -15,6 +16,7 @@ const (
 	BaseVCHost   = "https://api.vc.bilibili.com"
 	VideoView    = "https://www.bilibili.com/video"
 	DynamicView  = "https://t.bilibili.com"
+	PassportHost = "https://passport.bilibili.com"
 )
 
 var BasePath = map[string]string{
@@ -26,12 +28,18 @@ var BasePath = map[string]string{
 	PathRelationModify:         BaseHost,
 	PathRelationFeedList:       BaseLiveHost,
 	PathGetAttentionList:       BaseVCHost,
+	PathOAuth2GetKey:           PassportHost,
+	PathV3OAuth2Login:          PassportHost,
 }
 
 var (
 	ErrVerifyRequired = errors.New("verify required")
 	SESSDATA          string
 	biliJct           string
+
+	mux      = new(sync.RWMutex)
+	username string
+	password string
 )
 
 func BPath(path string) string {
@@ -55,7 +63,43 @@ func SetVerify(_SESSDATA string, _biliJct string) {
 	biliJct = _biliJct
 }
 
-func AddCookiesOption() []requests.Option {
+func SetAccount(_username string, _password string) {
+	username = _username
+	password = _password
+}
+
+func AddVerifyOption() []requests.Option {
+	if IsCookieGiven() {
+		return []requests.Option{requests.CookieOption("SESSDATA", SESSDATA), requests.CookieOption("bili_jct", biliJct)}
+	}
+
+	mux.Lock()
+	defer mux.Unlock()
+
+	if IsCookieGiven() {
+		return []requests.Option{requests.CookieOption("SESSDATA", SESSDATA), requests.CookieOption("bili_jct", biliJct)}
+	}
+
+	if !IsAccountGiven() {
+		logger.Errorf("AddVerifyOption error - 未设置cookie和帐号")
+		return nil
+	} else {
+		logger.Debug("AddVerifyOption 使用帐号刷新cookie")
+		cookieInfo, err := freshAccountCookieInfo()
+		if err != nil {
+			logger.Errorf("freshAccountCookieInfo error %v", err)
+		} else {
+			logger.Debug("freshAccountCookieInfo ok, set SESSDATA and bili_jct")
+			for _, cookie := range cookieInfo.GetCookies() {
+				if cookie.GetName() == "SESSDATA" {
+					SESSDATA = cookie.GetValue()
+				}
+				if cookie.GetName() == "bili_jct" {
+					biliJct = cookie.GetValue()
+				}
+			}
+		}
+	}
 	return []requests.Option{requests.CookieOption("SESSDATA", SESSDATA), requests.CookieOption("bili_jct", biliJct)}
 }
 
@@ -63,8 +107,29 @@ func AddUAOption() requests.Option {
 	return requests.AddUAOption()
 }
 
+func AddReferOption(refer ...string) requests.Option {
+	if len(refer) == 0 {
+		return requests.HeaderOption("Referer", "https://www.bilibili.com/")
+	}
+	return requests.HeaderOption("Referer", refer[0])
+}
+
 func IsVerifyGiven() bool {
+	if IsCookieGiven() || IsAccountGiven() {
+		return true
+	}
+	return false
+}
+
+func IsCookieGiven() bool {
 	if SESSDATA == "" || biliJct == "" {
+		return false
+	}
+	return true
+}
+
+func IsAccountGiven() bool {
+	if username == "" {
 		return false
 	}
 	return true
@@ -73,4 +138,32 @@ func IsVerifyGiven() bool {
 func ParseUid(s string) (int64, error) {
 	s = strings.TrimLeft(s, "UID:")
 	return strconv.ParseInt(s, 10, 64)
+}
+
+func freshAccountCookieInfo() (*LoginResponse_Data_CookieInfo, error) {
+	logger.Debug("freshAccountCookieInfo")
+	if !IsAccountGiven() {
+		return nil, errors.New("未设置帐号")
+	}
+	if ci, err := GetCookieInfo(username); err == nil {
+		logger.Debug("GetCookieInfo from db ok")
+		return ci, nil
+	}
+	logger.Debug("login to fresh cookie")
+	resp, err := Login(username, password)
+	if err != nil {
+		logger.Errorf("Login error %v", err)
+		return nil, err
+	}
+	if resp.GetCode() != 0 {
+		logger.Errorf("Login code %v", resp.GetCode())
+		return nil, fmt.Errorf("login code %v", resp.GetCode())
+	}
+	logger.Debug("login success")
+	if err = SetCookieInfo(username, resp.GetData().GetCookieInfo()); err != nil {
+		logger.Errorf("SetCookieInfo error %v", err)
+	} else {
+		logger.Debug("SetCookieInfo ok")
+	}
+	return resp.GetData().GetCookieInfo(), nil
 }

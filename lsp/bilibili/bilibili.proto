@@ -141,6 +141,67 @@ message FeedListResponse {
   Data data = 3;
 }
 
+message GetKeyRequest {
+  string appkey = 1;
+  string sign = 2;
+}
+
+message GetKeyResponse {
+  int64 ts = 1;
+  int32 code = 2;
+  message Data {
+    string hash = 1;
+    string key = 2;
+  }
+  Data data = 3;
+}
+
+message LoginRequest {
+  string appkey = 1;
+  int32 build = 2;
+  //  string captcha = 3;
+  //  string challenge = 4;
+  string channel = 5;
+  string device = 6;
+  //  string mobi_app = 7;
+  string password = 8;
+  string permission = 9;
+  string platform = 10;
+  // string seccode = 11;
+  int32 subid = 12;
+  int32 ts = 13;
+  string username = 14;
+  //  string validate = 15;
+}
+
+message LoginResponse {
+  int32 ts = 1;
+  int32 code = 2;
+  message Data {
+    message TokenInfo {
+      int64 mid = 1;
+      string access_token = 2;
+      string refresh_token = 3;
+      int64 expires_in = 4;
+    }
+    message CookieInfo {
+      message Cookie {
+        string name = 1;
+        string value = 2;
+        int32 http_only = 3;
+        int64 expires = 4;
+      }
+      repeated Cookie cookies = 1;
+      repeated string domains = 2;
+    }
+    int32 status = 1;
+    TokenInfo token_info = 2;
+    CookieInfo cookie_info = 3;
+    repeated string sso = 4;
+  }
+  Data data = 3;
+}
+
 message Card {
   message Desc {
     message UserProfile {

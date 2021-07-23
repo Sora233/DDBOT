@@ -264,6 +264,44 @@ func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err err
 	return
 }
 
+func SetCookieInfo(username string, cookieInfo *LoginResponse_Data_CookieInfo) error {
+	if cookieInfo == nil {
+		return errors.New("<nil> cookieInfo")
+	}
+	return localdb.RWTxCover(func(tx *buntdb.Tx) error {
+		key := localdb.BilibiliUserCookieInfoKey(username)
+		cookieData, err := json.Marshal(cookieInfo)
+		if err != nil {
+			return err
+		}
+		var expire int64
+		for _, cookie := range cookieInfo.GetCookies() {
+			expire = cookie.GetExpires()
+			break
+		}
+		if expire != 0 {
+			tx.Set(key, string(cookieData), localdb.ExpireOption(time.Duration(expire-time.Now().Unix())*time.Second))
+		} else {
+			tx.Set(key, string(cookieData), nil)
+		}
+		return nil
+	})
+}
+
+func GetCookieInfo(username string) (cookieInfo *LoginResponse_Data_CookieInfo, err error) {
+	localdb.RTxCover(func(tx *buntdb.Tx) error {
+		key := localdb.BilibiliUserCookieInfoKey(username)
+		var cookieStr string
+		cookieStr, err = tx.Get(key)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal([]byte(cookieStr), &cookieInfo)
+		return nil
+	})
+	return
+}
+
 func (c *StateManager) Start() error {
 	db := localdb.MustGetClient()
 	db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
