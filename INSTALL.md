@@ -10,6 +10,9 @@
 
 从 [Release](https://github.com/Sora233/DDBOT/releases) 中下载适合您的版本
 
+<details>
+<summary>从源码编译（不推荐）</summary>
+
 ## 从源码编译
 
 go >= 1.16
@@ -37,6 +40,8 @@ NOCV=1 make build
 # 如果没有安装make程序，则用下面的命令编译
 go build -tags nocv
 ```
+
+</details>
 
 ## 配置
 
@@ -77,24 +82,21 @@ DDBOT运行时的配置文件，如果检测到不存在，会生成一个最小
 
 如果可以直连油管，那也可以正常使用YTB订阅，如果无法直连油管，则需要配置代理功能，YTB订阅才能正常工作。
 
-如果要使用b站订阅功能，需要填入下面bilibili的SESSDATA和bili_jct两个配置，请参考下面的说明。
+如果要使用b站订阅功能，需要填入b站账号和密码。
 
 ```yaml
 bot:
   account:  # 你的qq号，不填则使用扫码登陆
   password: # 你的qq密码
 
-# b站登陆后的cookie字段，从cookie中找到这两个填进去，如果不会请百度搜索如何查看网站cookies
-# 请注意，bot将使用您b站帐号的以下功能，建议使用新注册的小号：
+# b站相关的功能需要一个b站账号，建议使用新注册的小号
+# bot将使用您b站帐号的以下功能：
 # 关注用户 / 取消关注用户 / 查看关注列表
-# 警告：
-# SESSDATA和bili_jct等价于您的帐号凭证
-# 请绝对不要透露给他人，更不能上传至Github等公开平台
-# 否则将导致您的帐号被盗
+# 请注意，订阅一个账号后，此处使用的b站账号将自动关注该账号
 bilibili:
-  SESSDATA:
-  bili_jct:
-  interval: 15s
+  account:  # 你的b站账号 
+  password: # 你的b站密码
+  interval: 20s
 
 concern:
   emitInterval: 5s
@@ -113,17 +115,23 @@ bot:
   account: # bot账号
   password: # bot密码
 
-# b站登陆后的cookie字段，从cookie中找到这两个填进去
 # 请注意，bot将使用您b站帐号的以下功能，建议使用新注册的小号：
 # 关注用户 / 取消关注用户 / 查看关注列表
-#
-# 警告：
-# SESSDATA和bili_jct等价于您的帐号凭证
-# 请绝对不要透露给他人，更不能上传至Github等公开平台
-# 否则将导致您的帐号被盗
+# 目前支持填cookie和账号两种方式 （选择任意一种方式即可，推荐使用账号密码）
+# 若使用账号
+    # 直接填入账号密码
+# 若使用cookie
+    # b站登陆后的cookie字段，从cookie中找到这两个填进去
+    # 警告：
+    # SESSDATA和bili_jct等价于您的帐号凭证
+    # 请绝对不要透露给他人，更不能上传至Github等公开平台
+    # 否则将导致您的帐号被盗
+# 请注意，订阅一个账号后，此处使用的b站账号将自动关注该账号
 bilibili:
   SESSDATA: ""
   bili_jct: ""
+  account:  # 你的b站账号 
+  password: # 你的b站密码
   interval: 30s # 直播状态和动态检测间隔，过快可能导致ip被暂时封禁
 
 
