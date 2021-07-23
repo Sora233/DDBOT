@@ -29,7 +29,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"math/rand"
-	"os"
 	"path"
 	"runtime"
 	"strings"
@@ -359,10 +358,10 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		go cmd.Execute()
 	})
 	bot.OnDisconnected(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
-		go func() {
-			time.Sleep(time.Second * 3)
-			os.Exit(1)
-		}()
+		logger.Errorf("收到OnDisconnected事件 %v", event.Message)
+		if err := bot.ReLogin(event); err != nil {
+			logger.Fatalf("重连时发生错误%v，bot将自动退出", err)
+		}
 	})
 
 	bot.OnLog(func() func(*client.QQClient, *client.LogEvent) {

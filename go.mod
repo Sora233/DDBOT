@@ -26,4 +26,4 @@ require (
 	gocv.io/x/gocv v0.27.0
 )
 
-replace github.com/Logiase/MiraiGo-Template => github.com/Sora233/MiraiGo-Template v0.0.0-20210712123458-dea21fc94120
+replace github.com/Logiase/MiraiGo-Template => github.com/Sora233/MiraiGo-Template v0.0.0-20210723161939-c8574bad87e8
