@@ -14,6 +14,8 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"runtime"
+	"strings"
 	"syscall"
 
 	_ "github.com/Sora233/DDBOT/logging"
@@ -109,7 +111,8 @@ func main() {
 	bot.Stop()
 }
 
-var exampleConfig = `
+var exampleConfig = func() string {
+	s := `
 bot:
   account:  # 你的qq号，不填则使用扫码登陆
   password: # 你的qq密码
@@ -128,3 +131,9 @@ concern:
 
 logLevel: info
 `
+	// win上用记事本打开不会正确换行
+	if runtime.GOOS == "windows" {
+		s = strings.ReplaceAll(s, "\n", "\r\n")
+	}
+	return s
+}()
