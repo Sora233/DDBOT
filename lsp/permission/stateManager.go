@@ -290,15 +290,14 @@ func (c *StateManager) GrantRole(target int64, role RoleType) error {
 	}
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(target, role.String())
-		_, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			tx.Set(key, "", nil)
-			return nil
-		} else if err == nil {
-			return ErrPermissionExist
-		} else {
+		_, replaced, err := tx.Set(key, "", nil)
+		if err != nil {
 			return err
 		}
+		if replaced {
+			return ErrPermissionExist
+		}
+		return nil
 	})
 }
 
@@ -366,15 +365,11 @@ func (c *StateManager) UngrantGroupRole(groupCode int64, target int64, role Role
 	}
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.GroupPermissionKey(groupCode, target, role.String())
-		_, err := tx.Get(key)
+		_, err := tx.Delete(key)
 		if err == buntdb.ErrNotFound {
 			return ErrPermissionNotExist
-		} else if err == nil {
-			_, err := tx.Delete(key)
-			return err
-		} else {
-			return err
 		}
+		return err
 	})
 }
 
@@ -384,15 +379,14 @@ func (c *StateManager) GrantPermission(groupCode int64, target int64, command st
 	}
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(groupCode, target, command)
-		_, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			tx.Set(key, "", nil)
-			return nil
-		} else if err == nil {
-			return ErrPermissionExist
-		} else {
+		_, replaced, err := tx.Set(key, "", nil)
+		if err != nil {
 			return err
 		}
+		if replaced {
+			return ErrPermissionExist
+		}
+		return nil
 	})
 }
 
@@ -402,15 +396,11 @@ func (c *StateManager) UngrantPermission(groupCode int64, target int64, command 
 	}
 	return c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(groupCode, target, command)
-		_, err := tx.Get(key)
+		_, err := tx.Delete(key)
 		if err == buntdb.ErrNotFound {
 			return ErrPermissionNotExist
-		} else if err == nil {
-			tx.Delete(key)
-			return nil
-		} else {
-			return err
 		}
+		return err
 	})
 }
 

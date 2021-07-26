@@ -89,14 +89,22 @@ func AddVerifyOption() []requests.Option {
 		if err != nil {
 			logger.Errorf("freshAccountCookieInfo error %v", err)
 		} else {
-			logger.Debug("freshAccountCookieInfo ok, set SESSDATA and bili_jct")
+			logger.Debug("freshAccountCookieInfo ok")
 			for _, cookie := range cookieInfo.GetCookies() {
 				if cookie.GetName() == "SESSDATA" {
 					SESSDATA = cookie.GetValue()
+					logger.Debug("使用cookieInfo设置 SESSDATA")
 				}
 				if cookie.GetName() == "bili_jct" {
 					biliJct = cookie.GetValue()
+					logger.Debug("使用cookieInfo设置 bili_jct")
 				}
+			}
+			if !IsCookieGiven() {
+				logger.Errorf("freshAccountCookieInfo ok 但是设置cookie失败，如果发现这个问题，请反馈给开发者。")
+				// 设置错误cookie防止反复登陆
+				SESSDATA = "wrong"
+				biliJct = "wrong"
 			}
 		}
 	}

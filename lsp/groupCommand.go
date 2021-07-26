@@ -547,9 +547,11 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		replyText = fmt.Sprintf("签到成功！获得1积分，当前积分为%v", score)
 		return nil
 	})
-	lgc.textReply(replyText)
 	if err != nil {
+		lgc.textSend("失败 - 内部错误")
 		log.Errorf("checkin error %v", err)
+	} else {
+		lgc.textReply(replyText)
 	}
 }
 

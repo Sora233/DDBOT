@@ -308,6 +308,17 @@ func (c *Concern) watchCore() {
 				return
 			}
 
+			sendLiveInfo := func(info *LiveInfo) {
+				addLiveInfoErr := c.AddLiveInfo(info)
+				if addLiveInfoErr != nil {
+					// 如果因为系统原因add失败，会造成重复推送
+					// 按照ddbot的原则，选择不推送，而非重复推送
+					logger.WithField("mid", info.Mid).Errorf("add live info error %v", err)
+				} else {
+					c.eventChan <- info
+				}
+			}
+
 			for _, id := range ids {
 				mid := id.(int64)
 				oldInfo, _ := c.GetLiveInfo(mid)
@@ -315,8 +326,7 @@ func (c *Concern) watchCore() {
 					// first live info
 					if newInfo, found := liveInfoMap[mid]; found {
 						newInfo.LiveStatusChanged = true
-						c.eventChan <- newInfo
-						c.AddLiveInfo(newInfo)
+						sendLiveInfo(newInfo)
 					}
 					continue
 				}
@@ -324,8 +334,7 @@ func (c *Concern) watchCore() {
 					if newInfo, found := liveInfoMap[mid]; found {
 						// notliving -> living
 						newInfo.LiveStatusChanged = true
-						c.eventChan <- newInfo
-						c.AddLiveInfo(newInfo)
+						sendLiveInfo(newInfo)
 					}
 				} else if oldInfo.Status == LiveStatus_Living {
 					if newInfo, found := liveInfoMap[mid]; !found {
@@ -342,8 +351,7 @@ func (c *Concern) watchCore() {
 						c.ClearNotLiveCount(mid)
 						newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle, oldInfo.Cover, LiveStatus_NoLiving)
 						newInfo.LiveStatusChanged = true
-						c.eventChan <- newInfo
-						c.AddLiveInfo(newInfo)
+						sendLiveInfo(newInfo)
 					} else {
 						if newInfo.LiveTitle == "bilibili主播的直播间" {
 							newInfo.LiveTitle = oldInfo.LiveTitle
@@ -352,9 +360,8 @@ func (c *Concern) watchCore() {
 						if newInfo.LiveTitle != oldInfo.LiveTitle {
 							// live title change
 							newInfo.LiveTitleChanged = true
-							c.eventChan <- newInfo
+							sendLiveInfo(newInfo)
 						}
-						c.AddLiveInfo(newInfo)
 					}
 				}
 			}
@@ -382,14 +389,22 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 	logger.WithField("cost", time.Now().Sub(start)).Trace("freshDynamicNew cost 1")
 	for _, card := range resp.GetData().GetCards() {
 		uid := card.GetDesc().GetUid()
+		// 应该用dynamic_id_str
+		// 但好像已经没法保持向后兼容同时改动了
+		// 只能相信概率论了，出问题的概率应该比较小，出问题会导致推送丢失
 		replaced, err := c.MarkDynamicId(card.GetDesc().GetDynamicId())
 		if err != nil || replaced {
+			if err != nil {
+				logger.WithField("uid", uid).
+					WithField("dynamicId", card.GetDesc().GetDynamicId()).
+					Errorf("MarkDynamicId error %v", err)
+			}
 			continue
 		}
 		ts, err := c.StateManager.GetUidFirstTimestamp(uid)
 		if err == nil && card.GetDesc().GetTimestamp() < ts {
 			logger.WithField("uid", uid).
-				WithField("dynamicId", card.GetDesc().GetDynamicIdStr()).
+				WithField("dynamicId", card.GetDesc().GetDynamicId()).
 				Debugf("past news skip")
 			continue
 		}

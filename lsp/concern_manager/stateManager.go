@@ -72,19 +72,20 @@ func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}
 // CheckAndSetAtAllMark 检查@全体标记是否过期，已过期返回true，并重置标记，否则返回false。
 // 因为@全体有次数限制，并且较为恼人，故设置标记，两次@全体之间必须有间隔。
 func (c *StateManager) CheckAndSetAtAllMark(groupCode int64, id interface{}) (result bool) {
-	_ = c.RWTxCover(func(tx *buntdb.Tx) error {
+	err := c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.GroupAtAllMarkKey(groupCode, id)
-		_, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			result = true
-			_, _, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*2))
-			if err != nil {
-				// 如果设置失败，可能会造成连续at
-				result = false
-			}
+		_, replaced, err := tx.Set(key, "", localdb.ExpireOption(time.Hour*2))
+		if err != nil {
+			return err
+		}
+		if replaced {
+			return localdb.ErrRollback
 		}
 		return nil
 	})
+	if err == nil {
+		result = true
+	}
 	return
 }
 
@@ -144,10 +145,7 @@ func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype
 		} else {
 			_, _, err = tx.Set(groupStateKey, newCtype.String(), nil)
 		}
-		if err != nil {
-			return err
-		}
-		return nil
+		return err
 	})
 	return
 }
@@ -378,8 +376,14 @@ func (c *StateManager) FreshIndex(groups ...int64) {
 }
 
 func (c *StateManager) FreshAll() {
-	miraiBot.Instance.ReloadFriendList()
-	miraiBot.Instance.ReloadGroupList()
+	if err := miraiBot.Instance.ReloadFriendList(); err != nil {
+		logger.Errorf("ReloadFriendList error %v", err)
+		return
+	}
+	if err := miraiBot.Instance.ReloadGroupList(); err != nil {
+		logger.Errorf("ReloadGroupList error %v", err)
+		return
+	}
 	db, err := localdb.GetClient()
 	if err != nil {
 		return
@@ -390,7 +394,9 @@ func (c *StateManager) FreshAll() {
 	}
 	for _, index := range allIndex {
 		if strings.HasPrefix(index, c.GroupConcernStateKey()+":") {
-			db.DropIndex(index)
+			if err := db.DropIndex(index); err != nil {
+				logger.Errorf("DropIndex %v error %v", index, err)
+			}
 		}
 	}
 
@@ -402,8 +408,8 @@ func (c *StateManager) FreshAll() {
 	}
 	var removeKey []string
 
-	c.RTxCover(func(tx *buntdb.Tx) error {
-		tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
+	err = c.RTxCover(func(tx *buntdb.Tx) error {
+		return tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
 			groupCode, _, err := c.ParseGroupConcernStateKey(key)
 			if err != nil {
 				removeKey = append(removeKey, key)
@@ -412,14 +418,22 @@ func (c *StateManager) FreshAll() {
 			}
 			return true
 		})
-		return nil
 	})
-	c.RWTxCover(func(tx *buntdb.Tx) error {
+	if err != nil {
+		logger.Errorf("Ascend %v error %v", c.GroupConcernStateKey(), err)
+		return
+	}
+	err = c.RWTxCover(func(tx *buntdb.Tx) error {
 		for _, key := range removeKey {
-			tx.Delete(key)
+			if _, err := tx.Delete(key); err != nil {
+				return err
+			}
 		}
 		return nil
 	})
+	if err != nil {
+		logger.Errorf("tx delete error %v", err)
+	}
 }
 
 func (c *StateManager) upsertConcernType(key string, ctype concern.Type) (newCtype concern.Type, err error) {
@@ -427,14 +441,14 @@ func (c *StateManager) upsertConcernType(key string, ctype concern.Type) (newCty
 		val, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
 			newCtype = ctype
-			tx.Set(key, ctype.String(), nil)
+			_, _, err = tx.Set(key, ctype.String(), nil)
 		} else if err == nil {
 			newCtype = concern.FromString(val).Add(ctype)
-			tx.Set(key, newCtype.String(), nil)
+			_, _, err = tx.Set(key, newCtype.String(), nil)
 		} else {
 			return err
 		}
-		return nil
+		return err
 	})
 	return
 }

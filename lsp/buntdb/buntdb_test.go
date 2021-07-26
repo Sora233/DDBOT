@@ -95,3 +95,29 @@ func TestRTxCover(t *testing.T) {
 		return nil
 	})
 }
+
+func TestRWTxCover(t *testing.T) {
+	var err error
+	err = InitBuntDB(MEMORYDB)
+	assert.Nil(t, err)
+	defer Close()
+
+	err = RWTxCover(func(tx *buntdb.Tx) error {
+		_, _, err := tx.Set("a", "b", ExpireOption(time.Hour*48))
+		return err
+	})
+	assert.Nil(t, err)
+	err = RWTxCover(func(tx *buntdb.Tx) error {
+		tx.Set("a", "c", ExpireOption(time.Second*1))
+		return ErrRollback
+	})
+	assert.EqualValues(t, ErrRollback, err)
+	var ttl time.Duration
+	err = RTxCover(func(tx *buntdb.Tx) error {
+		var err error
+		ttl, err = tx.TTL("a")
+		return err
+	})
+	assert.Nil(t, err)
+	assert.Greater(t, ttl, time.Hour*47)
+}

@@ -107,31 +107,26 @@ func (s *StateManager) IsMuted(groupCode int64, uin int64) bool {
 func (s *StateManager) SaveGroupInvitor(groupCode int64, uin int64) error {
 	return s.RWTxCover(func(tx *buntdb.Tx) error {
 		key := localdb.GroupInvitorKey(groupCode)
-		_, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			_, _, err := tx.Set(key, strconv.FormatInt(uin, 10), nil)
+		_, replaced, err := tx.Set(key, strconv.FormatInt(uin, 10), nil)
+		if err != nil {
 			return err
-		} else if err != nil {
-			return err
-		} else {
+		}
+		if replaced {
 			return localdb.ErrKeyExist
 		}
+		return nil
 	})
 }
 
-func (s *StateManager) GetGroupInvitor(groupCode int64) (target int64, err error) {
+func (s *StateManager) PopGroupInvitor(groupCode int64) (target int64, err error) {
 	err = s.RWTxCover(func(tx *buntdb.Tx) error {
 		key := localdb.GroupInvitorKey(groupCode)
 		invitor, err := tx.Delete(key)
 		if err != nil {
 			return err
-		} else {
-			target, err = strconv.ParseInt(invitor, 10, 64)
-			if err != nil {
-				return err
-			}
-			return nil
 		}
+		target, err = strconv.ParseInt(invitor, 10, 64)
+		return err
 	})
 	return
 }

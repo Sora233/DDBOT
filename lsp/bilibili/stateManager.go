@@ -165,9 +165,8 @@ func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 	return newsInfo, nil
 }
 
-func (c *StateManager) CheckDynamicId(dynamic int64) bool {
-	var result bool
-	c.RTxCover(func(tx *buntdb.Tx) error {
+func (c *StateManager) CheckDynamicId(dynamic int64) (result bool) {
+	err := c.RTxCover(func(tx *buntdb.Tx) error {
 		key := c.DynamicIdKey(dynamic)
 		_, err := tx.Get(key)
 		if err == nil {
@@ -175,15 +174,26 @@ func (c *StateManager) CheckDynamicId(dynamic int64) bool {
 		} else if err == buntdb.ErrNotFound {
 			result = true
 		} else {
-			result = false
+			return err
 		}
 		return nil
 	})
+	if err != nil {
+		result = false
+	}
 	return result
 }
 
 func (c *StateManager) MarkDynamicId(dynamic int64) (replaced bool, err error) {
-	c.RWTxCover(func(tx *buntdb.Tx) error {
+	//	一个错误的写法，用闭包返回值简单地替代了RWTxCover返回值
+	//	在磁盘空间用尽的情况下，闭包可以成功执行，但RWTxCover执行持久化时会报错，这个错误就被意外地忽略了
+	//	c.RWTxCover(func(tx *buntdb.Tx) error {
+	//		key := c.DynamicIdKey(dynamic)
+	//		_, replaced, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*120))
+	//		return err
+	//	})
+	err = c.RWTxCover(func(tx *buntdb.Tx) error {
+		var err error
 		key := c.DynamicIdKey(dynamic)
 		_, replaced, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*120))
 		return err
@@ -192,7 +202,7 @@ func (c *StateManager) MarkDynamicId(dynamic int64) (replaced bool, err error) {
 }
 
 func (c *StateManager) IncNotLiveCount(uid int64) (result int) {
-	c.RWTxCover(func(tx *buntdb.Tx) error {
+	err := c.RWTxCover(func(tx *buntdb.Tx) error {
 		key := c.NotLiveKey(uid)
 		oldV, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -210,6 +220,9 @@ func (c *StateManager) IncNotLiveCount(uid int64) (result int) {
 		}
 		return err
 	})
+	if err != nil {
+		result = 0
+	}
 	return
 }
 
@@ -236,7 +249,7 @@ func (c *StateManager) SetUidFirstTimestampIfNotExist(uid int64, timestamp int64
 		}
 		return nil
 	})
-	if err != nil && err == localdb.ErrRollback {
+	if err == localdb.ErrRollback {
 		err = nil
 	}
 	return err
@@ -251,7 +264,8 @@ func (c *StateManager) UnsetUidFirstTimestamp(uid int64) error {
 }
 
 func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err error) {
-	c.RTxCover(func(tx *buntdb.Tx) error {
+	err = c.RTxCover(func(tx *buntdb.Tx) error {
+		var err error
 		key := c.UidFirstTimestamp(uid)
 		var tsStr string
 		tsStr, err = tx.Get(key)
@@ -261,6 +275,9 @@ func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err err
 		timestamp, err = strconv.ParseInt(tsStr, 10, 64)
 		return err
 	})
+	if err != nil {
+		timestamp = 0
+	}
 	return
 }
 
@@ -280,16 +297,17 @@ func SetCookieInfo(username string, cookieInfo *LoginResponse_Data_CookieInfo) e
 			break
 		}
 		if expire != 0 {
-			tx.Set(key, string(cookieData), localdb.ExpireOption(time.Duration(expire-time.Now().Unix())*time.Second))
+			_, _, err = tx.Set(key, string(cookieData), localdb.ExpireOption(time.Duration(expire-time.Now().Unix())*time.Second))
 		} else {
-			tx.Set(key, string(cookieData), nil)
+			_, _, err = tx.Set(key, string(cookieData), nil)
 		}
-		return nil
+		return err
 	})
 }
 
 func GetCookieInfo(username string) (cookieInfo *LoginResponse_Data_CookieInfo, err error) {
-	localdb.RTxCover(func(tx *buntdb.Tx) error {
+	err = localdb.RTxCover(func(tx *buntdb.Tx) error {
+		var err error
 		key := localdb.BilibiliUserCookieInfoKey(username)
 		var cookieStr string
 		cookieStr, err = tx.Get(key)
@@ -297,7 +315,7 @@ func GetCookieInfo(username string) (cookieInfo *LoginResponse_Data_CookieInfo, 
 			return err
 		}
 		err = json.Unmarshal([]byte(cookieStr), &cookieInfo)
-		return nil
+		return err
 	})
 	return
 }

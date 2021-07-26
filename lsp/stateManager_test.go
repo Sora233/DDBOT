@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
@@ -30,16 +31,18 @@ func TestStateManager_GetGroupInvitor(t *testing.T) {
 	sm := newStateManager(t)
 	assert.NotNil(t, sm)
 
-	_, err := sm.GetGroupInvitor(test.G1)
+	_, err := sm.PopGroupInvitor(test.G1)
 	assert.EqualValues(t, buntdb.ErrNotFound, err)
 
 	assert.Nil(t, sm.SaveGroupInvitor(test.G1, test.UID1))
 
-	target, err := sm.GetGroupInvitor(test.G1)
+	assert.EqualValues(t, localdb.ErrKeyExist, sm.SaveGroupInvitor(test.G1, test.UID2))
+
+	target, err := sm.PopGroupInvitor(test.G1)
 	assert.Nil(t, err)
 	assert.Equal(t, test.UID1, target)
 
-	_, err = sm.GetGroupInvitor(test.G2)
+	_, err = sm.PopGroupInvitor(test.G2)
 	assert.EqualValues(t, buntdb.ErrNotFound, err)
 }
 

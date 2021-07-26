@@ -273,7 +273,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		//		err    error
 		//	)
 		//	localutils.Retry(10, time.Second*3, func() bool {
-		//		target, err = l.LspStateManager.GetGroupInvitor(info.Code)
+		//		target, err = l.LspStateManager.PopGroupInvitor(info.Code)
 		//		return err == nil
 		//	})
 		//	if err == buntdb.ErrNotFound {
