@@ -61,7 +61,7 @@ func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
 			if err != nil {
 				continue
 			}
-			markedImg, err := png.Decode(bytes.NewReader(markedImgBytes))
+			markedImg, err := png.Decode(bytes.NewReader(markedImgBytes.GetBytes()))
 			if err != nil {
 				continue
 			}
@@ -103,7 +103,11 @@ func OpenCvAnimeFaceDetect(imgBytes []byte) ([]byte, error) {
 			A: 255,
 		}, 2)
 	}
-	return gocv.IMEncode(gocv.PNGFileExt, img)
+	buf, err := gocv.IMEncode(gocv.PNGFileExt, img)
+	if err != nil {
+		return nil, err
+	}
+	return buf.GetBytes(), err
 }
 
 func NewAnimeCascadeClassifier() gocv.CascadeClassifier {
