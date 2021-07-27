@@ -8,7 +8,10 @@
 
 *预编译版本均为nocv版本，即无法正常使用face命令（本来也没啥人用这个命令）。*
 
-从 [Release](https://github.com/Sora233/DDBOT/releases) 中下载适合您的版本
+从 [Release](https://github.com/Sora233/DDBOT/releases) 中下载适合您的版本，版本规则：
+
+- 根据系统选择windows / linux / darwin
+- 根据架构选择 32位->386 / 64位->amd64 / arm->arm
 
 <details>
 <summary>从源码编译（不推荐）</summary>

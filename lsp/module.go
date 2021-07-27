@@ -522,7 +522,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 	if !result {
 		logger.WithField("content", localutils.MsgToString(msg.Elements)).
 			WithField("GroupCode", groupCode).
-			Errorf("send group message failed after retry")
+			Errorf("发送群消息失败")
 	}
 	if res == nil {
 		res = &message.GroupMessage{Id: -1, Elements: msg.Elements}
