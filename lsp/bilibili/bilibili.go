@@ -102,10 +102,12 @@ func AddVerifyOption() []requests.Option {
 			}
 			if !IsCookieGiven() {
 				logger.Errorf("freshAccountCookieInfo ok 但是设置cookie失败，如果发现这个问题，请反馈给开发者。")
-				// 设置错误cookie防止反复登陆
-				SESSDATA = "wrong"
-				biliJct = "wrong"
 			}
+		}
+		if !IsCookieGiven() {
+			// 设置错误cookie防止反复登陆
+			SESSDATA = "wrong"
+			biliJct = "wrong"
 		}
 	}
 	return []requests.Option{requests.CookieOption("SESSDATA", SESSDATA), requests.CookieOption("bili_jct", biliJct)}
