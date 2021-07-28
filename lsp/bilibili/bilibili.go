@@ -87,9 +87,9 @@ func AddVerifyOption() []requests.Option {
 		logger.Debug("AddVerifyOption 使用帐号刷新cookie")
 		cookieInfo, err := freshAccountCookieInfo()
 		if err != nil {
-			logger.Errorf("freshAccountCookieInfo error %v", err)
+			logger.Errorf("b站登陆失败，请手动指定cookie配置 - freshAccountCookieInfo error %v", err)
 		} else {
-			logger.Debug("freshAccountCookieInfo ok")
+			logger.Debug("b站登陆成功 - freshAccountCookieInfo ok")
 			for _, cookie := range cookieInfo.GetCookies() {
 				if cookie.GetName() == "SESSDATA" {
 					SESSDATA = cookie.GetValue()
@@ -101,7 +101,7 @@ func AddVerifyOption() []requests.Option {
 				}
 			}
 			if !IsCookieGiven() {
-				logger.Errorf("freshAccountCookieInfo ok 但是设置cookie失败，如果发现这个问题，请反馈给开发者。")
+				logger.Errorf("b站登陆成功，但是设置cookie失败，如果发现这个问题，请反馈给开发者。")
 			}
 		}
 		if !IsCookieGiven() {
