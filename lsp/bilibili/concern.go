@@ -449,7 +449,7 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 			logger.Errorf("freshLive FeedList code %v msg %v", resp.GetCode(), resp.GetMessage())
 			return nil, err
 		}
-		pageSize, _ := strconv.ParseInt(resp.GetData().GetPagesize(), 10, 64)
+		pageSize, _ := strconv.ParseInt(resp.GetData().GetPagesize(), 10, 0)
 		for _, l := range resp.GetData().GetList() {
 			if infoSet[l.GetUid()] {
 				continue

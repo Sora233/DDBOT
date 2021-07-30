@@ -106,7 +106,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 					if types, _ := PredefinedType[tp]; types != nil {
 						convTypes = append(convTypes, types...)
 					} else {
-						if t, err := strconv.ParseInt(tp, 10, 64); err == nil {
+						if t, err := strconv.ParseInt(tp, 10, 32); err == nil {
 							convTypes = append(convTypes, DynamicDescType(t))
 						}
 					}
