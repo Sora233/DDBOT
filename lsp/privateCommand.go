@@ -99,6 +99,8 @@ func (c *LspPrivateCommand) Execute() {
 		c.ConfigCommand()
 	case "/whosyourdaddy":
 		c.WhosyourdaddyCommand()
+	case "/quit":
+		c.QuitCommand()
 	default:
 		c.textReply("阁下似乎输入了一个无法识别的命令，请使用/help命令查看帮助。")
 		log.Debug("no command matched")
@@ -621,6 +623,58 @@ func (c *LspPrivateCommand) LogCommand() {
 	} else {
 		c.textSend(strings.Join(lines, "\n"))
 	}
+}
+
+func (c *LspPrivateCommand) QuitCommand() {
+	log := c.DefaultLoggerWithCommand(QuitCommand)
+	log.Info("run quit command")
+	defer func() { log.Info("quit command end") }()
+
+	var quitCmd struct {
+		GroupCode int64 `arg:"" optional:"" help:"要退出的群号"`
+		Force     bool  `optional:"" short:"f" help:"强制清除"`
+	}
+
+	_, output := c.parseCommandSyntax(&quitCmd, QuitCommand)
+	if output != "" {
+		c.textSend(output)
+	}
+	if c.exit {
+		return
+	}
+
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
+	if quitCmd.GroupCode == 0 {
+		log.Errorf("GroupCode is 0")
+		c.textSend("没有指定群号，请输入群号")
+		return
+	}
+
+	log = log.WithField("TargetGroupCode", quitCmd.GroupCode).WithField("Force", quitCmd.Force)
+
+	gi := c.bot.FindGroup(quitCmd.GroupCode)
+	if gi == nil {
+		if quitCmd.Force {
+			log.Debugf("没有找到该QQ群，force已启用")
+			c.textSend("没有找到该QQ群，请确认bot在群内，但由于指定了-f参数，将强制清除bot在该群的数据")
+			log.Debugf("将清除群【%v】的数据", quitCmd.GroupCode)
+		} else {
+			log.Errorf("没有找到该QQ群，force已禁用")
+			c.textSend("没有找到该QQ群，请确认bot在群内，如果要强制清除bot在该群内的数据，请指定-f参数")
+			return
+		}
+	} else {
+		log.Debugf("将退出群【%v】", gi.Name)
+		log.Debugf("将清除群【%v】的数据", gi.Name)
+		gi.Quit()
+	}
+	c.l.RemoveAllByGroup(quitCmd.GroupCode)
 }
 
 func (c *LspPrivateCommand) PingCommand() {
