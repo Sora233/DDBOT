@@ -201,10 +201,22 @@ func TestNestedCover(t *testing.T) {
 		assert.EqualValues(t, buntdb.ErrTxNotWritable, err)
 		return nil
 	})
+	assert.Nil(t, err)
 	err = RTxCover(func(tx *buntdb.Tx) error {
 		_, err := tx.Get("c")
 		assert.EqualValues(t, buntdb.ErrNotFound, err)
 		return nil
 	})
 	assert.Nil(t, err)
+}
+
+func TestClose(t *testing.T) {
+	var err error
+	err = InitBuntDB(MEMORYDB)
+	assert.Nil(t, err)
+
+	err = RWTxCover(func(tx *buntdb.Tx) error {
+		return Close()
+	})
+	assert.Equal(t, buntdb.ErrTxClosed, err)
 }
