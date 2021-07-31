@@ -19,7 +19,7 @@ func (c *StateManager) AddUserInfo(userInfo *UserInfo) error {
 	if userInfo == nil {
 		return errors.New("nil UserInfo")
 	}
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.UserInfoKey(userInfo.Mid)
 		_, _, err := tx.Set(key, userInfo.ToString(), nil)
 		return err
@@ -29,7 +29,7 @@ func (c *StateManager) AddUserInfo(userInfo *UserInfo) error {
 func (c *StateManager) GetUserInfo(mid int64) (*UserInfo, error) {
 	var userInfo = &UserInfo{}
 
-	err := c.RTxCover(func(tx *buntdb.Tx) error {
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.UserInfoKey(mid))
 		if err != nil {
 			return err
@@ -51,7 +51,7 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	if liveInfo == nil {
 		return errors.New("nil LiveInfo")
 	}
-	err := c.RWTxCover(func(tx *buntdb.Tx) error {
+	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set(c.UserInfoKey(liveInfo.Mid), liveInfo.UserInfo.ToString(), nil)
 		if err != nil {
 			return err
@@ -65,7 +65,7 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 func (c *StateManager) GetLiveInfo(mid int64) (*LiveInfo, error) {
 	var liveInfo = &LiveInfo{}
 
-	err := c.RTxCover(func(tx *buntdb.Tx) error {
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.CurrentLiveKey(mid))
 		if err != nil {
 			return err
@@ -87,7 +87,7 @@ func (c *StateManager) AddNewsInfo(newsInfo *NewsInfo) error {
 	if newsInfo == nil {
 		return errors.New("nil NewsInfo")
 	}
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set(c.UserInfoKey(newsInfo.Mid), newsInfo.UserInfo.ToString(), nil)
 		if err != nil {
 			return err
@@ -98,21 +98,21 @@ func (c *StateManager) AddNewsInfo(newsInfo *NewsInfo) error {
 }
 
 func (c *StateManager) DeleteNewsInfo(mid int64) error {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		_, err := tx.Delete(c.CurrentNewsKey(mid))
 		return err
 	})
 }
 
 func (c *StateManager) DeleteLiveInfo(mid int64) error {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		_, err := tx.Delete(c.CurrentLiveKey(mid))
 		return err
 	})
 }
 
 func (c *StateManager) DeleteNewsAndLiveInfo(mid int64) error {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		_, err := tx.Delete(c.CurrentLiveKey(mid))
 		if err != nil && err != buntdb.ErrNotFound {
 			return err
@@ -123,7 +123,7 @@ func (c *StateManager) DeleteNewsAndLiveInfo(mid int64) error {
 }
 
 func (c *StateManager) ClearByMid(mid int64) error {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		var errs []error
 		_, err := tx.Delete(c.CurrentLiveKey(mid))
 		errs = append(errs, err)
@@ -147,7 +147,7 @@ func (c *StateManager) ClearByMid(mid int64) error {
 func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 	var newsInfo = &NewsInfo{}
 
-	err := c.RTxCover(func(tx *buntdb.Tx) error {
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.CurrentNewsKey(mid))
 		if err != nil {
 			return err
@@ -166,7 +166,7 @@ func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 }
 
 func (c *StateManager) CheckDynamicId(dynamic int64) (result bool) {
-	err := c.RTxCover(func(tx *buntdb.Tx) error {
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
 		key := c.DynamicIdKey(dynamic)
 		_, err := tx.Get(key)
 		if err == nil {
@@ -187,12 +187,12 @@ func (c *StateManager) CheckDynamicId(dynamic int64) (result bool) {
 func (c *StateManager) MarkDynamicId(dynamic int64) (replaced bool, err error) {
 	//	一个错误的写法，用闭包返回值简单地替代了RWTxCover返回值
 	//	在磁盘空间用尽的情况下，闭包可以成功执行，但RWTxCover执行持久化时会报错，这个错误就被意外地忽略了
-	//	c.RWTxCover(func(tx *buntdb.Tx) error {
+	//	c.RWCoverTx(func(tx *buntdb.Tx) error {
 	//		key := c.DynamicIdKey(dynamic)
 	//		_, replaced, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*120))
 	//		return err
 	//	})
-	err = c.RWTxCover(func(tx *buntdb.Tx) error {
+	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
 		var err error
 		key := c.DynamicIdKey(dynamic)
 		_, replaced, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*120))
@@ -202,7 +202,7 @@ func (c *StateManager) MarkDynamicId(dynamic int64) (replaced bool, err error) {
 }
 
 func (c *StateManager) IncNotLiveCount(uid int64) (result int) {
-	err := c.RWTxCover(func(tx *buntdb.Tx) error {
+	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.NotLiveKey(uid)
 		oldV, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -227,7 +227,7 @@ func (c *StateManager) IncNotLiveCount(uid int64) (result int) {
 }
 
 func (c *StateManager) ClearNotLiveCount(uid int64) error {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.NotLiveKey(uid)
 		_, err := tx.Delete(key)
 		if err == buntdb.ErrNotFound {
@@ -238,7 +238,7 @@ func (c *StateManager) ClearNotLiveCount(uid int64) error {
 }
 
 func (c *StateManager) SetUidFirstTimestampIfNotExist(uid int64, timestamp int64) error {
-	err := c.RWTxCover(func(tx *buntdb.Tx) error {
+	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.UidFirstTimestamp(uid)
 		_, replaced, err := tx.Set(key, strconv.FormatInt(timestamp, 10), nil)
 		if err != nil {
@@ -256,7 +256,7 @@ func (c *StateManager) SetUidFirstTimestampIfNotExist(uid int64, timestamp int64
 }
 
 func (c *StateManager) UnsetUidFirstTimestamp(uid int64) error {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.UidFirstTimestamp(uid)
 		_, err := tx.Delete(key)
 		return err
@@ -264,7 +264,7 @@ func (c *StateManager) UnsetUidFirstTimestamp(uid int64) error {
 }
 
 func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err error) {
-	err = c.RTxCover(func(tx *buntdb.Tx) error {
+	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		var err error
 		key := c.UidFirstTimestamp(uid)
 		var tsStr string

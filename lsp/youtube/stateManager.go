@@ -14,7 +14,7 @@ type StateManager struct {
 }
 
 func (s *StateManager) AddInfo(info *Info) error {
-	return s.RWTxCover(func(tx *buntdb.Tx) error {
+	return s.RWCoverTx(func(tx *buntdb.Tx) error {
 		infoKey := s.InfoKey(info.ChannelId)
 		_, _, err := tx.Set(infoKey, info.ToString(), localdb.ExpireOption(time.Hour*24*7))
 		return err
@@ -22,7 +22,7 @@ func (s *StateManager) AddInfo(info *Info) error {
 }
 
 func (s *StateManager) GetInfo(channelId string) (info *Info, err error) {
-	err = s.RTxCover(func(tx *buntdb.Tx) error {
+	err = s.RCoverTx(func(tx *buntdb.Tx) error {
 		infoKey := s.InfoKey(channelId)
 		val, err := tx.Get(infoKey)
 		if err != nil {
@@ -39,7 +39,7 @@ func (s *StateManager) GetInfo(channelId string) (info *Info, err error) {
 
 func (s *StateManager) GetVideo(channelId string, videoId string) (*VideoInfo, error) {
 	var v = new(VideoInfo)
-	err := s.RTxCover(func(tx *buntdb.Tx) error {
+	err := s.RCoverTx(func(tx *buntdb.Tx) error {
 		key := s.VideoKey(channelId, videoId)
 		val, err := tx.Get(key)
 		if err != nil {
@@ -55,7 +55,7 @@ func (s *StateManager) GetVideo(channelId string, videoId string) (*VideoInfo, e
 }
 
 func (s *StateManager) AddVideo(v *VideoInfo) error {
-	return s.RWTxCover(func(tx *buntdb.Tx) error {
+	return s.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := s.VideoKey(v.ChannelId, v.VideoId)
 		b, err := json.Marshal(v)
 		if err != nil {

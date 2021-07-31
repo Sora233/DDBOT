@@ -34,7 +34,7 @@ func ExpireOption(d time.Duration) CommandOption {
 // CheckBlockList return true if blocked
 func (c *StateManager) CheckBlockList(caller int64) bool {
 	var result bool
-	err := c.RTxCover(func(tx *buntdb.Tx) error {
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
 		key := c.BlockListKey(caller)
 		_, err := tx.Get(key)
 		if err == nil {
@@ -54,21 +54,21 @@ func (c *StateManager) CheckBlockList(caller int64) bool {
 }
 
 func (c *StateManager) AddBlockList(caller int64, d time.Duration) error {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.BlockListKey(caller)
-		_, err := tx.Get(key)
-		if err == nil {
-			return localdb.ErrKeyExist
-		} else if err != buntdb.ErrNotFound {
+		_, replaced, err := tx.Set(key, "", localdb.ExpireOption(d))
+		if err != nil {
 			return err
 		}
-		_, _, err = tx.Set(key, "", localdb.ExpireOption(d))
-		return err
+		if replaced {
+			return localdb.ErrKeyExist
+		}
+		return nil
 	})
 }
 
 func (c *StateManager) DeleteBlockList(caller int64) error {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.BlockListKey(caller)
 		_, err := tx.Get(key)
 		if err != nil {
@@ -84,7 +84,7 @@ func (c *StateManager) CheckRole(caller int64, role RoleType) bool {
 		return false
 	}
 	var result bool
-	err := c.RTxCover(func(tx *buntdb.Tx) error {
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(caller, role.String())
 		_, err := tx.Get(key)
 		if err == nil {
@@ -109,7 +109,7 @@ func (c *StateManager) CheckGroupRole(groupCode int64, caller int64, role RoleTy
 		return false
 	}
 	var result bool
-	err := c.RTxCover(func(tx *buntdb.Tx) error {
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
 		key := c.GroupPermissionKey(groupCode, caller, role.String())
 		_, err := tx.Get(key)
 		if err == nil {
@@ -158,7 +158,7 @@ func (c *StateManager) operatorEnableKey(key string, status string, opts ...Comm
 	for _, o := range opts {
 		o(opt)
 	}
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		prev, replaced, err := tx.Set(key, status, localdb.ExpireOption(opt.duration))
 		if err != nil {
 			return err
@@ -172,16 +172,26 @@ func (c *StateManager) operatorEnableKey(key string, status string, opts ...Comm
 
 // CheckGroupCommandEnabled check global first, check explicit enabled, must exist
 func (c *StateManager) CheckGroupCommandEnabled(groupCode int64, command string) bool {
-	return !c.CheckGlobalCommandDisabled(command) && c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
-		return exist && val == Enable
+	var result bool
+	_ = c.RCover(func() error {
+		result = !c.CheckGlobalCommandDisabled(command) && c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
+			return exist && val == Enable
+		})
+		return nil
 	})
+	return result
 }
 
 // CheckGroupCommandDisabled check global first, then check explicit disabled, must exist
 func (c *StateManager) CheckGroupCommandDisabled(groupCode int64, command string) bool {
-	return c.CheckGlobalCommandDisabled(command) || c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
-		return exist && val == Disable
+	var result bool
+	_ = c.RCover(func() error {
+		result = c.CheckGlobalCommandDisabled(command) || c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
+			return exist && val == Disable
+		})
+		return nil
 	})
+	return result
 }
 
 func (c *StateManager) CheckGlobalCommandDisabled(command string) bool {
@@ -198,7 +208,7 @@ func (c *StateManager) CheckGlobalCommandDisabled(command string) bool {
 
 func (c *StateManager) CheckGroupCommandFunc(groupCode int64, command string, f func(val string, exist bool) bool) bool {
 	var result bool
-	err := c.RTxCover(func(tx *buntdb.Tx) error {
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
 		key := c.GroupEnabledKey(groupCode, command)
 		val, err := tx.Get(key)
 		if err != nil && err != buntdb.ErrNotFound {
@@ -218,7 +228,7 @@ func (c *StateManager) CheckGroupCommandFunc(groupCode int64, command string, f 
 
 func (c *StateManager) CheckGlobalCommandFunc(command string, f func(val string, exist bool) bool) bool {
 	var result bool
-	err := c.RTxCover(func(tx *buntdb.Tx) error {
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
 		key := c.GlobalEnabledKey(command)
 		val, err := tx.Get(key)
 		if err != nil && err != buntdb.ErrNotFound {
@@ -263,7 +273,7 @@ func (c *StateManager) CheckGroupCommandPermission(groupCode int64, caller int64
 		return true
 	}
 	var result bool
-	err := c.RTxCover(func(tx *buntdb.Tx) error {
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(groupCode, caller, command)
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -288,7 +298,7 @@ func (c *StateManager) GrantRole(target int64, role RoleType) error {
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(target, role.String())
 		_, replaced, err := tx.Set(key, "", nil)
 		if err != nil {
@@ -305,7 +315,7 @@ func (c *StateManager) UngrantRole(target int64, role RoleType) error {
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(target, role.String())
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -321,7 +331,7 @@ func (c *StateManager) UngrantRole(target int64, role RoleType) error {
 
 func (c *StateManager) CheckNoAdmin() bool {
 	var result = true
-	err := c.RTxCover(func(tx *buntdb.Tx) error {
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
 		return tx.Ascend(c.PermissionKey(), func(key, value string) bool {
 			splits := strings.Split(key, ":")
 			if len(splits) != 3 {
@@ -345,7 +355,7 @@ func (c *StateManager) GrantGroupRole(groupCode int64, target int64, role RoleTy
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.GroupPermissionKey(groupCode, target, role.String())
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -363,7 +373,7 @@ func (c *StateManager) UngrantGroupRole(groupCode int64, target int64, role Role
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.GroupPermissionKey(groupCode, target, role.String())
 		_, err := tx.Delete(key)
 		if err == buntdb.ErrNotFound {
@@ -377,7 +387,7 @@ func (c *StateManager) GrantPermission(groupCode int64, target int64, command st
 	if c.CheckGlobalCommandDisabled(command) {
 		return ErrGlobalDisabled
 	}
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(groupCode, target, command)
 		_, replaced, err := tx.Set(key, "", nil)
 		if err != nil {
@@ -394,7 +404,7 @@ func (c *StateManager) UngrantPermission(groupCode int64, target int64, command 
 	if c.CheckGlobalCommandDisabled(command) {
 		return ErrGlobalDisabled
 	}
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.PermissionKey(groupCode, target, command)
 		_, err := tx.Delete(key)
 		if err == buntdb.ErrNotFound {
@@ -415,7 +425,7 @@ func (c *StateManager) RequireAny(option ...RequireOption) bool {
 
 func (c *StateManager) RemoveAllByGroup(groupCode int64) error {
 	var deleteKey []string
-	err := c.RTxCover(func(tx *buntdb.Tx) error {
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
 		tx.Ascend(c.GroupPermissionKey(groupCode), func(key, value string) bool {
 			deleteKey = append(deleteKey, key)
 			return true
@@ -425,7 +435,7 @@ func (c *StateManager) RemoveAllByGroup(groupCode int64) error {
 	if err != nil {
 		return err
 	}
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		for _, k := range deleteKey {
 			tx.Delete(k)
 		}

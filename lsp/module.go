@@ -496,11 +496,10 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 
 // sendGroupMessage 发送一条消息，返回值总是非nil，Id为-1表示发送失败
 func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *message.GroupMessage {
-	// TODO 要求send不在事务中发送确实有点难，等把buntdb重构一下，支持获取当前事务之后再来处理
-	//if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
-	//	logger.WithField("GroupCode", groupCode).Debug("skip muted group")
-	//	return &message.GroupMessage{Id: -1}
-	//}
+	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
+		logger.WithField("GroupCode", groupCode).Debug("skip muted group")
+		return &message.GroupMessage{Id: -1}
+	}
 	if msg == nil {
 		logger.WithField("GroupCode", groupCode).Debug("send with nil message")
 		return &message.GroupMessage{Id: -1}
@@ -515,7 +514,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 	// don't know why
 	// msg.Elements = l.compactTextElements(msg.Elements)
 	var res *message.GroupMessage
-	result := localutils.Retry(2, time.Millisecond*50, func() bool {
+	result := localutils.Retry(2, time.Millisecond*500, func() bool {
 		res = bot.Instance.SendGroupMessage(groupCode, msg)
 		return res != nil && res.Id != -1
 	})

@@ -53,7 +53,7 @@ func (s *StateManager) SaveMessageImageUrl(groupCode int64, messageID int32, msg
 	} else {
 		return nil
 	}
-	return s.RWTxCover(func(tx *buntdb.Tx) error {
+	return s.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := s.GroupMessageImageKey(groupCode, messageID)
 		_, _, err := tx.Set(key, strings.Join(urls, " "), localdb.ExpireOption(time.Hour*8))
 		return err
@@ -62,7 +62,7 @@ func (s *StateManager) SaveMessageImageUrl(groupCode int64, messageID int32, msg
 
 func (s *StateManager) GetMessageImageUrl(groupCode int64, messageID int32) []string {
 	var result []string
-	s.RTxCover(func(tx *buntdb.Tx) error {
+	s.RCoverTx(func(tx *buntdb.Tx) error {
 		key := s.GroupMessageImageKey(groupCode, messageID)
 		val, err := tx.Get(key)
 		if err == nil {
@@ -74,7 +74,7 @@ func (s *StateManager) GetMessageImageUrl(groupCode int64, messageID int32) []st
 }
 
 func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
-	return s.RWTxCover(func(tx *buntdb.Tx) error {
+	return s.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := s.GroupMuteKey(groupCode, uin)
 		if t == 0 {
 			_, err := tx.Delete(key)
@@ -88,7 +88,7 @@ func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
 
 func (s *StateManager) IsMuted(groupCode int64, uin int64) bool {
 	var result = true
-	err := s.RTxCover(func(tx *buntdb.Tx) error {
+	err := s.RCoverTx(func(tx *buntdb.Tx) error {
 		key := s.GroupMuteKey(groupCode, uin)
 		_, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
@@ -105,7 +105,7 @@ func (s *StateManager) IsMuted(groupCode int64, uin int64) bool {
 }
 
 func (s *StateManager) SaveGroupInvitor(groupCode int64, uin int64) error {
-	return s.RWTxCover(func(tx *buntdb.Tx) error {
+	return s.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := localdb.GroupInvitorKey(groupCode)
 		_, replaced, err := tx.Set(key, strconv.FormatInt(uin, 10), nil)
 		if err != nil {
@@ -119,7 +119,7 @@ func (s *StateManager) SaveGroupInvitor(groupCode int64, uin int64) error {
 }
 
 func (s *StateManager) PopGroupInvitor(groupCode int64) (target int64, err error) {
-	err = s.RWTxCover(func(tx *buntdb.Tx) error {
+	err = s.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := localdb.GroupInvitorKey(groupCode)
 		invitor, err := tx.Delete(key)
 		if err != nil {

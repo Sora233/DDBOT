@@ -17,7 +17,7 @@ type StateManager struct {
 func (c *StateManager) GetLiveInfo(id int64) (*LiveInfo, error) {
 	var liveInfo = &LiveInfo{}
 
-	err := c.RTxCover(func(tx *buntdb.Tx) error {
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.CurrentLiveKey(id))
 		if err != nil {
 			return err
@@ -41,7 +41,7 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 		return errors.New("nil LiveInfo")
 	}
 
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set(c.CurrentLiveKey(liveInfo.RoomId), liveInfo.ToString(), localdb.ExpireOption(time.Hour*24*7))
 		return err
 

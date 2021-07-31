@@ -28,7 +28,7 @@ type StateManager struct {
 // GetGroupConcernConfig always return non-nil
 func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig *GroupConcernConfig) {
 	var err error
-	err = c.RTxCover(func(tx *buntdb.Tx) error {
+	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernConfigKey(groupCode, id))
 		if err != nil {
 			return err
@@ -47,7 +47,7 @@ func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (c
 
 // OperateGroupConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，如果返回true，就保存GroupConcernConfig，否则就回滚。
 func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig *GroupConcernConfig) bool) error {
-	err := c.RWTxCover(func(tx *buntdb.Tx) error {
+	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
 		var concernConfig *GroupConcernConfig
 		var configKey = c.GroupConcernConfigKey(groupCode, id)
 		val, err := tx.Get(configKey)
@@ -72,7 +72,7 @@ func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}
 // CheckAndSetAtAllMark 检查@全体标记是否过期，已过期返回true，并重置标记，否则返回false。
 // 因为@全体有次数限制，并且较为恼人，故设置标记，两次@全体之间必须有间隔。
 func (c *StateManager) CheckAndSetAtAllMark(groupCode int64, id interface{}) (result bool) {
-	err := c.RWTxCover(func(tx *buntdb.Tx) error {
+	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := c.GroupAtAllMarkKey(groupCode, id)
 		_, replaced, err := tx.Set(key, "", localdb.ExpireOption(time.Hour*2))
 		if err != nil {
@@ -90,7 +90,7 @@ func (c *StateManager) CheckAndSetAtAllMark(groupCode int64, id interface{}) (re
 }
 
 func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype concern.Type) error {
-	return c.RTxCover(func(tx *buntdb.Tx) error {
+	return c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
 		if err == nil {
 			if concern.FromString(val).ContainAll(ctype) {
@@ -132,7 +132,7 @@ func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype co
 }
 
 func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype concern.Type) (newCtype concern.Type, err error) {
-	err = c.RWTxCover(func(tx *buntdb.Tx) error {
+	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
 		groupStateKey := c.GroupConcernStateKey(groupCode, id)
 		val, err := tx.Get(groupStateKey)
 		if err != nil {
@@ -151,7 +151,7 @@ func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype
 }
 
 func (c *StateManager) RemoveAllByGroupCode(groupCode int64) (err error) {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		var removeKey []string
 		var iterErr error
 		var indexes = []string{
@@ -178,7 +178,7 @@ func (c *StateManager) RemoveAllByGroupCode(groupCode int64) (err error) {
 }
 
 func (c *StateManager) RemoveAllById(_id interface{}) (err error) {
-	return c.RWTxCover(func(tx *buntdb.Tx) error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		var removeKey []string
 		var iterErr error
 		iterErr = tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
@@ -201,7 +201,7 @@ func (c *StateManager) RemoveAllById(_id interface{}) (err error) {
 
 // GetGroupConcern return the concern.Type in specific group for a id
 func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result concern.Type, err error) {
-	err = c.RTxCover(func(tx *buntdb.Tx) error {
+	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
 		if err != nil {
 			return err
@@ -224,7 +224,7 @@ func (c *StateManager) GetConcern(id interface{}) (result concern.Type, err erro
 }
 
 func (c *StateManager) List(filter func(groupCode int64, id interface{}, p concern.Type) bool) (idGroups []int64, ids []interface{}, idTypes []concern.Type, err error) {
-	err = c.RTxCover(func(tx *buntdb.Tx) error {
+	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		var iterErr error
 		err := tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
 			var groupCode int64
@@ -259,7 +259,7 @@ func (c *StateManager) List(filter func(groupCode int64, id interface{}, p conce
 }
 
 func (c *StateManager) ListByGroup(groupCode int64, filter func(id interface{}, p concern.Type) bool) (ids []interface{}, idTypes []concern.Type, err error) {
-	err = c.RTxCover(func(tx *buntdb.Tx) error {
+	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		var iterErr error
 		err := tx.Ascend(c.GroupConcernStateKey(groupCode), func(key, value string) bool {
 			var id interface{}
@@ -330,7 +330,7 @@ func (c *StateManager) GroupTypeById(ids []interface{}, types []concern.Type) ([
 }
 
 func (c *StateManager) FreshCheck(id interface{}, setTTL bool) (result bool, err error) {
-	err = c.RWTxCover(func(tx *buntdb.Tx) error {
+	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
 		freshKey := c.FreshKey(id)
 		_, err := tx.Get(freshKey)
 		if err == buntdb.ErrNotFound {
@@ -408,7 +408,7 @@ func (c *StateManager) FreshAll() {
 	}
 	var removeKey []string
 
-	err = c.RTxCover(func(tx *buntdb.Tx) error {
+	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		return tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
 			groupCode, _, err := c.ParseGroupConcernStateKey(key)
 			if err != nil {
@@ -423,7 +423,7 @@ func (c *StateManager) FreshAll() {
 		logger.Errorf("Ascend %v error %v", c.GroupConcernStateKey(), err)
 		return
 	}
-	err = c.RWTxCover(func(tx *buntdb.Tx) error {
+	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
 		for _, key := range removeKey {
 			if _, err := tx.Delete(key); err != nil {
 				return err
@@ -437,7 +437,7 @@ func (c *StateManager) FreshAll() {
 }
 
 func (c *StateManager) upsertConcernType(key string, ctype concern.Type) (newCtype concern.Type, err error) {
-	err = c.RWTxCover(func(tx *buntdb.Tx) error {
+	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
 			newCtype = ctype
