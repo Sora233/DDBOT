@@ -20,6 +20,7 @@ import (
 
 	_ "github.com/Sora233/DDBOT/logging"
 	_ "github.com/Sora233/DDBOT/lsp"
+	_ "github.com/Sora233/DDBOT/msg_marker"
 )
 
 func init() {
