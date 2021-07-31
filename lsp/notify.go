@@ -20,6 +20,12 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 		select {
 		case inotify := <-l.concernNotify:
 			nLogger := inotify.Logger()
+
+			if l.LspStateManager.IsMuted(inotify.GetGroupCode(), bot.Uin) {
+				nLogger.Info("bot is muted in group, skip notify")
+				continue
+			}
+
 			innertState := l.getInnerState(inotify.Type())
 			cfg := l.getConcernConfig(inotify.GetGroupCode(), inotify.GetUid(), inotify.Type())
 			hook := l.getConcernConfigHook(inotify.Type(), cfg)

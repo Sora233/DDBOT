@@ -20,6 +20,7 @@ import (
 	"github.com/tidwall/buntdb"
 	"io/ioutil"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -659,22 +660,29 @@ func (c *LspPrivateCommand) QuitCommand() {
 	log = log.WithField("TargetGroupCode", quitCmd.GroupCode).WithField("Force", quitCmd.Force)
 
 	gi := c.bot.FindGroup(quitCmd.GroupCode)
+	var displayName string
+	if gi == nil {
+		displayName = strconv.FormatInt(quitCmd.GroupCode, 10)
+	} else {
+		displayName = gi.Name
+	}
 	if gi == nil {
 		if quitCmd.Force {
 			log.Debugf("没有找到该QQ群，force已启用")
 			c.textSend("没有找到该QQ群，请确认bot在群内，但由于指定了-f参数，将强制清除bot在该群的数据")
-			log.Debugf("将清除群【%v】的数据", quitCmd.GroupCode)
 		} else {
 			log.Errorf("没有找到该QQ群，force已禁用")
 			c.textSend("没有找到该QQ群，请确认bot在群内，如果要强制清除bot在该群内的数据，请指定-f参数")
 			return
 		}
 	} else {
-		log.Debugf("将退出群【%v】", gi.Name)
-		log.Debugf("将清除群【%v】的数据", gi.Name)
 		gi.Quit()
+		log.Debugf("已退出群【%v】", displayName)
+		c.textSend(fmt.Sprintf("已退出群【%v】", displayName))
 	}
 	c.l.RemoveAllByGroup(quitCmd.GroupCode)
+	log.Debugf("已清除群【%v】的数据", displayName)
+	c.textSend(fmt.Sprintf("已清除群【%v】的数据", displayName))
 }
 
 func (c *LspPrivateCommand) PingCommand() {
