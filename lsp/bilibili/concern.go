@@ -8,6 +8,7 @@ import (
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/tidwall/buntdb"
+	"golang.org/x/sync/errgroup"
 	"runtime"
 	"strconv"
 	"sync"
@@ -32,8 +33,8 @@ type Concern struct {
 
 	eventChan chan ConcernEvent
 	notify    chan<- concern.Notify
-	stopped   bool
 	stop      chan interface{}
+	wg        sync.WaitGroup
 }
 
 func NewConcern(notify chan<- concern.Notify) *Concern {
@@ -44,6 +45,18 @@ func NewConcern(notify chan<- concern.Notify) *Concern {
 		stop:         make(chan interface{}),
 	}
 	return c
+}
+
+func (c *Concern) Stop() {
+	logger.Trace("正在停止bilibili StateManager")
+	c.StateManager.Stop()
+	logger.Trace("bilibili StateManager已停止")
+	if c.stop != nil {
+		close(c.stop)
+	}
+	logger.Trace("正在停止bilibili concern")
+	c.wg.Wait()
+	logger.Trace("bilibili concern已停止")
 }
 
 func (c *Concern) Start() {
@@ -68,17 +81,17 @@ func (c *Concern) Start() {
 	go c.watchCore()
 	go func() {
 		c.syncSub()
-		for range time.Tick(time.Hour) {
-			c.syncSub()
+
+		tick := time.Tick(time.Hour)
+		for {
+			select {
+			case <-tick:
+				c.syncSub()
+			case <-c.stop:
+				return
+			}
 		}
 	}()
-}
-
-func (c *Concern) Stop() {
-	c.stopped = true
-	if c.stop != nil {
-		close(c.stop)
-	}
 }
 
 func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo, error) {
@@ -197,11 +210,9 @@ func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo
 }
 
 func (c *Concern) notifyLoop() {
+	c.wg.Add(1)
+	defer c.wg.Done()
 	for ievent := range c.eventChan {
-		if c.stopped {
-			return
-		}
-
 		switch ievent.Type() {
 		case Live:
 			event := (ievent).(*LiveInfo)
@@ -258,37 +269,39 @@ func (c *Concern) notifyLoop() {
 }
 
 func (c *Concern) watchCore() {
+	c.wg.Add(1)
+	defer c.wg.Done()
 	t := time.NewTimer(time.Second * 3)
-	var wg sync.WaitGroup
 	for {
-		<-t.C
-		if c.stopped {
+		select {
+		case <-t.C:
+		case <-c.stop:
+			close(c.eventChan)
 			return
 		}
 		start := time.Now()
+		var errGroup errgroup.Group
 
-		wg.Add(2)
-		go func() {
-			defer wg.Done()
+		errGroup.Go(func() error {
 			defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore dynamic fresh done") }()
 			newsList, err := c.freshDynamicNew()
 			if err != nil {
 				logger.Errorf("freshDynamicNew failed %v", err)
-				return
+				return err
 			} else {
 				for _, news := range newsList {
 					c.eventChan <- news
 				}
 			}
-		}()
+			return nil
+		})
 
-		go func() {
-			defer wg.Done()
+		errGroup.Go(func() error {
 			defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore live fresh done") }()
 			liveInfo, err := c.freshLive()
 			if err != nil {
 				logger.Errorf("freshLive error %v", err)
-				return
+				return err
 			}
 			var liveInfoMap = make(map[int64]*LiveInfo)
 			for _, info := range liveInfo {
@@ -300,12 +313,12 @@ func (c *Concern) watchCore() {
 			})
 			if err != nil {
 				logger.Errorf("List error %v", err)
-				return
+				return err
 			}
 			ids, types, err = c.GroupTypeById(ids, types)
 			if err != nil {
 				logger.Errorf("GroupTypeById error %v", err)
-				return
+				return err
 			}
 
 			sendLiveInfo := func(info *LiveInfo) {
@@ -365,11 +378,16 @@ func (c *Concern) watchCore() {
 					}
 				}
 			}
-		}()
-		wg.Wait()
-		t.Reset(config.GlobalConfig.GetDuration("bilibili.interval"))
+			return nil
+		})
+		err := errGroup.Wait()
 		end := time.Now()
-		logger.WithField("cost", end.Sub(start)).Debug("watchCore loop done")
+		if err == nil {
+			logger.WithField("cost", end.Sub(start)).Tracef("watchCore loop done")
+		} else {
+			logger.WithField("cost", end.Sub(start)).Errorf("watchCore error %v", err)
+		}
+		t.Reset(config.GlobalConfig.GetDuration("bilibili.interval"))
 	}
 }
 

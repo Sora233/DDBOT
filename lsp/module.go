@@ -51,7 +51,9 @@ type Lsp struct {
 	pool           image_pool.Pool
 	concernNotify  chan concern.Notify
 	stop           chan interface{}
+	wg             sync.WaitGroup
 	status         *Status
+	notifyWg       sync.WaitGroup
 
 	PermissionStateManager *permission.StateManager
 	LspStateManager        *StateManager
@@ -421,8 +423,19 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 	if l.stop != nil {
 		close(l.stop)
 	}
-	proxy_pool.Stop()
+
 	l.bilibiliConcern.Stop()
+	l.douyuConcern.Stop()
+	l.huyaConcern.Stop()
+	l.youtubeConcern.Stop()
+	close(l.concernNotify)
+
+	l.wg.Wait()
+	logger.Debug("等待所有推送发送完毕")
+	l.notifyWg.Wait()
+	logger.Debug("推送发送完毕")
+
+	proxy_pool.Stop()
 	if err := localdb.Close(); err != nil {
 		logger.Errorf("close db err %v", err)
 	}

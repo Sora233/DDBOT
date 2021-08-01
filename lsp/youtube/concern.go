@@ -7,6 +7,7 @@ import (
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"runtime"
+	"sync"
 )
 
 var logger = utils.GetModuleLogger("youtube")
@@ -16,6 +17,8 @@ type Concern struct {
 
 	eventChan chan ConcernEvent
 	notify    chan<- concern.Notify
+	stop      chan interface{}
+	wg        sync.WaitGroup
 }
 
 func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Info, err error) {
@@ -63,6 +66,19 @@ func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo
 	return result, resultTypes, nil
 }
 
+func (c *Concern) Stop() {
+	logger.Trace("正在停止youtube StateManager")
+	c.StateManager.Stop()
+	logger.Trace("youtube StateManager已停止")
+	if c.stop != nil {
+		close(c.stop)
+	}
+	close(c.eventChan)
+	logger.Trace("正在停止youtube concern")
+	c.wg.Wait()
+	logger.Trace("youtube concern已停止")
+}
+
 func (c *Concern) Start() {
 	if err := c.StateManager.Start(); err != nil {
 		logger.Errorf("state manager start err %v", err)
@@ -89,6 +105,8 @@ func (c *Concern) Start() {
 }
 
 func (c *Concern) notifyLoop() {
+	c.wg.Add(1)
+	defer c.wg.Done()
 	for ievent := range c.eventChan {
 		event := ievent.(*VideoInfo)
 		log := logger.WithField("channel_id", event.ChannelId).

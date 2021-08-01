@@ -12,6 +12,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"reflect"
 	"runtime"
+	"sync"
 )
 
 var logger = utils.GetModuleLogger("douyu-concern")
@@ -85,7 +86,20 @@ type Concern struct {
 	eventChan chan ConcernEvent
 	notify    chan<- concern.Notify
 	stop      chan interface{}
-	stopped   bool
+	wg        sync.WaitGroup
+}
+
+func (c *Concern) Stop() {
+	logger.Trace("正在停止douyu StateManager")
+	c.StateManager.Stop()
+	logger.Trace("douyu StateManager已停止")
+	if c.stop != nil {
+		close(c.stop)
+	}
+	close(c.eventChan)
+	logger.Trace("正在停止douyu concern")
+	c.wg.Wait()
+	logger.Trace("douyu concern已停止")
 }
 
 func (c *Concern) Start() {
@@ -187,10 +201,9 @@ func (c *Concern) ListWatching(groupCode int64, p concern.Type) ([]*LiveInfo, []
 }
 
 func (c *Concern) notifyLoop() {
+	c.wg.Add(1)
+	defer c.wg.Done()
 	for ievent := range c.eventChan {
-		if c.stopped {
-			return
-		}
 		switch ievent.Type() {
 		case Live:
 			event := ievent.(*LiveInfo)

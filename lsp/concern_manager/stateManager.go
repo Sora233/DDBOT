@@ -11,6 +11,7 @@ import (
 	"github.com/Sora233/sliceutil"
 	"github.com/tidwall/buntdb"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -23,6 +24,8 @@ type StateManager struct {
 	emitChan  chan *localutils.EmitE
 	emitQueue *localutils.EmitQueue
 	useEmit   bool
+	stop      chan interface{}
+	wg        sync.WaitGroup
 }
 
 // GetGroupConcernConfig always return non-nil
@@ -453,6 +456,13 @@ func (c *StateManager) upsertConcernType(key string, ctype concern.Type) (newCty
 	return
 }
 
+func (c *StateManager) Stop() {
+	if c.stop != nil {
+		close(c.stop)
+	}
+	c.wg.Wait()
+}
+
 func (c *StateManager) Start() error {
 	if c.useEmit {
 		_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
@@ -478,15 +488,22 @@ func (c *StateManager) EmitFreshCore(name string, fresher func(ctype concern.Typ
 	if !c.useEmit {
 		return
 	}
-	for e := range c.emitChan {
-		id := e.Id
-		if ok, _ := c.FreshCheck(id, true); !ok {
-			logger.WithField("id", id).WithField("result", ok).Trace("fresh check failed")
-			continue
-		}
-		logger.WithField("id", id).Trace("fresh")
-		if err := fresher(e.Type, id); err != nil {
-			logger.WithField("id", id).WithField("name", name).Errorf("fresher error %v", err)
+	c.wg.Add(1)
+	defer c.wg.Done()
+	for {
+		select {
+		case e := <-c.emitChan:
+			id := e.Id
+			if ok, _ := c.FreshCheck(id, true); !ok {
+				logger.WithField("id", id).WithField("result", ok).Trace("fresh check failed")
+				continue
+			}
+			logger.WithField("id", id).Trace("fresh")
+			if err := fresher(e.Type, id); err != nil {
+				logger.WithField("id", id).WithField("name", name).Errorf("fresher error %v", err)
+			}
+		case <-c.stop:
+			return
 		}
 	}
 }
@@ -496,6 +513,7 @@ func NewStateManager(keySet KeySet, useEmit bool) *StateManager {
 		emitChan: make(chan *localutils.EmitE),
 		KeySet:   keySet,
 		useEmit:  useEmit,
+		stop:     make(chan interface{}),
 	}
 	if useEmit {
 		var interval time.Duration

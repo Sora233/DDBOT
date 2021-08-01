@@ -15,10 +15,18 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 			go l.ConcernNotify(bot)
 		}
 	}()
+	l.wg.Add(1)
+	defer l.wg.Done()
 	for {
 		var chainMsg []*message.SendingMessage
 		select {
-		case inotify := <-l.concernNotify:
+		case inotify, ok := <-l.concernNotify:
+			if !ok {
+				return
+			}
+			if inotify == nil {
+				continue
+			}
 			nLogger := inotify.Logger()
 
 			if l.LspStateManager.IsMuted(inotify.GetGroupCode(), bot.Uin) {
@@ -72,7 +80,9 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 
 			nLogger.Info("notify")
 
+			l.notifyWg.Add(1)
 			go func() {
+				defer l.notifyWg.Done()
 				msgs := l.sendChainGroupMessage(inotify.GetGroupCode(), chainMsg)
 				if atBeforeHook.Pass {
 					for _, msg := range msgs {
