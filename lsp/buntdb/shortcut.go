@@ -1,6 +1,7 @@
 package buntdb
 
 import (
+	"github.com/modern-go/gls"
 	"github.com/tidwall/buntdb"
 	"time"
 )
@@ -9,20 +10,62 @@ type ShortCut struct{}
 
 var shortCut = new(ShortCut)
 
+var TxKey = new(struct{})
+
 // RWCoverTx 在一个RW事务中执行f，注意f的返回值不一定是RWCoverTx的返回值
 // 有可能f返回nil，但RWTxCover返回non-nil
 // 可以忽略error，但不要简单地用f返回值替代RWTxCover返回值，ref: bilibili/MarkDynamicId
-func (s *ShortCut) RWCoverTx(f func(tx *buntdb.Tx) error) error {
-	return withinTransactionNested(true, f)
+func (*ShortCut) RWCoverTx(f func(tx *buntdb.Tx) error) error {
+	if itx := gls.Get(TxKey); itx != nil {
+		return f(itx.(*buntdb.Tx))
+	}
+	db, err := GetClient()
+	if err != nil {
+		return err
+	}
+	return db.Update(func(tx *buntdb.Tx) error {
+		var err error
+		gls.WithEmptyGls(func() {
+			gls.Set(TxKey, tx)
+			err = f(tx)
+		})()
+		return err
+	})
 }
 
-func (s *ShortCut) RCoverTx(f func(tx *buntdb.Tx) error) error {
-	return withinTransactionNested(false, f)
+func (*ShortCut) RCoverTx(f func(tx *buntdb.Tx) error) error {
+	if itx := gls.Get(TxKey); itx != nil {
+		return f(itx.(*buntdb.Tx))
+	}
+	db, err := GetClient()
+	if err != nil {
+		return err
+	}
+	return db.View(func(tx *buntdb.Tx) error {
+		var err error
+		gls.WithEmptyGls(func() {
+			gls.Set(TxKey, tx)
+			err = f(tx)
+		})()
+		return err
+	})
 }
 
-func (s *ShortCut) RCover(f func() error) error {
-	return withinTransactionNested(false, func(tx *buntdb.Tx) error {
+func (*ShortCut) RCover(f func() error) error {
+	if itx := gls.Get(TxKey); itx != nil {
 		return f()
+	}
+	db, err := GetClient()
+	if err != nil {
+		return err
+	}
+	return db.View(func(tx *buntdb.Tx) error {
+		var err error
+		gls.WithEmptyGls(func() {
+			gls.Set(TxKey, tx)
+			err = f()
+		})()
+		return err
 	})
 }
 
@@ -32,6 +75,10 @@ func RWTxCover(f func(tx *buntdb.Tx) error) error {
 
 func RTxCover(f func(tx *buntdb.Tx) error) error {
 	return shortCut.RCoverTx(f)
+}
+
+func RCover(f func() error) error {
+	return shortCut.RCover(f)
 }
 
 func ExpireOption(duration time.Duration) *buntdb.SetOptions {

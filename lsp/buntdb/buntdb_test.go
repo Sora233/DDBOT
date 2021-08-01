@@ -4,6 +4,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
 	"os"
+	"sync"
 	"testing"
 	"time"
 )
@@ -210,13 +211,80 @@ func TestNestedCover(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestClose(t *testing.T) {
+func TestRWTxCover2(t *testing.T) {
 	var err error
 	err = InitBuntDB(MEMORYDB)
 	assert.Nil(t, err)
+	defer Close()
 
-	err = RWTxCover(func(tx *buntdb.Tx) error {
-		return Close()
-	})
-	assert.Equal(t, buntdb.ErrTxClosed, err)
+	testFn := func(tx *buntdb.Tx, key, exp string) {
+		val, err := tx.Get(key)
+		assert.Nil(t, err)
+		assert.Equal(t, exp, val)
+	}
+
+	set1Fn := func(tx *buntdb.Tx) error {
+		_, _, err := tx.Set("a", "a", nil)
+		if err != nil {
+			return err
+		}
+		err = RWTxCover(func(tx *buntdb.Tx) error {
+			_, _, err = tx.Set("b", "b", nil)
+			return err
+		})
+		if err != nil {
+			return err
+		}
+		err = RTxCover(func(tx *buntdb.Tx) error {
+			testFn(tx, "a", "a")
+			testFn(tx, "b", "b")
+			return nil
+		})
+		return err
+	}
+	set2Fn := func(tx *buntdb.Tx) error {
+		_, _, err := tx.Set("d", "d", nil)
+		if err != nil {
+			return err
+		}
+		err = RWTxCover(func(tx *buntdb.Tx) error {
+			_, _, err = tx.Set("c", "c", nil)
+			return err
+		})
+		err = RTxCover(func(tx *buntdb.Tx) error {
+			testFn(tx, "c", "c")
+			testFn(tx, "d", "d")
+			return nil
+		})
+		return err
+	}
+
+	c := make(chan interface{}, 16)
+	const b = 100000
+	var wg sync.WaitGroup
+	wg.Add(b*2 + 2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < b; i++ {
+			c <- struct{}{}
+			go func() {
+				defer wg.Done()
+				assert.Nil(t, RWTxCover(set1Fn))
+				<-c
+			}()
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		for i := 0; i < b; i++ {
+			c <- struct{}{}
+			go func() {
+				defer wg.Done()
+				assert.Nil(t, RWTxCover(set2Fn))
+				<-c
+			}()
+		}
+	}()
+	wg.Wait()
 }
