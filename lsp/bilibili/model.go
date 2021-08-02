@@ -308,14 +308,14 @@ func (notify *ConcernNewsNotify) ToMessage() []message.IMessageElement {
 				}
 				result = append(result, localutils.MessageTextf("%v\n", origin.GetItem().GetDescription()))
 				var skip = false
-				if len(origin.GetItem().GetPictures()) == 9 {
-					var urls = make([]string, 9)
+				if len(origin.GetItem().GetPictures()) >= 6 {
+					var urls = make([]string, len(origin.GetItem().GetPictures()))
 					for index, pic := range origin.GetItem().GetPictures() {
 						urls[index] = pic.GetImgSrc()
 					}
-					resultByte, err := urlsTo9ImageMode(urls)
+					resultByte, err := urlsMergeImage(urls)
 					if err != nil {
-						log.Errorf("urlsTo9ImageMode failed %v", err)
+						log.Errorf("urlsMergeImage failed %v", err)
 					} else {
 						groupImage, err := localutils.UploadGroupImage(notify.GroupCode, resultByte, false)
 						if err != nil {
@@ -486,14 +486,14 @@ func (notify *ConcernNewsNotify) ToMessage() []message.IMessageElement {
 			}
 			result = append(result, localutils.MessageTextf("%v发布了新动态：\n%v\n%v\n", notify.Name, date, cardImage.GetItem().GetDescription()))
 			var skip = false
-			if len(cardImage.GetItem().GetPictures()) == 9 {
-				var urls = make([]string, 9)
+			if len(cardImage.GetItem().GetPictures()) >= 6 {
+				var urls = make([]string, len(cardImage.GetItem().GetPictures()))
 				for index, pic := range cardImage.GetItem().GetPictures() {
 					urls[index] = pic.GetImgSrc()
 				}
-				resultByte, err := urlsTo9ImageMode(urls)
+				resultByte, err := urlsMergeImage(urls)
 				if err != nil {
-					log.Errorf("urlsTo9ImageMode failed %v", err)
+					log.Errorf("urlsMergeImage failed %v", err)
 				} else {
 					groupImage, err := localutils.UploadGroupImage(notify.GroupCode, resultByte, false)
 					if err != nil {
@@ -790,11 +790,11 @@ func (notify *ConcernLiveNotify) GetUid() interface{} {
 	return notify.Mid
 }
 
-func urlsTo9ImageMode(urls []string) ([]byte, error) {
-	if len(urls) != 9 {
-		return nil, errors.New("the number of image must be 9")
+func urlsMergeImage(urls []string) ([]byte, error) {
+	if len(urls) < 3 {
+		return nil, errors.New("the number of image must be at least 3")
 	}
-	var imgBytes = make([][]byte, 9)
+	var imgBytes = make([][]byte, len(urls))
 	var err error
 	for index, url := range urls {
 		imgBytes[index], err = localutils.ImageGet(url, proxy_pool.PreferNone)
@@ -802,5 +802,5 @@ func urlsTo9ImageMode(urls []string) ([]byte, error) {
 			return nil, err
 		}
 	}
-	return localutils.Merge9Images(imgBytes)
+	return localutils.MergeImages(imgBytes)
 }

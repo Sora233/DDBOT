@@ -174,18 +174,20 @@ func ImageSuffix(name string) bool {
 	return false
 }
 
-func Merge9Images(images [][]byte) ([]byte, error) {
-	const TotalSize = 1440
-	const subImageSize = TotalSize / 3
-	if len(images) != 9 {
-		return nil, errors.New("the number of images must be exactly 9")
+func MergeImages(images [][]byte) ([]byte, error) {
+	const ColumnSize = 1440
+	const columns = 3
+	const subImageSize = ColumnSize / columns
+	if len(images) == 0 {
+		return nil, errors.New("no image given")
 	}
+	var rows = (len(images)-1)/columns + 1
 	for _, img := range images {
 		if len(img) == 0 {
 			return nil, errors.New("empty image exists")
 		}
 	}
-	var bg = image.NewNRGBA(image.Rect(0, 0, TotalSize, TotalSize))
+	var bg = image.NewNRGBA(image.Rect(0, 0, ColumnSize, subImageSize*rows))
 	for i, imgBytes := range images {
 		cfg, _, err := image.DecodeConfig(bytes.NewReader(imgBytes))
 		if err != nil {
@@ -199,9 +201,13 @@ func Merge9Images(images [][]byte) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Decode failed %v", err)
 		}
-		img = resize.Resize(subImageSize, subImageSize, SubImage(img, image.Rect(0, 0, minSize, minSize)), resize.Lanczos3)
-		si := i / 3
-		sj := i % 3
+		if cfg.Width == cfg.Height {
+			img = resize.Resize(subImageSize, subImageSize, img, resize.Lanczos3)
+		} else {
+			img = resize.Resize(subImageSize, subImageSize, SubImage(img, image.Rect(0, 0, minSize, minSize)), resize.Lanczos3)
+		}
+		si := i / columns
+		sj := i % columns
 		draw.Draw(bg, img.Bounds().Add(image.Point{X: sj * subImageSize, Y: si * subImageSize}), img, image.Point{}, draw.Src)
 	}
 	var result = new(bytes.Buffer)
