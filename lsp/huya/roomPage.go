@@ -6,7 +6,7 @@ import (
 	"errors"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/DDBOT/proxy_pool/requests"
+	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
 	"strings"
 	"time"

@@ -19,8 +19,10 @@ jobs:
             goarch: "386"
     steps:
       - uses: actions/checkout@v2
-      - name: Set BUILD_TIME env
-        run: echo BUILD_TIME=$(date --rfc-3339=seconds) >> ${GITHUB_ENV}
+      - name: Set env
+        run: |
+          echo BUILD_TIME=$(date --rfc-3339=seconds) >> ${GITHUB_ENV}
+          echo Tags=${GITHUB_REF##*/} >> ${GITHUB_ENV}
       - uses: wangyoucao577/go-release-action@v1.16
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -28,5 +30,5 @@ jobs:
           goarch: ${{ matrix.goarch }}
           goversion: "https://golang.org/dl/go1.16.4.linux-amd64.tar.gz"
           build_flags: "-tags nocv"
-          ldflags: -X "main.BuildTime=${{ env.BUILD_TIME }}" -X main.CommitId=${{ github.sha }}
+          ldflags: -X "main.BuildTime=${{ env.BUILD_TIME }}" -X main.CommitId=${{ github.sha }} -X main.Tags=${{ env.Tags }}
           pre_command: "go mod edit -droprequire gocv.io/x/gocv"

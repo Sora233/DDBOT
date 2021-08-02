@@ -3,7 +3,7 @@ package bilibili
 import (
 	"context"
 	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/DDBOT/proxy_pool/requests"
+	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
 	"time"
 )

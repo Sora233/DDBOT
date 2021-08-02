@@ -37,6 +37,7 @@ func main() {
 	kong.Parse(&cli)
 
 	if cli.Version {
+		fmt.Printf("Tags: %v\n", Tags)
 		fmt.Printf("COMMIT_ID: %v\n", CommitId)
 		fmt.Printf("BUILD_TIME: %v\n", BuildTime)
 		os.Exit(0)
@@ -73,10 +74,14 @@ func main() {
 		return
 	}
 
-	if CommitId == "UNKNOWN" {
-		fmt.Println("DDBOT版本：未知-自编译版本")
+	if Tags != "UNKNOWN" {
+		fmt.Printf("DDBOT版本：Release版本【%v】\n", Tags)
 	} else {
-		fmt.Printf("DDBOT版本：%v-%v\n", BuildTime, CommitId)
+		if CommitId == "UNKNOWN" {
+			fmt.Println("DDBOT版本：编译版本未知")
+		} else {
+			fmt.Printf("DDBOT版本：编译版本【%v-%v】\n", BuildTime, CommitId)
+		}
 	}
 	fmt.Println("DDBOT唯一指定交流群：755612788")
 
@@ -97,6 +102,8 @@ func main() {
 
 	// 初始化 Modules
 	bot.StartService()
+
+	go CheckUpdate()
 
 	// 使用协议
 	// 不同协议可能会有部分功能无法使用
