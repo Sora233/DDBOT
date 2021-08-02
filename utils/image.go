@@ -175,12 +175,17 @@ func ImageSuffix(name string) bool {
 }
 
 func MergeImages(images [][]byte) ([]byte, error) {
-	const ColumnSize = 1440
-	const columns = 3
-	const subImageSize = ColumnSize / columns
 	if len(images) == 0 {
 		return nil, errors.New("no image given")
 	}
+
+	// 1440可以被2 3 4 5 6整除
+	const ColumnSize = 1440
+	var columns int
+	for columns = 2; columns < 6 && columns*columns < len(images); columns++ {
+	}
+	var subImageSize = ColumnSize / columns
+
 	var rows = (len(images)-1)/columns + 1
 	for _, img := range images {
 		if len(img) == 0 {
@@ -188,6 +193,7 @@ func MergeImages(images [][]byte) ([]byte, error) {
 		}
 	}
 	var bg = image.NewNRGBA(image.Rect(0, 0, ColumnSize, subImageSize*rows))
+	draw.Draw(bg, bg.Bounds(), image.White, image.Point{}, draw.Src)
 	for i, imgBytes := range images {
 		cfg, _, err := image.DecodeConfig(bytes.NewReader(imgBytes))
 		if err != nil {
@@ -202,16 +208,16 @@ func MergeImages(images [][]byte) ([]byte, error) {
 			return nil, fmt.Errorf("Decode failed %v", err)
 		}
 		if cfg.Width == cfg.Height {
-			img = resize.Resize(subImageSize, subImageSize, img, resize.Lanczos3)
+			img = resize.Resize(uint(subImageSize), uint(subImageSize), img, resize.Lanczos3)
 		} else {
-			img = resize.Resize(subImageSize, subImageSize, SubImage(img, image.Rect(0, 0, minSize, minSize)), resize.Lanczos3)
+			img = resize.Resize(uint(subImageSize), uint(subImageSize), SubImage(img, image.Rect(0, 0, minSize, minSize)), resize.Lanczos3)
 		}
 		si := i / columns
 		sj := i % columns
 		draw.Draw(bg, img.Bounds().Add(image.Point{X: sj * subImageSize, Y: si * subImageSize}), img, image.Point{}, draw.Src)
 	}
 	var result = new(bytes.Buffer)
-	err := png.Encode(result, bg)
+	err := jpeg.Encode(result, bg, &jpeg.Options{Quality: 100})
 	if err != nil {
 		return nil, err
 	}
