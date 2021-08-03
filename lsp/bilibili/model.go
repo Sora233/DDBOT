@@ -312,7 +312,7 @@ func (notify *ConcernNewsNotify) ToMessage() []message.IMessageElement {
 				}
 				result = append(result, localutils.MessageTextf("%v\n", origin.GetItem().GetDescription()))
 				var skip = false
-				if len(origin.GetItem().GetPictures()) >= 6 {
+				if shouldCombineImage(origin.GetItem().GetPictures()) {
 					var urls = make([]string, len(origin.GetItem().GetPictures()))
 					for index, pic := range origin.GetItem().GetPictures() {
 						urls[index] = pic.GetImgSrc()
@@ -490,7 +490,7 @@ func (notify *ConcernNewsNotify) ToMessage() []message.IMessageElement {
 			}
 			result = append(result, localutils.MessageTextf("%v发布了新动态：\n%v\n%v\n", notify.Name, date, cardImage.GetItem().GetDescription()))
 			var skip = false
-			if len(cardImage.GetItem().GetPictures()) >= 6 {
+			if shouldCombineImage(cardImage.GetItem().GetPictures()) {
 				var urls = make([]string, len(cardImage.GetItem().GetPictures()))
 				for index, pic := range cardImage.GetItem().GetPictures() {
 					urls[index] = pic.GetImgSrc()
@@ -812,11 +812,37 @@ var mergeImageCache = func() *lru.ARCCache {
 	return c
 }()
 
-func urlsMergeImage(urls []string) (result []byte, err error) {
-	if len(urls) < 3 {
-		err = errors.New("the number of image must be at least 3")
-		return
+func shouldCombineImage(pic []*CardWithImage_Item_Picture) bool {
+	if len(pic) <= 3 {
+		return false
 	}
+	if len(pic) == 9 {
+		return true
+	}
+	// 有竖条形状的图
+	for _, i := range pic {
+		if i.ImgWidth > 250 && float64(i.ImgHeight) > 3*float64(i.ImgWidth) {
+			return true
+		}
+	}
+	// 所有图尺寸相同
+	var sameSize = true
+	for idx, i := range pic {
+		if idx == 0 {
+			continue
+		}
+		if i.ImgWidth == pic[0].ImgWidth && i.ImgHeight == pic[0].ImgHeight {
+			continue
+		}
+		sameSize = false
+	}
+	if sameSize && (len(pic) == 4 || len(pic) == 6 || len(pic) == 9) {
+		return true
+	}
+	return false
+}
+
+func urlsMergeImage(urls []string) (result []byte, err error) {
 	hashFn := func(s []string) string {
 		hash := md5.New()
 		for _, i := range s {
