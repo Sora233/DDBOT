@@ -37,7 +37,7 @@ func (m *marker) Serve(bot *bot.Bot) {
 	})
 	bot.OnPrivateMessage(func(qqClient *client.QQClient, privateMessage *message.PrivateMessage) {
 		if privateMessage.Sender.Uin != qqClient.Uin {
-			qqClient.MarkPrivateMessageReaded(privateMessage.Sender.Uin, int64(privateMessage.Id))
+			qqClient.MarkPrivateMessageReaded(privateMessage.Sender.Uin, int64(privateMessage.Time))
 		}
 	})
 }
