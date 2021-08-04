@@ -510,18 +510,20 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 // sendGroupMessage 发送一条消息，返回值总是非nil，Id为-1表示发送失败
 func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *message.GroupMessage {
 	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
-		logger.WithField("GroupCode", groupCode).Debug("skip muted group")
-		return &message.GroupMessage{Id: -1}
+		logger.WithField("content", localutils.MsgToString(msg.Elements)).
+			WithFields(localutils.GroupLogFields(groupCode)).
+			Debug("BOT被禁言无法发送")
+		return &message.GroupMessage{Id: -1, Elements: msg.Elements}
 	}
 	if msg == nil {
-		logger.WithField("GroupCode", groupCode).Debug("send with nil message")
+		logger.WithFields(localutils.GroupLogFields(groupCode)).Debug("send with nil message")
 		return &message.GroupMessage{Id: -1}
 	}
 	msg.Elements = localutils.MessageFilter(msg.Elements, func(element message.IMessageElement) bool {
 		return element != nil
 	})
 	if len(msg.Elements) == 0 {
-		logger.WithField("GroupCode", groupCode).Debug("send with empty message")
+		logger.WithFields(localutils.GroupLogFields(groupCode)).Debug("send with empty message")
 		return &message.GroupMessage{Id: -1}
 	}
 	// don't know why
@@ -533,7 +535,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 	})
 	if !result {
 		logger.WithField("content", localutils.MsgToString(msg.Elements)).
-			WithField("GroupCode", groupCode).
+			WithFields(localutils.GroupLogFields(groupCode)).
 			Errorf("发送群消息失败")
 	}
 	if res == nil {

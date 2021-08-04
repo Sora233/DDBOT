@@ -47,7 +47,7 @@ func (s *StateManager) SaveMessageImageUrl(groupCode int64, messageID int32, msg
 		}
 	}
 	if len(urls) > 0 {
-		//logger.WithField("group_code", groupCode).
+		//logger.WithFields(utils.GroupLogFields(groupCode)).
 		//	WithField("message_id", messageID).
 		//	WithField("urls", urls).Trace("save image")
 	} else {

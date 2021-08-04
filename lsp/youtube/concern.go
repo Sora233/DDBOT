@@ -6,6 +6,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	localutils "github.com/Sora233/DDBOT/utils"
 	"runtime"
 	"sync"
 )
@@ -22,7 +23,7 @@ type Concern struct {
 }
 
 func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Info, err error) {
-	log := logger.WithField("group_code", groupCode)
+	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
 
 	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
 	if err != nil {
@@ -33,7 +34,7 @@ func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Inf
 	}
 	videoInfo, err := XFetchInfo(id)
 	if err != nil {
-		log.WithField("id", id).Errorf("XFetchInfo failed %v", err)
+		log.Errorf("XFetchInfo failed %v", err)
 		return nil, fmt.Errorf("查询channel信息失败 %v - %v", id, err)
 	}
 	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
@@ -44,7 +45,7 @@ func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Inf
 }
 
 func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo, []concern.Type, error) {
-	log := logger.WithField("group_code", groupCode)
+	log := logger.WithFields(localutils.GroupLogFields(groupCode))
 
 	ids, ctypes, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
 		return p.ContainAny(ctype)

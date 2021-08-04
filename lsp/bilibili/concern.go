@@ -7,6 +7,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
 	"golang.org/x/sync/errgroup"
 	"runtime"
@@ -96,7 +97,7 @@ func (c *Concern) Start() {
 
 func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo, error) {
 	var err error
-	log := logger.WithField("GroupCode", groupCode).WithField("mid", mid)
+	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("mid", mid)
 
 	err = c.StateManager.CheckGroupConcern(groupCode, mid, ctype)
 	if err != nil {
@@ -187,7 +188,7 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 }
 
 func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo, []concern.Type, error) {
-	log := logger.WithField("group_code", groupCode)
+	log := logger.WithFields(localutils.GroupLogFields(groupCode))
 
 	mids, ctypes, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
 		return p.ContainAny(ctype)
@@ -236,11 +237,11 @@ func (c *Concern) notifyLoop() {
 				notify := NewConcernLiveNotify(groupCode, event)
 				c.notify <- notify
 				if event.Status == LiveStatus_Living {
-					log.WithField("group_code", groupCode).Debug("living notify")
+					log.WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
 				} else if event.Status == LiveStatus_NoLiving {
-					log.WithField("group_code", groupCode).Debug("noliving notify")
+					log.WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
 				} else {
-					log.WithField("group_code", groupCode).Error("unknown live status")
+					log.WithFields(localutils.GroupLogFields(groupCode)).Error("unknown live status")
 				}
 			}
 		case News:
@@ -259,7 +260,7 @@ func (c *Concern) notifyLoop() {
 				continue
 			}
 			for _, groupCode := range groups {
-				log.WithField("group_code", groupCode).Debug("news notify")
+				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("news notify")
 				notify := NewConcernNewsNotify(groupCode, event)
 				c.notify <- notify
 			}

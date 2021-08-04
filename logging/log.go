@@ -91,8 +91,7 @@ func logGroupMessage(msg *message.GroupMessage) {
 		WithField("from", "GroupMessage").
 		WithField("MessageID", msg.Id).
 		WithField("MessageIID", msg.InternalId).
-		WithField("GroupCode", msg.GroupCode).
-		WithField("GroupName", msg.GroupName).
+		WithFields(localutils.GroupLogFields(msg.GroupCode)).
 		WithField("SenderID", msg.Sender.Uin).
 		WithField("SenderName", msg.Sender.DisplayName()).
 		Info(localutils.MsgToString(msg.Elements))
@@ -121,7 +120,7 @@ func logGroupMessageRecallEvent(event *client.GroupMessageRecalledEvent) {
 	logger.
 		WithField("from", "GroupMessageRecall").
 		WithField("MessageID", event.MessageId).
-		WithField("GroupCode", event.GroupCode).
+		WithFields(localutils.GroupLogFields(event.GroupCode)).
 		WithField("SenderID", event.AuthorUin).
 		WithField("OperatorID", event.OperatorUin).
 		Info("group message recall")
@@ -130,7 +129,7 @@ func logGroupMessageRecallEvent(event *client.GroupMessageRecalledEvent) {
 func logGroupMuteEvent(event *client.GroupMuteEvent) {
 	logger.
 		WithField("from", "GroupMute").
-		WithField("GroupCode", event.GroupCode).
+		WithFields(localutils.GroupLogFields(event.GroupCode)).
 		WithField("OperatorID", event.OperatorUin).
 		WithField("TargetID", event.TargetUin).
 		WithField("MuteTime", event.Time).

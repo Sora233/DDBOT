@@ -1,5 +1,7 @@
 package permission
 
+import localutils "github.com/Sora233/DDBOT/utils"
+
 type RoleType int64
 
 const (
@@ -71,7 +73,7 @@ func (g *groupAdminRoleRequireOption) Validate(s *StateManager) bool {
 	groupCode := g.groupCode
 	if s.CheckGroupRole(groupCode, uin, GroupAdmin) {
 		logger.WithField("type", "GroupAdminRole").
-			WithField("group_code", groupCode).
+			WithFields(localutils.GroupLogFields(groupCode)).
 			WithField("uin", uin).
 			WithField("result", true).
 			Debug("debug permission")
@@ -94,7 +96,7 @@ func (g *qqAdminRequireOption) Validate(s *StateManager) bool {
 	groupCode := g.groupCode
 	if s.CheckGroupAdministrator(groupCode, uin) {
 		logger.WithField("type", "QQGroupAdmin").WithField("uin", uin).
-			WithField("group_code", groupCode).
+			WithFields(localutils.GroupLogFields(groupCode)).
 			WithField("result", true).
 			Debug("debug permission")
 		return true
@@ -122,7 +124,7 @@ func (g *groupCommandRequireOption) Validate(s *StateManager) bool {
 	if s.CheckGroupCommandPermission(groupCode, uin, cmd) {
 		logger.WithField("type", "command").WithField("uin", uin).
 			WithField("command", cmd).
-			WithField("group_code", groupCode).
+			WithFields(localutils.GroupLogFields(groupCode)).
 			WithField("result", true).
 			Debug("debug permission")
 		return true

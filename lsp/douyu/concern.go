@@ -147,7 +147,7 @@ func (c *Concern) Start() {
 
 func (c *Concern) Add(groupCode int64, id int64, ctype concern.Type) (*LiveInfo, error) {
 	var err error
-	log := logger.WithField("GroupCode", groupCode)
+	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
 
 	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
 	if err != nil {
@@ -159,7 +159,7 @@ func (c *Concern) Add(groupCode int64, id int64, ctype concern.Type) (*LiveInfo,
 
 	betardResp, err := Betard(id)
 	if err != nil {
-		log.WithField("id", id).Error(err)
+		log.Error(err)
 		return nil, fmt.Errorf("查询房间信息失败 %v - %v", id, err)
 	}
 	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
@@ -178,7 +178,7 @@ func (c *Concern) Add(groupCode int64, id int64, ctype concern.Type) (*LiveInfo,
 }
 
 func (c *Concern) ListWatching(groupCode int64, p concern.Type) ([]*LiveInfo, []concern.Type, error) {
-	log := logger.WithField("group_code", groupCode)
+	log := logger.WithFields(localutils.GroupLogFields(groupCode))
 	ids, ctypes, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
 		return p.ContainAny(p)
 	})
