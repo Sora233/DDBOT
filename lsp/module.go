@@ -509,10 +509,10 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 
 // sendGroupMessage 发送一条消息，返回值总是非nil，Id为-1表示发送失败
 func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *message.GroupMessage {
-	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
+	if l.LspStateManager.IsMuted(groupCode, 0) || l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
 		logger.WithField("content", localutils.MsgToString(msg.Elements)).
 			WithFields(localutils.GroupLogFields(groupCode)).
-			Debug("BOT被禁言无法发送")
+			Debug("BOT被禁言无法发送群消息")
 		return &message.GroupMessage{Id: -1, Elements: msg.Elements}
 	}
 	if msg == nil {
@@ -534,9 +534,21 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 		return res != nil && res.Id != -1
 	})
 	if !result {
-		logger.WithField("content", localutils.MsgToString(msg.Elements)).
-			WithFields(localutils.GroupLogFields(groupCode)).
-			Errorf("发送群消息失败")
+		if msg.Count(func(e message.IMessageElement) bool {
+			at, ok := e.(*message.AtElement)
+			if !ok {
+				return false
+			}
+			return at.Target == 0
+		}) > 0 {
+			logger.WithField("content", localutils.MsgToString(msg.Elements)).
+				WithFields(localutils.GroupLogFields(groupCode)).
+				Errorf("发送群消息失败，可能是@全员次数用尽")
+		} else {
+			logger.WithField("content", localutils.MsgToString(msg.Elements)).
+				WithFields(localutils.GroupLogFields(groupCode)).
+				Errorf("发送群消息失败，账号可能被风控")
+		}
 	}
 	if res == nil {
 		res = &message.GroupMessage{Id: -1, Elements: msg.Elements}

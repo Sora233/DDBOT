@@ -113,7 +113,7 @@ func logFriendMessageRecallEvent(event *client.FriendMessageRecalledEvent) {
 		WithField("from", "FriendsMessageRecall").
 		WithField("MessageID", event.MessageId).
 		WithField("SenderID", event.FriendUin).
-		Info("friend message recall")
+		Info("好友消息撤回")
 }
 
 func logGroupMessageRecallEvent(event *client.GroupMessageRecalledEvent) {
@@ -123,24 +123,46 @@ func logGroupMessageRecallEvent(event *client.GroupMessageRecalledEvent) {
 		WithFields(localutils.GroupLogFields(event.GroupCode)).
 		WithField("SenderID", event.AuthorUin).
 		WithField("OperatorID", event.OperatorUin).
-		Info("group message recall")
+		Info("群消息撤回")
 }
 
 func logGroupMuteEvent(event *client.GroupMuteEvent) {
-	logger.
+	muteLogger := logger.WithFields(localutils.GroupLogFields(event.GroupCode)).
 		WithField("from", "GroupMute").
-		WithFields(localutils.GroupLogFields(event.GroupCode)).
-		WithField("OperatorID", event.OperatorUin).
-		WithField("TargetID", event.TargetUin).
-		WithField("MuteTime", event.Time).
-		Info("group mute")
+		WithField("TargetUin", event.TargetUin).
+		WithField("OperatorUin", event.OperatorUin)
+	if event.TargetUin == 0 {
+		if event.Time > 0 {
+			muteLogger.Debug("开启了全体禁言")
+		} else {
+			muteLogger.Debug("关闭了全体禁言")
+		}
+	} else {
+		gi := bot.Instance.FindGroup(event.GroupCode)
+		var mi *client.GroupMemberInfo
+		if gi != nil {
+			mi = gi.FindMember(event.TargetUin)
+			if mi != nil {
+				muteLogger = muteLogger.WithField("TargetName", mi.DisplayName())
+			}
+			mi = gi.FindMember(event.OperatorUin)
+			if mi != nil {
+				muteLogger = muteLogger.WithField("OperatorName", mi.DisplayName())
+			}
+		}
+		if event.Time > 0 {
+			muteLogger.Debug("用户被禁言")
+		} else {
+			muteLogger.Debug("用户被取消禁言")
+		}
+	}
 }
 
 func logDisconnect(event *client.ClientDisconnectedEvent) {
 	logger.
 		WithField("from", "Disconnected").
 		WithField("reason", event.Message).
-		Warn("bot disconnected")
+		Warn("bot断开链接")
 }
 
 func registerLog(b *bot.Bot) {
