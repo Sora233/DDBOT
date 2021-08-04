@@ -30,7 +30,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 			nLogger := inotify.Logger()
 
 			if l.LspStateManager.IsMuted(inotify.GetGroupCode(), bot.Uin) {
-				nLogger.Info("bot is muted in group, skip notify")
+				nLogger.Info("BOT群内被禁言，跳过本次推送")
 				continue
 			}
 

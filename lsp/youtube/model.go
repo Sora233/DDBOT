@@ -131,7 +131,7 @@ func (notify *ConcernNotify) ToMessage() []message.IMessageElement {
 	if err != nil {
 		logger.WithField("channel_name", notify.ChannelName).
 			WithField("video_id", notify.VideoId).
-			WithField("group_code", notify.GroupCode).
+			WithFields(localutils.GroupLogFields(notify.GroupCode)).
 			Errorf("upload cover failed %v", err)
 	} else {
 		result = append(result, groupImg)

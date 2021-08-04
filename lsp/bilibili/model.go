@@ -766,7 +766,7 @@ func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 	}
 	cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Cover, false, proxy_pool.PreferNone)
 	if err != nil {
-		logger.WithField("group_code", notify.GroupCode).
+		logger.WithFields(localutils.GroupLogFields(notify.GroupCode)).
 			WithField("cover", notify.Cover).
 			Errorf("add cover failed %v", err)
 	} else {

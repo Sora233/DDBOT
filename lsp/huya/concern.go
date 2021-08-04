@@ -148,7 +148,7 @@ func (c *Concern) Start() {
 
 func (c *Concern) Add(groupCode int64, id interface{}, ctype concern.Type) (*LiveInfo, error) {
 	var err error
-	log := logger.WithField("GroupCode", groupCode).WithField("id", id)
+	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
 
 	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
 	if err != nil {
@@ -171,7 +171,7 @@ func (c *Concern) Add(groupCode int64, id interface{}, ctype concern.Type) (*Liv
 }
 
 func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*LiveInfo, []concern.Type, error) {
-	log := logger.WithField("group_code", groupCode)
+	log := logger.WithFields(localutils.GroupLogFields(groupCode))
 
 	ids, ctypes, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
 		return p.ContainAny(ctype)

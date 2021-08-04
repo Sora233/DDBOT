@@ -122,7 +122,7 @@ func (c *StateManager) CheckGroupRole(groupCode int64, caller int64, role RoleTy
 		}
 	})
 	if err != nil {
-		logger.WithField("group_code", groupCode).
+		logger.WithFields(localutils.GroupLogFields(groupCode)).
 			WithField("caller", caller).
 			WithField("role", role.String()).
 			Errorf("check group role err %v", err)
