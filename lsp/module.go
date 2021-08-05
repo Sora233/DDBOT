@@ -509,7 +509,7 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 
 // sendGroupMessage 发送一条消息，返回值总是非nil，Id为-1表示发送失败
 func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *message.GroupMessage {
-	if l.LspStateManager.IsMuted(groupCode, 0) || l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
+	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
 		logger.WithField("content", localutils.MsgToString(msg.Elements)).
 			WithFields(localutils.GroupLogFields(groupCode)).
 			Debug("BOT被禁言无法发送群消息")
@@ -547,7 +547,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 		} else {
 			logger.WithField("content", localutils.MsgToString(msg.Elements)).
 				WithFields(localutils.GroupLogFields(groupCode)).
-				Errorf("发送群消息失败，账号可能被风控")
+				Errorf("发送群消息失败，可能是被禁言或者账号被风控")
 		}
 	}
 	if res == nil {
