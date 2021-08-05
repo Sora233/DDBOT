@@ -62,7 +62,7 @@
 
 详细介绍及示例请查看：[详细示例](/EXAMPLE.md)
 
-阁下可添加Demo机器人体验，QQ号：
+阁下可添加官方Demo机器人体验，QQ号：
 
 - 368236249 （二号机）
 - 1561991863 （初号机）
@@ -79,11 +79,11 @@
 
 推荐您优先选择二号机，由于目前初号机负载较高。
 
-**尝试同时使用多个Demo机器人会导致您被暂时加入黑名单**
+**尝试同时使用多个官方Demo机器人会导致您被暂时加入黑名单**
 
 ## 使用与部署
 
-对于普通用户，推荐您选择使用开放的Demo机器人。
+对于普通用户，推荐您选择使用开放的官方Demo机器人。
 
 您也可以选择私人部署，[详见部署指南](/INSTALL.md)。
 
@@ -190,10 +190,11 @@ login success
 - bot使用 [buntdb](https://github.com/tidwall/buntdb) 作为embed database，会在当前目录生成文件`.lsp.db`
   ，删除该文件将导致bot恢复出厂设置，可以使用 [buntdb-cli](https://github.com/Sora233/buntdb-cli) 作为运维工具，但注意不要在bot运行的时候使用（buntdb不支持多写）
 
-## 敬告
+## 声明
 
-- 请勿滥用
-- 禁止商用
+- 您可以免费使用DDBOT进行其他商业活动，但不允许通过出租、出售DDBOT等方式进行商业活动。
+- 如果您运营了私人部署的BOT，可以接受他人对您私人部署的BOT进行捐赠以帮助BOT运行，但该过程必须本着自愿的原则，不允许用BOT使用权来强制他人进行捐赠。
+- 如果您使用了DDBOT的源代码，或者对DDBOT源代码进行修改，您应该用相同的开源许可（AGPL3.0）进行开源，并标明著作权。
 
 ## 贡献
 
@@ -207,7 +208,7 @@ login success
 
 发现问题或功能建议请到 [issues](https://github.com/Sora233/DDBOT/issues)
 
-其他用法问题请到 [discussions](https://github.com/Sora233/DDBOT/discussions)
+其他用法问题请到**唯一指定交流群：755612788**
 
 ## 鸣谢
 
