@@ -25,11 +25,9 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool/zhima"
 	localutils "github.com/Sora233/DDBOT/utils"
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
-	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"math/rand"
-	"path"
 	"runtime"
 	"strings"
 	"sync"
@@ -366,27 +364,6 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 	})
 
-	bot.OnLog(func() func(*client.QQClient, *client.LogEvent) {
-		// create a new logger for miraigo log
-		writer, err := rotatelogs.New(
-			path.Join("miraigo-logs", "%Y-%m-%d.log"),
-			rotatelogs.WithMaxAge(7*24*time.Hour),
-			rotatelogs.WithRotationTime(24*time.Hour),
-		)
-		if err != nil {
-			logrus.WithError(err).Error("unable to write logs")
-			return func(qqClient *client.QQClient, event *client.LogEvent) {
-				logger.WithField("type", event.Type).Debug(event.Message)
-			}
-		}
-		miraigoLog := logrus.New()
-		miraigoLog.SetOutput(writer)
-		miraigoLog.SetLevel(logrus.DebugLevel)
-		miraigoLog.SetFormatter(&logrus.JSONFormatter{})
-		return func(qqClient *client.QQClient, event *client.LogEvent) {
-			miraigoLog.WithField("type", event.Type).Debug(event.Message)
-		}
-	}())
 }
 
 func (l *Lsp) PostStart(bot *bot.Bot) {

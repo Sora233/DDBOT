@@ -1,7 +1,8 @@
 package logging
 
 import (
-	"github.com/Logiase/MiraiGo-Template/utils"
+	"github.com/Mrs4s/MiraiGo/client"
+	"github.com/Mrs4s/MiraiGo/message"
 	localutils "github.com/Sora233/DDBOT/utils"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/rifflock/lfshook"
@@ -10,11 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/message"
-
 	"github.com/Logiase/MiraiGo-Template/bot"
 )
+
+const moduleId = "ddbot.logging"
 
 func init() {
 	instance = &logging{}
@@ -24,17 +24,32 @@ func init() {
 type logging struct {
 }
 
+var instance *logging
+
+var logger *logrus.Entry
+
 func (m *logging) MiraiGoModule() bot.ModuleInfo {
 	return bot.ModuleInfo{
-		ID:       "internal.logging",
+		ID:       moduleId,
 		Instance: instance,
 	}
 }
 
 func (m *logging) Init() {
-	// 初始化过程
-	// 在此处可以进行 Module 的初始化配置
-	// 如配置读取
+	// create a new logger for qq log
+	writer, err := rotatelogs.New(
+		path.Join("qq-logs", "%Y-%m-%d.log"),
+		rotatelogs.WithMaxAge(7*24*time.Hour),
+		rotatelogs.WithRotationTime(24*time.Hour),
+	)
+	if err != nil {
+		logrus.WithError(err).Error("unable to write logs")
+		return
+	}
+	qqlog := logrus.New()
+	qqlog.AddHook(lfshook.NewHook(writer, &logrus.JSONFormatter{DisableHTMLEscape: true}))
+	qqlog.SetLevel(logrus.DebugLevel)
+	logger = qqlog.WithField("module", moduleId)
 }
 
 func (m *logging) PostInit() {
@@ -66,25 +81,6 @@ func (m *logging) Stop(b *bot.Bot, wg *sync.WaitGroup) {
 	// 即将退出
 	// 在此处应该释放相应的资源或者对状态进行保存
 }
-
-var instance *logging
-
-var logger = func() *logrus.Entry {
-	// create a new logger for qq log
-	writer, err := rotatelogs.New(
-		path.Join("qq-logs", "%Y-%m-%d.log"),
-		rotatelogs.WithMaxAge(7*24*time.Hour),
-		rotatelogs.WithRotationTime(24*time.Hour),
-	)
-	if err != nil {
-		logrus.WithError(err).Error("unable to write logs")
-		return utils.GetModuleLogger("internal.logging")
-	}
-	qqlog := logrus.New()
-	qqlog.AddHook(lfshook.NewHook(writer, &logrus.JSONFormatter{}))
-	qqlog.SetLevel(logrus.DebugLevel)
-	return qqlog.WithField("module", "internal.logging")
-}()
 
 func logGroupMessage(msg *message.GroupMessage) {
 	logger.

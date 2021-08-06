@@ -9,22 +9,37 @@ import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/alecthomas/kong"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/rifflock/lfshook"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"path"
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 
 	_ "github.com/Sora233/DDBOT/logging"
 	_ "github.com/Sora233/DDBOT/lsp"
-	_ "github.com/Sora233/DDBOT/msg_marker"
+	_ "github.com/Sora233/DDBOT/miraigo-logging"
+	_ "github.com/Sora233/DDBOT/msg-marker"
+	_ "net/http/pprof"
 )
 
 func init() {
-	utils.WriteLogToFS()
+	writer, err := rotatelogs.New(
+		path.Join("logs", "%Y-%m-%d.log"),
+		rotatelogs.WithMaxAge(7*24*time.Hour),
+		rotatelogs.WithRotationTime(24*time.Hour),
+	)
+	if err != nil {
+		logrus.WithError(err).Error("unable to write logs")
+		return
+	}
+	logrus.AddHook(lfshook.NewHook(writer, &logrus.JSONFormatter{DisableHTMLEscape: true}))
 }
 
 func main() {
