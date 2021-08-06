@@ -75,14 +75,23 @@ func (s *StateManager) GetMessageImageUrl(groupCode int64, messageID int32) []st
 
 func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
 	return s.RWCoverTx(func(tx *buntdb.Tx) error {
+		var err error
 		key := s.GroupMuteKey(groupCode, uin)
 		if t == 0 {
-			_, err := tx.Delete(key)
+			_, err = tx.Delete(key)
 			return err
-		} else {
-			_, _, err := tx.Set(key, "", localdb.ExpireOption(time.Second*time.Duration(t)))
-			return err
+		} else if t < 0 {
+			if uin == 0 {
+				// 开启全体禁言
+				_, _, err = tx.Set(key, "", nil)
+			} else {
+				// 可能有吗？
+				_, err = tx.Delete(key)
+			}
+		} else { // t > 0
+			_, _, err = tx.Set(key, "", localdb.ExpireOption(time.Second*time.Duration(t)))
 		}
+		return err
 	})
 }
 

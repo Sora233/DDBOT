@@ -128,7 +128,7 @@ func logGroupMuteEvent(event *client.GroupMuteEvent) {
 		WithField("TargetUin", event.TargetUin).
 		WithField("OperatorUin", event.OperatorUin)
 	if event.TargetUin == 0 {
-		if event.Time > 0 {
+		if event.Time != 0 {
 			muteLogger.Debug("开启了全体禁言")
 		} else {
 			muteLogger.Debug("关闭了全体禁言")
