@@ -277,6 +277,19 @@ message Card {
         string desc_second = 6;
         string oid_str = 7;
         int64 origin_state = 8;
+        int64 stype = 9;
+        int64 livePlanStartTime = 10;
+        // 预约抽奖
+        message ReserveLottery {
+          // 抽奖的那个礼物图标
+          string icon = 1;
+          string text = 2;
+          string jump_url = 3;
+          int64 lottery_type = 4;
+          string share_icon = 5;
+        }
+        ReserveLottery reserve_lottery = 11;
+        bool show_desc_second = 14;
       }
       message AttachCard {
         string type = 1;

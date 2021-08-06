@@ -686,9 +686,16 @@ func (notify *ConcernNewsNotify) ToMessage() []message.IMessageElement {
 						result = append(result, cover)
 					}
 				case AddOnCardShowType_reserve:
-					result = append(result, localutils.MessageTextf("\n附加信息：\n%v\n%v\n",
-						addon.GetReserveAttachCard().GetTitle(),
-						addon.GetReserveAttachCard().GetDescFirst().GetText()))
+					if len(addon.GetReserveAttachCard().GetReserveLottery().GetText()) == 0 {
+						result = append(result, localutils.MessageTextf("\n附加信息：\n%v\n%v\n",
+							addon.GetReserveAttachCard().GetTitle(),
+							addon.GetReserveAttachCard().GetDescFirst().GetText()))
+					} else {
+						result = append(result, localutils.MessageTextf("\n附加信息：\n%v\n%v\n%v\n",
+							addon.GetReserveAttachCard().GetTitle(),
+							addon.GetReserveAttachCard().GetDescFirst().GetText(),
+							addon.GetReserveAttachCard().GetReserveLottery().GetText()))
+					}
 				case AddOnCardShowType_match:
 				// TODO 暂时没必要
 				case AddOnCardShowType_related:
