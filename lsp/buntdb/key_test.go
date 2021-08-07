@@ -77,3 +77,7 @@ func TestParseConcernStateKeyWithString2(t *testing.T) {
 		assert.NotNil(t, err)
 	}
 }
+
+func TestModeKey(t *testing.T) {
+	assert.Equal(t, "Mode", ModeKey())
+}

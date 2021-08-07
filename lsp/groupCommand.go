@@ -849,10 +849,18 @@ func (lgc *LspGroupCommand) HelpCommand() {
 		return
 	}
 
-	text := "一个多功能单推专用推送机器人，支持b站、斗鱼、油管、虎牙推送\n" +
-		"只需添加bot好友，阁下也可为自己的群添加自动推送功能\n" +
-		"详细介绍请添加好友后私聊发送/help"
-	lgc.textReply(text)
+	var sb strings.Builder
+	sb.WriteString("DDBOT是一个多功能单推专用推送机器人，支持b站、斗鱼、油管、虎牙推送\n")
+
+	switch lgc.l.LspStateManager.GetCurrentMode() {
+	case PublicMode:
+		sb.WriteString("当前BOT处于公开状态，添加BOT好友后即可让BOT为阁下的群服务\n详细介绍请添加好友后私聊发送/help")
+	case PrivateMode:
+		sb.WriteString("当前BOT处于私有状态，BOT会拒绝好友与加群邀请")
+	case ProtectMode:
+		sb.WriteString("当前BOT处于审核状态，添加BOT好友并由管理员审核后即可让BOT为阁下的群服务\n详细介绍请添加好友后私聊发送/help")
+	}
+	lgc.textReply(sb.String())
 }
 
 func (lgc *LspGroupCommand) ImageContent() {

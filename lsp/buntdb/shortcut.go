@@ -1,6 +1,7 @@
 package buntdb
 
 import (
+	"encoding/json"
 	"github.com/modern-go/gls"
 	"github.com/tidwall/buntdb"
 	"strings"
@@ -70,6 +71,32 @@ func (*ShortCut) RCover(f func() error) error {
 	})
 }
 
+func (s *ShortCut) JsonSave(key string, obj interface{}, opt ...*buntdb.SetOptions) error {
+	return s.RWCoverTx(func(tx *buntdb.Tx) error {
+		b, err := json.Marshal(obj)
+		if err != nil {
+			return err
+		}
+		if len(opt) == 0 {
+			_, _, err = tx.Set(key, string(b), nil)
+		} else {
+			_, _, err = tx.Set(key, string(b), opt[0])
+		}
+		return err
+	})
+}
+
+func (s *ShortCut) JsonGet(key string, obj interface{}) error {
+	return s.RWCoverTx(func(tx *buntdb.Tx) error {
+		val, err := tx.Get(key)
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal([]byte(val), obj)
+		return err
+	})
+}
+
 func RWCoverTx(f func(tx *buntdb.Tx) error) error {
 	return shortCut.RWCoverTx(f)
 }
@@ -80,6 +107,14 @@ func RCoverTx(f func(tx *buntdb.Tx) error) error {
 
 func RCover(f func() error) error {
 	return shortCut.RCover(f)
+}
+
+func JsonGet(key string, obj interface{}) error {
+	return shortCut.JsonGet(key, obj)
+}
+
+func JsonSave(key string, obj interface{}, opt ...*buntdb.SetOptions) error {
+	return shortCut.JsonSave(key, obj, opt...)
 }
 
 func ExpireOption(duration time.Duration) *buntdb.SetOptions {
