@@ -144,7 +144,7 @@ DDBOT提供一些可以使用的module：
 
 - github.com/Sora233/DDBOT/miraigo-logging
 
-该module可以自动把消息打印到`miraigo-logs`内（用于帮助定位miraigo内部问题，所以不输出到标准输出）。
+该module可以自动把miraigo的日志打印到`miraigo-logs`内（用于帮助定位miraigo内部问题，所以不输出到标准输出）。
 
 想要为开源做一点微小的贡献？
 
