@@ -2,10 +2,12 @@ package bilibili
 
 import (
 	"fmt"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
 	"testing"
+	"time"
 )
 
 func initStateManager(t *testing.T) *StateManager {
@@ -278,4 +280,30 @@ func TestGetCookieInfo(t *testing.T) {
 
 	err = SetCookieInfo(test.NAME2, nil)
 	assert.NotNil(t, err)
+}
+
+func TestStateManager_GetUserStat(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	c := initStateManager(t)
+
+	userStat, err := c.GetUserStat(test.UID1)
+	assert.NotNil(t, err)
+
+	assert.NotNil(t, c.AddUserStat(nil, nil))
+
+	userStat = NewUserStat(test.UID1, 1, 2)
+
+	assert.Nil(t, c.AddUserStat(userStat, localdb.ExpireOption(time.Hour)))
+
+	userStat = NewUserStat(test.UID2, 3, 4)
+
+	assert.Nil(t, c.AddUserStat(userStat, localdb.ExpireOption(time.Hour)))
+
+	userStat, err = c.GetUserStat(test.UID1)
+
+	assert.EqualValues(t, 1, userStat.Following)
+	assert.EqualValues(t, 2, userStat.Follower)
+	assert.EqualValues(t, test.UID1, userStat.Mid)
 }

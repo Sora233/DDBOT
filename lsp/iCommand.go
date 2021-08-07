@@ -211,7 +211,12 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		}
 		log = log.WithField("name", userInfo.Name)
 		log.Debugf("watch success")
-		c.TextReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", userInfo.Name))
+		const followerCap = 50
+		if userInfo != nil && userInfo.UserStat != nil && watchType.ContainAny(concern.BibiliLive) && userInfo.UserStat.Follower < followerCap {
+			c.TextReply(fmt.Sprintf("watch成功 - Bilibili用户 %v\n注意：检测到该用户粉丝数少于%v，请确认您的订阅目标是否正确，注意使用UID而非直播间ID", userInfo.Name, followerCap))
+		} else {
+			c.TextReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", userInfo.Name))
+		}
 	case douyu.Site:
 		mid, err := douyu.ParseUid(id)
 		if err != nil {

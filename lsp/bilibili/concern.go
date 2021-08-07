@@ -6,6 +6,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/concern"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
@@ -129,6 +130,13 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 		)
 	} else {
 		log.Debugf("UserInfo cache hit")
+	}
+
+	userStat, err := c.StatUserWithCache(mid, time.Hour)
+	if err != nil {
+		log.Errorf("get UserStat error %v\n", err)
+	} else if userStat != nil {
+		userInfo.UserStat = userStat
 	}
 
 	oldCtype, err := c.StateManager.GetConcern(mid)
@@ -519,6 +527,26 @@ func (c *Concern) FindUser(mid int64, load bool) (*UserInfo, error) {
 	return c.StateManager.GetUserInfo(mid)
 }
 
+func (c *Concern) StatUserWithCache(mid int64, expire time.Duration) (*UserStat, error) {
+	userStat, _ := c.StateManager.GetUserStat(mid)
+	if userStat != nil {
+		return userStat, nil
+	}
+	resp, err := XRelationStat(mid)
+	if err != nil {
+		return nil, err
+	}
+	if resp.GetCode() != 0 {
+		return nil, fmt.Errorf("code:%v %v", resp.GetCode(), resp.GetMessage())
+	}
+	userStat = NewUserStat(mid, resp.GetData().GetFollowing(), resp.GetData().GetFollower())
+	err = c.StateManager.AddUserStat(userStat, localdb.ExpireOption(expire))
+	if err != nil {
+		return nil, err
+	}
+	return userStat, nil
+}
+
 func (c *Concern) ModifyUserRelation(mid int64, act int) (*RelationModifyResponse, error) {
 	resp, err := RelationModify(mid, act)
 	if err != nil {
@@ -644,9 +672,6 @@ func (c *Concern) FindUserNews(mid int64, load bool) (*NewsInfo, error) {
 func (c *Concern) GroupWatchNotify(groupCode, mid int64, ctype concern.Type) {
 	if ctype.ContainAny(concern.BibiliLive) {
 		liveInfo, _ := c.GetLiveInfo(mid)
-		if liveInfo == nil {
-			return
-		}
 		if liveInfo.Living() {
 			liveInfo.LiveStatusChanged = true
 			c.notify <- NewConcernLiveNotify(groupCode, liveInfo)

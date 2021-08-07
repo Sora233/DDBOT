@@ -164,11 +164,29 @@ func (notify *ConcernLiveNotify) Type() concern.Type {
 	return concern.BibiliLive
 }
 
+type UserStat struct {
+	Mid int64 `json:"mid"`
+	// 关注数
+	Following int64 `json:"following"`
+	// 粉丝数
+	Follower int64 `json:"follower"`
+}
+
+func (us *UserStat) ToString() string {
+	if us == nil {
+		return ""
+	}
+	content, _ := json.Marshal(us)
+	return string(content)
+}
+
 type UserInfo struct {
 	Mid     int64  `json:"mid"`
 	Name    string `json:"name"`
 	RoomId  int64  `json:"room_id"`
 	RoomUrl string `json:"room_url"`
+
+	UserStat *UserStat `json:"-"`
 }
 
 func (ui *UserInfo) GetName() string {
@@ -213,6 +231,14 @@ func (l *LiveInfo) ToString() string {
 	}
 	content, _ := json.Marshal(l)
 	return string(content)
+}
+
+func NewUserStat(mid, following, follower int64) *UserStat {
+	return &UserStat{
+		Mid:       mid,
+		Following: following,
+		Follower:  follower,
+	}
 }
 
 func NewUserInfo(mid, roomId int64, name, url string) *UserInfo {

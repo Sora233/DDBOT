@@ -68,6 +68,9 @@ func BilibiliNotLiveCountKey(keys ...interface{}) string {
 func BilibiliUserInfoKey(keys ...interface{}) string {
 	return NamedKey("UserInfo", keys)
 }
+func BilibiliUserStatKey(keys ...interface{}) string {
+	return NamedKey("UserStat", keys)
+}
 func BilibiliGroupAtAllMarkKey(keys ...interface{}) string {
 	return NamedKey("GroupAtAll", keys)
 }

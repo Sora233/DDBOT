@@ -202,6 +202,17 @@ message LoginResponse {
   Data data = 3;
 }
 
+message XRelationStatResponse {
+  int32 code = 1;
+  string message = 2;
+  message Data {
+    int64 mid = 1;
+    int64 following = 2;
+    int64 follower = 3;
+  }
+  Data data = 3;
+}
+
 message Card {
   message Desc {
     message UserProfile {

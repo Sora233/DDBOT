@@ -47,6 +47,37 @@ func (c *StateManager) GetUserInfo(mid int64) (*UserInfo, error) {
 	return userInfo, nil
 }
 
+func (c *StateManager) AddUserStat(userStat *UserStat, opt *buntdb.SetOptions) error {
+	if userStat == nil {
+		return errors.New("nil UserStat")
+	}
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
+		_, _, err := tx.Set(c.UserStatKey(userStat.Mid), userStat.ToString(), opt)
+		return err
+	})
+}
+
+func (c *StateManager) GetUserStat(mid int64) (*UserStat, error) {
+	var userStat = &UserStat{}
+
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
+		val, err := tx.Get(c.UserStatKey(mid))
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal([]byte(val), userStat)
+		if err != nil {
+			logger.WithField("val", val).Errorf("user stat json unmarshal failed")
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return userStat, nil
+}
+
 func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	if liveInfo == nil {
 		return errors.New("nil LiveInfo")
@@ -326,6 +357,7 @@ func (c *StateManager) Start() error {
 	db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
 	db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
 	db.CreateIndex(c.UserInfoKey(), c.UserInfoKey("*"), buntdb.IndexString)
+	db.CreateIndex(c.UserStatKey(), c.UserStatKey("*"), buntdb.IndexString)
 	db.CreateIndex(c.DynamicIdKey(), c.DynamicIdKey("*"), buntdb.IndexString)
 	return c.StateManager.Start()
 }

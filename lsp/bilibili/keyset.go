@@ -35,6 +35,9 @@ func (k *extraKey) CurrentLiveKey(keys ...interface{}) string {
 func (k *extraKey) UserInfoKey(keys ...interface{}) string {
 	return buntdb.BilibiliUserInfoKey(keys...)
 }
+func (k *extraKey) UserStatKey(keys ...interface{}) string {
+	return buntdb.BilibiliUserStatKey(keys...)
+}
 func (k *extraKey) CurrentNewsKey(keys ...interface{}) string {
 	return buntdb.BilibiliCurrentNewsKey(keys...)
 }

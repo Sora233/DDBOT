@@ -9,14 +9,14 @@ import (
 )
 
 const (
-	PathXSpaceAccInfo = "/x/space/acc/info"
+	PathXRelationStat = "/x/relation/stat"
 )
 
-type XSpaceAccInfoRequest struct {
-	Mid int64 `json:"mid"`
+type XRelationStatRequest struct {
+	Mid int64 `json:"vmid"`
 }
 
-func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
+func XRelationStat(mid int64) (*XRelationStatResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 	st := time.Now()
@@ -24,8 +24,8 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 		ed := time.Now()
 		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
-	url := BPath(PathXSpaceAccInfo)
-	params, err := utils.ToParams(&XSpaceAccInfoRequest{
+	url := BPath(PathXRelationStat)
+	params, err := utils.ToParams(&XRelationStatRequest{
 		Mid: mid,
 	})
 	if err != nil {
@@ -41,13 +41,13 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	xsai := new(XSpaceAccInfoResponse)
-	err = resp.Json(xsai)
+	xrsr := new(XRelationStatResponse)
+	err = resp.Json(xrsr)
 	if err != nil {
 		return nil, err
 	}
-	if xsai.Code == -412 && resp.Proxy != "" {
+	if xrsr.Code == -412 && resp.Proxy != "" {
 		proxy_pool.Delete(resp.Proxy)
 	}
-	return xsai, nil
+	return xrsr, nil
 }

@@ -21,7 +21,7 @@ const (
 
 var BasePath = map[string]string{
 	PathRoomInit:               BaseLiveHost,
-	PathSpaceAccInfo:           BaseHost,
+	PathXSpaceAccInfo:          BaseHost,
 	PathDynamicSrvSpaceHistory: BaseVCHost,
 	PathGetRoomInfoOld:         BaseLiveHost,
 	PathDynamicSrvDynamicNew:   BaseVCHost,
@@ -30,6 +30,7 @@ var BasePath = map[string]string{
 	PathGetAttentionList:       BaseVCHost,
 	PathOAuth2GetKey:           PassportHost,
 	PathV3OAuth2Login:          PassportHost,
+	PathXRelationStat:          BaseHost,
 }
 
 var (
