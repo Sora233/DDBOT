@@ -238,8 +238,9 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		log := logger.WithField("uin", request.RequesterUin).
 			WithField("nickname", request.RequesterNick).
 			WithField("message", request.Message)
+		log.Info("收到好友申请")
 		if l.PermissionStateManager.CheckBlockList(request.RequesterUin) {
-			log.Debug("blocked new friend")
+			log.Info("该用户在block列表中，将拒绝好友申请")
 			request.Reject()
 			return
 		}
@@ -250,7 +251,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	bot.OnNewFriendAdded(func(qqClient *client.QQClient, event *client.NewFriendEvent) {
 		logger.WithField("uin", event.Friend.Uin).
 			WithField("nickname", event.Friend.Nickname).
-			Info("new friend")
+			Info("添加新好友")
 		sendingMsg := message.NewSendingMessage()
 		sendingMsg.Append(message.NewText("阁下的好友请求已通过，请使用/help查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。"))
 		bot.SendPrivateMessage(event.Friend.Uin, sendingMsg)
@@ -258,37 +259,15 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
 		l.FreshIndex()
-		log := logger.WithField("group_code", info.Code).
-			WithField("member_count", info.MemberCount).
-			WithField("group_name", info.Name)
-		log.Info("join group")
+		log := logger.WithField("GroupCode", info.Code).
+			WithField("MemberCount", info.MemberCount).
+			WithField("GroupName", info.Name)
+		log.Info("进入新群聊")
 
 		minfo := info.FindMember(bot.Uin)
-		minfo.EditCard("【bot】")
-		//go func() {
-		//	// sbtx
-		//	// 有一些sb的时候邀请加群会自动同意，这时可能join callback在invited callback之前触发
-		//	var (
-		//		target int64
-		//		err    error
-		//	)
-		//	localutils.Retry(10, time.Second*3, func() bool {
-		//		target, err = l.LspStateManager.PopGroupInvitor(info.Code)
-		//		return err == nil
-		//	})
-		//	if err == buntdb.ErrNotFound {
-		//		log.Debug("no invitor found finally, skip grant group admin role")
-		//	} else if err != nil {
-		//		log.Errorf("get invitor err %v", err)
-		//		return
-		//	} else {
-		//		log = log.WithField("invitor", target)
-		//		log.Debug("grant group admin role")
-		//		if err := l.PermissionStateManager.GrantGroupRole(info.Code, target, permission.GroupAdmin); err != nil {
-		//			log.Errorf("grant group admin role failed %v", err)
-		//		}
-		//	}
-		//}()
+		if minfo != nil {
+			minfo.EditCard("【bot】")
+		}
 	})
 
 	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
@@ -296,14 +275,14 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		douyuIds, _, _ := l.douyuConcern.ListByGroup(event.Group.Code, nil)
 		huyaIds, _, _ := l.huyaConcern.ListByGroup(event.Group.Code, nil)
 		ytbIds, _, _ := l.youtubeConcern.ListByGroup(event.Group.Code, nil)
-		logger.WithField("group_code", event.Group.Code).
-			WithField("group_name", event.Group.Name).
-			WithField("member_count", event.Group.MemberCount).
-			WithField("bilibili_watch_size", len(bilibiliIds)).
-			WithField("douyu_watch_size", len(douyuIds)).
-			WithField("huya_watch_size", len(huyaIds)).
-			WithField("ytb_watch_size", len(ytbIds)).
-			Info("leave group")
+		logger.WithField("GroupCode", event.Group.Code).
+			WithField("GroupName", event.Group.Name).
+			WithField("MemberCount", event.Group.MemberCount).
+			WithField("bilibili订阅数", len(bilibiliIds)).
+			WithField("douyu订阅数", len(douyuIds)).
+			WithField("huya订阅数", len(huyaIds)).
+			WithField("ytb订阅数", len(ytbIds)).
+			Info("退出群聊")
 		l.RemoveAllByGroup(event.Group.Code)
 	})
 
@@ -420,7 +399,7 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 
 func (l *Lsp) checkImage(img *message.ImageElement) string {
 	var cacheLabel string
-	localdb.RTxCover(func(tx *buntdb.Tx) error {
+	localdb.RCoverTx(func(tx *buntdb.Tx) error {
 		key := localdb.ImageCacheKey(string(img.Md5))
 		val, err := tx.Get(key)
 		if err == nil {
@@ -452,7 +431,7 @@ func (l *Lsp) checkImage(img *message.ImageElement) string {
 		WithField("rate", resp.Data.Results[0].SubResults[0].Rate).
 		Debug("detect done")
 	label := resp.Data.Results[0].SubResults[0].Label
-	localdb.RWTxCover(func(tx *buntdb.Tx) error {
+	localdb.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := localdb.ImageCacheKey(string(img.Md5))
 		_, _, err := tx.Set(key, label, localdb.ExpireOption(time.Hour*72))
 		return err
@@ -474,7 +453,7 @@ func (l *Lsp) RemoveAllByGroup(groupCode int64) {
 	l.douyuConcern.RemoveAllByGroupCode(groupCode)
 	l.youtubeConcern.RemoveAllByGroupCode(groupCode)
 	l.huyaConcern.RemoveAllByGroupCode(groupCode)
-	l.PermissionStateManager.RemoveAllByGroup(groupCode)
+	l.PermissionStateManager.RemoveAllByGroupCode(groupCode)
 }
 
 func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.Image, error) {

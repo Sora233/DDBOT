@@ -3,6 +3,7 @@ package buntdb
 import (
 	"github.com/modern-go/gls"
 	"github.com/tidwall/buntdb"
+	"strings"
 	"time"
 )
 
@@ -69,11 +70,11 @@ func (*ShortCut) RCover(f func() error) error {
 	})
 }
 
-func RWTxCover(f func(tx *buntdb.Tx) error) error {
+func RWCoverTx(f func(tx *buntdb.Tx) error) error {
 	return shortCut.RWCoverTx(f)
 }
 
-func RTxCover(f func(tx *buntdb.Tx) error) error {
+func RCoverTx(f func(tx *buntdb.Tx) error) error {
 	return shortCut.RCoverTx(f)
 }
 
@@ -89,4 +90,30 @@ func ExpireOption(duration time.Duration) *buntdb.SetOptions {
 		Expires: true,
 		TTL:     duration,
 	}
+}
+
+// RemoveByPrefixAndIndex 遍历每个index，如果一个key满足任意prefix，则删掉
+func RemoveByPrefixAndIndex(prefixKey []string, indexKey []string) error {
+	return RWCoverTx(func(tx *buntdb.Tx) error {
+		var removeKey = make(map[string]interface{})
+		var iterErr error
+		for _, index := range indexKey {
+			iterErr = tx.Ascend(index, func(key, value string) bool {
+				for _, prefix := range prefixKey {
+					if strings.HasPrefix(key, prefix) {
+						removeKey[key] = struct{}{}
+						return true
+					}
+				}
+				return true
+			})
+			if iterErr != nil {
+				return iterErr
+			}
+		}
+		for key := range removeKey {
+			tx.Delete(key)
+		}
+		return nil
+	})
 }

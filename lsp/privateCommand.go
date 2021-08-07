@@ -826,6 +826,10 @@ func (c *LspPrivateCommand) disabledReply() *message.PrivateMessage {
 	return c.textSend("该命令已被设置为disable，请设置enable后重试")
 }
 
+func (c *LspPrivateCommand) notImplReply() *message.PrivateMessage {
+	return c.textReply("暂未实现，你可以催作者GKD")
+}
+
 func (c *LspPrivateCommand) textSend(text string) *message.PrivateMessage {
 	sendingMsg := message.NewSendingMessage()
 	sendingMsg.Append(message.NewText(text))

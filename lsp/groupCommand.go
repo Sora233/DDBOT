@@ -508,7 +508,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 
 	date := time.Now().Format("20060102")
 
-	err := localdb.RWTxCover(func(tx *buntdb.Tx) error {
+	err := localdb.RWCoverTx(func(tx *buntdb.Tx) error {
 		var score int64
 		key := localdb.Key("Score", lgc.groupCode(), lgc.uin())
 		dateMarker := localdb.Key("ScoreDate", lgc.groupCode(), lgc.uin(), date)

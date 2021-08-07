@@ -423,30 +423,22 @@ func (c *StateManager) RequireAny(option ...RequireOption) bool {
 	return false
 }
 
-func (c *StateManager) RemoveAllByGroup(groupCode int64) error {
-	var deleteKey []string
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		tx.Ascend(c.GroupPermissionKey(groupCode), func(key, value string) bool {
-			deleteKey = append(deleteKey, key)
-			return true
-		})
-		return nil
-	})
-	if err != nil {
-		return err
+func (c *StateManager) RemoveAllByGroupCode(groupCode int64) error {
+	var indexKey = []string{
+		c.GroupPermissionKey(),
+		c.PermissionKey(),
 	}
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		for _, k := range deleteKey {
-			tx.Delete(k)
-		}
-		tx.DropIndex(c.GroupPermissionKey(groupCode))
-		return nil
-	})
+	var prefixKey = []string{
+		c.GroupPermissionKey(groupCode),
+		c.PermissionKey(groupCode),
+	}
+	return localdb.RemoveByPrefixAndIndex(prefixKey, indexKey)
 }
 
 func (c *StateManager) FreshIndex() {
 	db := localdb.MustGetClient()
 	db.CreateIndex(c.PermissionKey(), c.PermissionKey("*"), buntdb.IndexString)
+	db.CreateIndex(c.GroupPermissionKey(), c.GroupPermissionKey("*"), buntdb.IndexString)
 	if bot.Instance != nil {
 		for _, group := range bot.Instance.GroupList {
 			db.CreateIndex(c.GroupPermissionKey(group.Code), c.GroupPermissionKey(group.Code, "*"), buntdb.IndexString)

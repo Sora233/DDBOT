@@ -67,11 +67,11 @@ func TestNamedKey(t *testing.T) {
 }
 
 func TestRTxCover(t *testing.T) {
-	err := RWTxCover(func(tx *buntdb.Tx) error {
+	err := RWCoverTx(func(tx *buntdb.Tx) error {
 		return nil
 	})
 	assert.Equal(t, ErrNotInitialized, err)
-	err = RTxCover(func(tx *buntdb.Tx) error {
+	err = RCoverTx(func(tx *buntdb.Tx) error {
 		return nil
 	})
 	assert.Equal(t, ErrNotInitialized, err)
@@ -79,17 +79,17 @@ func TestRTxCover(t *testing.T) {
 	err = InitBuntDB(MEMORYDB)
 	assert.Nil(t, err)
 	defer Close()
-	err = RTxCover(func(tx *buntdb.Tx) error {
+	err = RCoverTx(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set("a", "b", nil)
 		return err
 	})
 	assert.Equal(t, buntdb.ErrTxNotWritable, err)
-	err = RWTxCover(func(tx *buntdb.Tx) error {
+	err = RWCoverTx(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set("a", "b", nil)
 		return err
 	})
 	assert.Nil(t, err)
-	_ = RTxCover(func(tx *buntdb.Tx) error {
+	_ = RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get("a")
 		assert.Equal(t, "b", val)
 		assert.Nil(t, err)
@@ -103,18 +103,18 @@ func TestRWTxCover(t *testing.T) {
 	assert.Nil(t, err)
 	defer Close()
 
-	err = RWTxCover(func(tx *buntdb.Tx) error {
+	err = RWCoverTx(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set("a", "b", ExpireOption(time.Hour*48))
 		return err
 	})
 	assert.Nil(t, err)
-	err = RWTxCover(func(tx *buntdb.Tx) error {
+	err = RWCoverTx(func(tx *buntdb.Tx) error {
 		tx.Set("a", "c", ExpireOption(time.Second*1))
 		return ErrRollback
 	})
 	assert.EqualValues(t, ErrRollback, err)
 	var ttl time.Duration
-	err = RTxCover(func(tx *buntdb.Tx) error {
+	err = RCoverTx(func(tx *buntdb.Tx) error {
 		var err error
 		ttl, err = tx.TTL("a")
 		return err
@@ -130,26 +130,26 @@ func TestNestedCover(t *testing.T) {
 	defer Close()
 
 	setAfn := func() error {
-		return RWTxCover(func(tx *buntdb.Tx) error {
+		return RWCoverTx(func(tx *buntdb.Tx) error {
 			_, _, err := tx.Set("a", "b", nil)
 			return err
 		})
 	}
 	setBfn := func() error {
-		return RWTxCover(func(tx *buntdb.Tx) error {
+		return RWCoverTx(func(tx *buntdb.Tx) error {
 			_, _, err := tx.Set("b", "c", nil)
 			return err
 		})
 	}
 	setCfn := func() error {
-		return RWTxCover(func(tx *buntdb.Tx) error {
+		return RWCoverTx(func(tx *buntdb.Tx) error {
 			_, _, err := tx.Set("c", "d", nil)
 			return err
 		})
 	}
 	readBfn := func() (string, error) {
 		var result string
-		err := RTxCover(func(tx *buntdb.Tx) error {
+		err := RCoverTx(func(tx *buntdb.Tx) error {
 			val, err := tx.Get("b", false)
 			result = val
 			return err
@@ -159,7 +159,7 @@ func TestNestedCover(t *testing.T) {
 
 	var val string
 
-	err = RWTxCover(func(tx *buntdb.Tx) error {
+	err = RWCoverTx(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set("d", "e", nil)
 		if err != nil {
 			return err
@@ -181,7 +181,7 @@ func TestNestedCover(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "c", val)
 
-	err = RTxCover(func(tx *buntdb.Tx) error {
+	err = RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get("a")
 		assert.Nil(t, err)
 		assert.Equal(t, "b", val)
@@ -194,7 +194,7 @@ func TestNestedCover(t *testing.T) {
 		return nil
 	})
 
-	err = RTxCover(func(tx *buntdb.Tx) error {
+	err = RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := readBfn()
 		assert.Nil(t, err)
 		assert.Equal(t, "c", val)
@@ -203,7 +203,7 @@ func TestNestedCover(t *testing.T) {
 		return nil
 	})
 	assert.Nil(t, err)
-	err = RTxCover(func(tx *buntdb.Tx) error {
+	err = RCoverTx(func(tx *buntdb.Tx) error {
 		_, err := tx.Get("c")
 		assert.EqualValues(t, buntdb.ErrNotFound, err)
 		return nil
@@ -228,14 +228,14 @@ func TestRWTxCover2(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		err = RWTxCover(func(tx *buntdb.Tx) error {
+		err = RWCoverTx(func(tx *buntdb.Tx) error {
 			_, _, err = tx.Set("b", "b", nil)
 			return err
 		})
 		if err != nil {
 			return err
 		}
-		err = RTxCover(func(tx *buntdb.Tx) error {
+		err = RCoverTx(func(tx *buntdb.Tx) error {
 			testFn(tx, "a", "a")
 			testFn(tx, "b", "b")
 			return nil
@@ -247,11 +247,11 @@ func TestRWTxCover2(t *testing.T) {
 		if err != nil {
 			return err
 		}
-		err = RWTxCover(func(tx *buntdb.Tx) error {
+		err = RWCoverTx(func(tx *buntdb.Tx) error {
 			_, _, err = tx.Set("c", "c", nil)
 			return err
 		})
-		err = RTxCover(func(tx *buntdb.Tx) error {
+		err = RCoverTx(func(tx *buntdb.Tx) error {
 			testFn(tx, "c", "c")
 			testFn(tx, "d", "d")
 			return nil
@@ -269,7 +269,7 @@ func TestRWTxCover2(t *testing.T) {
 			c <- struct{}{}
 			go func() {
 				defer wg.Done()
-				assert.Nil(t, RWTxCover(set1Fn))
+				assert.Nil(t, RWCoverTx(set1Fn))
 				<-c
 			}()
 		}
@@ -281,7 +281,7 @@ func TestRWTxCover2(t *testing.T) {
 			c <- struct{}{}
 			go func() {
 				defer wg.Done()
-				assert.Nil(t, RWTxCover(set2Fn))
+				assert.Nil(t, RWCoverTx(set2Fn))
 				<-c
 			}()
 		}

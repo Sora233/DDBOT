@@ -154,30 +154,15 @@ func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype
 }
 
 func (c *StateManager) RemoveAllByGroupCode(groupCode int64) (err error) {
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		var removeKey []string
-		var iterErr error
-		var indexes = []string{
-			c.GroupConcernStateKey(groupCode),
-			c.GroupConcernConfigKey(groupCode),
-		}
-		for _, key := range indexes {
-			iterErr = tx.Ascend(key, func(key, value string) bool {
-				removeKey = append(removeKey, key)
-				return true
-			})
-			if iterErr != nil {
-				return iterErr
-			}
-		}
-		for _, key := range removeKey {
-			tx.Delete(key)
-		}
-		for _, key := range indexes {
-			tx.DropIndex(key)
-		}
-		return nil
-	})
+	var indexKey = []string{
+		c.GroupConcernStateKey(),
+		c.GroupConcernConfigKey(),
+	}
+	var prefixKey = []string{
+		c.GroupConcernStateKey(groupCode),
+		c.GroupConcernConfigKey(groupCode),
+	}
+	return localdb.RemoveByPrefixAndIndex(prefixKey, indexKey)
 }
 
 func (c *StateManager) RemoveAllById(_id interface{}) (err error) {

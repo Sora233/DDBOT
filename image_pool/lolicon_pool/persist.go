@@ -14,7 +14,7 @@ func (pool *LoliconPool) load() {
 
 	for k, v := range pool.cache {
 		var img []*Setu
-		err := localdb.RTxCover(func(tx *buntdb.Tx) error {
+		err := localdb.RCoverTx(func(tx *buntdb.Tx) error {
 			key := localdb.LoliconPoolStoreKey(k.String())
 			val, err := tx.Get(key)
 			if err == buntdb.ErrNotFound {
@@ -68,7 +68,7 @@ func (pool *LoliconPool) store() {
 				break
 			}
 		}
-		err := localdb.RWTxCover(func(tx *buntdb.Tx) error {
+		err := localdb.RWCoverTx(func(tx *buntdb.Tx) error {
 			key := localdb.LoliconPoolStoreKey(k.String())
 			b, err := json.Marshal(img)
 			if err != nil {

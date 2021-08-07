@@ -208,7 +208,7 @@ func TestStateManager_RemoveAllByGroup(t *testing.T) {
 	//assert.True(t, gcadminOpt1.Validate(c))
 	assert.True(t, gcadminOpt2.Validate(c))
 
-	assert.Nil(t, c.RemoveAllByGroup(test.G1))
+	assert.Nil(t, c.RemoveAllByGroupCode(test.G1))
 
 	assert.False(t, gadminOpt1.Validate(c))
 	//assert.False(t, gcadminOpt1.Validate(c))

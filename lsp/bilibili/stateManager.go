@@ -285,7 +285,7 @@ func SetCookieInfo(username string, cookieInfo *LoginResponse_Data_CookieInfo) e
 	if cookieInfo == nil {
 		return errors.New("<nil> cookieInfo")
 	}
-	return localdb.RWTxCover(func(tx *buntdb.Tx) error {
+	return localdb.RWCoverTx(func(tx *buntdb.Tx) error {
 		key := localdb.BilibiliUserCookieInfoKey(username)
 		cookieData, err := json.Marshal(cookieInfo)
 		if err != nil {
@@ -306,7 +306,7 @@ func SetCookieInfo(username string, cookieInfo *LoginResponse_Data_CookieInfo) e
 }
 
 func GetCookieInfo(username string) (cookieInfo *LoginResponse_Data_CookieInfo, err error) {
-	err = localdb.RTxCover(func(tx *buntdb.Tx) error {
+	err = localdb.RCoverTx(func(tx *buntdb.Tx) error {
 		var err error
 		key := localdb.BilibiliUserCookieInfoKey(username)
 		var cookieStr string
