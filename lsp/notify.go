@@ -83,6 +83,12 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 			l.notifyWg.Add(1)
 			go func() {
 				defer l.notifyWg.Done()
+				defer func() {
+					if e := recover(); e != nil {
+						nLogger.WithField("stack", debug.Stack()).
+							Errorf("notify panic recovered: %v", e)
+					}
+				}()
 				msgs := l.sendChainGroupMessage(inotify.GetGroupCode(), chainMsg)
 				if atBeforeHook.Pass {
 					for _, msg := range msgs {
