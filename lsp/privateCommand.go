@@ -713,26 +713,17 @@ func (c *LspPrivateCommand) HelpCommand() {
 		return
 	}
 
-	help := "部分指令：\n" +
-		"/watch 用于订阅推送，订阅动态和直播都使用UID（非直播间ID），例如：\n" +
-		"作者的B站UID为97505，则\n" +
-		"订阅直播信息：/watch -s bilibili -t live 97505\n" +
-		"订阅动态信息：/watch -s bilibili -t news 97505\n" +
-		"可以用相应的/unwatch命令取消订阅\n" +
-		"取消订阅动态信息：/unwatch -s bilibili -t news 97505\n" +
-		"/list 用于查看当前订阅，例如：\n" +
-		"展示所有订阅列表：/list\n" +
-		"/enable和/disable 用于开启与禁用命令，例如：\n" +
-		"开启watch命令：/enable watch\n" +
-		"禁用watch命令，调用watch命令将不再有任何反应：/disable watch\n" +
-		"/config 用于配置BOT，例如：\n" +
-		"/config at 97505 add 123456 用于设置推送直播时自动@qq号为123456的成员\n" +
-		"/config at_all 97505 on / off 用于设置推送直播时自动@全体成员，on表示开启，off表示关闭\n" +
-		"配置@全体成员只推荐在私人bot上使用，如果是公开bot请配置使用@QQ号\n" +
-		"还支持配置下播推送，直播间标题推送，设置动态推送过滤条件等\n" +
-		"详细使用介绍及样例，请查看https://github.com/Sora233/DDBOT/blob/master/EXAMPLE.md\n" +
-		"使用时请把作者的UID换成你需要的主播的UID\n" +
-		"以上命令可以通过私聊操作以避免在群内刷屏"
+	help := "常见订阅用法：\n" +
+		"以作者UID:97505为例\n" +
+		"首先订阅直播信息：/watch 97505\n" +
+		"然后订阅动态信息：/watch -t news 97505\n" +
+		"由于通常动态内容较多，可以选择不推送转发的动态\n" +
+		"/config filter not_type 97505 转发\n" +
+		"还可以选择开启直播推送时@全体成员：\n" +
+		"/config at_all 97505 on\n" +
+		"BOT还支持更多功能，详细命令介绍请查看命令文档：\n" +
+		"https://hub.fastgit.org/Sora233/DDBOT/blob/master/EXAMPLE.md\n" +
+		"使用时请把作者UID换成你需要的UID"
 	help2 := "B站专栏介绍：https://www.bilibili.com/read/cv10602230\n" +
 		"如果您有任何疑问或者建议，请反馈到唯一指定交流群：755612788"
 	c.textSend(help)
