@@ -104,10 +104,10 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 							ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
 							if len(ids) != 0 {
 								nLogger = nLogger.WithField("at_QQ", ids)
-								nLogger.Errorf("notify atAll failed, try at someone")
+								nLogger.Debug("notify atAll failed, try at someone")
 								l.sendGroupMessage(inotify.GetGroupCode(), newAtIdsMsg(ids))
 							} else {
-								nLogger.Errorf("notify atAll failed, at someone not config")
+								nLogger.Debug("notify atAll failed, at someone not config")
 							}
 						}
 					}

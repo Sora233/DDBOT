@@ -491,11 +491,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 	})
 	if !result {
 		if msg.Count(func(e message.IMessageElement) bool {
-			at, ok := e.(*message.AtElement)
-			if !ok {
-				return false
-			}
-			return at.Target == 0
+			return e.Type() == message.At && e.(*message.AtElement).Target == 0
 		}) > 0 {
 			logger.WithField("content", localutils.MsgToString(msg.Elements)).
 				WithFields(localutils.GroupLogFields(groupCode)).
@@ -517,10 +513,10 @@ func (l *Lsp) sendChainGroupMessage(groupCode int64, msgs []*message.SendingMess
 	var res []*message.GroupMessage
 	for _, msg := range msgs {
 		r := l.sendGroupMessage(groupCode, msg)
+		res = append(res, r)
 		if r.Id == -1 {
 			break
 		}
-		res = append(res, r)
 	}
 	return res
 }
