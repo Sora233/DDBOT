@@ -74,6 +74,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 		hook.Pass = true
 		return
 	case *ConcernNewsNotify:
+		logger := logger.WithField("FilterType", g.GroupConcernFilter.Type)
 		switch g.GroupConcernFilter.Type {
 		case concern_manager.FilterTypeText:
 			textFilter, err := g.GroupConcernFilter.GetFilterByText()
@@ -89,6 +90,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 					}
 				}
 				if !hook.Pass {
+					logger.WithField("TextFilter", textFilter.Text).Debug("Card Filtered by textFilter")
 					hook.Reason = "TextFilter All pattern match failed"
 				}
 			}
@@ -144,7 +146,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 				n.Cards = filteredCards
 				hook.PassOrReason(len(n.Cards) > 0, fmt.Sprintf("All %v cards are filtered", originSize))
 				if hook.Pass {
-					logger.Debugf("NewsFilterHook done, size %v -> %v", originSize, len(n.Cards))
+					logger.Debugf("news notify NewsFilterHook done, size %v -> %v", originSize, len(n.Cards))
 				}
 			}
 		default:
