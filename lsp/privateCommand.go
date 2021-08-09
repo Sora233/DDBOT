@@ -721,6 +721,8 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"/config filter not_type 97505 转发\n" +
 		"还可以选择开启直播推送时@全体成员：\n" +
 		"/config at_all 97505 on\n" +
+		"以及开启下播推送：\n" +
+		"/config offline_notify 97505 on\n" +
 		"BOT还支持更多功能，详细命令介绍请查看命令文档：\n" +
 		"https://hub.fastgit.org/Sora233/DDBOT/blob/master/EXAMPLE.md\n" +
 		"使用时请把作者UID换成你需要的UID"
