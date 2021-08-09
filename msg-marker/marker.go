@@ -2,6 +2,8 @@ package msg_marker
 
 import (
 	"github.com/Logiase/MiraiGo-Template/bot"
+	"github.com/Logiase/MiraiGo-Template/config"
+	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	"sync"
@@ -12,13 +14,17 @@ func init() {
 	bot.RegisterModule(instance)
 }
 
+const moduleId = "sora233.message-read-marker"
+
 type marker struct{}
 
 var instance *marker
 
+var logger = utils.GetModuleLogger(moduleId)
+
 func (m *marker) MiraiGoModule() bot.ModuleInfo {
 	return bot.ModuleInfo{
-		ID:       "sora233.message-readed-marker",
+		ID:       moduleId,
 		Instance: instance,
 	}
 }
@@ -30,6 +36,11 @@ func (m *marker) PostInit() {
 }
 
 func (m *marker) Serve(bot *bot.Bot) {
+	if config.GlobalConfig.GetBool("message-marker.disable") {
+		logger.Debug("自动已读被禁用")
+		return
+	}
+	logger.Debug("自动已读已开启")
 	bot.OnGroupMessage(func(client *client.QQClient, message *message.GroupMessage) {
 		if message.Sender.Uin != client.Uin {
 			client.MarkGroupMessageReaded(message.GroupCode, int64(message.Id))
