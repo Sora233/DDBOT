@@ -795,7 +795,7 @@ func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 	case LiveStatus_Living:
 		result = append(result, localutils.MessageTextf("%s正在直播【%v】\n%v", notify.Name, notify.LiveTitle, notify.RoomUrl))
 	case LiveStatus_NoLiving:
-		result = append(result, localutils.MessageTextf("%s直播结束了\n%v", notify.Name, notify.RoomUrl))
+		result = append(result, localutils.MessageTextf("%s直播结束了", notify.Name))
 	}
 	cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Cover, false, proxy_pool.PreferNone)
 	if err != nil {

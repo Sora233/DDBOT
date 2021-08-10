@@ -48,7 +48,7 @@ func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 	case ShowStatus_Living:
 		result = append(result, localutils.MessageTextf("斗鱼-%s正在直播【%v】\n%v", notify.Nickname, notify.RoomName, notify.RoomUrl))
 	case ShowStatus_NoLiving:
-		result = append(result, localutils.MessageTextf("斗鱼-%s直播结束了\n%v", notify.Nickname, notify.RoomUrl))
+		result = append(result, localutils.MessageTextf("斗鱼-%s直播结束了", notify.Nickname))
 	}
 	cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.GetAvatar().GetBig(), false, proxy_pool.PreferNone)
 	if err != nil {

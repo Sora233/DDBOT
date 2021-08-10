@@ -44,7 +44,7 @@ func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
 	if notify.Living {
 		result = append(result, localutils.MessageTextf("虎牙-%s正在直播【%v】\n%v", notify.Name, notify.RoomName, notify.RoomUrl))
 	} else {
-		result = append(result, localutils.MessageTextf("虎牙-%s直播结束了\n%v", notify.Name, notify.RoomUrl))
+		result = append(result, localutils.MessageTextf("虎牙-%s直播结束了", notify.Name))
 	}
 	cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Avatar, false, proxy_pool.PreferNone)
 	if err != nil {
