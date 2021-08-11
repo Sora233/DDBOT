@@ -185,4 +185,12 @@ func registerLog(b *bot.Bot) {
 	b.OnDisconnected(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
 		logDisconnect(event)
 	})
+
+	b.OnSelfGroupMessage(func(qqClient *client.QQClient, groupMessage *message.GroupMessage) {
+		logGroupMessage(groupMessage)
+	})
+
+	b.OnSelfPrivateMessage(func(qqClient *client.QQClient, privateMessage *message.PrivateMessage) {
+		logPrivateMessage(privateMessage)
+	})
 }
