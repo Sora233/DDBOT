@@ -47,7 +47,12 @@ func (m *logging) Init() {
 		return
 	}
 	qqlog := logrus.New()
-	qqlog.AddHook(lfshook.NewHook(writer, &logrus.JSONFormatter{DisableHTMLEscape: true}))
+	qqlog.AddHook(lfshook.NewHook(writer, &logrus.TextFormatter{
+		FullTimestamp:    true,
+		PadLevelText:     true,
+		QuoteEmptyFields: true,
+		ForceQuote:       true,
+	}))
 	qqlog.SetLevel(logrus.DebugLevel)
 	logger = qqlog.WithField("module", moduleId)
 }

@@ -39,7 +39,17 @@ func init() {
 		logrus.WithError(err).Error("unable to write logs")
 		return
 	}
-	logrus.AddHook(lfshook.NewHook(writer, &logrus.JSONFormatter{DisableHTMLEscape: true}))
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp:    true,
+		PadLevelText:     true,
+		QuoteEmptyFields: true,
+	})
+	logrus.AddHook(lfshook.NewHook(writer, &logrus.TextFormatter{
+		FullTimestamp:    true,
+		PadLevelText:     true,
+		QuoteEmptyFields: true,
+		ForceQuote:       true,
+	}))
 }
 
 func main() {
