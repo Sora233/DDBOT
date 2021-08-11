@@ -26,22 +26,23 @@ func newLiveInfo(uid int64, living bool, liveStatusChanged bool, liveTitleChange
 	return notify
 }
 
-func newNewsInfo(uid int64, cardTypes ...DynamicDescType) *ConcernNewsNotify {
-	notify := &ConcernNewsNotify{
-		NewsInfo: NewsInfo{
-			UserInfo: UserInfo{
+func newNewsInfo(uid int64, cardTypes ...DynamicDescType) []*ConcernNewsNotify {
+
+	var result []*ConcernNewsNotify
+	for _, t := range cardTypes {
+		notify := &ConcernNewsNotify{
+			UserInfo: &UserInfo{
 				Mid: uid,
 			},
-		},
-	}
-	for _, t := range cardTypes {
-		notify.Cards = append(notify.Cards, &Card{
+		}
+		notify.Card = &Card{
 			Desc: &Card_Desc{
 				Type: t,
 			},
-		})
+		}
+		result = append(result, notify)
 	}
-	return notify
+	return result
 }
 
 func TestNewGroupConcernConfig(t *testing.T) {
@@ -67,8 +68,10 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 		newLiveInfo(test.UID1, true, true, false),
 		// 开播了改了标题 推
 		newLiveInfo(test.UID1, true, true, true),
-		// 无法处理news，应该pass
-		newNewsInfo(test.UID1, DynamicDescType_TextOnly),
+	}
+	// 无法处理news，应该pass
+	for _, card := range newNewsInfo(test.UID1, DynamicDescType_TextOnly) {
+		notify = append(notify, card)
 	}
 	var testCase = []*GroupConcernConfig{
 		{},
@@ -160,12 +163,13 @@ func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 }
 
 func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
-	var notify = newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
+	var notifies = newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
 	var g = new(GroupConcernConfig)
 
 	// 默认应该不过滤
-	assert.True(t, g.NewsFilterHook(notify).Pass)
-	assert.Len(t, notify.Cards, 3)
+	for _, notify := range notifies {
+		assert.True(t, g.NewsFilterHook(notify).Pass)
+	}
 
 	var typeFilter = []*concern_manager.GroupConcernFilterConfigByType{
 		{
@@ -219,23 +223,20 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 	}
 
 	testFn := func(index int, tp string, expected []DynamicDescType) {
-		notify := newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
+		notifies := newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
 		var g = new(GroupConcernConfig)
 		g.GroupConcernFilter = concern_manager.GroupConcernFilterConfig{
 			Type:   tp,
 			Config: typeFilter[index].ToString(),
 		}
-		hookResult := g.NewsFilterHook(notify)
 		var resultType []DynamicDescType
-		for _, card := range notify.Cards {
-			resultType = append(resultType, card.GetDesc().GetType())
+		for _, notify := range notifies {
+			hookResult := g.NewsFilterHook(notify)
+			if hookResult.Pass {
+				resultType = append(resultType, notify.Card.GetDesc().GetType())
+			}
 		}
-		if len(resultType) == 0 {
-			assert.False(t, hookResult.Pass)
-		} else {
-			assert.True(t, hookResult.Pass)
-			assert.EqualValues(t, expected, resultType)
-		}
+		assert.EqualValues(t, expected, resultType)
 	}
 
 	for index := range typeFilter {

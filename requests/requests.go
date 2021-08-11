@@ -7,6 +7,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/requests"
+	"github.com/sirupsen/logrus"
 	"net"
 	"net/http"
 	"time"
@@ -148,7 +149,11 @@ LOOP:
 		} else {
 			break
 		}
-		logger.WithField("proxy", req.GetProxy()).WithField("retry", retry).WithField("maxRetry", maxRetry).Debugf("request failed %v, retry", err)
+		logger.WithFields(logrus.Fields{
+			"Proxy":    req.GetProxy(),
+			"Retry":    retry,
+			"MaxRetry": maxRetry,
+		}).Debugf("request failed %v, retry", err)
 		if retry == maxRetry {
 			break
 		}

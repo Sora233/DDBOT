@@ -9,6 +9,7 @@ import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/sliceutil"
+	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"strings"
 	"sync"
@@ -480,12 +481,18 @@ func (c *StateManager) EmitFreshCore(name string, fresher func(ctype concern.Typ
 		case e := <-c.emitChan:
 			id := e.Id
 			if ok, _ := c.FreshCheck(id, true); !ok {
-				logger.WithField("id", id).WithField("result", ok).Trace("fresh check failed")
+				logger.WithFields(logrus.Fields{
+					"Id":     id,
+					"Result": ok,
+				}).Trace("fresh check failed")
 				continue
 			}
 			logger.WithField("id", id).Trace("fresh")
 			if err := fresher(e.Type, id); err != nil {
-				logger.WithField("id", id).WithField("name", name).Errorf("fresher error %v", err)
+				logger.WithFields(logrus.Fields{
+					"Id":   id,
+					"Name": name,
+				}).Errorf("fresher error %v", err)
 			}
 		case <-c.stop:
 			return

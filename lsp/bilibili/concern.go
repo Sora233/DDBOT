@@ -225,13 +225,8 @@ func (c *Concern) notifyLoop() {
 		switch ievent.Type() {
 		case Live:
 			event := (ievent).(*LiveInfo)
-			log := logger.WithField("mid", event.Mid).
-				WithField("name", event.Name).
-				WithField("roomid", event.RoomId).
-				WithField("title", event.LiveTitle).
-				WithField("status", event.Status.String()).
-				WithField("type", event.Type())
-			log.Debugf("debug event")
+			log := event.Logger()
+			log.Debugf("new event - live notify")
 
 			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
 				return id.(int64) == event.Mid && p.ContainAny(concern.BibiliLive)
@@ -254,11 +249,8 @@ func (c *Concern) notifyLoop() {
 			}
 		case News:
 			event := (ievent).(*NewsInfo)
-			log := logger.WithField("mid", event.Mid).
-				WithField("name", event.Name).
-				WithField("news_number", len(event.Cards)).
-				WithField("type", event.Type())
-			log.Debugf("debug event")
+			log := event.Logger()
+			log.Debugf("new event - news notify")
 
 			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
 				return id.(int64) == event.Mid && p.ContainAny(concern.BilibiliNews)
@@ -269,8 +261,10 @@ func (c *Concern) notifyLoop() {
 			}
 			for _, groupCode := range groups {
 				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("news notify")
-				notify := NewConcernNewsNotify(groupCode, event)
-				c.notify <- notify
+				notifies := NewConcernNewsNotify(groupCode, event)
+				for _, notify := range notifies {
+					c.notify <- notify
+				}
 			}
 		}
 

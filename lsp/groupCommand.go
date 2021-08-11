@@ -317,13 +317,14 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 				img := imgs[i+index]
 				sendingMsg.Append(groupImage)
 				if loliconImage, ok := img.(*lolicon_pool.Setu); ok {
-					log.WithField("author", loliconImage.Author).
-						WithField("r18", loliconImage.R18).
-						WithField("pid", loliconImage.Pid).
-						WithField("tags", loliconImage.Tags).
-						WithField("title", loliconImage.Title).
-						WithField("upload_url", groupImage.Url).
-						Debug("debug image")
+					log.WithFields(logrus.Fields{
+						"Author":    loliconImage.Author,
+						"R18":       loliconImage.R18,
+						"Pid":       loliconImage.Pid,
+						"Tags":      loliconImage.Tags,
+						"Title":     loliconImage.Title,
+						"UploadUrl": groupImage.Url,
+					}).Debug("debug image")
 					sendingMsg.Append(utils.MessageTextf("标题：%v\n", loliconImage.Title))
 					sendingMsg.Append(utils.MessageTextf("作者：%v\n", loliconImage.Author))
 					sendingMsg.Append(utils.MessageTextf("PID：%v P%v\n", loliconImage.Pid, loliconImage.P))

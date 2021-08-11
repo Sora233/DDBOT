@@ -1,7 +1,7 @@
 package bilibili
 
 import (
-	"fmt"
+	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/Sora233/DDBOT/utils"
@@ -11,6 +11,18 @@ import (
 
 type GroupConcernConfig struct {
 	concern_manager.GroupConcernConfig
+}
+
+func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
+	if inotify.Type() != concern.BilibiliNews {
+		return
+	}
+}
+
+func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, message *message.GroupMessage) {
+	if inotify.Type() != concern.BilibiliNews {
+		return
+	}
 }
 
 func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern_manager.HookResult) {
@@ -74,7 +86,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 		hook.Pass = true
 		return
 	case *ConcernNewsNotify:
-		logger := logger.WithField("FilterType", g.GroupConcernFilter.Type)
+		logger := notify.Logger().WithField("FilterType", g.GroupConcernFilter.Type)
 		switch g.GroupConcernFilter.Type {
 		case concern_manager.FilterTypeText:
 			textFilter, err := g.GroupConcernFilter.GetFilterByText()
@@ -90,8 +102,11 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 					}
 				}
 				if !hook.Pass {
-					logger.WithField("TextFilter", textFilter.Text).Debug("Card Filtered by textFilter")
+					logger.WithField("TextFilter", textFilter.Text).
+						Debug("news notify filtered by textFilter")
 					hook.Reason = "TextFilter All pattern match failed"
+				} else {
+					logger.Debugf("news notify NewsFilterHook pass")
 				}
 			}
 		case concern_manager.FilterTypeType, concern_manager.FilterTypeNotType:
@@ -101,9 +116,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 					Errorf("get type filter error %v", err)
 				hook.Pass = true
 			} else {
-				var originSize = len(n.Cards)
 				var convTypes []DynamicDescType
-				var filteredCards []*Card
 				for _, tp := range typeFilter.Type {
 					if types, _ := PredefinedType[tp]; types != nil {
 						convTypes = append(convTypes, types...)
@@ -114,39 +127,32 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 					}
 				}
 
-				for _, card := range n.Cards {
-					var ok bool
-					switch g.GroupConcernFilter.Type {
-					case concern_manager.FilterTypeType:
-						ok = false
-						for _, tp := range convTypes {
-							if card.GetDesc().GetType() == tp {
-								ok = true
-								break
-							}
-						}
-					case concern_manager.FilterTypeNotType:
-						ok = true
-						for _, tp := range convTypes {
-							if card.GetDesc().GetType() == tp {
-								ok = false
-								break
-							}
+				var ok bool
+				switch g.GroupConcernFilter.Type {
+				case concern_manager.FilterTypeType:
+					ok = false
+					for _, tp := range convTypes {
+						if n.Card.GetDesc().GetType() == tp {
+							ok = true
+							break
 						}
 					}
-					if ok {
-						filteredCards = append(filteredCards, card)
-					} else {
-						logger.WithField("CardType", card.GetDesc().GetType()).
-							WithField("DynamicId", card.GetDesc().GetDynamicIdStr()).
-							WithField("TypeFilter", convTypes).
-							Debug("Card Filtered by typeFilter")
+				case concern_manager.FilterTypeNotType:
+					ok = true
+					for _, tp := range convTypes {
+						if n.Card.GetDesc().GetType() == tp {
+							ok = false
+							break
+						}
 					}
 				}
-				n.Cards = filteredCards
-				hook.PassOrReason(len(n.Cards) > 0, fmt.Sprintf("All %v cards are filtered", originSize))
-				if hook.Pass {
-					logger.Debugf("news notify NewsFilterHook done, size %v -> %v", originSize, len(n.Cards))
+				if ok {
+					logger.Debugf("news notify NewsFilterHook pass")
+					hook.Pass = true
+				} else {
+					logger.WithField("TypeFilter", convTypes).
+						Debug("news notify NewsFilterHook filtered")
+					hook.Reason = "filtered by TypeFilter"
 				}
 			}
 		default:

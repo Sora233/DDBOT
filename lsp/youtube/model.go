@@ -45,6 +45,17 @@ type VideoInfo struct {
 	LiveStatusChanged bool `json:"-"`
 }
 
+func (v *VideoInfo) Logger() *logrus.Entry {
+	return logger.WithFields(logrus.Fields{
+		"Site":        Site,
+		"ChannelId":   v.ChannelId,
+		"VideoId":     v.VideoId,
+		"VideoType":   v.VideoType.String(),
+		"VideoTitle":  v.VideoTitle,
+		"VideoStatus": v.VideoStatus.String(),
+	})
+}
+
 func (v *VideoInfo) Type() EventType {
 	if v.IsLive() {
 		return Live
@@ -118,6 +129,7 @@ func (notify *ConcernNotify) GetUid() interface{} {
 
 func (notify *ConcernNotify) ToMessage() []message.IMessageElement {
 	var result []message.IMessageElement
+	log := notify.Logger()
 	if notify.IsLive() {
 		if notify.IsLiving() {
 			result = append(result, localutils.MessageTextf("YTB-%v正在直播：\n%v\n", notify.ChannelName, notify.VideoTitle))
@@ -129,10 +141,7 @@ func (notify *ConcernNotify) ToMessage() []message.IMessageElement {
 	}
 	groupImg, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Cover, false, proxy_pool.PreferOversea)
 	if err != nil {
-		logger.WithField("channel_name", notify.ChannelName).
-			WithField("video_id", notify.VideoId).
-			WithFields(localutils.GroupLogFields(notify.GroupCode)).
-			Errorf("upload cover failed %v", err)
+		log.WithField("Cover", notify.Cover).Errorf("upload cover failed %v", err)
 	} else {
 		result = append(result, groupImg)
 	}
@@ -144,14 +153,7 @@ func (notify *ConcernNotify) Logger() *logrus.Entry {
 	if notify == nil {
 		return logger
 	}
-	return logger.WithField("site", Site).
-		WithFields(localutils.GroupLogFields(notify.GroupCode)).
-		WithField("ChannelName", notify.ChannelName).
-		WithField("ChannelID", notify.ChannelId).
-		WithField("VideoId", notify.VideoId).
-		WithField("VideoTitle", notify.VideoTitle).
-		WithField("VideoStatus", notify.VideoStatus.String()).
-		WithField("VideoType", notify.VideoType.String())
+	return notify.VideoInfo.Logger().WithFields(localutils.GroupLogFields(notify.GroupCode))
 }
 
 func (notify *ConcernNotify) Type() concern.Type {

@@ -147,7 +147,7 @@ func IsAccountGiven() bool {
 }
 
 func ParseUid(s string) (int64, error) {
-	s = strings.TrimLeft(s, "UID:")
+	s = strings.TrimPrefix(strings.ToUpper(s), "UID:")
 	return strconv.ParseInt(s, 10, 64)
 }
 

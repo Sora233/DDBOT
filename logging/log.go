@@ -88,50 +88,52 @@ func (m *logging) Stop(b *bot.Bot, wg *sync.WaitGroup) {
 }
 
 func logGroupMessage(msg *message.GroupMessage) {
-	logger.
-		WithField("from", "GroupMessage").
-		WithField("MessageID", msg.Id).
-		WithField("MessageIID", msg.InternalId).
-		WithFields(localutils.GroupLogFields(msg.GroupCode)).
-		WithField("SenderID", msg.Sender.Uin).
-		WithField("SenderName", msg.Sender.DisplayName()).
-		Info(localutils.MsgToString(msg.Elements))
+	logger.WithFields(localutils.GroupLogFields(msg.GroupCode)).
+		WithFields(logrus.Fields{
+			"From":       "GroupMessage",
+			"MessageID":  msg.Id,
+			"MessageIID": msg.InternalId,
+			"SenderID":   msg.Sender.Uin,
+			"SenderName": msg.Sender.DisplayName(),
+		}).Info(localutils.MsgToString(msg.Elements))
 }
 
 func logPrivateMessage(msg *message.PrivateMessage) {
-	logger.
-		WithField("from", "PrivateMessage").
-		WithField("MessageID", msg.Id).
-		WithField("MessageIID", msg.InternalId).
-		WithField("SenderID", msg.Sender.Uin).
-		WithField("SenderName", msg.Sender.DisplayName()).
-		WithField("Target", msg.Target).
-		Info(localutils.MsgToString(msg.Elements))
+	logger.WithFields(logrus.Fields{
+		"From":       "PrivateMessage",
+		"MessageID":  msg.Id,
+		"MessageIID": msg.InternalId,
+		"SenderID":   msg.Sender.Uin,
+		"SenderName": msg.Sender.DisplayName(),
+		"Target":     msg.Target,
+	}).Info(localutils.MsgToString(msg.Elements))
 }
 
 func logFriendMessageRecallEvent(event *client.FriendMessageRecalledEvent) {
-	logger.
-		WithField("from", "FriendsMessageRecall").
-		WithField("MessageID", event.MessageId).
-		WithField("SenderID", event.FriendUin).
-		Info("好友消息撤回")
+	logger.WithFields(logrus.Fields{
+		"From":      "FriendsMessageRecall",
+		"MessageID": event.MessageId,
+		"SenderID":  event.FriendUin,
+	}).Info("好友消息撤回")
 }
 
 func logGroupMessageRecallEvent(event *client.GroupMessageRecalledEvent) {
-	logger.
-		WithField("from", "GroupMessageRecall").
-		WithField("MessageID", event.MessageId).
-		WithFields(localutils.GroupLogFields(event.GroupCode)).
-		WithField("SenderID", event.AuthorUin).
-		WithField("OperatorID", event.OperatorUin).
-		Info("群消息撤回")
+	logger.WithFields(localutils.GroupLogFields(event.GroupCode)).
+		WithFields(logrus.Fields{
+			"From":       "GroupMessageRecall",
+			"MessageID":  event.MessageId,
+			"SenderID":   event.AuthorUin,
+			"OperatorID": event.OperatorUin,
+		}).Info("群消息撤回")
 }
 
 func logGroupMuteEvent(event *client.GroupMuteEvent) {
 	muteLogger := logger.WithFields(localutils.GroupLogFields(event.GroupCode)).
-		WithField("from", "GroupMute").
-		WithField("TargetUin", event.TargetUin).
-		WithField("OperatorUin", event.OperatorUin)
+		WithFields(logrus.Fields{
+			"From":        "GroupMute",
+			"TargetUin":   event.TargetUin,
+			"OperatorUin": event.OperatorUin,
+		})
 	if event.TargetUin == 0 {
 		if event.Time != 0 {
 			muteLogger.Debug("开启了全体禁言")
@@ -160,10 +162,10 @@ func logGroupMuteEvent(event *client.GroupMuteEvent) {
 }
 
 func logDisconnect(event *client.ClientDisconnectedEvent) {
-	logger.
-		WithField("from", "Disconnected").
-		WithField("reason", event.Message).
-		Warn("bot断开链接")
+	logger.WithFields(logrus.Fields{
+		"From":   "Disconnected",
+		"Reason": event.Message,
+	}).Warn("bot断开链接")
 }
 
 func registerLog(b *bot.Bot) {

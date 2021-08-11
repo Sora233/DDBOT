@@ -564,7 +564,7 @@ func (l *Lsp) getConcernConfig(groupCode int64, id interface{}, ctype concern.Ty
 	return state.GetGroupConcernConfig(groupCode, id)
 }
 
-func (l *Lsp) getConcernConfigHook(ctype concern.Type, concernConfig *concern_manager.GroupConcernConfig) concern_manager.Hook {
+func (l *Lsp) getConcernConfigNotifyManager(ctype concern.Type, concernConfig *concern_manager.GroupConcernConfig) concern_manager.NotifyManager {
 	if concernConfig == nil {
 		return nil
 	}

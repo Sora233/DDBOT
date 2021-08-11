@@ -4,12 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
-	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/sirupsen/logrus"
 	"reflect"
 	"runtime"
 	"sync"
@@ -25,59 +22,6 @@ const (
 
 type ConcernEvent interface {
 	Type() EventType
-}
-
-type ConcernLiveNotify struct {
-	LiveInfo
-	GroupCode int64 `json:"group_code"`
-}
-
-func (notify *ConcernLiveNotify) GetGroupCode() int64 {
-	return notify.GroupCode
-}
-func (notify *ConcernLiveNotify) GetUid() interface{} {
-	return notify.RoomId
-}
-
-func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
-	var result []message.IMessageElement
-	if notify.Living {
-		result = append(result, localutils.MessageTextf("虎牙-%s正在直播【%v】\n%v", notify.Name, notify.RoomName, notify.RoomUrl))
-	} else {
-		result = append(result, localutils.MessageTextf("虎牙-%s直播结束了", notify.Name))
-	}
-	cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Avatar, false, proxy_pool.PreferNone)
-	if err != nil {
-		logger.WithField("avatar", notify.Avatar).Errorf("upload avatar failed %v", err)
-	} else {
-		result = append(result, cover)
-	}
-	return result
-}
-
-func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
-	if notify == nil {
-		return logger
-	}
-	return logger.WithField("site", Site).
-		WithFields(localutils.GroupLogFields(notify.GroupCode)).
-		WithField("Name", notify.Name).
-		WithField("Title", notify.RoomName).
-		WithField("Status", notify.Living)
-}
-
-func (notify *ConcernLiveNotify) Type() concern.Type {
-	return concern.HuyaLive
-}
-
-func NewConcernLiveNotify(groupCode int64, l *LiveInfo) *ConcernLiveNotify {
-	if l == nil {
-		return nil
-	}
-	return &ConcernLiveNotify{
-		*l,
-		groupCode,
-	}
 }
 
 type Concern struct {
@@ -201,10 +145,7 @@ func (c *Concern) notifyLoop() {
 		switch ievent.Type() {
 		case Live:
 			event := ievent.(*LiveInfo)
-			log := logger.WithField("name", event.Name).
-				WithField("roomid", event.RoomId).
-				WithField("title", event.RoomName).
-				WithField("living", event.Living)
+			log := event.Logger()
 			log.Debugf("debug event")
 
 			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
@@ -218,9 +159,9 @@ func (c *Concern) notifyLoop() {
 				notify := NewConcernLiveNotify(groupCode, event)
 				c.notify <- notify
 				if event.Living {
-					log.Debug("living notify")
+					log.WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
 				} else {
-					log.Debug("noliving notify")
+					log.WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
 				}
 			}
 		}

@@ -2,6 +2,12 @@ package concern_manager
 
 import "github.com/Sora233/DDBOT/concern"
 
+type Hook interface {
+	NewsFilterHook(notify concern.Notify) *HookResult
+	AtBeforeHook(notify concern.Notify) *HookResult
+	ShouldSendHook(notify concern.Notify) *HookResult
+}
+
 // HookResult Pass是false的时候，要把具体失败的地方填入Reason
 type HookResult struct {
 	Pass   bool
@@ -14,12 +20,6 @@ func (h *HookResult) PassOrReason(pass bool, reason string) {
 	} else {
 		h.Reason = reason
 	}
-}
-
-type Hook interface {
-	NewsFilterHook(notify concern.Notify) *HookResult
-	AtBeforeHook(notify concern.Notify) *HookResult
-	ShouldSendHook(notify concern.Notify) *HookResult
 }
 
 type defaultHook struct {

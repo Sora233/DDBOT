@@ -6,6 +6,7 @@ import (
 )
 
 type GroupConcernConfig struct {
+	defaultCallback
 	defaultHook
 	GroupConcernAt     GroupConcernAtConfig     `json:"group_concern_at"`
 	GroupConcernNotify GroupConcernNotifyConfig `json:"group_concern_notify"`

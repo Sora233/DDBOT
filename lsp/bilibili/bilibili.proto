@@ -496,6 +496,12 @@ message CardWithVideo {
   string tname = 6;
   int32 videos = 7;
   string pic = 8;
+  message Origin {
+    int64 uid = 1;
+    DynamicDescType type = 2;
+    string dynamic_id_str = 5;
+    string bvid = 9;
+  }
 }
 
 message CardTextOnly {

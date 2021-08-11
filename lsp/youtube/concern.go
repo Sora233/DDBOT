@@ -110,11 +110,7 @@ func (c *Concern) notifyLoop() {
 	defer c.wg.Done()
 	for ievent := range c.eventChan {
 		event := ievent.(*VideoInfo)
-		log := logger.WithField("channel_id", event.ChannelId).
-			WithField("video_id", event.VideoId).
-			WithField("video_type", event.VideoType.String()).
-			WithField("video_title", event.VideoTitle).
-			WithField("video_status", event.VideoStatus.String())
+		log := event.Logger()
 		if prev, err := c.StateManager.GetVideo(event.ChannelId, event.VideoId); err == nil {
 			if prev.VideoStatus == event.VideoStatus && prev.VideoType == event.VideoType {
 				log.Debugf("duplicate event")
@@ -147,12 +143,12 @@ func (c *Concern) notifyLoop() {
 			}
 			if doNotify {
 				if event.IsVideo() {
-					log.Debugf("video notify")
+					log.WithFields(localutils.GroupLogFields(groupCode)).Debugf("video notify")
 				} else if event.IsLive() {
 					if event.IsWaiting() {
-						log.Debugf("live waiting notify")
+						log.WithFields(localutils.GroupLogFields(groupCode)).Debugf("live waiting notify")
 					} else if event.IsLiving() {
-						log.Debugf("living notify")
+						log.WithFields(localutils.GroupLogFields(groupCode)).Debugf("living notify")
 					}
 				}
 			}

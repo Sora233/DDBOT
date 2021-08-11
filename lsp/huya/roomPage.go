@@ -20,6 +20,7 @@ func RoomPage(roomId string) (*LiveInfo, error) {
 		ed := time.Now()
 		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
+	log := logger.WithField("RoomId", roomId)
 	url := HuyaPath(roomId)
 	resp, err := requests.Get(ctx, url, nil, 3,
 		requests.AddUAOption(),
@@ -44,7 +45,7 @@ func RoomPage(roomId string) (*LiveInfo, error) {
 	}
 	livingSpan := doc.Find("span.host-prevStartTime,span.host-spectator")
 	if livingSpan.Size() != 1 {
-		logger.WithField("room_id", roomId).Errorf("living span size %v", livingSpan.Size())
+		log.Errorf("living span size %v", livingSpan.Size())
 		return nil, errors.New("can not determine live status")
 	}
 	for _, attr := range livingSpan.Get(0).Attr {
@@ -64,10 +65,10 @@ func RoomPage(roomId string) (*LiveInfo, error) {
 		if found {
 			ri.Name = name
 		} else {
-			logger.WithField("room_id", roomId).Errorf("h3.host-name[title] not found")
+			log.Errorf("h3.host-name[title] not found")
 		}
 	} else {
-		logger.WithField("room_id", roomId).Errorf("h3.host-name not found")
+		log.Errorf("h3.host-name not found")
 	}
 
 	avaImg := doc.Find("#avatar-img")
@@ -79,10 +80,10 @@ func RoomPage(roomId string) (*LiveInfo, error) {
 			}
 			ri.Avatar = ava
 		} else {
-			logger.WithField("room_id", roomId).Errorf("#avatar-img[src] not found")
+			log.Errorf("#avatar-img[src] not found")
 		}
 	} else {
-		logger.WithField("room_id", roomId).Errorf("#avatar-img not found")
+		log.Errorf("#avatar-img not found")
 	}
 
 	roomNameH1 := doc.Find(".host-title")
@@ -91,10 +92,10 @@ func RoomPage(roomId string) (*LiveInfo, error) {
 		if found {
 			ri.RoomName = roomName
 		} else {
-			logger.WithField("room_id", roomId).Errorf("h1.host-title[title] not found")
+			log.Errorf("h1.host-title[title] not found")
 		}
 	} else {
-		logger.WithField("room_id", roomId).Errorf("h1.host-title no found")
+		log.Errorf("h1.host-title no found")
 	}
 
 	return ri, nil
