@@ -2,6 +2,7 @@ package lolicon_pool
 
 import (
 	"context"
+	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
@@ -72,7 +73,7 @@ func LoliconAppSetu(apikey string, R18 R18Type, keyword string, num int) (*Respo
 		R18:      int(R18),
 		Keyword:  keyword,
 		Num:      num,
-		Proxy:    "disable",
+		Proxy:    config.GlobalConfig.GetString("loliconPool.proxy"),
 		Size1200: true,
 	})
 	if err != nil {

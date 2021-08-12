@@ -151,6 +151,7 @@ loliconPool: # 图片功能，使用api.lolicon.app图库
   apikey:    # 由于该图库更新，此字段不再需要了，留空即可
   cacheMin: 10
   cacheMax: 50
+  proxy:
 
 pyProxyPool: # 代理池配置，py代理池 https://github.com/jhao104/proxy_pool
   host: http://127.0.0.1:5010
