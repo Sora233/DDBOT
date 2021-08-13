@@ -24,4 +24,6 @@ func TestCompareVersion(t *testing.T) {
 	assert.True(t, compareVersion("v1.0.0", "v2"))
 	assert.True(t, compareVersion("v1.0.0", "v2.0"))
 	assert.True(t, compareVersion("v1.0.0", "v2.0.0"))
+	assert.True(t, compareVersion("v0.0.19", "v0.0.19.1"))
+	assert.True(t, compareVersion("v0.0.19.1", "v0.0.20"))
 }

@@ -32,10 +32,6 @@ func (s *StateManager) SaveMessageImageUrl(groupCode int64, messageID int32, msg
 	var urls []string
 	for _, img := range imgs {
 		switch i := img.(type) {
-		case *message.ImageElement:
-			if i.Url != "" {
-				urls = append(urls, i.Url)
-			}
 		case *message.GroupImageElement:
 			if i.Url != "" {
 				urls = append(urls, i.Url)

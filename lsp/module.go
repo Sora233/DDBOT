@@ -397,7 +397,7 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 	}
 }
 
-func (l *Lsp) checkImage(img *message.ImageElement) string {
+func (l *Lsp) checkImage(img *message.GroupImageElement) string {
 	var cacheLabel string
 	localdb.RCoverTx(func(tx *buntdb.Tx) error {
 		key := localdb.ImageCacheKey(string(img.Md5))

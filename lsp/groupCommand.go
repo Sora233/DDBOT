@@ -766,10 +766,12 @@ func (lgc *LspGroupCommand) FaceCommand() {
 
 	for _, e := range lgc.msg.Elements {
 		if e.Type() == message.Image {
-			if ie, ok := e.(*message.ImageElement); ok {
+			switch ie := e.(type) {
+			case *message.GroupImageElement:
 				lgc.faceDetect(ie.Url)
-				return
-			} else {
+			case *message.FriendImageElement:
+				lgc.faceDetect(ie.Url)
+			default:
 				log.Errorf("cast to ImageElement failed")
 				lgc.textReply("失败")
 				return
@@ -807,10 +809,11 @@ func (lgc *LspGroupCommand) ReverseCommand() {
 
 	for _, e := range lgc.msg.Elements {
 		if e.Type() == message.Image {
-			if ie, ok := e.(*message.ImageElement); ok {
+			switch ie := e.(type) {
+			case *message.GroupImageElement:
 				lgc.reserveGif(ie.Url)
 				return
-			} else {
+			default:
 				log.Errorf("cast to ImageElement failed")
 				lgc.textReply("失败")
 				return
@@ -862,8 +865,9 @@ func (lgc *LspGroupCommand) ImageContent() {
 
 	for _, e := range lgc.msg.Elements {
 		if e.Type() == message.Image {
-			if img, ok := e.(*message.ImageElement); ok {
-				rating := lgc.l.checkImage(img)
+			switch ie := e.(type) {
+			case *message.GroupImageElement:
+				rating := lgc.l.checkImage(ie)
 				if rating == aliyun.SceneSexy {
 					lgc.textReply("就这")
 					return
@@ -871,8 +875,7 @@ func (lgc *LspGroupCommand) ImageContent() {
 					lgc.textReply("多发点")
 					return
 				}
-
-			} else {
+			default:
 				log.Error("can not cast element to ImageElement")
 			}
 		}

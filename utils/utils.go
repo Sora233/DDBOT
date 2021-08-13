@@ -193,14 +193,20 @@ func MsgToString(elements []message.IMessageElement) (res string) {
 		switch e := elem.(type) {
 		case *message.TextElement:
 			res += e.Content
-		case *message.ImageElement:
-			res += "[Image]"
 		case *message.FaceElement:
 			res += "[" + e.Name + "]"
 		case *message.GroupImageElement:
-			res += "[Image]"
-		case *message.GroupFlashImgElement:
-			res += "[Flash Image]"
+			if e.Flash {
+				res += "[Flash Image]"
+			} else {
+				res += "[Image]"
+			}
+		case *message.FriendImageElement:
+			if e.Flash {
+				res += "[Flash Image]"
+			} else {
+				res += "[Image]"
+			}
 		case *message.AtElement:
 			res += e.Display
 		case *message.RedBagElement:
