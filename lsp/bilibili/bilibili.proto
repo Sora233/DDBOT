@@ -502,6 +502,7 @@ message CardWithVideo {
     string dynamic_id_str = 5;
     string bvid = 9;
   }
+  Origin origin = 9;
 }
 
 message CardTextOnly {

@@ -1,12 +1,14 @@
 package bilibili
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/concern"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/Sora233/DDBOT/utils"
+	"github.com/tidwall/buntdb"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type GroupConcernConfig struct {
@@ -17,11 +19,36 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 	if inotify.Type() != concern.BilibiliNews {
 		return
 	}
-}
-
-func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, message *message.GroupMessage) {
-	if inotify.Type() != concern.BilibiliNews {
+	notify := inotify.(*ConcernNewsNotify)
+	if notify.Card.GetDesc().GetType() != DynamicDescType_WithVideo {
 		return
+	}
+	videoCard, err := notify.Card.GetCardWithVideo()
+	if err != nil {
+		return
+	}
+	videoOrigin := videoCard.GetOrigin()
+	if videoOrigin == nil {
+		return
+	}
+
+	// 主要是解决联合投稿的时候刷屏
+
+	notify.videoOrigin = videoOrigin
+
+	err = localdb.RWCoverTx(func(tx *buntdb.Tx) error {
+		key := localdb.BilibiliVideoOriginMarkKey(notify.GroupCode, notify.videoOrigin.GetBvid())
+		_, replaced, err := tx.Set(key, notify.Card.GetDesc().GetDynamicIdStr(), localdb.ExpireOption(time.Minute*15))
+		if err != nil {
+			return err
+		}
+		if replaced {
+			return localdb.ErrRollback
+		}
+		return nil
+	})
+	if err == nil {
+		notify.videoOriginMark = true
 	}
 }
 

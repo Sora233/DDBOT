@@ -122,9 +122,9 @@ type ConcernNewsNotify struct {
 
 	// messageCache 导致ConcernNewsNotify的ToMessage()变得线程不安全
 	messageCache []message.IMessageElement
-	// videoWithOrigin 用于处理联合投稿的情况，如果一个群内订阅了多个联合投稿成员，短时间内可能刷屏
-	// 此时等待第一条推送完成，然后剩下的推送回复第一条消息
-	videoWithOrigin *CardWithVideo_Origin
+	// 用于联合投稿防止多人同时推送
+	videoOrigin     *CardWithVideo_Origin
+	videoOriginMark bool
 }
 
 func (notify *ConcernNewsNotify) Type() concern.Type {
@@ -302,13 +302,21 @@ func NewConcernLiveNotify(groupCode int64, liveInfo *LiveInfo) *ConcernLiveNotif
 }
 
 func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) {
+	var (
+		card       = notify.Card
+		log        = notify.Logger()
+		dynamicUrl = DynamicUrl(card.GetDesc().GetDynamicIdStr())
+		date       = localutils.TimestampFormat(card.GetDesc().GetTimestamp())
+	)
+	// 如果短时间有多个联合投稿，则推送一条简化动态
+	if notify.videoOrigin != nil && !notify.videoOriginMark {
+		videoCard, _ := notify.Card.GetCardWithVideo()
+		localutils.MessageTextf("%v%v：\n%v\n%v", notify.Name, notify.Card.GetDisplay().GetUsrActionTxt(), videoCard.GetTitle(), dynamicUrl)
+		return
+	}
 	if notify.messageCache != nil {
 		return notify.messageCache
 	}
-	var card = notify.Card
-	log := notify.Logger()
-	dynamicUrl := DynamicUrl(card.GetDesc().GetDynamicIdStr())
-	date := localutils.TimestampFormat(card.GetDesc().GetTimestamp())
 	switch card.GetDesc().GetType() {
 	case DynamicDescType_WithOrigin:
 		cardOrigin, err := card.GetCardWithOrig()

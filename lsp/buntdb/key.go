@@ -74,6 +74,9 @@ func BilibiliUserStatKey(keys ...interface{}) string {
 func BilibiliGroupAtAllMarkKey(keys ...interface{}) string {
 	return NamedKey("GroupAtAll", keys)
 }
+func BilibiliVideoOriginMarkKey(keys ...interface{}) string {
+	return NamedKey("VideoOriginMark", keys)
+}
 func DouyuGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("DouyuConcernState", keys)
 }
