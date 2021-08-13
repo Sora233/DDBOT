@@ -237,6 +237,7 @@ func NewConcern(notify chan<- concern.Notify) *Concern {
 	return &Concern{
 		StateManager: NewStateManager(),
 		notify:       notify,
+		stop:         make(chan interface{}),
 		eventChan:    make(chan ConcernEvent, 500),
 	}
 }
