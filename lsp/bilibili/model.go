@@ -840,18 +840,21 @@ func shouldCombineImage(pic []*CardWithImage_Item_Picture) bool {
 			return true
 		}
 	}
-	// 所有图尺寸相同
-	var sameSize = true
+	// 有超过一半的图片尺寸一样
+	var size = make(map[int64]int)
 	for idx, i := range pic {
 		if idx == 0 {
 			continue
 		}
-		if i.ImgWidth == pic[0].ImgWidth && i.ImgHeight == pic[0].ImgHeight {
-			continue
-		}
-		sameSize = false
+		size[int64(i.ImgWidth)*int64(i.ImgHeight)] += 1
 	}
-	if sameSize && (len(pic) == 4 || len(pic) == 6 || len(pic) == 9) {
+	var sizeMerge bool
+	for _, count := range size {
+		if 2*count > len(pic) {
+			sizeMerge = true
+		}
+	}
+	if sizeMerge && (len(pic) == 4 || len(pic) == 6 || len(pic) == 9) {
 		return true
 	}
 	return false
