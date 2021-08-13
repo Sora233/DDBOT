@@ -72,10 +72,10 @@ func TestStateManager_GetMessageImageUrl(t *testing.T) {
 	assert.Len(t, sm.GetMessageImageUrl(test.G1, test.MessageID1), 0)
 
 	assert.Nil(t, sm.SaveMessageImageUrl(test.G1, test.MessageID1, []message.IMessageElement{
-		&message.ImageElement{
+		&message.GroupImageElement{
 			Url: "image1",
 		},
-		&message.ImageElement{
+		&message.GroupImageElement{
 			Url: "image2",
 		},
 	}))
