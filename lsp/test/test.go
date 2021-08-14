@@ -27,6 +27,8 @@ const (
 
 	CMD1 = "command1"
 	CMD2 = "command2"
+
+	BVID1 = "bvid1"
 )
 
 func InitBuntdb(t *testing.T) {

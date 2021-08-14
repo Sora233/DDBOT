@@ -46,7 +46,7 @@ func newNewsInfo(uid int64, cardTypes ...DynamicDescType) []*ConcernNewsNotify {
 }
 
 func TestNewGroupConcernConfig(t *testing.T) {
-	g := NewGroupConcernConfig(new(concern_manager.GroupConcernConfig))
+	g := NewGroupConcernConfig(new(concern_manager.GroupConcernConfig), nil)
 	assert.NotNil(t, g)
 }
 

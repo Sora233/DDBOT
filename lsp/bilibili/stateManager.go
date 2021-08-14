@@ -312,6 +312,20 @@ func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err err
 	return
 }
 
+func (c *StateManager) SetGroupVideoOriginMarkIfNotExist(groupCode int64, bvid string) error {
+	return localdb.RWCoverTx(func(tx *buntdb.Tx) error {
+		key := localdb.BilibiliVideoOriginMarkKey(groupCode, bvid)
+		_, replaced, err := tx.Set(key, "", localdb.ExpireOption(time.Minute*15))
+		if err != nil {
+			return err
+		}
+		if replaced {
+			return localdb.ErrRollback
+		}
+		return nil
+	})
+}
+
 func SetCookieInfo(username string, cookieInfo *LoginResponse_Data_CookieInfo) error {
 	if cookieInfo == nil {
 		return errors.New("<nil> cookieInfo")

@@ -307,3 +307,13 @@ func TestStateManager_GetUserStat(t *testing.T) {
 	assert.EqualValues(t, 2, userStat.Follower)
 	assert.EqualValues(t, test.UID1, userStat.Mid)
 }
+
+func TestStateManager_SetGroupVideoOriginMarkIfNotExist(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	c := initStateManager(t)
+
+	assert.Nil(t, c.SetGroupVideoOriginMarkIfNotExist(test.G1, test.BVID1))
+	assert.NotNil(t, c.SetGroupVideoOriginMarkIfNotExist(test.G1, test.BVID1))
+}

@@ -2,17 +2,15 @@ package bilibili
 
 import (
 	"github.com/Sora233/DDBOT/concern"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/Sora233/DDBOT/utils"
-	"github.com/tidwall/buntdb"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type GroupConcernConfig struct {
 	concern_manager.GroupConcernConfig
+	StateManager *StateManager
 }
 
 func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
@@ -36,17 +34,7 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 
 	notify.videoOrigin = videoOrigin
 
-	err = localdb.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := localdb.BilibiliVideoOriginMarkKey(notify.GroupCode, notify.videoOrigin.GetBvid())
-		_, replaced, err := tx.Set(key, notify.Card.GetDesc().GetDynamicIdStr(), localdb.ExpireOption(time.Minute*15))
-		if err != nil {
-			return err
-		}
-		if replaced {
-			return localdb.ErrRollback
-		}
-		return nil
-	})
+	err = g.StateManager.SetGroupVideoOriginMarkIfNotExist(notify.GetGroupCode(), videoOrigin.GetBvid())
 	if err == nil {
 		notify.videoOriginMark = true
 	}
@@ -192,8 +180,8 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 	}
 }
 
-func NewGroupConcernConfig(g *concern_manager.GroupConcernConfig) *GroupConcernConfig {
-	return &GroupConcernConfig{*g}
+func NewGroupConcernConfig(g *concern_manager.GroupConcernConfig, sm *StateManager) *GroupConcernConfig {
+	return &GroupConcernConfig{*g, sm}
 }
 
 const (
