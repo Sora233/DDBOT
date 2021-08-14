@@ -17,11 +17,13 @@ func InitBuntDB(dbpath string) error {
 	if err != nil {
 		return err
 	}
-	buntDB.SetConfig(buntdb.Config{
-		SyncPolicy:           buntdb.Always,
-		AutoShrinkPercentage: 10,
-		AutoShrinkMinSize:    1 * 1024 * 1024,
-	})
+	if dbpath != MEMORYDB {
+		buntDB.SetConfig(buntdb.Config{
+			SyncPolicy:           buntdb.EverySecond,
+			AutoShrinkPercentage: 10,
+			AutoShrinkMinSize:    1 * 1024 * 1024,
+		})
+	}
 	db = buntDB
 	return nil
 }
