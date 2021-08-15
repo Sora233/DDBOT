@@ -261,10 +261,6 @@ func (c *StateManager) CheckGroupAdministrator(groupCode int64, caller int64) bo
 		logger.Errorf("nil member info")
 		return false
 	}
-	logger.WithField("uin", caller).
-		WithFields(localutils.GroupLogFields(groupCode)).
-		WithField("permission", groupMemberInfo.Permission).
-		Debug("debug member permission")
 	return groupMemberInfo.Permission == client.Administrator || groupMemberInfo.Permission == client.Owner
 }
 

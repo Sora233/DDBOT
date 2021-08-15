@@ -1,6 +1,9 @@
 package permission
 
-import localutils "github.com/Sora233/DDBOT/utils"
+import (
+	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/sirupsen/logrus"
+)
 
 type RoleType int64
 
@@ -51,9 +54,10 @@ type adminRoleRequireOption struct {
 
 func (r *adminRoleRequireOption) Validate(s *StateManager) bool {
 	if s.CheckRole(r.uin, Admin) {
-		logger.WithField("type", "AdminRole").WithField("uin", r.uin).
-			WithField("result", true).
-			Debug("debug permission")
+		logger.WithFields(logrus.Fields{
+			"type": "AdminRole",
+			"uin":  r.uin,
+		}).Debug("adminRole permission pass")
 		return true
 	}
 	return false
@@ -72,11 +76,11 @@ func (g *groupAdminRoleRequireOption) Validate(s *StateManager) bool {
 	uin := g.uin
 	groupCode := g.groupCode
 	if s.CheckGroupRole(groupCode, uin, GroupAdmin) {
-		logger.WithField("type", "GroupAdminRole").
-			WithFields(localutils.GroupLogFields(groupCode)).
-			WithField("uin", uin).
-			WithField("result", true).
-			Debug("debug permission")
+		logger.WithFields(localutils.GroupLogFields(groupCode)).
+			WithFields(logrus.Fields{
+				"type": "GroupAdminRole",
+				"uin":  uin,
+			}).Debug("groupAdminRole permission pass")
 		return true
 	}
 	return false
@@ -95,10 +99,11 @@ func (g *qqAdminRequireOption) Validate(s *StateManager) bool {
 	uin := g.uin
 	groupCode := g.groupCode
 	if s.CheckGroupAdministrator(groupCode, uin) {
-		logger.WithField("type", "QQGroupAdmin").WithField("uin", uin).
-			WithFields(localutils.GroupLogFields(groupCode)).
-			WithField("result", true).
-			Debug("debug permission")
+		logger.WithFields(localutils.GroupLogFields(groupCode)).
+			WithFields(logrus.Fields{
+				"type": "QQGroupAdmin",
+				"uin":  uin,
+			}).Debug("qqAdmin permission pass")
 		return true
 	}
 	return false
@@ -122,11 +127,12 @@ func (g *groupCommandRequireOption) Validate(s *StateManager) bool {
 	groupCode := g.groupCode
 	cmd := g.command
 	if s.CheckGroupCommandPermission(groupCode, uin, cmd) {
-		logger.WithField("type", "command").WithField("uin", uin).
-			WithField("command", cmd).
-			WithFields(localutils.GroupLogFields(groupCode)).
-			WithField("result", true).
-			Debug("debug permission")
+		logger.WithFields(localutils.GroupLogFields(groupCode)).
+			WithFields(logrus.Fields{
+				"type":    "command",
+				"uin":     uin,
+				"command": cmd,
+			}).Debug("groupCommand permission pass")
 		return true
 	}
 	return false
