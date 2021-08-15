@@ -5508,7 +5508,8 @@ func (m *CardWithMylist_Upper) GetName() string {
 	return ""
 }
 
-// 可能是新版直播间
+// 可能是新版直播间 （x）
+// 发现是系统推荐的直播间，应该忽略吧？
 type CardWithLiveV2 struct {
 	LivePlayInfo         *CardWithLiveV2_LivePlayInfo `protobuf:"bytes,1,opt,name=live_play_info,json=livePlayInfo,proto3" json:"live_play_info,omitempty"`
 	Style                int64                        `protobuf:"varint,2,opt,name=style,proto3" json:"style,omitempty"`

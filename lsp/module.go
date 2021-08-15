@@ -286,7 +286,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if event.Operator == nil {
 			logger.Info("退出群聊")
 		} else {
-			logger.Infof("被%v踢出群聊", event.Operator.DisplayName())
+			logger.Infof("被 %v(%v) 踢出群聊", event.Operator.DisplayName(), event.Operator.Uin)
 		}
 		l.RemoveAllByGroup(event.Group.Code)
 	})

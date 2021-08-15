@@ -668,6 +668,7 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 			result = append(result, cover)
 		}
 	case DynamicDescType_WithLiveV2:
+		// 2021-08-15 发现这个是系统推荐的直播间，应该不是人为操作，选择不推送，在filter中过滤
 		cardLiveV2, err := card.GetCardWithLiveV2()
 		if err != nil {
 			log.WithField("card", card).

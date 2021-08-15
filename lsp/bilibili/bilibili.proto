@@ -625,7 +625,8 @@ message CardWithMylist {
   Upper upper = 11;
 }
 
-// 可能是新版直播间
+// 可能是新版直播间 （x）
+// 发现是系统推荐的直播间，应该忽略吧？
 message CardWithLiveV2 {
   message LivePlayInfo {
     string cover = 1;
