@@ -474,7 +474,7 @@ func (lgc *LspGroupCommand) RollCommand() {
 			} else {
 				max, err = strconv.ParseInt(rollarg, 10, 64)
 				if err != nil {
-					lgc.textReply(fmt.Sprintf("参数解析错误 - %v", rollarg))
+					lgc.textReply(rollarg)
 					return
 				}
 			}
