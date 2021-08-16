@@ -9,6 +9,7 @@ import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/sliceutil"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"time"
 )
 
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 var logger = utils.GetModuleLogger("concern_manager")
 var ErrEmitQNotInit = errors.New("emit queue not enabled")
 

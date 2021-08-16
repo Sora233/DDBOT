@@ -1,11 +1,16 @@
 package douyu
 
-import "strconv"
+import (
+	jsoniter "github.com/json-iterator/go"
+	"strconv"
+)
 
 const (
 	Site = "douyu"
 	Host = "https://www.douyu.com"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func DouyuPath(path string) string {
 	return Host + path

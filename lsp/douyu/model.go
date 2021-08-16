@@ -1,7 +1,6 @@
 package douyu
 
 import (
-	"encoding/json"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/proxy_pool"

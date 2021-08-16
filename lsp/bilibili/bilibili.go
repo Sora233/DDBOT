@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Sora233/DDBOT/requests"
+	jsoniter "github.com/json-iterator/go"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,6 +19,8 @@ const (
 	DynamicView  = "https://t.bilibili.com"
 	PassportHost = "https://passport.bilibili.com"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 var BasePath = map[string]string{
 	PathRoomInit:               BaseLiveHost,

@@ -2,7 +2,6 @@ package douyu
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Sora233/DDBOT/proxy_pool"

@@ -1,7 +1,6 @@
 package bilibili
 
 import (
-	"encoding/json"
 	"errors"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"

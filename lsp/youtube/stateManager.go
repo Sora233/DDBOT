@@ -1,7 +1,6 @@
 package youtube
 
 import (
-	"encoding/json"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/tidwall/buntdb"

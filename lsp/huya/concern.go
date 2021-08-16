@@ -7,11 +7,13 @@ import (
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	localutils "github.com/Sora233/DDBOT/utils"
+	jsoniter "github.com/json-iterator/go"
 	"reflect"
 	"runtime"
 	"sync"
 )
 
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 var logger = utils.GetModuleLogger("huya-concern")
 
 type EventType int64

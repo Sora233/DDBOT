@@ -1,10 +1,12 @@
 package lolicon_pool
 
 import (
-	"encoding/json"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/tidwall/buntdb"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func (pool *LoliconPool) load() {
 	pool.cond.L.Lock()

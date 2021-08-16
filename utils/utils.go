@@ -1,13 +1,13 @@
 package utils
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/requests"
 	"github.com/davecgh/go-spew/spew"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	"net/url"
 	"os"
@@ -20,6 +20,7 @@ import (
 	"time"
 )
 
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 var ErrGoCvNotSetUp = errors.New("gocv not setup")
 
 func FilePathWalkDir(root string) ([]string, error) {
@@ -232,24 +233,6 @@ func MsgToString(elements []message.IMessageElement) (res string) {
 		}
 	}
 	return
-}
-
-// CompareId 用_id的类型信息去转换number类型，并尝试比较
-func CompareId(number json.Number, _id interface{}) bool {
-	idType := reflect.TypeOf(_id)
-	switch idType.Kind() {
-	case reflect.Int64:
-		jid, err := number.Int64()
-		if err != nil {
-			panic(err)
-		}
-		return jid == _id.(int64)
-	case reflect.String:
-		jid := number.String()
-		return jid == _id.(string)
-	default:
-		return false
-	}
 }
 
 func Switch2Bool(_s string) bool {

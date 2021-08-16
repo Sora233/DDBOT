@@ -1,7 +1,6 @@
 package concern_manager
 
 import (
-	"encoding/json"
 	"errors"
 )
 

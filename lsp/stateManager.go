@@ -25,6 +25,11 @@ type StateManager struct {
 	KeySet
 }
 
+//
+//func (s *StateManager) SaveGroupMessage(msg *message.GroupMessage) error {
+//
+//}
+
 func (s *StateManager) SaveMessageImageUrl(groupCode int64, messageID int32, msgs []message.IMessageElement) error {
 	imgs := utils.MessageFilter(msgs, func(e message.IMessageElement) bool {
 		return e.Type() == message.Image
