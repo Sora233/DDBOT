@@ -153,7 +153,7 @@ LOOP:
 			"Proxy":    req.GetProxy(),
 			"Retry":    retry,
 			"MaxRetry": maxRetry,
-		}).Debugf("request failed %v, retry", err)
+		}).Tracef("request failed %v, retry", err)
 		if retry == maxRetry {
 			break
 		}
