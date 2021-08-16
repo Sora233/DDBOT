@@ -368,9 +368,9 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 		}
 		if err == permission.ErrPermissionExist {
 			if disable {
-				c.TextReply("失败 - 该命令已禁用")
+				c.TextReply("失败 - 该命令已经禁用过了，请不要重复禁用")
 			} else {
-				c.TextReply("失败 - 该命令已启用")
+				c.TextReply("失败 - 该命令已经启用过了，请不要重复启用")
 			}
 		} else {
 			c.TextReply(fmt.Sprintf("失败 - 内部错误"))
