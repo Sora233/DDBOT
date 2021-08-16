@@ -41,13 +41,13 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 
 			sendHookResult := notifyManager.ShouldSendHook(inotify)
 			if !sendHookResult.Pass {
-				nLogger.WithField("Reason", sendHookResult.Reason).Debug("notify filtered by hook ShouldSendHook")
+				nLogger.WithField("Reason", sendHookResult.Reason).Info("notify filtered by hook ShouldSendHook")
 				continue
 			}
 
 			newsFilterHook := notifyManager.NewsFilterHook(inotify)
 			if !newsFilterHook.Pass {
-				nLogger.WithField("Reason", newsFilterHook.Reason).Debug("notify filtered by hook NewsFilterHook")
+				nLogger.WithField("Reason", newsFilterHook.Reason).Info("notify filtered by hook NewsFilterHook")
 				continue
 			}
 
