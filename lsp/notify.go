@@ -89,7 +89,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				defer l.notifyWg.Done()
 				defer func() {
 					if e := recover(); e != nil {
-						nLogger.WithField("stack", debug.Stack()).
+						nLogger.WithField("stack", string(debug.Stack())).
 							Errorf("notify panic recovered: %v", e)
 					}
 				}()
