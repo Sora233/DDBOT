@@ -840,6 +840,9 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 				if err := c.l.LspStateManager.DeleteGroupInvitedRequest(req.RequestId); err != nil {
 					log.Errorf("DeleteGroupInvitedRequest error %v", err)
 				}
+				if err := c.l.PermissionStateManager.GrantGroupRole(req.GroupCode, req.InvitorUin, permission.GroupAdmin); err != nil {
+					log.Errorf("设置群管理员权限失败 - %v", err)
+				}
 			}
 			log.Infof("已接受%v个加群邀请", len(requests))
 			c.textReply(fmt.Sprintf("成功 - 已接受全部%v个加群邀请", len(requests)))
@@ -876,6 +879,9 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 			c.textReply(fmt.Sprintf("成功- 已拒绝 %v(%v) 邀请加群 %v(%v)", request.InvitorNick, request.InvitorUin, request.GroupName, request.GroupCode))
 		} else {
 			c.bot.SolveGroupJoinRequest(request, true, false, "")
+			if err := c.l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
+				log.Errorf("设置群管理员权限失败 - %v", err)
+			}
 			log.Info("接受加群请求成功")
 			c.textReply(fmt.Sprintf("成功 - 已接受 %v(%v) 邀请加群 %v(%v)", request.InvitorNick, request.InvitorUin, request.GroupName, request.GroupCode))
 		}

@@ -190,10 +190,12 @@ func (l *Lsp) PostInit() {
 
 func (l *Lsp) Serve(bot *bot.Bot) {
 	bot.OnGroupInvited(func(qqClient *client.QQClient, request *client.GroupInvitedRequest) {
-		log := logger.WithField("GroupCode", request.GroupCode).
-			WithField("GroupName", request.GroupName).
-			WithField("InvitorUin", request.InvitorUin).
-			WithField("InvitorNick", request.InvitorNick)
+		log := logger.WithFields(logrus.Fields{
+			"GroupCode":   request.GroupCode,
+			"GroupName":   request.GroupName,
+			"InvitorUin":  request.InvitorUin,
+			"InvitorNick": request.InvitorNick,
+		})
 
 		if l.PermissionStateManager.CheckBlockList(request.InvitorUin) {
 			log.Debug("收到加群邀请，该用户在block列表中，将拒绝加群邀请")
@@ -236,9 +238,11 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnNewFriendRequest(func(qqClient *client.QQClient, request *client.NewFriendRequest) {
-		log := logger.WithField("RequesterUin", request.RequesterUin).
-			WithField("RequesterNick", request.RequesterNick).
-			WithField("Message", request.Message)
+		log := logger.WithFields(logrus.Fields{
+			"RequesterUin":  request.RequesterUin,
+			"RequesterNick": request.RequesterNick,
+			"Message":       request.Message,
+		})
 		if l.PermissionStateManager.CheckBlockList(request.RequesterUin) {
 			log.Info("收到好友申请，该用户在block列表中，将拒绝好友申请")
 			request.Reject()
@@ -276,15 +280,34 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
 		l.FreshIndex()
-		log := logger.WithField("GroupCode", info.Code).
-			WithField("MemberCount", info.MemberCount).
-			WithField("GroupName", info.Name)
+		log := logger.WithFields(logrus.Fields{
+			"GroupCode":   info.Code,
+			"MemberCount": info.MemberCount,
+			"GroupName":   info.Name,
+			"OwnerUin":    info.OwnerUin,
+			"Memo":        info.Memo,
+		})
 		log.Info("进入新群聊")
 
 		minfo := info.FindMember(bot.Uin)
 		if minfo != nil {
 			minfo.EditCard("【bot】")
 		}
+
+		l.LspStateManager.RWCover(func() error {
+			requests, err := l.LspStateManager.ListGroupInvitedRequest()
+			if err != nil {
+				log.Errorf("ListGroupInvitedRequest error %v", err)
+				return err
+			}
+			for _, req := range requests {
+				if req.GroupCode == info.Code {
+					l.LspStateManager.DeleteGroupInvitedRequest(req.RequestId)
+					l.PermissionStateManager.GrantGroupRole(info.Code, req.InvitorUin, permission.GroupAdmin)
+				}
+			}
+			return nil
+		})
 	})
 
 	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {

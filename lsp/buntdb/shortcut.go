@@ -35,6 +35,24 @@ func (*ShortCut) RWCoverTx(f func(tx *buntdb.Tx) error) error {
 	})
 }
 
+func (*ShortCut) RWCover(f func() error) error {
+	if itx := gls.Get(TxKey); itx != nil {
+		return f()
+	}
+	db, err := GetClient()
+	if err != nil {
+		return err
+	}
+	return db.Update(func(tx *buntdb.Tx) error {
+		var err error
+		gls.WithEmptyGls(func() {
+			gls.Set(TxKey, tx)
+			err = f()
+		})()
+		return err
+	})
+}
+
 func (*ShortCut) RCoverTx(f func(tx *buntdb.Tx) error) error {
 	if itx := gls.Get(TxKey); itx != nil {
 		return f(itx.(*buntdb.Tx))
@@ -103,6 +121,10 @@ func RWCoverTx(f func(tx *buntdb.Tx) error) error {
 
 func RCoverTx(f func(tx *buntdb.Tx) error) error {
 	return shortCut.RCoverTx(f)
+}
+
+func RWCover(f func() error) error {
+	return shortCut.RWCover(f)
 }
 
 func RCover(f func() error) error {
