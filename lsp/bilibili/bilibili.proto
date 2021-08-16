@@ -40,6 +40,8 @@ enum DynamicDescType {
   // 首次发现于综艺
   WithDrama = 4099;
   WithLive = 4200;
+  // XXX的收藏夹，收藏夹居然也可以发动态？
+  WithMylist = 4300;
   WithLiveV2 = 4308;
 }
 
@@ -601,6 +603,26 @@ message CardWithLive {
   string area_v2_name = 6;
   LiveStatus live_status = 7;
   RoomStatus round_status = 8;
+}
+
+message CardWithMylist {
+  string cover = 1;
+  int32 cover_type = 2;
+  int64 fid = 3;
+  int64 id = 4;
+  string intro = 5;
+  int32 media_count = 6;
+  int64 mid = 7;
+  bool sharable = 8;
+  string title = 9;
+  int32 type = 10;
+  message Upper {
+    string face = 1;
+    int32 followed = 2;
+    int64 mid = 3;
+    string name = 4;
+  }
+  Upper upper = 11;
 }
 
 // 可能是新版直播间

@@ -502,6 +502,21 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 			} else {
 				result = append(result, groupImage)
 			}
+		case DynamicDescType_WithMylist:
+			result = append(result, localutils.MessageTextf("%v分享了%v的收藏夹：\n%v\n%v\n\n原收藏夹：\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+			origin := new(CardWithMylist)
+			err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
+			if err != nil {
+				log.WithField("orogin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithMylist failed %v", err)
+				return
+			}
+			result = append(result, localutils.MessageTextf("%v\n", origin.GetTitle()))
+			groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetCover(), false, proxy_pool.PreferNone)
+			if err != nil {
+				log.WithField("origin", cardOrigin.GetOrigin()).Errorf("upload CardWithMylist cover failed %v", err)
+			} else {
+				result = append(result, groupImage)
+			}
 		case DynamicDescType_WithMiss:
 			result = append(result, localutils.MessageTextf("%v分享了动态：\n%v\n%v\n\n%v\n", notify.Name, date, cardOrigin.GetItem().GetContent(), cardOrigin.GetItem().GetTips()))
 		default:
