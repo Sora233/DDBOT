@@ -645,11 +645,10 @@ func IConfigFilterCmdClear(c *MessageContext, groupCode int64, id string, site s
 	} else {
 		ReplyUserInfo(c, site, id)
 	}
-
 }
 
 func IConfigFilterCmdShow(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type) {
-	_ = iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
+	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
 		if config.GroupConcernFilter.Empty() {
 			c.TextReply("当前配置为空")
 			return false
@@ -689,6 +688,14 @@ func IConfigFilterCmdShow(c *MessageContext, groupCode int64, id string, site st
 		c.TextReply(sb.String())
 		return false
 	})
+	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
+		return
+	}
+	if err != nil {
+		c.TextReply(err.Error())
+	} else {
+		ReplyUserInfo(c, site, id)
+	}
 }
 
 func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, f func(*concern_manager.GroupConcernConfig) bool) (err error) {
