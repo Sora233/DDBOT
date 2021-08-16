@@ -29,6 +29,7 @@ import (
 	"github.com/tidwall/buntdb"
 	"math/rand"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"time"
@@ -464,7 +465,20 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 }
 
 // sendGroupMessage 发送一条消息，返回值总是非nil，Id为-1表示发送失败
-func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *message.GroupMessage {
+// miraigo偶尔发送消息会panic？！
+func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, recovered ...bool) (res *message.GroupMessage) {
+	defer func() {
+		if e := recover(); e != nil {
+			if len(recovered) == 0 {
+				res = l.sendGroupMessage(groupCode, msg, true)
+			} else {
+				logger.WithField("content", localutils.MsgToString(msg.Elements)).
+					WithField("stack", string(debug.Stack())).
+					Errorf("sendGroupMessage panic recovered %v", e)
+				res = &message.GroupMessage{Id: -1, Elements: msg.Elements}
+			}
+		}
+	}()
 	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
 		logger.WithField("content", localutils.MsgToString(msg.Elements)).
 			WithFields(localutils.GroupLogFields(groupCode)).
@@ -482,9 +496,6 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage) *me
 		logger.WithFields(localutils.GroupLogFields(groupCode)).Debug("send with empty message")
 		return &message.GroupMessage{Id: -1}
 	}
-	// don't know why
-	// msg.Elements = l.compactTextElements(msg.Elements)
-	var res *message.GroupMessage
 	result := localutils.Retry(2, time.Millisecond*500, func() bool {
 		res = bot.Instance.SendGroupMessage(groupCode, msg)
 		return res != nil && res.Id != -1
