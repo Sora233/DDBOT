@@ -427,10 +427,12 @@ func (c *StateManager) RemoveAllByGroupCode(groupCode int64) error {
 	var indexKey = []string{
 		c.GroupPermissionKey(),
 		c.PermissionKey(),
+		c.GroupEnabledKey(),
 	}
 	var prefixKey = []string{
 		c.GroupPermissionKey(groupCode),
 		c.PermissionKey(groupCode),
+		c.GroupEnabledKey(groupCode),
 	}
 	return localdb.RemoveByPrefixAndIndex(prefixKey, indexKey)
 }
