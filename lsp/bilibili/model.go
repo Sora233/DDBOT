@@ -311,8 +311,8 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 	// 如果短时间有多个联合投稿，则推送一条简化动态
 	if notify.videoOrigin != nil && !notify.videoOriginMark {
 		videoCard, _ := notify.Card.GetCardWithVideo()
-		localutils.MessageTextf("%v%v：\n%v\n%v", notify.Name, notify.Card.GetDisplay().GetUsrActionTxt(), videoCard.GetTitle(), dynamicUrl)
-		return
+		result = append(result, localutils.MessageTextf("%v%v：\n%v\n%v", notify.Name, notify.Card.GetDisplay().GetUsrActionTxt(), videoCard.GetTitle(), dynamicUrl))
+		return result
 	}
 	if notify.messageCache != nil {
 		return notify.messageCache
