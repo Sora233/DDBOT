@@ -276,14 +276,18 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		douyuIds, _, _ := l.douyuConcern.ListByGroup(event.Group.Code, nil)
 		huyaIds, _, _ := l.huyaConcern.ListByGroup(event.Group.Code, nil)
 		ytbIds, _, _ := l.youtubeConcern.ListByGroup(event.Group.Code, nil)
-		logger.WithField("GroupCode", event.Group.Code).
+		logger := logger.WithField("GroupCode", event.Group.Code).
 			WithField("GroupName", event.Group.Name).
 			WithField("MemberCount", event.Group.MemberCount).
 			WithField("bilibili订阅数", len(bilibiliIds)).
 			WithField("douyu订阅数", len(douyuIds)).
 			WithField("huya订阅数", len(huyaIds)).
-			WithField("ytb订阅数", len(ytbIds)).
-			Info("退出群聊")
+			WithField("ytb订阅数", len(ytbIds))
+		if event.Operator == nil {
+			logger.Info("退出群聊")
+		} else {
+			logger.Infof("被%v踢出群聊", event.Operator.DisplayName())
+		}
 		l.RemoveAllByGroup(event.Group.Code)
 	})
 
