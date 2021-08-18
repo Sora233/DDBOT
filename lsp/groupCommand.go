@@ -236,7 +236,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	if setuCmd.Tag != "" {
 		options = append(options, lolicon_pool.KeywordOption(setuCmd.Tag))
 	}
-	options = append(options, lolicon_pool.NumOption(num))
+	options = append(options, image_pool.NumOption(num))
 	imgs, err := lgc.l.GetImageFromPool(options...)
 	if err != nil {
 		if err == lolicon_pool.ErrNotFound {

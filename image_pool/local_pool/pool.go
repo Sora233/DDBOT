@@ -29,7 +29,7 @@ func (i *Image) Content() ([]byte, error) {
 	return ioutil.ReadFile(i.Path)
 }
 
-func (pool *LocalPool) Get(option ...image_pool.OptionFunc) ([]image_pool.Image, error) {
+func (pool *LocalPool) Get(opts ...image_pool.OptionFunc) ([]image_pool.Image, error) {
 	if pool == nil {
 		return nil, errors.New("pool status down")
 	}
@@ -40,10 +40,33 @@ func (pool *LocalPool) Get(option ...image_pool.OptionFunc) ([]image_pool.Image,
 		return nil, errors.New("no image")
 	}
 
-	img := &Image{
-		Path: pool.imageList[rand.Intn(len(pool.imageList))],
+	var (
+		result []image_pool.Image
+		option = make(image_pool.Option)
+		num    = 1
+	)
+
+	for _, opt := range opts {
+		opt(option)
 	}
-	return []image_pool.Image{img}, nil
+
+	for k, v := range option {
+		switch k {
+		case "num":
+			_v, ok := v.(int)
+			if ok {
+				num = _v
+			}
+		}
+	}
+
+	for i := 0; i < num; i++ {
+		result = append(result, &Image{
+			Path: pool.imageList[rand.Intn(len(pool.imageList))],
+		})
+	}
+
+	return result, nil
 }
 
 func (pool *LocalPool) RefreshImage() error {

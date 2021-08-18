@@ -31,13 +31,6 @@ func KeywordOption(keyword string) image_pool.OptionFunc {
 	}
 }
 
-func NumOption(num int) image_pool.OptionFunc {
-	return func(option image_pool.Option) image_pool.Option {
-		option["num"] = num
-		return option
-	}
-}
-
 func R18Option(r18Type R18Type) image_pool.OptionFunc {
 	return func(option image_pool.Option) image_pool.Option {
 		option["r18"] = r18Type
