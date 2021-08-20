@@ -564,13 +564,19 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 	}
 
 	var enableCmd struct {
-		Command string `arg:"" help:"command name"`
+		Command string `arg:"" optional:"" help:"command name"`
 	}
 	_, output := lgc.parseCommandSyntax(&enableCmd, name)
 	if output != "" {
 		lgc.textReply(output)
 	}
 	if lgc.exit {
+		return
+	}
+
+	if len(enableCmd.Command) == 0 {
+		lgc.textReply("失败 - 没有指定要操作的命令名")
+		log.Errorf("empty command")
 		return
 	}
 

@@ -386,7 +386,7 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 
 	var enableCmd struct {
 		Group   int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
-		Command string `arg:"" help:"命令名"`
+		Command string `arg:"" optional:"" help:"命令名"`
 		Global  bool   `optional:"" help:"系统级操作，对所有群生效"`
 	}
 
@@ -395,6 +395,12 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 		c.textReply(output)
 	}
 	if c.exit {
+		return
+	}
+
+	if len(enableCmd.Command) == 0 {
+		c.textReply("失败 - 没有指定要操作的命令名")
+		log.Errorf("empty command")
 		return
 	}
 
