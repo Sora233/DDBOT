@@ -33,14 +33,38 @@
 
 - 我使用的是私人部署的bot：
 
-请检查b站配置完整，需要配置bilibili一栏的account和password，同时检查运行后日志内有如下或类似内容，否则请看ERROR日志：
+请检查b站配置完整，用文本编辑`application.yaml`文件，需要配置`bilibili`一栏的`account`和`password`。
 
+常见情况：
+
+- 写错了帐号/密码
+- 填写了错误的格式
+
+一个格式示范：
+
+英文引号后需要一个英文空格，帐号和密码用英文引号括起来
+
+```yaml
+bilibili:
+  account: "account"
+  password: "password"
 ```
-AddVerifyOption 使用帐号刷新cookie
-login to fresh cookie
-login success
-使用cookieInfo设置 bili_jct
-使用cookieInfo设置 SESSDATA
+
+- 如果上面确认无误，那您的b站帐号不支持自动登陆，此时只能手动设置cookie，如果不知道如何查看cookie，请百度搜索`如何查看cookie`
+
+**cookie内容可能较长，请确认复制完整**
+
+请按照下面格式配置，注意把`account`和`password`删除
+
+```yaml
+# b站登陆后的cookie字段，从cookie中找到这两个填进去
+# 警告：
+# SESSDATA和bili_jct等价于您的帐号凭证
+# 请绝对不要透露给他人，更不能上传至Github等公开平台
+# 否则将导致您的帐号被盗
+bilibili:
+  SESSDATA: "xxxxxxxxxxxx"
+  bili_jct: "xxxxxxxxxxxx"
 ```
 
 ### Q：为什么我订阅了动态/直播没有推送？
@@ -64,3 +88,5 @@ login success
 ### Q：为什么我私人部署的bot会出现发送群消息失败？
 
 如果您是刚开始使用BOT，大概是因为qq账号被风控导致，建议使用bot挂机3-7天（期间请不要使用bot的功能，否则可能导致封号），即可解除风控。
+
+如果仍出现问题，请删除`device.json`文件，重复上面的步骤。
