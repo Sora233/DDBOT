@@ -173,25 +173,36 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 }
 
 func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concern.Type, error) {
-	newCtype, err := c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
-	if err != nil {
-		return concern.Empty, err
-	}
-
-	//{
-	//	// inner err is not outer err
-	//	var err error
-	//	state, err := c.GetConcern(mid)
-	//	if err != nil {
-	//		logger.WithField("mid", mid).Errorf("GetConcern error %v", err)
-	//	} else if state.Empty() {
-	//		logger.WithField("mid", mid).Debug("empty state, unsub")
-	//		c.ModifyUserRelation(mid, ActUnsub)
-	//		if err := c.ClearByMid(mid); err != nil {
-	//			logger.WithField("mid", mid).Errorf("ClearByMid failed %v", err)
-	//		}
-	//	}
-	//}
+	var newCtype concern.Type
+	err := c.StateManager.RWCoverTx(func(tx *buntdb.Tx) error {
+		var (
+			err      error
+			allCtype concern.Type
+		)
+		newCtype, err = c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
+		if err != nil {
+			return err
+		}
+		if !ctype.ContainAll(concern.BibiliLive) {
+			return nil
+		}
+		allCtype, err = c.StateManager.ListById(mid)
+		if err != nil {
+			return err
+		}
+		// 如果已经没有watch live的了，此时应该把liveinfo删掉，否则会无法刷新到livelinfo
+		// 如果此时liveinfo是living状态，则此状态会一直保留，下次watch时会以为在living错误推送
+		if !allCtype.ContainAll(concern.BibiliLive) {
+			err = c.StateManager.DeleteLiveInfo(mid)
+			if err == buntdb.ErrNotFound {
+				err = nil
+			}
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	return newCtype, err
 }
 

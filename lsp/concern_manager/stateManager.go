@@ -277,6 +277,17 @@ func (c *StateManager) ListByGroup(groupCode int64, filter func(id interface{}, 
 	return
 }
 
+// ListById 查询一个id在所有group内的ctype
+func (c *StateManager) ListById(id int64) (result concern.Type, err error) {
+	_, _, _, err = c.List(func(groupCode int64, _id interface{}, p concern.Type) bool {
+		if id == _id.(int64) {
+			result = result.Add(p)
+		}
+		return true
+	})
+	return result, err
+}
+
 func (c *StateManager) ListIds() (ids []interface{}, err error) {
 	var idSet = make(map[interface{}]bool)
 	_, _, _, err = c.List(func(groupCode int64, id interface{}, p concern.Type) bool {

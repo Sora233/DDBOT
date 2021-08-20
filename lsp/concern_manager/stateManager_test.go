@@ -143,6 +143,10 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	_, err = sm.AddGroupConcern(test.G2, test.UID2, concern.DouyuLive)
 	assert.Nil(t, err)
 
+	ctype, err := sm.ListById(test.UID1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, concern.BibiliLive|concern.YoutubeLive|concern.HuyaLive, ctype)
+
 	// G1 UID1: blive|ylive , UID2: dlive
 	// G2 UID1: hlive       , UID2  dlive
 
@@ -177,6 +181,11 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	// 删除UID在G1中的ylive
 	_, err = sm.RemoveGroupConcern(test.G1, test.UID1, concern.YoutubeLive)
 	assert.Nil(t, err)
+
+	ctype, err = sm.ListById(test.UID1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, concern.BibiliLive|concern.HuyaLive, ctype)
+
 	// 检查UID在所有G中没有ylive
 	assert.Nil(t, sm.CheckConcern(test.UID1, concern.YoutubeLive))
 	// 检查UID在所有G中有blive和hlive
@@ -198,7 +207,7 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.Equal(t, test.UID1, ids[0])
 	assert.Equal(t, concern.HuyaLive, ctypes[0])
 
-	ctype, err := sm.GetGroupConcern(test.G2, test.UID2)
+	ctype, err = sm.GetGroupConcern(test.G2, test.UID2)
 	assert.Nil(t, err)
 	assert.EqualValues(t, concern.DouyuLive, ctype)
 
