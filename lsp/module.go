@@ -270,9 +270,26 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnNewFriendAdded(func(qqClient *client.QQClient, event *client.NewFriendEvent) {
-		logger.WithField("Uin", event.Friend.Uin).
-			WithField("Nickname", event.Friend.Nickname).
-			Info("添加新好友")
+		log := logger.WithFields(logrus.Fields{
+			"Uin":      event.Friend.Uin,
+			"Nickname": event.Friend.Nickname,
+		})
+		log.Info("添加新好友")
+
+		l.LspStateManager.RWCover(func() error {
+			requests, err := l.LspStateManager.ListNewFriendRequest()
+			if err != nil {
+				log.Errorf("ListNewFriendRequest error %v", err)
+				return err
+			}
+			for _, req := range requests {
+				if req.RequesterUin == req.RequesterUin {
+					l.LspStateManager.DeleteNewFriendRequest(req.RequestId)
+				}
+			}
+			return nil
+		})
+
 		sendingMsg := message.NewSendingMessage()
 		sendingMsg.Append(message.NewText("阁下的好友请求已通过，请使用/help查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。"))
 		bot.SendPrivateMessage(event.Friend.Uin, sendingMsg)
