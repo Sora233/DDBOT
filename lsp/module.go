@@ -190,68 +190,84 @@ func (l *Lsp) PostInit() {
 
 func (l *Lsp) Serve(bot *bot.Bot) {
 	bot.OnGroupInvited(func(qqClient *client.QQClient, request *client.GroupInvitedRequest) {
-		log := logger.WithField("group_code", request.GroupCode).
-			WithField("group_name", request.GroupName).
-			WithField("invitor_uin", request.InvitorUin).
-			WithField("invitor_nick", request.InvitorNick)
+		log := logger.WithField("GroupCode", request.GroupCode).
+			WithField("GroupName", request.GroupName).
+			WithField("InvitorUin", request.InvitorUin).
+			WithField("InvitorNick", request.InvitorNick)
 
 		if l.PermissionStateManager.CheckBlockList(request.InvitorUin) {
-			log.Debug("blocked invited")
+			log.Debug("收到加群邀请，该用户在block列表中，将拒绝加群邀请")
 			request.Reject(false, "")
 			return
 		}
 
-		log.Info("new group invited")
 		fi := bot.FindFriend(request.InvitorUin)
 		if fi == nil {
 			request.Reject(false, "未找到阁下的好友信息，请添加好友进行操作")
-			log.Errorf("can not find friend info")
+			log.Errorf("收到加群邀请，无法找到好友信息，将拒绝加群邀请")
 			return
 		}
-		sendingMsg := message.NewSendingMessage()
-		sendingMsg.Append(message.NewText(fmt.Sprintf("阁下的群邀请已通过，基于对阁下的信任，阁下已获得本bot在群【%s】的控制权限，相信阁下不会滥用本bot。", request.GroupName)))
-		bot.SendPrivateMessage(request.InvitorUin, sendingMsg)
-		if err := l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
-			log.WithField("target", request.InvitorUin).
-				WithField("group_code", request.GroupCode).
-				Errorf("grant group admin failed %v", err)
-		}
-		request.Accept()
 
-		//err := l.LspStateManager.SaveGroupInvitor(request.GroupCode, request.InvitorUin)
-		//if err == localdb.ErrKeyExist {
-		//	request.Reject(false, "已有其他群友邀请加群，请通知管理员审核")
-		//	log.Errorf("invited duplicate")
-		//	return
-		//} else if err != nil {
-		//	request.Reject(false, "未知问题，加群失败")
-		//	log.Errorf("invited process failed %v", err)
-		//	return
-		//} else {
-		//	request.Accept()
-		//	sendingMsg := message.NewSendingMessage()
-		//	sendingMsg.Append(message.NewText(fmt.Sprintf("已接受阁下的群邀请。在成功入群后，基于对阁下的信任，阁下将获得bot在群【%s】的控制权限。", request.GroupName)))
-		//	bot.SendPrivateMessage(request.InvitorUin, sendingMsg)
-		//}
+		switch l.LspStateManager.GetCurrentMode() {
+		case PrivateMode:
+			log.Info("收到加群邀请，当前BOT处于私有模式，将拒绝加群邀请")
+			request.Reject(false, "当前BOT处于私有模式")
+		case ProtectMode:
+			if err := l.LspStateManager.SaveGroupInvitedRequest(request); err != nil {
+				log.Errorf("收到加群邀请，但记录申请失败，将拒绝该申请，请将该问题反馈给开发者 - error %v", err)
+				request.Reject(false, "内部错误")
+			} else {
+				log.Info("收到加群邀请，当前BOT处于审核模式，将保留加群邀请")
+			}
+		case PublicMode:
+			request.Accept()
+			log.Info("收到加群邀请，当前BOT处于公开模式，将接受加群邀请")
+			sendingMsg := message.NewSendingMessage()
+			sendingMsg.Append(message.NewText(fmt.Sprintf("阁下的群邀请已通过，基于对阁下的信任，阁下已获得本bot在群【%s】的控制权限，相信阁下不会滥用本bot。", request.GroupName)))
+			bot.SendPrivateMessage(request.InvitorUin, sendingMsg)
+			if err := l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
+				log.Errorf("设置群管理员权限失败 - %v", err)
+			}
+		default:
+			// impossible
+			log.Errorf("收到加群邀请，当前BOT处于未知模式，将拒绝加群邀请，请将该问题反馈给开发者")
+			request.Reject(false, "内部错误")
+		}
 	})
 
 	bot.OnNewFriendRequest(func(qqClient *client.QQClient, request *client.NewFriendRequest) {
-		log := logger.WithField("uin", request.RequesterUin).
-			WithField("nickname", request.RequesterNick).
-			WithField("message", request.Message)
-		log.Info("收到好友申请")
+		log := logger.WithField("RequesterUin", request.RequesterUin).
+			WithField("RequesterNick", request.RequesterNick).
+			WithField("Message", request.Message)
 		if l.PermissionStateManager.CheckBlockList(request.RequesterUin) {
-			log.Info("该用户在block列表中，将拒绝好友申请")
+			log.Info("收到好友申请，该用户在block列表中，将拒绝好友申请")
 			request.Reject()
 			return
 		}
-		log.Info("friend request")
-		request.Accept()
+		switch l.LspStateManager.GetCurrentMode() {
+		case PrivateMode:
+			log.Info("收到好友申请，当前BOT处于私有模式，将拒绝好友申请")
+			request.Reject()
+		case ProtectMode:
+			if err := l.LspStateManager.SaveNewFriendRequest(request); err != nil {
+				log.Errorf("收到好友申请，但记录申请失败，将拒绝该申请，请将该问题反馈给开发者 - error %v", err)
+				request.Reject()
+			} else {
+				log.Info("收到好友申请，当前BOT处于审核模式，将保留好友申请")
+			}
+		case PublicMode:
+			log.Info("收到好友申请，当前BOT处于公开模式，将通过好友申请")
+			request.Accept()
+		default:
+			// impossible
+			log.Errorf("收到好友申请，当前BOT处于未知模式，将拒绝好友申请，请将该问题反馈给开发者")
+			request.Reject()
+		}
 	})
 
 	bot.OnNewFriendAdded(func(qqClient *client.QQClient, event *client.NewFriendEvent) {
-		logger.WithField("uin", event.Friend.Uin).
-			WithField("nickname", event.Friend.Nickname).
+		logger.WithField("Uin", event.Friend.Uin).
+			WithField("Nickname", event.Friend.Nickname).
 			Info("添加新好友")
 		sendingMsg := message.NewSendingMessage()
 		sendingMsg.Append(message.NewText("阁下的好友请求已通过，请使用/help查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。"))
@@ -276,7 +292,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		douyuIds, _, _ := l.douyuConcern.ListByGroup(event.Group.Code, nil)
 		huyaIds, _, _ := l.huyaConcern.ListByGroup(event.Group.Code, nil)
 		ytbIds, _, _ := l.youtubeConcern.ListByGroup(event.Group.Code, nil)
-		logger := logger.WithField("GroupCode", event.Group.Code).
+		log := logger.WithField("GroupCode", event.Group.Code).
 			WithField("GroupName", event.Group.Name).
 			WithField("MemberCount", event.Group.MemberCount).
 			WithField("bilibili订阅数", len(bilibiliIds)).
@@ -284,9 +300,9 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			WithField("huya订阅数", len(huyaIds)).
 			WithField("ytb订阅数", len(ytbIds))
 		if event.Operator == nil {
-			logger.Info("退出群聊")
+			log.Info("退出群聊")
 		} else {
-			logger.Infof("被 %v(%v) 踢出群聊", event.Operator.DisplayName(), event.Operator.Uin)
+			log.Infof("被 %v 踢出群聊", event.Operator.DisplayName())
 		}
 		l.RemoveAllByGroup(event.Group.Code)
 	})
@@ -596,6 +612,19 @@ func (l *Lsp) getConcernConfigNotifyManager(ctype concern.Type, concernConfig *c
 		return concernConfig
 	}
 }
+
+//
+//func (l *Lsp) IsPublicMode() bool {
+//	return l.LspStateManager.IsPublicMode()
+//}
+//
+//func (l *Lsp) IsProtectMode() bool {
+//	return l.LspStateManager.IsProtectMode()
+//}
+//
+//func (l *Lsp) IsPrivateMode() bool {
+//	return l.LspStateManager.IsPrivateMode()
+//}
 
 var Instance *Lsp
 

@@ -31,6 +31,9 @@ const (
 	SysinfoCommand       = "sysinfo"
 	WhosyourdaddyCommand = "whosyourdaddy"
 	QuitCommand          = "quit"
+	ModeCommand          = "mode"
+	GroupRequestCommand  = "群请求"
+	FriendRequestCommand = "好友请求"
 )
 
 var allGroupCommand = [...]string{
@@ -47,12 +50,15 @@ var allPrivateOperate = [...]string{
 	BlockCommand, SysinfoCommand, ListCommand,
 	WatchCommand, UnwatchCommand, DisableCommand,
 	EnableCommand, GrantCommand, ConfigCommand,
-	WhosyourdaddyCommand, QuitCommand,
+	WhosyourdaddyCommand, QuitCommand, ModeCommand,
+	GroupRequestCommand, FriendRequestCommand,
 }
 
 var nonOprateable = [...]string{
 	EnableCommand, DisableCommand, GrantCommand,
-	BlockCommand, LogCommand, PingCommand, WhosyourdaddyCommand, QuitCommand,
+	BlockCommand, LogCommand, PingCommand,
+	WhosyourdaddyCommand, QuitCommand, ModeCommand,
+	GroupRequestCommand, FriendRequestCommand,
 }
 
 func CheckValidCommand(command string) bool {

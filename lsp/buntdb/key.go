@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+type KeyPatternFunc func(...interface{}) string
+
 func Key(keys ...interface{}) string {
 	var _keys []string
 	for _, ikey := range keys {
@@ -159,6 +161,16 @@ func LoliconPoolStoreKey(keys ...interface{}) string {
 
 func ImageCacheKey(keys ...interface{}) string {
 	return NamedKey("ImageCache", keys)
+}
+
+func ModeKey() string {
+	return NamedKey("Mode", nil)
+}
+func NewFriendRequestKey(keys ...interface{}) string {
+	return NamedKey("NewFriendRequest", keys)
+}
+func GroupInvitedKey(keys ...interface{}) string {
+	return NamedKey("GroupInvited", keys)
 }
 
 func ParseConcernStateKeyWithInt64(key string) (groupCode int64, id int64, err error) {

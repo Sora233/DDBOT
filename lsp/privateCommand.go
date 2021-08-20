@@ -73,12 +73,6 @@ func (c *LspPrivateCommand) Execute() {
 	case "/help":
 		c.HelpCommand()
 	case "/block":
-		if !c.l.PermissionStateManager.RequireAny(
-			permission.AdminRoleRequireOption(c.uin()),
-		) {
-			c.noPermission()
-			return
-		}
 		c.BlockCommand()
 	case "/watch":
 		c.WatchCommand(false)
@@ -102,6 +96,12 @@ func (c *LspPrivateCommand) Execute() {
 		c.WhosyourdaddyCommand()
 	case "/quit":
 		c.QuitCommand()
+	case "/mode":
+		c.ModeCommand()
+	case "/群邀请":
+		c.GroupRequestCommand()
+	case "/好友申请":
+		c.FriendRequestCommand()
 	default:
 		c.textReply("阁下似乎输入了一个无法识别的命令，请使用/help命令查看帮助。")
 		log.Debug("no command matched")
@@ -514,6 +514,13 @@ func (c *LspPrivateCommand) BlockCommand() {
 	log.Info("run block command")
 	defer func() { log.Info("block command end") }()
 
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
 	var blockCmd struct {
 		Uin    int64 `arg:"" required:"" help:"the uin to block"`
 		Days   int   `optional:""`
@@ -570,6 +577,13 @@ func (c *LspPrivateCommand) LogCommand() {
 	log.Info("run log command")
 	defer func() { log.Info("log command end") }()
 
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
 	var logCmd struct {
 		N       int       `arg:"" optional:"" help:"the number of lines from tail"`
 		Date    time.Time `optional:"" short:"d" format:"2006-01-02"`
@@ -581,13 +595,6 @@ func (c *LspPrivateCommand) LogCommand() {
 		c.textSend(output)
 	}
 	if c.exit {
-		return
-	}
-
-	if !c.l.PermissionStateManager.RequireAny(
-		permission.AdminRoleRequireOption(c.uin()),
-	) {
-		c.noPermission()
 		return
 	}
 
@@ -637,6 +644,13 @@ func (c *LspPrivateCommand) QuitCommand() {
 	log.Info("run quit command")
 	defer func() { log.Info("quit command end") }()
 
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
 	var quitCmd struct {
 		GroupCode int64 `arg:"" optional:"" help:"要退出的群号"`
 		Force     bool  `optional:"" short:"f" help:"强制清除"`
@@ -647,13 +661,6 @@ func (c *LspPrivateCommand) QuitCommand() {
 		c.textSend(output)
 	}
 	if c.exit {
-		return
-	}
-
-	if !c.l.PermissionStateManager.RequireAny(
-		permission.AdminRoleRequireOption(c.uin()),
-	) {
-		c.noPermission()
 		return
 	}
 
@@ -689,6 +696,311 @@ func (c *LspPrivateCommand) QuitCommand() {
 	c.l.RemoveAllByGroup(quitCmd.GroupCode)
 	log.Debugf("已清除群【%v】的数据", displayName)
 	c.textSend(fmt.Sprintf("已清除群【%v】的数据", displayName))
+}
+
+func (c *LspPrivateCommand) ModeCommand() {
+	log := c.DefaultLoggerWithCommand(ModeCommand)
+	log.Info("run mode command")
+	defer func() { log.Info("mode command end") }()
+
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
+	var modeCmd struct {
+		Mode string `arg:"" optional:"" help:"指定切换模式，支持<公开> <私人> <审核>，默认为公开"`
+	}
+
+	_, output := c.parseCommandSyntax(&modeCmd, ModeCommand, kong.Description("切换BOT模式"), kong.UsageOnError())
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	if modeCmd.Mode == "" {
+		mode := c.l.LspStateManager.GetCurrentMode()
+		log.Infof("当前Mode为%v", mode)
+		switch c.l.LspStateManager.GetCurrentMode() {
+		case PublicMode:
+			c.textReply("当前模式为公开")
+		case PrivateMode:
+			c.textReply("当前模式为私人")
+		case ProtectMode:
+			c.textReply("当前模式为审核")
+		}
+		return
+	}
+
+	log = log.WithField("Mode", modeCmd.Mode)
+
+	var err error
+
+	switch modeCmd.Mode {
+	case "公开":
+		err = c.l.LspStateManager.SetMode(PublicMode)
+	case "私人":
+		err = c.l.LspStateManager.SetMode(PrivateMode)
+	case "审核":
+		err = c.l.LspStateManager.SetMode(ProtectMode)
+	default:
+		log.Errorf("未知的模式")
+		c.textSend(fmt.Sprintf("未知的模式【%v】，仅支持<公开> <私人> <审核>，请查看命令文档", modeCmd.Mode))
+		return
+	}
+	if err != nil {
+		log.Errorf("切换模式失败 %v", err)
+		c.textReply(fmt.Sprintf("切换模式失败 - %v", err))
+	} else {
+		log.Infof("切换到%v模式", modeCmd.Mode)
+		c.textReply(fmt.Sprintf("成功 - 切换到%v模式", modeCmd.Mode))
+	}
+}
+
+func (c *LspPrivateCommand) GroupRequestCommand() {
+	log := c.DefaultLoggerWithCommand(GroupRequestCommand)
+	log.Info("run GroupRequest command")
+	defer func() { log.Info("GroupRequest command end") }()
+
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
+	var groupRequestCmd struct {
+		RequestId int64    `arg:"" optional:"" help:"要处理的请求的RequestId"`
+		Reject    bool     `optional:"" short:"r" help:"拒绝请求"`
+		All       bool     `optional:"" short:"a" help:"处理全部"`
+		Message   []string `arg:"" optional:"" help:"拒绝理由"`
+	}
+
+	_, output := c.parseCommandSyntax(&groupRequestCmd, GroupRequestCommand, kong.Description("处理群邀请"), kong.UsageOnError())
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	msg := strings.Join(groupRequestCmd.Message, " ")
+
+	log = log.WithFields(logrus.Fields{
+		"Requestid": groupRequestCmd.RequestId,
+		"Reject":    groupRequestCmd.Reject,
+		"All":       groupRequestCmd.All,
+		"Message":   msg,
+	})
+
+	if groupRequestCmd.RequestId == 0 {
+		requests, err := c.l.LspStateManager.ListGroupInvitedRequest()
+		if err != nil {
+			log.Errorf("ListGroupInvitedRequest error - %v", err)
+			c.textReply(fmt.Sprintf("失败 - %v", err))
+			return
+		}
+
+		if len(requests) == 0 {
+			log.Infof("没有查询到加群邀请")
+			c.textReply("没有查询到加群邀请")
+			return
+		}
+
+		if groupRequestCmd.Reject {
+			// 拒绝全部？
+			if !groupRequestCmd.All {
+				log.Info("拒绝全部加群邀请需要确认")
+				c.textReply(fmt.Sprintf("您似乎想要拒绝全部%v个加群邀请，如果确定想这样做，请输入：\n%v --all %v", len(requests), c.GetCmd(), strings.Join(c.GetArgs(), " ")))
+				return
+			}
+			// 拒绝全部！
+			log.Info("确认拒绝全部加群邀请")
+			for _, req := range requests {
+				log.Debugf("正在拒绝%v(%v)的加群%v(%v)邀请", req.InvitorNick, req.InvitorUin, req.GroupName, req.GroupCode)
+				c.bot.SolveGroupJoinRequest(req, false, false, msg)
+				if err := c.l.LspStateManager.DeleteGroupInvitedRequest(req.RequestId); err != nil {
+					log.Errorf("DeleteGroupInvitedRequest error %v", err)
+				}
+			}
+			log.Infof("已拒绝%v个加群邀请", len(requests))
+			c.textReply(fmt.Sprintf("成功 - 已拒绝全部%v个加群邀请", len(requests)))
+			return
+		}
+
+		if groupRequestCmd.All {
+			// 接受全部！
+			for _, req := range requests {
+				log.Infof("正在接受%v(%v)的加群%v(%v)邀请", req.InvitorNick, req.InvitorUin, req.GroupName, req.GroupCode)
+				c.bot.SolveGroupJoinRequest(req, true, false, "")
+				if err := c.l.LspStateManager.DeleteGroupInvitedRequest(req.RequestId); err != nil {
+					log.Errorf("DeleteGroupInvitedRequest error %v", err)
+				}
+			}
+			log.Infof("已接受%v个加群邀请", len(requests))
+			c.textReply(fmt.Sprintf("成功 - 已接受全部%v个加群邀请", len(requests)))
+			return
+		}
+
+		// 展示加群邀请
+		var sb strings.Builder
+		for _, req := range requests {
+			sb.WriteString(fmt.Sprintf("ID:%v %v(%v) 邀请加入群 %v(%v)\n", req.RequestId, req.InvitorNick, req.InvitorUin, req.GroupName, req.GroupCode))
+		}
+		log.Infof("查询到%v个加群邀请", len(requests))
+		c.textReply(sb.String())
+	} else {
+		request, err := c.l.LspStateManager.GetGroupInvitedRequest(groupRequestCmd.RequestId)
+		if err == buntdb.ErrNotFound {
+			log.Errorf("处理加群邀请失败 - 未找到该邀请")
+			c.textReply(fmt.Sprintf("失败 - 未找到该邀请【%v】", groupRequestCmd.RequestId))
+			return
+		} else if err != nil {
+			log.Errorf("GetGroupInvitedRequest error %v", err)
+			c.textReply(fmt.Sprintf("失败 - 内部错误"))
+			return
+		}
+		log := log.WithFields(logrus.Fields{
+			"GroupName":   request.GroupName,
+			"GroupCode":   request.GroupCode,
+			"InvitorUin":  request.InvitorUin,
+			"InvitorNick": request.InvitorNick,
+		})
+		if groupRequestCmd.Reject {
+			c.bot.SolveGroupJoinRequest(request, false, false, msg)
+			log.Info("拒绝加群邀请成功")
+			c.textReply(fmt.Sprintf("成功- 已拒绝 %v(%v) 邀请加群 %v(%v)", request.InvitorNick, request.InvitorUin, request.GroupName, request.GroupCode))
+		} else {
+			c.bot.SolveGroupJoinRequest(request, true, false, "")
+			log.Info("接受加群请求成功")
+			c.textReply(fmt.Sprintf("成功 - 已接受 %v(%v) 邀请加群 %v(%v)", request.InvitorNick, request.InvitorUin, request.GroupName, request.GroupCode))
+		}
+		if err := c.l.LspStateManager.DeleteGroupInvitedRequest(request.RequestId); err != nil {
+			log.Errorf("DeleteGroupInvitedRequest error %v", err)
+		}
+	}
+}
+
+func (c *LspPrivateCommand) FriendRequestCommand() {
+	log := c.DefaultLoggerWithCommand(FriendRequestCommand)
+	log.Info("run FriendRequestCommand command")
+	defer func() { log.Info("FriendRequestCommand command end") }()
+
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
+	var friendRequestCmd struct {
+		RequestId int64 `arg:"" optional:"" help:"要处理的请求的RequestId"`
+		Reject    bool  `optional:"" short:"r" help:"拒绝请求"`
+		All       bool  `optional:"" short:"a" help:"处理全部"`
+	}
+
+	_, output := c.parseCommandSyntax(&friendRequestCmd, FriendRequestCommand, kong.Description("处理好友请求"), kong.UsageOnError())
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	log = log.WithFields(logrus.Fields{
+		"Requestid": friendRequestCmd.RequestId,
+		"Reject":    friendRequestCmd.Reject,
+		"All":       friendRequestCmd.All,
+	})
+
+	if friendRequestCmd.RequestId == 0 {
+		requests, err := c.l.LspStateManager.ListNewFriendRequest()
+		if err != nil {
+			log.Errorf("ListNewFriendRequest error - %v", err)
+			c.textReply(fmt.Sprintf("失败 - %v", err))
+			return
+		}
+
+		if len(requests) == 0 {
+			log.Infof("没有查询到好友申请")
+			c.textReply("没有查询到好友申请")
+			return
+		}
+
+		if friendRequestCmd.Reject {
+			if !friendRequestCmd.All {
+				log.Info("拒绝全部好友申请需要确认")
+				c.textReply(fmt.Sprintf("您似乎想要拒绝全部%v个好友申请，如果确定想这样做，请输入：\n%v --all %v", len(requests), c.GetCmd(), strings.Join(c.GetArgs(), " ")))
+				return
+			}
+			log.Info("确认拒绝全部好友申请")
+			for _, req := range requests {
+				log.Debugf("正在拒绝%v(%v)的好友申请", req.RequesterNick, req.RequesterUin)
+				c.bot.SolveFriendRequest(req, false)
+				if err := c.l.LspStateManager.DeleteNewFriendRequest(req.RequestId); err != nil {
+					log.Errorf("DeleteNewFriendRequest error %v", err)
+				}
+			}
+			log.Infof("已拒绝%v个好友申请", len(requests))
+			c.textReply(fmt.Sprintf("成功 - 已拒绝全部%v个好友申请", len(requests)))
+			return
+		}
+
+		if friendRequestCmd.All {
+			// 接受全部！
+			for _, req := range requests {
+				log.Debugf("正在接受%v(%v)的好友申请", req.RequesterNick, req.RequesterUin)
+				c.bot.SolveFriendRequest(req, true)
+				if err := c.l.LspStateManager.DeleteNewFriendRequest(req.RequestId); err != nil {
+					log.Errorf("DeleteNewFriendRequest error %v", err)
+				}
+			}
+			log.Infof("已接受%v个好友申请", len(requests))
+			c.textReply(fmt.Sprintf("成功 - 已接受全部%v个好友申请", len(requests)))
+			return
+		}
+
+		// 展示好友申请
+		var sb strings.Builder
+		for _, req := range requests {
+			sb.WriteString(fmt.Sprintf("ID:%v %v(%v)申请好友\n", req.RequestId, req.RequesterNick, req.RequesterUin))
+		}
+		log.Infof("查询到%v个好友申请", len(requests))
+		c.textReply(sb.String())
+	} else {
+		request, err := c.l.LspStateManager.GetNewFriendRequest(friendRequestCmd.RequestId)
+		if err == buntdb.ErrNotFound {
+			log.Errorf("处理好友申请失败 - 未找到该好友申请")
+			c.textReply(fmt.Sprintf("失败 - 未找到该好友申请【%v】", friendRequestCmd.RequestId))
+			return
+		} else if err != nil {
+			log.Errorf("GetNewFriendRequest error %v", err)
+			c.textReply(fmt.Sprintf("失败 - 内部错误"))
+			return
+		}
+
+		log := log.WithFields(logrus.Fields{
+			"RequesterNick": request.RequesterNick,
+			"RequesterUin":  request.RequesterUin,
+		})
+
+		if friendRequestCmd.Reject {
+			c.bot.SolveFriendRequest(request, false)
+			log.Info("拒绝好友申请")
+			c.textReply(fmt.Sprintf("成功 - 已拒绝 %v(%v) 的好友申请", request.RequesterNick, request.RequesterUin))
+		} else {
+			c.bot.SolveFriendRequest(request, true)
+			log.Info("接受好友申请")
+			c.textReply(fmt.Sprintf("成功 - 已接受 %v(%v) 的好友申请", request.RequesterNick, request.RequesterUin))
+		}
+		if err := c.l.LspStateManager.DeleteNewFriendRequest(request.RequestId); err != nil {
+			log.Errorf("DeleteNewFriendRequest error %v", err)
+		}
+	}
 }
 
 func (c *LspPrivateCommand) PingCommand() {
