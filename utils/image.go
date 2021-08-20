@@ -199,10 +199,20 @@ func MergeImages(images [][]byte) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("DecodeConfig failed %v", err)
 		}
-		minSize := cfg.Width
+		var minSize = cfg.Width
 		if minSize > cfg.Height {
 			minSize = cfg.Height
 		}
+
+		var Dx int
+
+		if cfg.Width > cfg.Height {
+			Dx = (cfg.Width - minSize) / 2
+		}
+		if Dx < 0 {
+			Dx = 0
+		}
+
 		img, _, err := image.Decode(bytes.NewReader(imgBytes))
 		if err != nil {
 			return nil, fmt.Errorf("Decode failed %v", err)
@@ -210,7 +220,7 @@ func MergeImages(images [][]byte) ([]byte, error) {
 		if cfg.Width == cfg.Height {
 			img = resize.Resize(uint(subImageSize), uint(subImageSize), img, resize.Lanczos3)
 		} else {
-			img = resize.Resize(uint(subImageSize), uint(subImageSize), SubImage(img, image.Rect(0, 0, minSize, minSize)), resize.Lanczos3)
+			img = resize.Resize(uint(subImageSize), uint(subImageSize), SubImage(img, image.Rect(Dx, 0, minSize+Dx, minSize)), resize.Lanczos3)
 		}
 		si := i / columns
 		sj := i % columns
