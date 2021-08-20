@@ -32,7 +32,7 @@ const (
 	WhosyourdaddyCommand = "whosyourdaddy"
 	QuitCommand          = "quit"
 	ModeCommand          = "mode"
-	GroupRequestCommand  = "群请求"
+	GroupRequestCommand  = "群邀请"
 	FriendRequestCommand = "好友请求"
 )
 
