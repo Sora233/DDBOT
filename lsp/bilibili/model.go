@@ -439,19 +439,6 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 					result = append(result, cover)
 				}
 			}
-		case DynamicDescType_WithAnime:
-			origin := new(CardWithAnime)
-			err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
-			if err != nil {
-				log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithAnime failed %v", err)
-				return
-			}
-			result = append(result, localutils.MessageTextf("%v转发了%v【%v】：\n%v\n%v\n", notify.Name,
-				origin.GetApiSeasonInfo().GetTypeName(),
-				origin.GetApiSeasonInfo().GetTitle(),
-				date,
-				cardOrigin.GetItem().GetContent()),
-			)
 		case DynamicDescType_WithSketch:
 			origin := new(CardWithSketch)
 			err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
@@ -519,8 +506,27 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 		case DynamicDescType_WithMiss:
 			result = append(result, localutils.MessageTextf("%v分享了动态：\n%v\n%v\n\n%v\n", notify.Name, date, cardOrigin.GetItem().GetContent(), cardOrigin.GetItem().GetTips()))
 		default:
-			log.WithField("content", card.GetCard()).Info("found new type with origin")
-			result = append(result, localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+			// 试试media
+			origin := new(CardWithMedia)
+			err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
+			if err == nil {
+				result = append(result, localutils.MessageTextf("%v转发了%v【%v】%v：\n%v\n%v\n", notify.Name,
+					origin.GetApiSeasonInfo().GetTypeName(),
+					origin.GetApiSeasonInfo().GetTitle(),
+					origin.GetIndex(),
+					date,
+					cardOrigin.GetItem().GetContent()),
+				)
+				groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetCover(), true, proxy_pool.PreferNone)
+				if err != nil {
+					log.WithField("origin", cardOrigin.GetOrigin()).Errorf("upload CardWithMedia cover failed %v", err)
+				} else {
+					result = append(result, groupImage)
+				}
+			} else {
+				log.WithField("content", card.GetCard()).Info("found new type with origin")
+				result = append(result, localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+			}
 		}
 	case DynamicDescType_WithImage:
 		cardImage, err := card.GetCardWithImage()

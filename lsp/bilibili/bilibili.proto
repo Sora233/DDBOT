@@ -37,8 +37,11 @@ enum DynamicDescType {
   WithMiss = 1024;
   // 评分、头像挂件，这种动态下面有一个小卡片的
   WithSketch = 2048;
-  // 首次发现于综艺
+  WithMovie = 4098;
+  // 电视剧、综艺
   WithDrama = 4099;
+  // 4100去哪了捏
+  WithDocumentary = 4101;
   WithLive = 4200;
   // XXX的收藏夹，收藏夹居然也可以发动态？
   WithMylist = 4300;
@@ -547,7 +550,8 @@ message CardWithMusic {
   string upperAvatar = 14;
 }
 
-message CardWithAnime {
+// 包括动漫，纪录片，电影等，总之可以解析试试
+message CardWithMedia {
   message ApiSeasonInfo {
     int64 bgm_type = 1;
     string cover = 2;
