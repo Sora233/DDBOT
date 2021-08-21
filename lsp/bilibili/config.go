@@ -91,11 +91,6 @@ func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concer
 
 func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concern_manager.HookResult) {
 	hook = new(concern_manager.HookResult)
-	// 没设置过滤，pass
-	if g.GroupConcernFilter.Empty() {
-		hook.Pass = true
-		return
-	}
 	switch n := notify.(type) {
 	case *ConcernLiveNotify:
 		hook.Pass = true
@@ -106,6 +101,13 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 			hook.Reason = "WithLiveV2 news notify filtered"
 			return
 		}
+
+		// 没设置过滤，pass
+		if g.GroupConcernFilter.Empty() {
+			hook.Pass = true
+			return
+		}
+
 		logger := notify.Logger().WithField("FilterType", g.GroupConcernFilter.Type)
 		switch g.GroupConcernFilter.Type {
 		case concern_manager.FilterTypeText:
