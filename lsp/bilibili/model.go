@@ -510,10 +510,14 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 			origin := new(CardWithMedia)
 			err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
 			if err == nil {
+				var desc = origin.GetNewDesc()
+				if len(desc) == 0 {
+					desc = origin.GetIndex()
+				}
 				result = append(result, localutils.MessageTextf("%v转发了%v【%v】%v：\n%v\n%v\n", notify.Name,
 					origin.GetApiSeasonInfo().GetTypeName(),
 					origin.GetApiSeasonInfo().GetTitle(),
-					origin.GetIndex(),
+					desc,
 					date,
 					cardOrigin.GetItem().GetContent()),
 				)
