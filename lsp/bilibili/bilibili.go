@@ -23,17 +23,17 @@ const (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 var BasePath = map[string]string{
-	PathRoomInit:               BaseLiveHost,
-	PathXSpaceAccInfo:          BaseHost,
-	PathDynamicSrvSpaceHistory: BaseVCHost,
-	PathGetRoomInfoOld:         BaseLiveHost,
-	PathDynamicSrvDynamicNew:   BaseVCHost,
-	PathRelationModify:         BaseHost,
-	PathRelationFeedList:       BaseLiveHost,
-	PathGetAttentionList:       BaseVCHost,
-	PathOAuth2GetKey:           PassportHost,
-	PathV3OAuth2Login:          PassportHost,
-	PathXRelationStat:          BaseHost,
+	PathRoomInit:                 BaseLiveHost,
+	PathXSpaceAccInfo:            BaseHost,
+	PathDynamicSrvSpaceHistory:   BaseVCHost,
+	PathGetRoomInfoOld:           BaseLiveHost,
+	PathDynamicSrvDynamicNew:     BaseVCHost,
+	PathRelationModify:           BaseHost,
+	PathRelationFeedList:         BaseLiveHost,
+	PathGetAttentionList:         BaseVCHost,
+	PathPassportLoginWebKey:      PassportHost,
+	PathPassportLoginOAuth2Login: PassportHost,
+	PathXRelationStat:            BaseHost,
 }
 
 var (

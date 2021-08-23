@@ -18,16 +18,16 @@ import (
 )
 
 const (
-	Appkey            = "aae92bc66f3edfab"
-	Salt              = "af125a0d5279fd576c1b4418a3e8276d"
-	PathOAuth2GetKey  = "/api/oauth2/getKey"
-	PathV3OAuth2Login = "/api/v3/oauth2/login"
+	Appkey                       = "aae92bc66f3edfab"
+	Salt                         = "af125a0d5279fd576c1b4418a3e8276d"
+	PathPassportLoginWebKey      = "/x/passport-login/web/key"
+	PathPassportLoginOAuth2Login = "/x/passport-login/oauth2/login"
 )
 
 func NewLoginRequest(username string, encryptedPassword string) *LoginRequest {
 	return &LoginRequest{
 		Appkey:     Appkey,
-		Build:      6040500,
+		Build:      6270200,
 		Channel:    "bili",
 		Device:     "phone",
 		Password:   encryptedPassword,
@@ -84,7 +84,7 @@ func Login(username string, password string) (*LoginResponse, error) {
 		AddReferOption(),
 	)
 
-	resp, err := requests.Post(ctx, BPath(PathV3OAuth2Login), formReq, 3, opts...)
+	resp, err := requests.Post(ctx, BPath(PathPassportLoginOAuth2Login), formReq, 3, opts...)
 	if err != nil {
 		logger.Errorf("requests post error %v", err)
 		return nil, err
@@ -140,7 +140,7 @@ func GetKey() (*GetKeyResponse, error) {
 		ed := time.Now()
 		logger.Tracef("cost %v", ed.Sub(st))
 	}()
-	url := BPath(PathOAuth2GetKey)
+	url := BPath(PathPassportLoginWebKey)
 	var opts []requests.Option
 	opts = append(opts,
 		requests.ProxyOption(proxy_pool.PreferNone),
@@ -152,11 +152,11 @@ func GetKey() (*GetKeyResponse, error) {
 		Appkey: Appkey,
 		Sign:   Sign(fmt.Sprintf("appkey=%v", Appkey)),
 	}
-	reqData, err := utils.ToDatas(req)
+	reqData, err := utils.ToParams(req)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Post(ctx, url, reqData, 3, opts...)
+	resp, err := requests.Get(ctx, url, reqData, 3, opts...)
 	if err != nil {
 		return nil, err
 	}
