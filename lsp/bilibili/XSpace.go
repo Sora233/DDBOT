@@ -36,7 +36,7 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 		requests.TimeoutOption(time.Second * 5),
 		AddUAOption(),
 	}
-	opts = append(opts, AddVerifyOption()...)
+	opts = append(opts, GetVerifyOption()...)
 	resp, err := requests.Get(ctx, url, params, 1, opts...)
 	if err != nil {
 		return nil, err

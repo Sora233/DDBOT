@@ -80,7 +80,13 @@ func (l *Lsp) Init() {
 		panic(err)
 	}
 
-	bilibili.SetVerify(config.GlobalConfig.GetString("bilibili.SESSDATA"), config.GlobalConfig.GetString("bilibili.bili_jct"))
+	var (
+		SESSDATA = config.GlobalConfig.GetString("bilibili.SESSDATA")
+		biliJct  = config.GlobalConfig.GetString("bilibili.bili_jct")
+	)
+	if len(SESSDATA) != 0 && len(biliJct) != 0 {
+		bilibili.SetVerify(SESSDATA, biliJct)
+	}
 	bilibili.SetAccount(config.GlobalConfig.GetString("bilibili.account"), config.GlobalConfig.GetString("bilibili.password"))
 
 	keyId := config.GlobalConfig.GetString("aliyun.accessKeyID")

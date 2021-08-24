@@ -64,7 +64,7 @@ func FeedList(opt ...FeedOpt) (*FeedListResponse, error) {
 		AddUAOption(),
 		requests.TimeoutOption(time.Second*3),
 	)
-	opts = append(opts, AddVerifyOption()...)
+	opts = append(opts, GetVerifyOption()...)
 	resp, err := requests.Get(ctx, url, params, 1, opts...)
 	if err != nil {
 		return nil, err

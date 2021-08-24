@@ -30,7 +30,7 @@ func GetAttentionList() (*GetAttentionListResponse, error) {
 		AddUAOption(),
 		requests.TimeoutOption(time.Second*3),
 	)
-	opts = append(opts, AddVerifyOption()...)
+	opts = append(opts, GetVerifyOption()...)
 	resp, err := requests.Get(ctx, url, nil, 3, opts...)
 	if err != nil {
 		return nil, err

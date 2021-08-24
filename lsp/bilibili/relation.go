@@ -45,7 +45,7 @@ func RelationModify(fid int64, act int) (*RelationModifyResponse, error) {
 		Fid:   fid,
 		Act:   act,
 		ReSrc: 11,
-		Csrf:  biliJct,
+		Csrf:  GetVerifyBiliJct(),
 	}
 	form, err := utils.ToDatas(formRequest)
 	if err != nil {
@@ -57,7 +57,7 @@ func RelationModify(fid int64, act int) (*RelationModifyResponse, error) {
 		requests.TimeoutOption(time.Second*5),
 		AddUAOption(),
 	)
-	opts = append(opts, AddVerifyOption()...)
+	opts = append(opts, GetVerifyOption()...)
 	resp, err := requests.Post(ctx, url, form, 1,
 		opts...,
 	)
