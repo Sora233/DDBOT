@@ -505,11 +505,14 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 			}
 		case DynamicDescType_WithMiss:
 			result = append(result, localutils.MessageTextf("%v分享了动态：\n%v\n%v\n\n%v\n", notify.Name, date, cardOrigin.GetItem().GetContent(), cardOrigin.GetItem().GetTips()))
+		case DynamicDescType_WithOrigin:
+			// 麻了，套起来了
+			result = append(result, localutils.MessageTextf("%v转发了%v的动态：%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
 		default:
 			// 试试media
 			origin := new(CardWithMedia)
 			err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
-			if err == nil {
+			if err == nil && origin.GetApiSeasonInfo() != nil {
 				var desc = origin.GetNewDesc()
 				if len(desc) == 0 {
 					desc = origin.GetIndex()
