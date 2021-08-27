@@ -3,6 +3,7 @@ package bilibili
 import (
 	"errors"
 	"fmt"
+	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Sora233/DDBOT/requests"
 	jsoniter "github.com/json-iterator/go"
 	"strconv"
@@ -53,6 +54,18 @@ var (
 	username string
 	password string
 )
+
+func Init() {
+	var (
+		SESSDATA = config.GlobalConfig.GetString("bilibili.SESSDATA")
+		biliJct  = config.GlobalConfig.GetString("bilibili.bili_jct")
+	)
+	if len(SESSDATA) != 0 && len(biliJct) != 0 {
+		SetVerify(SESSDATA, biliJct)
+	}
+	SetAccount(config.GlobalConfig.GetString("bilibili.account"), config.GlobalConfig.GetString("bilibili.password"))
+
+}
 
 func BPath(path string) string {
 	if strings.HasPrefix(path, "/") {

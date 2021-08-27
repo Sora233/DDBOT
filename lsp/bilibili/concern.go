@@ -82,13 +82,13 @@ func (c *Concern) Start() {
 
 	go c.watchCore()
 	go func() {
-		c.syncSub()
+		c.SyncSub()
 
 		tick := time.Tick(time.Hour)
 		for {
 			select {
 			case <-tick:
-				c.syncSub()
+				c.SyncSub()
 			case <-c.stop:
 				return
 			}
@@ -569,17 +569,17 @@ func (c *Concern) ModifyUserRelation(mid int64, act int) (*RelationModifyRespons
 	return resp, nil
 }
 
-func (c *Concern) syncSub() {
-	defer logger.Debug("syncSub done")
+func (c *Concern) SyncSub() {
+	defer logger.Debug("SyncSub done")
 	resp, err := GetAttentionList()
 	if err != nil {
-		logger.Errorf("syncSub error %v", err)
+		logger.Errorf("SyncSub error %v", err)
 		return
 	}
 	if resp.GetCode() != 0 {
 		logger.WithField("code", resp.GetCode()).
 			WithField("msg", resp.GetMessage()).
-			Errorf("syncSub GetAttentionList error")
+			Errorf("SyncSub GetAttentionList error")
 		return
 	}
 	var midSet = make(map[int64]bool)
@@ -590,7 +590,7 @@ func (c *Concern) syncSub() {
 	})
 
 	if err != nil {
-		logger.Errorf("syncSub List all error %v", err)
+		logger.Errorf("SyncSub List all error %v", err)
 		return
 	}
 	for _, attentionMid := range resp.GetData().GetList() {

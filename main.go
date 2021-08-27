@@ -6,6 +6,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/lsp"
+	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/alecthomas/kong"
@@ -54,10 +55,11 @@ func init() {
 
 func main() {
 	var cli struct {
-		Play     bool  `optional:"" help:"run the play function"`
-		Debug    bool  `optional:"" help:"enable debug mode"`
-		SetAdmin int64 `optional:"" xor:"c" help:"set QQ number to Admin"`
-		Version  bool  `optional:"" xor:"c" short:"v" help:"print the version info"`
+		Play         bool  `optional:"" help:"运行play函数，适用于测试和开发"`
+		Debug        bool  `optional:"" help:"启动debug模式"`
+		SetAdmin     int64 `optional:"" xor:"c" help:"这只admin权限"`
+		Version      bool  `optional:"" xor:"c" short:"v" help:"打印版本信息"`
+		SyncBilibili bool  `optional:"" xor:"c" help:"同步b站帐号的关注，适用于更换或迁移b站帐号的时候"`
 	}
 	kong.Parse(&cli)
 
@@ -75,18 +77,9 @@ func main() {
 		fmt.Println("检测到device.json，使用存在的device.json")
 	}
 
-	if b, _ := utils.FileExist("application.yaml"); !b {
-		fmt.Println("警告：没有检测到配置文件application.yaml，正在生成，如果是第一次运行，可忽略")
-		if err := ioutil.WriteFile("application.yaml", []byte(exampleConfig), 0755); err != nil {
-			fmt.Printf("application.yaml生成失败 - %v\n", err)
-		} else {
-			fmt.Println("最小配置application.yaml已生成，请按需修改，如需高级配置请查看帮助文档")
-		}
-	}
-
 	if cli.SetAdmin != 0 {
 		if err := localdb.InitBuntDB(""); err != nil {
-			fmt.Println("can not init buntdb")
+			fmt.Printf("初始化Buntdb失败 %v\n", err)
 			os.Exit(1)
 		}
 		defer localdb.Close()
@@ -94,9 +87,33 @@ func main() {
 		err := sm.GrantRole(cli.SetAdmin, permission.Admin)
 		if err != nil {
 			fmt.Printf("set role failed %v\n", err)
-			os.Exit(1)
 		}
 		return
+	}
+
+	if cli.SyncBilibili {
+		config.Init()
+		if err := localdb.InitBuntDB(""); err != nil {
+			fmt.Printf("初始化buntdb失败 %v \n", err)
+			return
+		}
+		defer localdb.Close()
+		c := bilibili.NewConcern(nil)
+		if err := c.StateManager.Start(); err != nil {
+			fmt.Printf("启动bilibili StateManager失败 %v\n", err)
+		}
+		bilibili.Init()
+		c.SyncSub()
+		return
+	}
+
+	if b, _ := utils.FileExist("application.yaml"); !b {
+		fmt.Println("警告：没有检测到配置文件application.yaml，正在生成，如果是第一次运行，可忽略")
+		if err := ioutil.WriteFile("application.yaml", []byte(exampleConfig), 0755); err != nil {
+			fmt.Printf("application.yaml生成失败 - %v\n", err)
+		} else {
+			fmt.Println("最小配置application.yaml已生成，请按需修改，如需高级配置请查看帮助文档")
+		}
 	}
 
 	if Tags != "UNKNOWN" {

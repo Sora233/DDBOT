@@ -71,23 +71,16 @@ func (l *Lsp) Init() {
 	lev, err := logrus.ParseLevel(config.GlobalConfig.GetString("logLevel"))
 	if err != nil {
 		logrus.SetLevel(logrus.DebugLevel)
-		log.Warn("unknown log level")
+		log.Warn("无法识别logLevel，将使用Debug级别")
 	} else {
 		logrus.SetLevel(lev)
-		log.Info("set log level")
+		log.Infof("设置logLevel为%v", lev.String())
 	}
 	if err := localdb.InitBuntDB(""); err != nil {
 		panic(err)
 	}
 
-	var (
-		SESSDATA = config.GlobalConfig.GetString("bilibili.SESSDATA")
-		biliJct  = config.GlobalConfig.GetString("bilibili.bili_jct")
-	)
-	if len(SESSDATA) != 0 && len(biliJct) != 0 {
-		bilibili.SetVerify(SESSDATA, biliJct)
-	}
-	bilibili.SetAccount(config.GlobalConfig.GetString("bilibili.account"), config.GlobalConfig.GetString("bilibili.password"))
+	bilibili.Init()
 
 	keyId := config.GlobalConfig.GetString("aliyun.accessKeyID")
 	keySecret := config.GlobalConfig.GetString("aliyun.accessKeySecret")
@@ -95,7 +88,7 @@ func (l *Lsp) Init() {
 		aliyun.InitAliyun(keyId, keySecret)
 		l.status.AliyunEnable = true
 	} else {
-		log.Debug("aliyun not init, some feature is not usable")
+		log.Debug("未配置阿里云，一些次要功能将无法使用")
 	}
 
 	l.PermissionStateManager = permission.NewStateManager()
@@ -120,22 +113,22 @@ func (l *Lsp) Init() {
 			log.Errorf("can not init pool %v", err)
 		} else {
 			l.pool = pool
-			log.Debugf("init image pool")
+			log.Infof("初始化%v图片池", imagePoolType)
 			l.status.ImagePoolEnable = true
 		}
 	case "localPool":
 		pool, err := local_pool.NewLocalPool(config.GlobalConfig.GetString("localPool.imageDir"))
 		if err != nil {
-			log.Errorf("can not init pool %v", err)
+			log.Errorf("初始化%v图片池失败 %v", imagePoolType, err)
 		} else {
 			l.pool = pool
-			log.Debugf("init image pool")
+			log.Infof("初始化%v图片池", imagePoolType)
 			l.status.ImagePoolEnable = true
 		}
 	case "off":
-		log.Debug("image pool turn off")
+		log.Debug("关闭图片池")
 	default:
-		log.Errorf("unknown pool")
+		log.Errorf("未知的图片池")
 	}
 
 	proxyType := config.GlobalConfig.GetString("proxy.type")
