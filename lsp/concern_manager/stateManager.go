@@ -360,20 +360,25 @@ func (c *StateManager) FreshIndex(groups ...int64) {
 	db.CreateIndex(c.GroupConcernConfigKey(), c.GroupConcernConfigKey("*"), buntdb.IndexString)
 	db.CreateIndex(c.GroupAtAllMarkKey(), c.GroupAtAllMarkKey("*"), buntdb.IndexString)
 	db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
+	var groupSet = make(map[int64]interface{})
 	if len(groups) == 0 {
 		for _, groupInfo := range miraiBot.Instance.GroupList {
-			db.CreateIndex(c.GroupConcernStateKey(groupInfo.Code), c.GroupConcernStateKey(groupInfo.Code, "*"), buntdb.IndexString)
-			db.CreateIndex(c.GroupConcernConfigKey(groupInfo.Code), c.GroupConcernConfigKey(groupInfo.Code, "*"), buntdb.IndexString)
-			db.CreateIndex(c.GroupAtAllMarkKey(groupInfo.Code), c.GroupAtAllMarkKey(groupInfo.Code, "*"), buntdb.IndexString)
-			db.CreateIndex(c.FreshKey(groupInfo.Code), c.FreshKey(groupInfo.Code, "*"), buntdb.IndexString)
+			groupSet[groupInfo.Code] = struct{}{}
 		}
 	} else {
 		for _, g := range groups {
-			db.CreateIndex(c.GroupConcernStateKey(g), c.GroupConcernStateKey(g, "*"), buntdb.IndexString)
-			db.CreateIndex(c.GroupConcernConfigKey(g), c.GroupConcernConfigKey(g, "*"), buntdb.IndexString)
-			db.CreateIndex(c.GroupAtAllMarkKey(g), c.GroupAtAllMarkKey(g, "*"), buntdb.IndexString)
-			db.CreateIndex(c.FreshKey(g), c.FreshKey(g, "*"), buntdb.IndexString)
+			groupSet[g] = struct{}{}
 		}
+	}
+	c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+		groupSet[groupCode] = struct{}{}
+		return true
+	})
+	for g := range groupSet {
+		db.CreateIndex(c.GroupConcernStateKey(g), c.GroupConcernStateKey(g, "*"), buntdb.IndexString)
+		db.CreateIndex(c.GroupConcernConfigKey(g), c.GroupConcernConfigKey(g, "*"), buntdb.IndexString)
+		db.CreateIndex(c.GroupAtAllMarkKey(g), c.GroupAtAllMarkKey(g, "*"), buntdb.IndexString)
+		db.CreateIndex(c.FreshKey(g), c.FreshKey(g, "*"), buntdb.IndexString)
 	}
 }
 
