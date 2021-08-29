@@ -421,6 +421,8 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 	l.youtubeConcern.Start()
 	l.huyaConcern.Start()
 	l.started = true
+	logger.Infof("DDBOT启动完成")
+	logger.Infof("D宝，一款真正人性化的单推BOT")
 }
 
 func (l *Lsp) Start(bot *bot.Bot) {
