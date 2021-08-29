@@ -199,14 +199,16 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			c.TextReply(fmt.Sprintf("watch失败 - %v", err))
 			return
 		}
-		// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
-		liveInfo, _ := c.Lsp.bilibiliConcern.GetLiveInfo(mid)
-		if liveInfo != nil && liveInfo.Living() {
-			if c.IsFromGroup() {
-				defer c.Lsp.bilibiliConcern.GroupWatchNotify(groupCode, mid, watchType)
-			}
-			if c.IsFromPrivate() {
-				defer c.TextReply("检测到该用户正在直播，但由于您目前处于私聊模式，因此不会在群内推送本次直播，将在该用户下次直播时推送")
+		if watchType.ContainAny(concern.BibiliLive) {
+			// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
+			liveInfo, _ := c.Lsp.bilibiliConcern.GetLiveInfo(mid)
+			if liveInfo != nil && liveInfo.Living() {
+				if c.IsFromGroup() {
+					defer c.Lsp.bilibiliConcern.GroupWatchNotify(groupCode, mid)
+				}
+				if c.IsFromPrivate() {
+					defer c.TextReply("检测到该用户正在直播，但由于您目前处于私聊模式，因此不会在群内推送本次直播，将在该用户下次直播时推送")
+				}
 			}
 		}
 		log = log.WithField("name", userInfo.Name)

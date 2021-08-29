@@ -674,12 +674,10 @@ func (c *Concern) FindUserNews(mid int64, load bool) (*NewsInfo, error) {
 	return c.StateManager.GetNewsInfo(mid)
 }
 
-func (c *Concern) GroupWatchNotify(groupCode, mid int64, ctype concern.Type) {
-	if ctype.ContainAny(concern.BibiliLive) {
-		liveInfo, _ := c.GetLiveInfo(mid)
-		if liveInfo.Living() {
-			liveInfo.LiveStatusChanged = true
-			c.notify <- NewConcernLiveNotify(groupCode, liveInfo)
-		}
+func (c *Concern) GroupWatchNotify(groupCode, mid int64) {
+	liveInfo, _ := c.GetLiveInfo(mid)
+	if liveInfo.Living() {
+		liveInfo.LiveStatusChanged = true
+		c.notify <- NewConcernLiveNotify(groupCode, liveInfo)
 	}
 }
