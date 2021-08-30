@@ -94,3 +94,12 @@ bilibili:
 如果您是刚开始使用BOT，大概是因为qq账号被风控导致，建议使用bot挂机3-7天（期间请不要使用bot的功能，否则可能导致封号），即可解除风控。
 
 如果仍出现问题，请删除`device.json`文件，重复上面的步骤。
+
+### Q：我下载的DDBOT程序应该如何运行？
+
+检查您是否下载了正确的程序，windows程序应该有.exe后缀。
+
+- 根据系统选择windows / linux / darwin
+- 根据架构选择 32位->386 / 64位->amd64 / arm->arm
+
+例如您的系统是windows 11/10/7/server，64位则选择windows-amd64下载，32位则选择windows-386下载。
