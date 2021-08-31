@@ -1,6 +1,7 @@
 package test
 
 import (
+	"github.com/Sora233/DDBOT/concern"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -32,6 +33,15 @@ const (
 
 	ID1 = 2001
 	ID2 = 2002
+)
+
+const (
+	BibiliLive concern.Type = 1 << iota
+	BilibiliNews
+	DouyuLive
+	YoutubeLive
+	YoutubeVideo
+	HuyaLive
 )
 
 func InitBuntdb(t *testing.T) {

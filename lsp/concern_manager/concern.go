@@ -1,26 +1,15 @@
-package concern
+package concern_manager
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/DDBOT/concern"
 	"github.com/sirupsen/logrus"
 	"strconv"
-	"strings"
 )
 
 type Type int64
 
 const Empty Type = 0
-
-const (
-	BibiliLive Type = 1 << iota
-	BilibiliNews
-	DouyuLive
-	YoutubeLive
-	YoutubeVideo
-	HuyaLive
-)
-
-var all = [...]Type{BibiliLive, BilibiliNews, DouyuLive, YoutubeLive, YoutubeVideo, HuyaLive}
 
 type Notify interface {
 	Type() Type
@@ -45,10 +34,11 @@ func (t Type) ContainAny(o Type) bool {
 	if t.Empty() && o.Empty() {
 		return false
 	}
-	for _, c := range all {
-		if t.ContainAll(c) && o.ContainAll(c) {
+	for !o.Empty() {
+		if t&(o&(-o)) != 0 {
 			return true
 		}
+		o -= o & (-o)
 	}
 	return false
 }
@@ -56,32 +46,26 @@ func (t Type) ContainAny(o Type) bool {
 // Split return a Type unit slice from a given Type
 func (t Type) Split() []Type {
 	var result []Type
-	for _, a := range all {
-		if t.ContainAny(a) {
-			result = append(result, a)
-		}
+	for t > 0 {
+		result = append(result, t&(-t))
+		t -= t & (-t)
 	}
 	return result
 }
 
 func (t Type) Remove(o Type) Type {
 	newT := t
-	for _, c := range all {
-		if t.ContainAll(c) && o.ContainAll(c) {
-			newT ^= c
+	for o > 0 {
+		if t&(o&(-o)) != 0 {
+			newT ^= o & (-o)
 		}
+		o -= o & (-o)
 	}
 	return newT
 }
 
 func (t Type) Add(o Type) Type {
-	newT := t
-	for _, c := range all {
-		if !t.ContainAll(c) && o.ContainAll(c) {
-			newT ^= c
-		}
-	}
-	return newT
+	return t | o
 }
 
 func (t Type) Empty() bool {
@@ -96,25 +80,6 @@ func FromString(s string) Type {
 	return Type(t)
 }
 
-func (t Type) Description() string {
-	switch t {
-	case BibiliLive, HuyaLive, DouyuLive, YoutubeLive:
-		return "live"
-	case BilibiliNews, YoutubeVideo:
-		return "news"
-	}
-
-	sb := strings.Builder{}
-	var first = true
-	for _, o := range all {
-		if t.ContainAny(o) {
-			if first {
-				first = false
-			} else {
-				sb.WriteString("/")
-			}
-			sb.WriteString(o.Description())
-		}
-	}
-	return sb.String()
+type Concern interface {
+	Describe(ctype concern.Type)
 }

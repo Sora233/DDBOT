@@ -1,6 +1,7 @@
-package concern
+package concern_manager
 
 import (
+	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -48,15 +49,15 @@ func TestType_Add(t *testing.T) {
 func TestType_Remove(t *testing.T) {
 	var testCase = [][]Type{
 		{
-			BibiliLive | BilibiliNews, BilibiliNews,
+			test.BibiliLive | test.BilibiliNews, test.BilibiliNews,
 		},
 		{
-			BibiliLive | BilibiliNews, YoutubeVideo,
+			test.BibiliLive | test.BilibiliNews, test.YoutubeVideo,
 		},
 	}
 	var expected = []Type{
-		BibiliLive,
-		BilibiliNews | BibiliLive,
+		test.BibiliLive,
+		test.BilibiliNews | test.BibiliLive,
 	}
 
 	assert.Equal(t, len(expected), len(testCase))
@@ -66,14 +67,14 @@ func TestType_Remove(t *testing.T) {
 }
 
 func TestType_Split(t *testing.T) {
-	var a = BibiliLive | BilibiliNews | DouyuLive | YoutubeLive | YoutubeVideo | HuyaLive
+	var a = test.BibiliLive | test.BilibiliNews | test.DouyuLive | test.YoutubeLive | test.YoutubeVideo | test.HuyaLive
 	var expected = map[Type]bool{
-		BibiliLive:   true,
-		BilibiliNews: true,
-		DouyuLive:    true,
-		YoutubeLive:  true,
-		YoutubeVideo: true,
-		HuyaLive:     true,
+		test.BibiliLive:   true,
+		test.BilibiliNews: true,
+		test.DouyuLive:    true,
+		test.YoutubeLive:  true,
+		test.YoutubeVideo: true,
+		test.HuyaLive:     true,
 	}
 	var testCase = make(map[Type]bool)
 	for _, t := range a.Split() {
@@ -85,19 +86,19 @@ func TestType_Split(t *testing.T) {
 func TestType_ContainAll(t *testing.T) {
 	var testCase = [][]Type{
 		{
-			BibiliLive | BilibiliNews, BibiliLive | BilibiliNews,
+			test.BibiliLive | test.BilibiliNews, test.BibiliLive | test.BilibiliNews,
 		},
 		{
-			BibiliLive | BilibiliNews, YoutubeVideo | BibiliLive,
+			test.BibiliLive | test.BilibiliNews, test.YoutubeVideo | test.BibiliLive,
 		},
 		{
-			BibiliLive | YoutubeLive, YoutubeLive | BibiliLive,
+			test.BibiliLive | test.YoutubeLive, test.YoutubeLive | test.BibiliLive,
 		},
 		{
-			BibiliLive | BilibiliNews, BilibiliNews,
+			test.BibiliLive | test.BilibiliNews, test.BilibiliNews,
 		},
 		{
-			BibiliLive | BilibiliNews, YoutubeLive | YoutubeVideo,
+			test.BibiliLive | test.BilibiliNews, test.YoutubeLive | test.YoutubeVideo,
 		},
 		{
 			0, 0,
@@ -115,19 +116,19 @@ func TestType_ContainAll(t *testing.T) {
 func TestType_ContainAny(t *testing.T) {
 	var testCase = [][]Type{
 		{
-			BibiliLive | BilibiliNews, BibiliLive | BilibiliNews,
+			test.BibiliLive | test.BilibiliNews, test.BibiliLive | test.BilibiliNews,
 		},
 		{
-			BibiliLive | BilibiliNews, YoutubeVideo | BibiliLive,
+			test.BibiliLive | test.BilibiliNews, test.YoutubeVideo | test.BibiliLive,
 		},
 		{
-			BibiliLive | YoutubeLive, YoutubeLive | BibiliLive,
+			test.BibiliLive | test.YoutubeLive, test.YoutubeLive | test.BibiliLive,
 		},
 		{
-			BibiliLive | BilibiliNews, BilibiliNews,
+			test.BibiliLive | test.BilibiliNews, test.BilibiliNews,
 		},
 		{
-			BibiliLive | BilibiliNews, YoutubeLive | YoutubeVideo,
+			test.BibiliLive | test.BilibiliNews, test.YoutubeLive | test.YoutubeVideo,
 		},
 		{
 			0, 0,
@@ -147,7 +148,7 @@ func TestFromString(t *testing.T) {
 		"1", "4", "3", "error",
 	}
 	var expected = []Type{
-		BibiliLive, DouyuLive, BibiliLive | BilibiliNews, 0,
+		test.BibiliLive, test.DouyuLive, test.BibiliLive | test.BilibiliNews, 0,
 	}
 	assert.Equal(t, len(expected), len(testCase))
 	for i := 0; i < len(expected); i++ {
@@ -155,23 +156,10 @@ func TestFromString(t *testing.T) {
 	}
 }
 
-func TestType_Description(t *testing.T) {
-	var testCase = []Type{
-		BibiliLive, BilibiliNews, DouyuLive, YoutubeVideo, BilibiliNews | BibiliLive,
-	}
-	var expected = []string{
-		"live", "news", "live", "news", "live/news",
-	}
-	assert.Equal(t, len(expected), len(testCase))
-	for i := 0; i < len(expected); i++ {
-		assert.Equal(t, expected[i], testCase[i].Description())
-	}
-}
-
 func TestType_Empty(t *testing.T) {
 	var testCase = []Type{
 		0,
-		BibiliLive,
+		test.BibiliLive,
 	}
 	var expected = []bool{
 		true,

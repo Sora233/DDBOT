@@ -1,8 +1,7 @@
 package bilibili
 
 import (
-	"github.com/Sora233/DDBOT/concern"
-	"github.com/Sora233/DDBOT/lsp/test"
+	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -31,10 +30,10 @@ func TestConcern_Remove(t *testing.T) {
 
 	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
 	assert.NotNil(t, origUserInfo)
-	_, err := c.AddGroupConcern(test.G1, test.UID1, concern.BibiliLive)
+	_, err := c.AddGroupConcern(test.G1, test.UID1, test.BibiliLive)
 	assert.Nil(t, err)
 
-	_, err = c.Remove(test.G1, test.UID1, concern.BibiliLive)
+	_, err = c.Remove(test.G1, test.UID1, test.BibiliLive)
 	assert.Nil(t, err)
 }
 
@@ -47,25 +46,25 @@ func TestConcern_ListWatching(t *testing.T) {
 	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
 	assert.NotNil(t, origUserInfo)
 	assert.Nil(t, c.AddUserInfo(origUserInfo))
-	_, err := c.AddGroupConcern(test.G1, test.UID1, concern.BibiliLive)
+	_, err := c.AddGroupConcern(test.G1, test.UID1, test.BibiliLive)
 	assert.Nil(t, err)
 
-	_, err = c.AddGroupConcern(test.G1, test.UID1, concern.BibiliLive)
+	_, err = c.AddGroupConcern(test.G1, test.UID1, test.BibiliLive)
 	assert.Nil(t, err)
 
-	userInfos, ctypes, err := c.ListWatching(test.G1, concern.BibiliLive)
+	userInfos, ctypes, err := c.ListWatching(test.G1, test.BibiliLive)
 	assert.Nil(t, err)
 	assert.Len(t, userInfos, 1)
 	assert.Len(t, ctypes, 1)
 	assert.Equal(t, origUserInfo, userInfos[0])
-	assert.Equal(t, concern.BibiliLive, ctypes[0])
+	assert.Equal(t, test.BibiliLive, ctypes[0])
 
-	userInfos, ctypes, err = c.ListWatching(test.G1, concern.BilibiliNews)
+	userInfos, ctypes, err = c.ListWatching(test.G1, test.BilibiliNews)
 	assert.Nil(t, err)
 	assert.Len(t, userInfos, 0)
 	assert.Len(t, ctypes, 0)
 
-	userInfos, ctypes, err = c.ListWatching(test.G2, concern.BibiliLive)
+	userInfos, ctypes, err = c.ListWatching(test.G2, test.BibiliLive)
 	assert.Nil(t, err)
 	assert.Len(t, userInfos, 0)
 	assert.Len(t, ctypes, 0)

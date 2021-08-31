@@ -8,11 +8,9 @@ import (
 	"github.com/Sora233/DDBOT/concern"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/sliceutil"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
-	"strings"
 	"sync"
 	"time"
 )
@@ -95,11 +93,11 @@ func (c *StateManager) CheckAndSetAtAllMark(groupCode int64, id interface{}) (re
 	return
 }
 
-func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype concern.Type) error {
+func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype Type) error {
 	return c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
 		if err == nil {
-			if concern.FromString(val).ContainAll(ctype) {
+			if FromString(val).ContainAll(ctype) {
 				return ErrAlreadyExists
 			}
 		}
@@ -107,7 +105,7 @@ func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype 
 	})
 }
 
-func (c *StateManager) CheckConcern(id interface{}, ctype concern.Type) error {
+func (c *StateManager) CheckConcern(id interface{}, ctype Type) error {
 	state, err := c.GetConcern(id)
 	if err != nil {
 		return err
@@ -191,21 +189,21 @@ func (c *StateManager) RemoveAllById(_id interface{}) (err error) {
 }
 
 // GetGroupConcern return the concern.Type in specific group for a id
-func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result concern.Type, err error) {
+func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result Type, err error) {
 	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
 		if err != nil {
 			return err
 		}
-		result = concern.FromString(val)
+		result = FromString(val)
 		return nil
 	})
 	return result, err
 }
 
 // GetConcern return the concern.Type combined from all group for a id
-func (c *StateManager) GetConcern(id interface{}) (result concern.Type, err error) {
-	_, _, _, err = c.List(func(groupCode int64, _id interface{}, p concern.Type) bool {
+func (c *StateManager) GetConcern(id interface{}) (result Type, err error) {
+	_, _, _, err = c.List(func(groupCode int64, _id interface{}, p Type) bool {
 		if id == _id {
 			result = result.Add(p)
 		}
@@ -214,7 +212,7 @@ func (c *StateManager) GetConcern(id interface{}) (result concern.Type, err erro
 	return
 }
 
-func (c *StateManager) List(filter func(groupCode int64, id interface{}, p concern.Type) bool) (idGroups []int64, ids []interface{}, idTypes []concern.Type, err error) {
+func (c *StateManager) List(filter func(groupCode int64, id interface{}, p Type) bool) (idGroups []int64, ids []interface{}, idTypes []concern.Type, err error) {
 	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		var iterErr error
 		err := tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
@@ -379,67 +377,6 @@ func (c *StateManager) FreshIndex(groups ...int64) {
 		db.CreateIndex(c.GroupConcernConfigKey(g), c.GroupConcernConfigKey(g, "*"), buntdb.IndexString)
 		db.CreateIndex(c.GroupAtAllMarkKey(g), c.GroupAtAllMarkKey(g, "*"), buntdb.IndexString)
 		db.CreateIndex(c.FreshKey(g), c.FreshKey(g, "*"), buntdb.IndexString)
-	}
-}
-
-func (c *StateManager) FreshAll() {
-	if err := miraiBot.Instance.ReloadFriendList(); err != nil {
-		logger.Errorf("ReloadFriendList error %v", err)
-		return
-	}
-	if err := miraiBot.Instance.ReloadGroupList(); err != nil {
-		logger.Errorf("ReloadGroupList error %v", err)
-		return
-	}
-	db, err := localdb.GetClient()
-	if err != nil {
-		return
-	}
-	allIndex, err := db.Indexes()
-	if err != nil {
-		return
-	}
-	for _, index := range allIndex {
-		if strings.HasPrefix(index, c.GroupConcernStateKey()+":") {
-			if err := db.DropIndex(index); err != nil {
-				logger.Errorf("DropIndex %v error %v", index, err)
-			}
-		}
-	}
-
-	c.FreshIndex()
-
-	var groupCodes []int64
-	for _, groupInfo := range miraiBot.Instance.GroupList {
-		groupCodes = append(groupCodes, groupInfo.Code)
-	}
-	var removeKey []string
-
-	err = c.RCoverTx(func(tx *buntdb.Tx) error {
-		return tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
-			groupCode, _, err := c.ParseGroupConcernStateKey(key)
-			if err != nil {
-				removeKey = append(removeKey, key)
-			} else if !sliceutil.Contains(groupCodes, groupCode) {
-				removeKey = append(removeKey, key)
-			}
-			return true
-		})
-	})
-	if err != nil {
-		logger.Errorf("Ascend %v error %v", c.GroupConcernStateKey(), err)
-		return
-	}
-	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
-		for _, key := range removeKey {
-			if _, err := tx.Delete(key); err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		logger.Errorf("tx delete error %v", err)
 	}
 }
 

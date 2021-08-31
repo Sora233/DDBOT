@@ -2,8 +2,8 @@ package bilibili
 
 import (
 	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
-	"github.com/Sora233/DDBOT/lsp/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -78,22 +78,22 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 		{
 			GroupConcernConfig: concern_manager.GroupConcernConfig{
 				GroupConcernNotify: concern_manager.GroupConcernNotifyConfig{
-					TitleChangeNotify: concern.BibiliLive,
+					TitleChangeNotify: test.BibiliLive,
 				},
 			},
 		},
 		{
 			GroupConcernConfig: concern_manager.GroupConcernConfig{
 				GroupConcernNotify: concern_manager.GroupConcernNotifyConfig{
-					OfflineNotify: concern.BibiliLive,
+					OfflineNotify: test.BibiliLive,
 				},
 			},
 		},
 		{
 			GroupConcernConfig: concern_manager.GroupConcernConfig{
 				GroupConcernNotify: concern_manager.GroupConcernNotifyConfig{
-					OfflineNotify:     concern.BibiliLive,
-					TitleChangeNotify: concern.BibiliLive,
+					OfflineNotify:     test.BibiliLive,
+					TitleChangeNotify: test.BibiliLive,
 				},
 			},
 		},
