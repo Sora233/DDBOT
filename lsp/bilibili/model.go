@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
+	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/proxy_pool"
@@ -863,7 +864,30 @@ var mergeImageCache = func() *lru.ARCCache {
 	return c
 }()
 
+var mode = "auto"
+var modeSync sync.Once
+
 func shouldCombineImage(pic []*CardWithImage_Item_Picture) bool {
+	modeSync.Do(func() {
+		if config.GlobalConfig == nil {
+			return
+		}
+		switch config.GlobalConfig.GetString("bilibili.imageMergeMode") {
+		case "auto":
+			mode = "auto"
+		case "off", "false":
+			mode = "off"
+		case "only9":
+			mode = "only9"
+		default:
+			mode = "auto"
+		}
+	})
+	if mode == "off" {
+		return false
+	} else if mode == "only9" {
+		return len(pic) == 9
+	}
 	if len(pic) <= 3 {
 		return false
 	}
