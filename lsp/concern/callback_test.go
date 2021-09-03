@@ -1,6 +1,8 @@
-package concern_manager
+package concern
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestDefaultCallback(t *testing.T) {
 	var d defaultCallback

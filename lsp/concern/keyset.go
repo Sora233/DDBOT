@@ -1,4 +1,4 @@
-package concern_manager
+package concern
 
 type KeySet interface {
 	GroupConcernStateKey(keys ...interface{}) string

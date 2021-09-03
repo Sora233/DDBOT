@@ -3,14 +3,14 @@ package bilibili
 import (
 	"errors"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/tidwall/buntdb"
 	"strconv"
 	"time"
 )
 
 type StateManager struct {
-	*concern_manager.StateManager
+	*concern.StateManager
 	*extraKey
 }
 
@@ -378,6 +378,6 @@ func (c *StateManager) Start() error {
 func NewStateManager() *StateManager {
 	sm := &StateManager{}
 	sm.extraKey = NewExtraKey()
-	sm.StateManager = concern_manager.NewStateManager(NewKeySet(), false)
+	sm.StateManager = concern.NewStateManager(NewKeySet(), false)
 	return sm
 }

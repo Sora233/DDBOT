@@ -4,8 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/DDBOT/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"reflect"
 	"runtime"
@@ -14,14 +13,12 @@ import (
 
 var logger = utils.GetModuleLogger("douyu-concern")
 
-type EventType int64
-
 const (
-	Live EventType = iota
+	Live concern.Type = 1 << iota
 )
 
 type ConcernEvent interface {
-	Type() EventType
+	Type() concern.Type
 }
 
 type Concern struct {
@@ -66,7 +63,7 @@ func (c *Concern) Start() {
 		if !ok {
 			return fmt.Errorf("cast fresh id type<%v> to int64 failed", reflect.ValueOf(id).Type().String())
 		}
-		if ctype.ContainAll(concern.DouyuLive) {
+		if ctype.ContainAll(Live) {
 			oldInfo, _ := c.FindRoom(roomid, false)
 			liveInfo, err := c.FindRoom(roomid, true)
 			if err != nil {
@@ -95,7 +92,7 @@ func (c *Concern) Add(groupCode int64, id int64, ctype concern.Type) (*LiveInfo,
 
 	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
 	if err != nil {
-		if err == concern_manager.ErrAlreadyExists {
+		if err == concern.ErrAlreadyExists {
 			return nil, errors.New("已经watch过了")
 		}
 		return nil, err

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	concern2 "github.com/Sora233/DDBOT/lsp/concern"
 	localutils "github.com/Sora233/DDBOT/utils"
 	jsoniter "github.com/json-iterator/go"
 	"reflect"
@@ -98,7 +98,7 @@ func (c *Concern) Add(groupCode int64, id interface{}, ctype concern.Type) (*Liv
 
 	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
 	if err != nil {
-		if err == concern_manager.ErrAlreadyExists {
+		if err == concern2.ErrAlreadyExists {
 			return nil, errors.New("已经watch过了")
 		}
 		return nil, err

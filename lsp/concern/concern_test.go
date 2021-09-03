@@ -1,4 +1,4 @@
-package concern_manager
+package concern
 
 import (
 	"github.com/Sora233/DDBOT/internal/test"

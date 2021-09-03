@@ -1,8 +1,8 @@
 package test
 
 import (
-	"github.com/Sora233/DDBOT/concern"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

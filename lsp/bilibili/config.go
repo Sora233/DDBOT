@@ -2,6 +2,7 @@ package bilibili
 
 import (
 	"github.com/Sora233/DDBOT/concern"
+	concern2 "github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/Sora233/DDBOT/utils"
 	"strconv"
@@ -9,7 +10,7 @@ import (
 )
 
 type GroupConcernConfig struct {
-	concern_manager.GroupConcernConfig
+	concern2.GroupConcernConfig
 	StateManager *StateManager
 }
 
@@ -110,7 +111,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 
 		logger := notify.Logger().WithField("FilterType", g.GroupConcernFilter.Type)
 		switch g.GroupConcernFilter.Type {
-		case concern_manager.FilterTypeText:
+		case concern2.FilterTypeText:
 			textFilter, err := g.GroupConcernFilter.GetFilterByText()
 			if err != nil {
 				logger.WithField("GroupConcernTextFilter", g.GroupConcernFilter.Config).
@@ -131,7 +132,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 					logger.Debugf("news notify NewsFilterHook pass")
 				}
 			}
-		case concern_manager.FilterTypeType, concern_manager.FilterTypeNotType:
+		case concern2.FilterTypeType, concern2.FilterTypeNotType:
 			typeFilter, err := g.GroupConcernFilter.GetFilterByType()
 			if err != nil {
 				logger.WithField("GroupConcernFilterConfig", g.GroupConcernFilter.Config).
@@ -151,7 +152,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 
 				var ok bool
 				switch g.GroupConcernFilter.Type {
-				case concern_manager.FilterTypeType:
+				case concern2.FilterTypeType:
 					ok = false
 					for _, tp := range convTypes {
 						if n.Card.GetDesc().GetType() == tp {
@@ -159,7 +160,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 							break
 						}
 					}
-				case concern_manager.FilterTypeNotType:
+				case concern2.FilterTypeNotType:
 					ok = true
 					for _, tp := range convTypes {
 						if n.Card.GetDesc().GetType() == tp {
@@ -187,7 +188,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 	}
 }
 
-func NewGroupConcernConfig(g *concern_manager.GroupConcernConfig, sm *StateManager) *GroupConcernConfig {
+func NewGroupConcernConfig(g *concern2.GroupConcernConfig, sm *StateManager) *GroupConcernConfig {
 	return &GroupConcernConfig{*g, sm}
 }
 

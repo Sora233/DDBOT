@@ -7,14 +7,13 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/image_pool"
 	"github.com/Sora233/DDBOT/image_pool/local_pool"
 	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
 	"github.com/Sora233/DDBOT/lsp/aliyun"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/douyu"
 	"github.com/Sora233/DDBOT/lsp/huya"
 	"github.com/Sora233/DDBOT/lsp/permission"
@@ -613,7 +612,7 @@ func (l *Lsp) compactTextElements(elements []message.IMessageElement) []message.
 	return compactMsg
 }
 
-func (l *Lsp) getInnerState(ctype concern.Type) *concern_manager.StateManager {
+func (l *Lsp) getInnerState(ctype concern.Type) *concern.StateManager {
 	switch ctype {
 	case concern.BilibiliNews, concern.BibiliLive:
 		return l.bilibiliConcern.StateManager.StateManager
@@ -628,7 +627,7 @@ func (l *Lsp) getInnerState(ctype concern.Type) *concern_manager.StateManager {
 	}
 }
 
-func (l *Lsp) getConcernConfig(groupCode int64, id interface{}, ctype concern.Type) *concern_manager.GroupConcernConfig {
+func (l *Lsp) getConcernConfig(groupCode int64, id interface{}, ctype concern.Type) *concern2.GroupConcernConfig {
 	state := l.getInnerState(ctype)
 	if state == nil {
 		return nil
@@ -636,7 +635,7 @@ func (l *Lsp) getConcernConfig(groupCode int64, id interface{}, ctype concern.Ty
 	return state.GetGroupConcernConfig(groupCode, id)
 }
 
-func (l *Lsp) getConcernConfigNotifyManager(ctype concern.Type, concernConfig *concern_manager.GroupConcernConfig) concern_manager.NotifyManager {
+func (l *Lsp) getConcernConfigNotifyManager(ctype concern.Type, concernConfig *concern2.GroupConcernConfig) concern.NotifyManager {
 	if concernConfig == nil {
 		return nil
 	}

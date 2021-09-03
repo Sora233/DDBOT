@@ -1,8 +1,7 @@
-package concern_manager
+package concern
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
 	"github.com/sirupsen/logrus"
 	"strconv"
 )
@@ -81,5 +80,15 @@ func FromString(s string) Type {
 }
 
 type Concern interface {
-	Describe(ctype concern.Type)
+	ParseType(typename string) Type
+	Start()
+	Stop()
+
+	Add(groupCode int64, mid int64, ctype Type) error
+	Remove(groupCode int64, mid int64, ctype Type) error
+	List(groupCode int64, ctype Type) error
+	GetStateManager() *StateManager
+	GetConfig(groupCode int64, id interface{}, ctype Type) Config
+	GetNotifyManager(groupCode int64, id interface{}, ctype Type) NotifyManager
+	Describe(ctype Type) string
 }

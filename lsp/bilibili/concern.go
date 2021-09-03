@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/DDBOT/concern"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
 	"golang.org/x/sync/errgroup"
@@ -102,7 +101,7 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 
 	err = c.StateManager.CheckGroupConcern(groupCode, mid, ctype)
 	if err != nil {
-		if err == concern_manager.ErrAlreadyExists {
+		if err == concern.ErrAlreadyExists {
 			return nil, errors.New("已经watch过了")
 		}
 		log.Errorf("CheckGroupConcern error %v", err)

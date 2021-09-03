@@ -2,11 +2,12 @@ package huya
 
 import (
 	"github.com/Sora233/DDBOT/concern"
+	concern2 "github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 )
 
 type GroupConcernConfig struct {
-	concern_manager.GroupConcernConfig
+	concern2.GroupConcernConfig
 }
 
 func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern_manager.HookResult) {
@@ -52,6 +53,6 @@ func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concer
 	return g.GroupConcernConfig.ShouldSendHook(notify)
 }
 
-func NewGroupConcernConfig(g *concern_manager.GroupConcernConfig) *GroupConcernConfig {
+func NewGroupConcernConfig(g *concern2.GroupConcernConfig) *GroupConcernConfig {
 	return &GroupConcernConfig{*g}
 }

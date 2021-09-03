@@ -1,20 +1,20 @@
-package concern_manager
+package concern
 
 import (
-	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestGroupConcernAtConfig_CheckAtAll(t *testing.T) {
 	var g *GroupConcernAtConfig
-	assert.False(t, g.CheckAtAll(concern.BibiliLive))
+	assert.False(t, g.CheckAtAll(test.BibiliLive))
 
 	g = &GroupConcernAtConfig{
-		AtAll: concern.BilibiliNews,
+		AtAll: test.BilibiliNews,
 	}
-	assert.True(t, g.CheckAtAll(concern.BilibiliNews))
-	assert.False(t, g.CheckAtAll(concern.BibiliLive))
+	assert.True(t, g.CheckAtAll(test.BilibiliNews))
+	assert.False(t, g.CheckAtAll(test.BibiliLive))
 }
 
 func TestNewGroupConcernConfigFromString(t *testing.T) {
@@ -24,10 +24,10 @@ func TestNewGroupConcernConfigFromString(t *testing.T) {
 	var expected = []*GroupConcernConfig{
 		{
 			GroupConcernAt: GroupConcernAtConfig{
-				AtAll: concern.BibiliLive,
+				AtAll: test.BibiliLive,
 				AtSomeone: []*AtSomeone{
 					{
-						Ctype:  concern.BibiliLive,
+						Ctype:  test.BibiliLive,
 						AtList: []int64{1, 2, 3, 4, 5},
 					},
 				},
@@ -46,17 +46,17 @@ func TestGroupConcernConfig_ToString(t *testing.T) {
 	var testCase = []*GroupConcernConfig{
 		{
 			GroupConcernAt: GroupConcernAtConfig{
-				AtAll: concern.BibiliLive,
+				AtAll: test.BibiliLive,
 				AtSomeone: []*AtSomeone{
 					{
-						Ctype:  concern.BibiliLive,
+						Ctype:  test.BibiliLive,
 						AtList: []int64{1, 2, 3, 4, 5},
 					},
 				},
 			},
 			GroupConcernNotify: GroupConcernNotifyConfig{
-				TitleChangeNotify: concern.BibiliLive,
-				OfflineNotify:     concern.DouyuLive,
+				TitleChangeNotify: test.BibiliLive,
+				OfflineNotify:     test.DouyuLive,
 			},
 		},
 	}
@@ -84,10 +84,10 @@ func TestGroupConcernAtConfig_GetAtSomeoneList(t *testing.T) {
 	var testCase = []*GroupConcernConfig{
 		{
 			GroupConcernAt: GroupConcernAtConfig{
-				AtAll: concern.BibiliLive,
+				AtAll: test.BibiliLive,
 				AtSomeone: []*AtSomeone{
 					{
-						Ctype:  concern.BibiliLive,
+						Ctype:  test.BibiliLive,
 						AtList: []int64{1, 2, 3, 4, 5},
 					},
 				},
@@ -95,7 +95,7 @@ func TestGroupConcernAtConfig_GetAtSomeoneList(t *testing.T) {
 		},
 		{
 			GroupConcernAt: GroupConcernAtConfig{
-				AtAll:     concern.BibiliLive,
+				AtAll:     test.BibiliLive,
 				AtSomeone: nil,
 			},
 		},
@@ -106,20 +106,20 @@ func TestGroupConcernAtConfig_GetAtSomeoneList(t *testing.T) {
 	}
 	assert.Equal(t, len(testCase), len(expected))
 	for i := 0; i < len(testCase); i++ {
-		assert.EqualValues(t, expected[i], testCase[i].GroupConcernAt.GetAtSomeoneList(concern.BibiliLive))
+		assert.EqualValues(t, expected[i], testCase[i].GroupConcernAt.GetAtSomeoneList(test.BibiliLive))
 	}
 
 	var g *GroupConcernAtConfig
-	assert.Nil(t, g.GetAtSomeoneList(concern.BibiliLive))
+	assert.Nil(t, g.GetAtSomeoneList(test.BibiliLive))
 }
 
 func TestGroupConcernNotifyConfig_CheckTitleChangeNotify(t *testing.T) {
 	var g = &GroupConcernNotifyConfig{
-		TitleChangeNotify: concern.BibiliLive | concern.DouyuLive,
+		TitleChangeNotify: test.BibiliLive | test.DouyuLive,
 	}
-	assert.True(t, g.CheckTitleChangeNotify(concern.BibiliLive))
-	assert.True(t, g.CheckTitleChangeNotify(concern.DouyuLive))
-	assert.False(t, g.CheckTitleChangeNotify(concern.HuyaLive))
+	assert.True(t, g.CheckTitleChangeNotify(test.BibiliLive))
+	assert.True(t, g.CheckTitleChangeNotify(test.DouyuLive))
+	assert.False(t, g.CheckTitleChangeNotify(test.HuyaLive))
 }
 
 func TestGroupConcernAtConfig_ClearAtSomeoneList(t *testing.T) {
@@ -127,17 +127,17 @@ func TestGroupConcernAtConfig_ClearAtSomeoneList(t *testing.T) {
 		AtAll: 0,
 		AtSomeone: []*AtSomeone{
 			{
-				Ctype:  concern.BibiliLive,
+				Ctype:  test.BibiliLive,
 				AtList: []int64{1, 2, 3, 4},
 			},
 		},
 	}
-	g.ClearAtSomeoneList(concern.DouyuLive)
+	g.ClearAtSomeoneList(test.DouyuLive)
 	for i := 1; i <= 4; i++ {
-		assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
+		assert.Contains(t, g.GetAtSomeoneList(test.BibiliLive), int64(i))
 	}
-	g.ClearAtSomeoneList(concern.BibiliLive)
-	assert.Equal(t, 0, len(g.GetAtSomeoneList(concern.BibiliLive)))
+	g.ClearAtSomeoneList(test.BibiliLive)
+	assert.Equal(t, 0, len(g.GetAtSomeoneList(test.BibiliLive)))
 }
 
 func TestGroupConcernAtConfig_RemoveAtSomeoneList(t *testing.T) {
@@ -145,20 +145,20 @@ func TestGroupConcernAtConfig_RemoveAtSomeoneList(t *testing.T) {
 		AtAll: 0,
 		AtSomeone: []*AtSomeone{
 			{
-				Ctype:  concern.BibiliLive,
+				Ctype:  test.BibiliLive,
 				AtList: []int64{1, 2, 3, 4},
 			},
 		},
 	}
-	g.RemoveAtSomeoneList(concern.DouyuLive, []int64{1, 2, 3, 4})
-	assert.EqualValues(t, []int64{1, 2, 3, 4}, g.GetAtSomeoneList(concern.BibiliLive))
-	g.RemoveAtSomeoneList(concern.BibiliLive, []int64{3})
+	g.RemoveAtSomeoneList(test.DouyuLive, []int64{1, 2, 3, 4})
+	assert.EqualValues(t, []int64{1, 2, 3, 4}, g.GetAtSomeoneList(test.BibiliLive))
+	g.RemoveAtSomeoneList(test.BibiliLive, []int64{3})
 	for i := 1; i <= 4; i++ {
 		if i != 3 {
-			assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
+			assert.Contains(t, g.GetAtSomeoneList(test.BibiliLive), int64(i))
 		}
 	}
-	assert.NotContains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(3))
+	assert.NotContains(t, g.GetAtSomeoneList(test.BibiliLive), int64(3))
 }
 
 func TestGroupConcernAtConfig_MergeAtSomeoneList(t *testing.T) {
@@ -167,15 +167,15 @@ func TestGroupConcernAtConfig_MergeAtSomeoneList(t *testing.T) {
 		AtSomeone: nil,
 	}
 
-	g.MergeAtSomeoneList(concern.BibiliLive, []int64{1, 2, 3, 4})
+	g.MergeAtSomeoneList(test.BibiliLive, []int64{1, 2, 3, 4})
 	for i := 1; i <= 4; i++ {
-		assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
+		assert.Contains(t, g.GetAtSomeoneList(test.BibiliLive), int64(i))
 	}
-	g.MergeAtSomeoneList(concern.BibiliLive, []int64{3, 4, 5})
+	g.MergeAtSomeoneList(test.BibiliLive, []int64{3, 4, 5})
 	for i := 1; i <= 5; i++ {
-		assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
+		assert.Contains(t, g.GetAtSomeoneList(test.BibiliLive), int64(i))
 	}
-	assert.EqualValues(t, 0, len(g.GetAtSomeoneList(concern.DouyuLive)))
+	assert.EqualValues(t, 0, len(g.GetAtSomeoneList(test.DouyuLive)))
 }
 
 func TestGroupConcernAtConfig_SetAtSomeoneList(t *testing.T) {
@@ -184,28 +184,28 @@ func TestGroupConcernAtConfig_SetAtSomeoneList(t *testing.T) {
 		AtSomeone: nil,
 	}
 
-	g.SetAtSomeoneList(concern.BibiliLive, []int64{1, 2, 3, 4})
+	g.SetAtSomeoneList(test.BibiliLive, []int64{1, 2, 3, 4})
 	for i := 1; i <= 4; i++ {
-		assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
+		assert.Contains(t, g.GetAtSomeoneList(test.BibiliLive), int64(i))
 	}
 
-	g.SetAtSomeoneList(concern.BibiliLive, []int64{5, 6})
+	g.SetAtSomeoneList(test.BibiliLive, []int64{5, 6})
 	for i := 1; i <= 6; i++ {
 		if i <= 4 {
-			assert.NotContains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
+			assert.NotContains(t, g.GetAtSomeoneList(test.BibiliLive), int64(i))
 		} else {
-			assert.Contains(t, g.GetAtSomeoneList(concern.BibiliLive), int64(i))
+			assert.Contains(t, g.GetAtSomeoneList(test.BibiliLive), int64(i))
 		}
 	}
 }
 
 func TestGroupConcernNotifyConfig_CheckOfflineNotify(t *testing.T) {
 	var g = &GroupConcernNotifyConfig{
-		OfflineNotify: concern.BibiliLive | concern.DouyuLive,
+		OfflineNotify: test.BibiliLive | test.DouyuLive,
 	}
-	assert.True(t, g.CheckOfflineNotify(concern.BibiliLive))
-	assert.True(t, g.CheckOfflineNotify(concern.DouyuLive))
-	assert.False(t, g.CheckOfflineNotify(concern.HuyaLive))
+	assert.True(t, g.CheckOfflineNotify(test.BibiliLive))
+	assert.True(t, g.CheckOfflineNotify(test.DouyuLive))
+	assert.False(t, g.CheckOfflineNotify(test.HuyaLive))
 }
 
 func TestGroupConcernFilterConfig_GetFilter(t *testing.T) {

@@ -1,4 +1,4 @@
-package concern_manager
+package concern
 
 type NotifyManager interface {
 	Callback

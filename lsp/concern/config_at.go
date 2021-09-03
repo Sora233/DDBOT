@@ -1,26 +1,24 @@
-package concern_manager
-
-import "github.com/Sora233/DDBOT/concern"
+package concern
 
 type AtSomeone struct {
-	Ctype  concern.Type `json:"ctype"`
-	AtList []int64      `json:"at_list"`
+	Ctype  Type    `json:"ctype"`
+	AtList []int64 `json:"at_list"`
 }
 
 // GroupConcernAtConfig @配置
 type GroupConcernAtConfig struct {
-	AtAll     concern.Type `json:"at_all"`
+	AtAll     Type         `json:"at_all"`
 	AtSomeone []*AtSomeone `json:"at_someone"`
 }
 
-func (g *GroupConcernAtConfig) CheckAtAll(ctype concern.Type) bool {
+func (g *GroupConcernAtConfig) CheckAtAll(ctype Type) bool {
 	if g == nil {
 		return false
 	}
 	return g.AtAll.ContainAll(ctype)
 }
 
-func (g *GroupConcernAtConfig) GetAtSomeoneList(ctype concern.Type) []int64 {
+func (g *GroupConcernAtConfig) GetAtSomeoneList(ctype Type) []int64 {
 	if g == nil {
 		return nil
 	}
@@ -32,7 +30,7 @@ func (g *GroupConcernAtConfig) GetAtSomeoneList(ctype concern.Type) []int64 {
 	return nil
 }
 
-func (g *GroupConcernAtConfig) SetAtSomeoneList(ctype concern.Type, ids []int64) {
+func (g *GroupConcernAtConfig) SetAtSomeoneList(ctype Type, ids []int64) {
 	if g == nil {
 		return
 	}
@@ -51,7 +49,7 @@ func (g *GroupConcernAtConfig) SetAtSomeoneList(ctype concern.Type, ids []int64)
 	}
 }
 
-func (g *GroupConcernAtConfig) MergeAtSomeoneList(ctype concern.Type, ids []int64) {
+func (g *GroupConcernAtConfig) MergeAtSomeoneList(ctype Type, ids []int64) {
 	if g == nil {
 		return
 	}
@@ -80,7 +78,7 @@ func (g *GroupConcernAtConfig) MergeAtSomeoneList(ctype concern.Type, ids []int6
 	}
 }
 
-func (g *GroupConcernAtConfig) RemoveAtSomeoneList(ctype concern.Type, ids []int64) {
+func (g *GroupConcernAtConfig) RemoveAtSomeoneList(ctype Type, ids []int64) {
 	if g == nil {
 		return
 	}
@@ -101,7 +99,7 @@ func (g *GroupConcernAtConfig) RemoveAtSomeoneList(ctype concern.Type, ids []int
 	}
 }
 
-func (g *GroupConcernAtConfig) ClearAtSomeoneList(ctype concern.Type) {
+func (g *GroupConcernAtConfig) ClearAtSomeoneList(ctype Type) {
 	if g == nil {
 		return
 	}
