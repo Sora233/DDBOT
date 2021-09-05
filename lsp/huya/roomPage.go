@@ -2,7 +2,6 @@ package huya
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/Sora233/DDBOT/proxy_pool"
@@ -13,8 +12,6 @@ import (
 )
 
 func RoomPage(roomId string) (*LiveInfo, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
@@ -22,24 +19,24 @@ func RoomPage(roomId string) (*LiveInfo, error) {
 	}()
 	log := logger.WithField("RoomId", roomId)
 	url := HuyaPath(roomId)
-	resp, err := requests.Get(ctx, url, nil, 3,
+	var opts = []requests.Option{
 		requests.AddUAOption(),
 		requests.ProxyOption(proxy_pool.PreferNone),
-	)
+		requests.RetryOption(3),
+		requests.TimeoutOption(time.Second * 10),
+	}
+	var body = new(bytes.Buffer)
+	err := requests.Get(url, nil, body, opts...)
 	if err != nil {
 		return nil, err
 	}
-	b, err := resp.Content()
-	if err != nil {
-		return nil, err
-	}
-	if strings.Contains(string(b), "找不到这个主播") {
+	if strings.Contains(body.String(), "找不到这个主播") {
 		return nil, errors.New("房间不存在")
 	}
 	ri := new(LiveInfo)
 	ri.RoomId = roomId
 	ri.RoomUrl = url
-	doc, err := goquery.NewDocumentFromReader(bytes.NewReader(b))
+	doc, err := goquery.NewDocumentFromReader(body)
 	if err != nil {
 		return nil, err
 	}

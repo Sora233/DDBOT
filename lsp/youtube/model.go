@@ -48,6 +48,7 @@ func (v *VideoInfo) Logger() *logrus.Entry {
 	return logger.WithFields(logrus.Fields{
 		"Site":        Site,
 		"ChannelId":   v.ChannelId,
+		"ChannelName": v.ChannelName,
 		"VideoId":     v.VideoId,
 		"VideoType":   v.VideoType.String(),
 		"VideoTitle":  v.VideoTitle,

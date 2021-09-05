@@ -2,7 +2,6 @@ package utils
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"github.com/Sora233/DDBOT/proxy_pool"
@@ -23,17 +22,21 @@ func ImageGet(url string, prefer proxy_pool.Prefer, opt ...requests.Option) ([]b
 	if url == "" {
 		return nil, errors.New("empty url")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
-	defer cancel()
 
-	opts := []requests.Option{requests.ProxyOption(prefer), requests.TimeoutOption(time.Second * 5)}
+	opts := []requests.Option{
+		requests.ProxyOption(prefer),
+		requests.TimeoutOption(time.Second * 15),
+		requests.RetryOption(3),
+	}
 	opts = append(opts, opt...)
 
-	resp, err := requests.Get(ctx, url, nil, 3, opts...)
+	var body = new(bytes.Buffer)
+
+	err := requests.Get(url, nil, body, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return resp.Content()
+	return body.Bytes(), nil
 }
 
 func ImageNormSize(origImage []byte) ([]byte, error) {

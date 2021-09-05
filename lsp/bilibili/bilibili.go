@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/config"
+	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	jsoniter "github.com/json-iterator/go"
 	"strconv"
@@ -45,14 +46,28 @@ type VerifyInfo struct {
 	VerifyOpts []requests.Option
 }
 
+type ICode interface {
+	GetCode() int32
+}
+
 var (
 	ErrVerifyRequired = errors.New("verify required")
 	// atomicVerifyInfo is a *VerifyInfo
 	atomicVerifyInfo atomic.Value
 
-	mux      = new(sync.Mutex)
-	username string
-	password string
+	mux                  = new(sync.Mutex)
+	username             string
+	password             string
+	delete412ProxyOption = func() requests.Option {
+		return requests.ProxyCallbackOption(func(out interface{}, proxy string) {
+			if out == nil {
+				return
+			}
+			if c, ok := out.(ICode); ok && (c.GetCode() == -412 || c.GetCode() == 412) {
+				proxy_pool.Delete(proxy)
+			}
+		})
+	}()
 )
 
 func Init() {

@@ -1,7 +1,6 @@
 package bilibili
 
 import (
-	"context"
 	"fmt"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
@@ -20,8 +19,6 @@ type DynamicSrvSpaceHistoryRequest struct {
 }
 
 func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
-	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
@@ -34,24 +31,17 @@ func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, err
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(ctx, url, params, 1,
+	var opts = []requests.Option{
 		requests.ProxyOption(proxy_pool.PreferNone),
 		requests.HeaderOption("Referer", fmt.Sprintf("https://space.bilibili.com/%v/", hostUid)),
 		AddUAOption(),
-		requests.TimeoutOption(time.Second*5),
-	)
-	if err != nil {
-		return nil, err
+		requests.TimeoutOption(time.Second * 15),
+		delete412ProxyOption,
 	}
 	spaceHistoryResp := new(DynamicSvrSpaceHistoryResponse)
-	err = resp.Json(spaceHistoryResp)
+	err = requests.Get(url, params, 1, opts...)
 	if err != nil {
-		content, _ := resp.Content()
-		logger.WithField("content", string(content)).Errorf("DynamicSrvSpaceHistory response json failed")
 		return nil, err
-	}
-	if spaceHistoryResp.Code == -412 && resp.Proxy != "" {
-		proxy_pool.Delete(resp.Proxy)
 	}
 	return spaceHistoryResp, nil
 }

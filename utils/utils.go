@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/requests"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/guonaihong/gout"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	"net/url"
@@ -85,15 +85,63 @@ func toMap(data interface{}) (map[string]string, error) {
 	return params, nil
 }
 
-func ToParams(get interface{}) (requests.Params, error) {
-	return toMap(get)
+func toGoutHMap(data interface{}) (gout.H, error) {
+	params := make(gout.H)
+
+	rg := reflect.ValueOf(data)
+	if rg.Type().Kind() == reflect.Ptr {
+		rg = rg.Elem()
+	}
+	if rg.Type().Kind() != reflect.Struct {
+		return nil, errors.New("can only convert struct type")
+	}
+	for i := 0; ; i++ {
+		if i >= rg.Type().NumField() {
+			break
+		}
+		field := rg.Type().Field(i)
+		fillname, found := field.Tag.Lookup("json")
+		if !found {
+			fillname = toCamel(field.Name)
+		} else {
+			if pos := strings.Index(fillname, ","); pos != -1 {
+				fillname = fillname[:pos]
+			}
+		}
+		if fillname == "-" {
+			continue
+		}
+		switch field.Type.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			params[fillname] = strconv.FormatInt(rg.Field(i).Int(), 10)
+		case reflect.String:
+			params[fillname] = rg.Field(i).String()
+		case reflect.Bool:
+			params[fillname] = strconv.FormatBool(rg.Field(i).Bool())
+		default:
+			return nil, fmt.Errorf("not support type %v", field.Type.Kind().String())
+		}
+
+	}
+	return params, nil
 }
 
-func ToDatas(data interface{}) (requests.Datas, error) {
+func ToParams(data interface{}) (gout.H, error) {
+	if d, ok := data.(map[string]string); ok {
+		g := make(gout.H)
+		for k, v := range d {
+			g[k] = v
+		}
+		return g, nil
+	}
+	return toGoutHMap(data)
+}
+
+func ToDatas(data interface{}) (map[string]string, error) {
 	return toMap(data)
 }
 
-func UrlEncode(data requests.Datas) string {
+func UrlEncode(data map[string]string) string {
 	params := url.Values{}
 	for k, v := range data {
 		params.Add(k, v)

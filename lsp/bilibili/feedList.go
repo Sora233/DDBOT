@@ -1,7 +1,6 @@
 package bilibili
 
 import (
-	"context"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
@@ -35,8 +34,6 @@ func FeedList(opt ...FeedOpt) (*FeedListResponse, error) {
 	if !IsVerifyGiven() {
 		return nil, ErrVerifyRequired
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
@@ -62,20 +59,13 @@ func FeedList(opt ...FeedOpt) (*FeedListResponse, error) {
 	opts = append(opts,
 		requests.ProxyOption(proxy_pool.PreferNone),
 		AddUAOption(),
-		requests.TimeoutOption(time.Second*3),
+		requests.TimeoutOption(time.Second*10),
 	)
 	opts = append(opts, GetVerifyOption()...)
-	resp, err := requests.Get(ctx, url, params, 1, opts...)
-	if err != nil {
-		return nil, err
-	}
 	flr := new(FeedListResponse)
-	err = resp.Json(flr)
+	err = requests.Get(url, params, flr, opts...)
 	if err != nil {
 		return nil, err
-	}
-	if flr.Code == -412 && resp.Proxy != "" {
-		proxy_pool.Delete(resp.Proxy)
 	}
 	return flr, nil
 }

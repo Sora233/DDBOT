@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/sirupsen/logrus"
@@ -26,18 +25,13 @@ func CheckUpdate() {
 		logrus.Debug("自编译版本，跳过更新检测")
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
-	resp, err := requests.Get(ctx, "https://api.github.com/repos/Sora233/DDBOT/releases/latest",
-		nil, 2,
-		requests.TimeoutOption(time.Second*3),
-		requests.ProxyOption(proxy_pool.PreferOversea))
-	if err != nil {
-		logrus.Errorf("更新检测失败：%v", err)
-		return
+	var opts = []requests.Option{
+		requests.TimeoutOption(time.Second * 3),
+		requests.ProxyOption(proxy_pool.PreferOversea),
+		requests.RetryOption(2),
 	}
 	var m = make(map[string]interface{})
-	err = resp.Json(&m)
+	err := requests.Get("https://api.github.com/repos/Sora233/DDBOT/releases/latest", nil, m, opts...)
 	if err != nil {
 		logrus.Errorf("更新检测失败：%v", err)
 		return

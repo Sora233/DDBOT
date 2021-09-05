@@ -1,7 +1,6 @@
 package bilibili
 
 import (
-	"context"
 	"crypto/md5"
 	"crypto/rand"
 	"crypto/rsa"
@@ -46,8 +45,6 @@ func Login(username string, password string) (*LoginResponse, error) {
 	if len(password) == 0 {
 		return nil, errors.New("empty password")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
@@ -75,26 +72,25 @@ func Login(username string, password string) (*LoginResponse, error) {
 	sign := Sign(utils.UrlEncode(formReq))
 	formReq["sign"] = sign
 
+	form, err := utils.ToParams(formReq)
+	if err != nil {
+		logger.Errorf("ToParams error %v", err)
+		return nil, err
+	}
+
 	var opts []requests.Option
 
 	opts = append(opts,
 		requests.ProxyOption(proxy_pool.PreferNone),
 		AddUAOption(),
-		requests.TimeoutOption(time.Second*3),
+		requests.TimeoutOption(time.Second*10),
 		AddReferOption(),
+		requests.RetryOption(3),
 	)
 
-	resp, err := requests.Post(ctx, BPath(PathPassportLoginOAuth2Login), formReq, 3, opts...)
-	if err != nil {
-		logger.Errorf("requests post error %v", err)
-		return nil, err
-	}
 	var loginResp = new(LoginResponse)
-	err = resp.Json(loginResp)
-	if err != nil {
-		logger.Errorf("loginResp json error %v", err)
-		return nil, err
-	}
+	err = requests.Post(BPath(PathPassportLoginOAuth2Login), form, loginResp, opts...)
+
 	return loginResp, err
 }
 
@@ -133,8 +129,6 @@ func Sign(params string) string {
 }
 
 func GetKey() (*GetKeyResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
@@ -146,7 +140,9 @@ func GetKey() (*GetKeyResponse, error) {
 		requests.ProxyOption(proxy_pool.PreferNone),
 		AddUAOption(),
 		AddReferOption(),
-		requests.TimeoutOption(time.Second*3),
+		requests.TimeoutOption(time.Second*10),
+		requests.RetryOption(3),
+		delete412ProxyOption,
 	)
 	req := &GetKeyRequest{
 		Appkey: Appkey,
@@ -156,19 +152,10 @@ func GetKey() (*GetKeyResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(ctx, url, reqData, 3, opts...)
-	if err != nil {
-		return nil, err
-	}
 	getKeyResp := new(GetKeyResponse)
-	err = resp.Json(getKeyResp)
+	err = requests.Get(url, reqData, getKeyResp, opts...)
 	if err != nil {
-		content, _ := resp.Content()
-		logger.WithField("content", string(content)).Errorf("GetKey response json failed")
 		return nil, err
-	}
-	if getKeyResp.Code == -412 && resp.Proxy != "" {
-		proxy_pool.Delete(resp.Proxy)
 	}
 	return getKeyResp, nil
 }
