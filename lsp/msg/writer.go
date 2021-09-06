@@ -3,7 +3,6 @@ package msg
 import (
 	"bytes"
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/requests"
 	"strings"
@@ -11,16 +10,25 @@ import (
 
 // MSG 线程不安全
 type MSG struct {
-	qqClient *client.QQClient
 	elements []message.IMessageElement
 
 	textBuf strings.Builder
 }
 
-func NewMSG(qqClient *client.QQClient) *MSG {
-	return &MSG{
-		qqClient: qqClient,
-	}
+func NewMSG() *MSG {
+	return &MSG{}
+}
+
+func NewText(s string) *MSG {
+	msg := NewMSG()
+	msg.Text(s)
+	return msg
+}
+
+func NewTextf(format string, args ...interface{}) *MSG {
+	msg := NewMSG()
+	msg.Textf(format, args...)
+	return msg
 }
 
 func (m *MSG) append(e message.IMessageElement) {
