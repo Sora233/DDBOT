@@ -3,6 +3,7 @@ package msg
 import (
 	"bytes"
 	"fmt"
+	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/requests"
 	"strings"
@@ -33,11 +34,13 @@ func NewTextf(format string, args ...interface{}) *MSG {
 
 func (m *MSG) append(e message.IMessageElement) {
 	if e.Type() == message.Text {
-		m.textBuf.WriteString(e.(*message.TextElement).Content)
-	} else {
-		m.flushText()
-		m.elements = append(m.elements, e)
+		if textE, ok := e.(*message.TextElement); ok {
+			m.textBuf.WriteString(textE.Content)
+			return
+		}
 	}
+	m.flushText()
+	m.elements = append(m.elements, e)
 }
 
 func (m *MSG) flushText() {
@@ -47,32 +50,59 @@ func (m *MSG) flushText() {
 	}
 }
 
-func (m *MSG) Text(s string) {
+func (m *MSG) Text(s string) *MSG {
 	m.textBuf.WriteString(s)
+	return m
 }
 
-func (m *MSG) Textf(format string, args ...interface{}) {
+func (m *MSG) Textf(format string, args ...interface{}) *MSG {
 	m.textBuf.WriteString(fmt.Sprintf(format, args...))
+	return m
 }
 
-func (m *MSG) ImageBytes(buf *bytes.Reader) {
-	m.append(NewImageFromBytes(buf))
+func (m *MSG) Image(buf *bytes.Reader) *MSG {
+	m.append(NewImage(buf))
+	return m
 }
 
-func (m *MSG) ImageByUrl(url string, opts ...requests.Option) {
-	var img = NewImageFromBytes(nil)
+func (m *MSG) ImageByUrl(url string, opts ...requests.Option) *MSG {
+	var img = NewImage(nil)
 	var body = new(bytes.Buffer)
 	err := requests.Get(url, nil, body, opts...)
 	if err == nil {
-		img.Buf = body
+		img.Buf = bytes.NewReader(body.Bytes())
 	}
 	m.append(img)
+	return m
 }
 
-func (m *MSG) Raw(e message.IMessageElement) {
+func (m *MSG) Raw(e message.IMessageElement) *MSG {
 	m.append(e)
+	return m
 }
 
-func (m *MSG) ToPrivateMSG(target int64) message.SendingMessage {
+func (m *MSG) ToMessage(client *client.QQClient, target Target) *message.SendingMessage {
+	var sending = message.NewSendingMessage()
 	m.flushText()
+	for _, e := range m.elements {
+		if custom, ok := e.(CustomElement); ok {
+			sending.Append(custom.PackToElement(client, target))
+			continue
+		}
+		sending.Append(e)
+	}
+	return sending
+}
+
+// Send 根据TargetType返回message.GroupMessage或者message.PrivateMessage
+func (m *MSG) Send(client *client.QQClient, target Target) interface{} {
+	msg := m.ToMessage(client, target)
+	switch target.TargetType() {
+	case TargetGroup:
+		return client.SendGroupMessage(target.TargetCode(), msg)
+	case TargetPrivate:
+		return client.SendPrivateMessage(target.TargetCode(), msg)
+	default:
+		panic("MSG Send: unknown target type")
+	}
 }
