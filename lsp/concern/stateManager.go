@@ -16,6 +16,35 @@ import (
 var logger = utils.GetModuleLogger("concern_manager")
 var ErrEmitQNotInit = errors.New("emit queue not enabled")
 
+type IStateManager interface {
+	Start() error
+	Stop()
+
+	GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig IConfig)
+	OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig IConfig) bool) error
+
+	GetGroupConcern(groupCode int64, id interface{}) (result Type, err error)
+	GetConcern(id interface{}) (result Type, err error)
+
+	CheckAndSetAtAllMark(groupCode int64, id interface{}) (result bool)
+	CheckGroupConcern(groupCode int64, id interface{}, ctype Type) error
+	CheckConcern(id interface{}, ctype Type) error
+	CheckFresh(id interface{}, setTTL bool) (result bool, err error)
+
+	AddGroupConcern(groupCode int64, id interface{}, ctype Type) (newCtype Type, err error)
+	RemoveGroupConcern(groupCode int64, id interface{}, ctype Type) (newCtype Type, err error)
+	RemoveAllByGroupCode(groupCode int64) (err error)
+	RemoveAllById(_id interface{}) (err error)
+
+	List(filter func(groupCode int64, id interface{}, p Type) bool) (idGroups []int64, ids []interface{}, idTypes []Type, err error)
+	GroupTypeById(ids []interface{}, types []Type) ([]interface{}, []Type, error)
+	ListByGroup(groupCode int64, filter func(id interface{}, p Type) bool) (ids []interface{}, idTypes []Type, err error)
+	ListIds() (ids []interface{}, err error)
+
+	FreshIndex(groups ...int64)
+	EmitFreshCore(name string, fresher func(ctype Type, id interface{}) error)
+}
+
 type StateManager struct {
 	*localdb.ShortCut
 	KeySet
@@ -27,7 +56,7 @@ type StateManager struct {
 }
 
 // GetGroupConcernConfig always return non-nil
-func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig *GroupConcernConfig) {
+func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig IConfig) {
 	var err error
 	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernConfigKey(groupCode, id))
@@ -47,7 +76,7 @@ func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (c
 }
 
 // OperateGroupConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，如果返回true，就保存GroupConcernConfig，否则就回滚。
-func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig *GroupConcernConfig) bool) error {
+func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig IConfig) bool) error {
 	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
 		var concernConfig *GroupConcernConfig
 		var configKey = c.GroupConcernConfigKey(groupCode, id)
@@ -185,7 +214,7 @@ func (c *StateManager) RemoveAllById(_id interface{}) (err error) {
 	})
 }
 
-// GetGroupConcern return the concern.Type in specific group for a id
+// GetGroupConcern return the concern.Type in specific group for an id
 func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result Type, err error) {
 	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
@@ -198,7 +227,7 @@ func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result 
 	return result, err
 }
 
-// GetConcern return the concern.Type combined from all group for a id
+// GetConcern 查询一个id在所有group内的 concern.Type
 func (c *StateManager) GetConcern(id interface{}) (result Type, err error) {
 	_, _, _, err = c.List(func(groupCode int64, _id interface{}, p Type) bool {
 		if id == _id {
@@ -274,17 +303,6 @@ func (c *StateManager) ListByGroup(groupCode int64, filter func(id interface{}, 
 	return
 }
 
-// ListById 查询一个id在所有group内的ctype
-func (c *StateManager) ListById(id interface{}) (result Type, err error) {
-	_, _, _, err = c.List(func(groupCode int64, _id interface{}, p Type) bool {
-		if id == _id {
-			result = result.Add(p)
-		}
-		return true
-	})
-	return result, err
-}
-
 func (c *StateManager) ListIds() (ids []interface{}, err error) {
 	var idSet = make(map[interface{}]bool)
 	_, _, _, err = c.List(func(groupCode int64, id interface{}, p Type) bool {
@@ -326,7 +344,7 @@ func (c *StateManager) GroupTypeById(ids []interface{}, types []Type) ([]interfa
 	return result, resultType, nil
 }
 
-func (c *StateManager) FreshCheck(id interface{}, setTTL bool) (result bool, err error) {
+func (c *StateManager) CheckFresh(id interface{}, setTTL bool) (result bool, err error) {
 	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
 		freshKey := c.FreshKey(id)
 		_, err := tx.Get(freshKey)
@@ -432,7 +450,7 @@ func (c *StateManager) EmitFreshCore(name string, fresher func(ctype Type, id in
 		select {
 		case e := <-c.emitChan:
 			id := e.Id
-			if ok, _ := c.FreshCheck(id, true); !ok {
+			if ok, _ := c.CheckFresh(id, true); !ok {
 				logger.WithFields(logrus.Fields{
 					"Id":     id,
 					"Result": ok,

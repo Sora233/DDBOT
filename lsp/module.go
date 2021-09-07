@@ -612,46 +612,46 @@ func (l *Lsp) compactTextElements(elements []message.IMessageElement) []message.
 	return compactMsg
 }
 
-func (l *Lsp) getInnerState(ctype concern.Type) *concern.StateManager {
-	switch ctype {
-	case concern.BilibiliNews, concern.BibiliLive:
-		return l.bilibiliConcern.StateManager.StateManager
-	case concern.DouyuLive:
-		return l.douyuConcern.StateManager.StateManager
-	case concern.YoutubeVideo, concern.YoutubeLive:
-		return l.youtubeConcern.StateManager.StateManager
-	case concern.HuyaLive:
-		return l.huyaConcern.StateManager.StateManager
-	default:
-		return nil
-	}
-}
-
-func (l *Lsp) getConcernConfig(groupCode int64, id interface{}, ctype concern.Type) *concern2.GroupConcernConfig {
-	state := l.getInnerState(ctype)
-	if state == nil {
-		return nil
-	}
-	return state.GetGroupConcernConfig(groupCode, id)
-}
-
-func (l *Lsp) getConcernConfigNotifyManager(ctype concern.Type, concernConfig *concern2.GroupConcernConfig) concern.NotifyManager {
-	if concernConfig == nil {
-		return nil
-	}
-	switch ctype {
-	case concern.BibiliLive, concern.BilibiliNews:
-		return bilibili.NewGroupConcernConfig(concernConfig, l.bilibiliConcern.StateManager)
-	case concern.DouyuLive:
-		return douyu.NewGroupConcernConfig(concernConfig)
-	case concern.YoutubeLive, concern.YoutubeVideo:
-		return youtube.NewGroupConcernConfig(concernConfig)
-	case concern.HuyaLive:
-		return huya.NewGroupConcernConfig(concernConfig)
-	default:
-		return concernConfig
-	}
-}
+//func (l *Lsp) getInnerState(ctype concern.Type) *concern.StateManager {
+//	switch ctype {
+//	case concern.BilibiliNews, concern.BibiliLive:
+//		return l.bilibiliConcern.StateManager.StateManager
+//	case concern.DouyuLive:
+//		return l.douyuConcern.StateManager.StateManager
+//	case concern.YoutubeVideo, concern.YoutubeLive:
+//		return l.youtubeConcern.StateManager.StateManager
+//	case concern.HuyaLive:
+//		return l.huyaConcern.StateManager.StateManager
+//	default:
+//		return nil
+//	}
+//}
+//
+//func (l *Lsp) getConcernConfig(groupCode int64, id interface{}, ctype concern.Type) *concern2.GroupConcernConfig {
+//	state := l.getInnerState(ctype)
+//	if state == nil {
+//		return nil
+//	}
+//	return state.GetGroupConcernConfig(groupCode, id)
+//}
+//
+//func (l *Lsp) getConcernConfigNotifyManager(ctype concern.Type, concernConfig *concern2.GroupConcernConfig) concern.INotifyManager {
+//	if concernConfig == nil {
+//		return nil
+//	}
+//	switch ctype {
+//	case concern.BibiliLive, concern.BilibiliNews:
+//		return bilibili.NewGroupConcernConfig(concernConfig, l.bilibiliConcern.StateManager)
+//	case concern.DouyuLive:
+//		return douyu.NewGroupConcernConfig(concernConfig)
+//	case concern.YoutubeLive, concern.YoutubeVideo:
+//		return youtube.NewGroupConcernConfig(concernConfig)
+//	case concern.HuyaLive:
+//		return huya.NewGroupConcernConfig(concernConfig)
+//	default:
+//		return concernConfig
+//	}
+//}
 
 //
 //func (l *Lsp) IsPublicMode() bool {

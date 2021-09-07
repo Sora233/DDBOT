@@ -2,7 +2,6 @@ package concern
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/lsp/msg"
 	"github.com/sirupsen/logrus"
 	"sort"
 	"strings"
@@ -135,14 +134,13 @@ func FromString(s string) Type {
 
 type Concern interface {
 	Name() string
-	Start()
+	Start() error
 	Stop()
+	ParseId(string) (interface{}, error)
 
-	Add(groupCode int64, mid int64, ctype Type) *msg.MSG
-	Remove(groupCode int64, mid int64, ctype Type) *msg.MSG
-	List(groupCode int64, ctype Type) *msg.MSG
-	GetStateManager() *StateManager
-	GetConfig(groupCode int64, id interface{}, ctype Type) Config
-	GetNotifyManager(groupCode int64, id interface{}, ctype Type) NotifyManager
+	GetStateManager() IStateManager
+	GetConfig(groupCode int64, id interface{}, ctype Type) IConfig
+	GetNotifyManager(groupCode int64, id interface{}, ctype Type) INotifyManager
+	FreshIndex()
 	Describe(ctype Type) string
 }

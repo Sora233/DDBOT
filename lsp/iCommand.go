@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	concern2 "github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/douyu"
 	"github.com/Sora233/DDBOT/lsp/huya"
 	"github.com/Sora233/DDBOT/lsp/permission"
@@ -566,10 +565,10 @@ func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site st
 		c.TextReply(fmt.Sprintf("失败 - 未定义的类型：\n%v", strings.Join(invalid, " ")))
 		return
 	}
-	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern2.GroupConcernConfig) bool {
-		config.GroupConcernFilter.Type = concern2.FilterTypeType
-		filterConfig := &concern2.GroupConcernFilterConfigByType{Type: types}
-		config.GroupConcernFilter.Config = filterConfig.ToString()
+	err := iConfigCmd(c, groupCode, id, site, ctype, func(config concern.IConfig) bool {
+		config.GetGroupConcernFilter().Type = concern.FilterTypeType
+		filterConfig := &concern.GroupConcernFilterConfigByType{Type: types}
+		config.GetGroupConcernFilter().Config = filterConfig.ToString()
 		return true
 	})
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
@@ -597,10 +596,10 @@ func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site
 		return
 	}
 
-	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern2.GroupConcernConfig) bool {
-		config.GroupConcernFilter.Type = concern2.FilterTypeNotType
-		filterConfig := &concern2.GroupConcernFilterConfigByType{Type: types}
-		config.GroupConcernFilter.Config = filterConfig.ToString()
+	err := iConfigCmd(c, groupCode, id, site, ctype, func(config concern.IConfig) bool {
+		config.GetGroupConcernFilter().Type = concern.FilterTypeNotType
+		filterConfig := &concern.GroupConcernFilterConfigByType{Type: types}
+		config.GetGroupConcernFilter().Config = filterConfig.ToString()
 		return true
 	})
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
@@ -618,10 +617,10 @@ func IConfigFilterCmdText(c *MessageContext, groupCode int64, id string, site st
 		c.TextReply("失败 - 没有指定过滤关键字")
 		return
 	}
-	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern2.GroupConcernConfig) bool {
-		config.GroupConcernFilter.Type = concern2.FilterTypeText
-		filterConfig := &concern2.GroupConcernFilterConfigByText{Text: keywords}
-		config.GroupConcernFilter.Config = filterConfig.ToString()
+	err := iConfigCmd(c, groupCode, id, site, ctype, func(config concern.IConfig) bool {
+		config.GetGroupConcernFilter().Type = concern.FilterTypeText
+		filterConfig := &concern.GroupConcernFilterConfigByText{Text: keywords}
+		config.GetGroupConcernFilter().Config = filterConfig.ToString()
 		return true
 	})
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
@@ -635,8 +634,8 @@ func IConfigFilterCmdText(c *MessageContext, groupCode int64, id string, site st
 }
 
 func IConfigFilterCmdClear(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type) {
-	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern2.GroupConcernConfig) bool {
-		config.GroupConcernFilter = concern2.GroupConcernFilterConfig{}
+	err := iConfigCmd(c, groupCode, id, site, ctype, func(config concern.IConfig) bool {
+		*config.GetGroupConcernFilter() = concern.GroupConcernFilterConfig{}
 		return true
 	})
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
@@ -650,19 +649,19 @@ func IConfigFilterCmdClear(c *MessageContext, groupCode int64, id string, site s
 }
 
 func IConfigFilterCmdShow(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type) {
-	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern2.GroupConcernConfig) bool {
-		if config.GroupConcernFilter.Empty() {
+	err := iConfigCmd(c, groupCode, id, site, ctype, func(config concern.IConfig) bool {
+		if config.GetGroupConcernFilter().Empty() {
 			c.TextReply("当前配置为空")
 			return false
 		}
 		sb := strings.Builder{}
 		sb.WriteString("当前配置：\n")
-		switch config.GroupConcernFilter.Type {
-		case concern2.FilterTypeText:
+		switch config.GetGroupConcernFilter().Type {
+		case concern.FilterTypeText:
 			sb.WriteString("关键字过滤模式：\n")
-			filter, err := config.GroupConcernFilter.GetFilterByText()
+			filter, err := config.GetGroupConcernFilter().GetFilterByText()
 			if err != nil {
-				logger.WithField("filter_config", config.GroupConcernFilter.Config).Errorf("get filter failed %v", err)
+				logger.WithField("filter_config", config.GetGroupConcernFilter().Config).Errorf("get filter failed %v", err)
 				c.TextReply("查询失败 - 内部错误")
 				return false
 			}
@@ -670,16 +669,16 @@ func IConfigFilterCmdShow(c *MessageContext, groupCode int64, id string, site st
 				sb.WriteString(kw)
 				sb.WriteRune('\n')
 			}
-		case concern2.FilterTypeType, concern2.FilterTypeNotType:
-			filter, err := config.GroupConcernFilter.GetFilterByType()
+		case concern.FilterTypeType, concern.FilterTypeNotType:
+			filter, err := config.GetGroupConcernFilter().GetFilterByType()
 			if err != nil {
-				logger.WithField("filter_config", config.GroupConcernFilter.Config).Errorf("get filter failed %v", err)
+				logger.WithField("filter_config", config.GetGroupConcernFilter().Config).Errorf("get filter failed %v", err)
 				c.TextReply("查询失败 - 内部错误")
 				return false
 			}
-			if config.GroupConcernFilter.Type == concern2.FilterTypeType {
+			if config.GetGroupConcernFilter().Type == concern.FilterTypeType {
 				sb.WriteString("动态类型过滤模式 - 只推送以下种类的动态：\n")
-			} else if config.GroupConcernFilter.Type == concern2.FilterTypeNotType {
+			} else if config.GetGroupConcernFilter().Type == concern.FilterTypeNotType {
 				sb.WriteString("动态类型过滤模式 - 不推送以下种类的动态：\n")
 			}
 			for _, tp := range filter.Type {
@@ -700,7 +699,7 @@ func IConfigFilterCmdShow(c *MessageContext, groupCode int64, id string, site st
 	}
 }
 
-func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, f func(*concern2.GroupConcernConfig) bool) (err error) {
+func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, f func(config concern.IConfig) bool) (err error) {
 	log := c.Log
 	if err := configCmdGroupCommonCheck(c, groupCode); err != nil {
 		return err
@@ -715,7 +714,7 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 			return
 		}
 		err = c.Lsp.bilibiliConcern.CheckGroupConcern(groupCode, mid, ctype)
-		if err != concern2.ErrAlreadyExists {
+		if err != concern.ErrAlreadyExists {
 			return errors.New("失败 - 该id尚未watch")
 		}
 		err = c.Lsp.bilibiliConcern.OperateGroupConcernConfig(groupCode, mid, f)
@@ -727,19 +726,19 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 			return errors.New("失败 - douyu id格式错误")
 		}
 		err = c.Lsp.douyuConcern.CheckGroupConcern(groupCode, uid, ctype)
-		if err != concern2.ErrAlreadyExists {
+		if err != concern.ErrAlreadyExists {
 			return errors.New("失败 - 该id尚未watch")
 		}
 		err = c.Lsp.douyuConcern.OperateGroupConcernConfig(groupCode, uid, f)
 	case youtube.Site:
 		err = c.Lsp.youtubeConcern.CheckGroupConcern(groupCode, id, ctype)
-		if err != concern2.ErrAlreadyExists {
+		if err != concern.ErrAlreadyExists {
 			return errors.New("失败 - 该id尚未watch")
 		}
 		err = c.Lsp.youtubeConcern.OperateGroupConcernConfig(groupCode, id, f)
 	case huya.Site:
 		err = c.Lsp.huyaConcern.CheckGroupConcern(groupCode, id, ctype)
-		if err != concern2.ErrAlreadyExists {
+		if err != concern.ErrAlreadyExists {
 			return errors.New("失败 - 该id尚未watch")
 		}
 		err = c.Lsp.huyaConcern.OperateGroupConcernConfig(groupCode, id, f)
@@ -800,20 +799,20 @@ func configCmdGroupCommonCheck(c *MessageContext, groupCode int64) error {
 	return nil
 }
 
-func operateAtConcernConfig(c *MessageContext, ctype concern.Type, action string, QQ []int64) func(concernConfig *concern2.GroupConcernConfig) bool {
-	return func(concernConfig *concern2.GroupConcernConfig) bool {
+func operateAtConcernConfig(c *MessageContext, ctype concern.Type, action string, QQ []int64) func(concernConfig concern.IConfig) bool {
+	return func(concernConfig concern.IConfig) bool {
 		switch action {
 		case "add":
-			concernConfig.GroupConcernAt.MergeAtSomeoneList(ctype, QQ)
+			concernConfig.GetGroupConcernAt().MergeAtSomeoneList(ctype, QQ)
 			return true
 		case "remove":
-			concernConfig.GroupConcernAt.RemoveAtSomeoneList(ctype, QQ)
+			concernConfig.GetGroupConcernAt().RemoveAtSomeoneList(ctype, QQ)
 			return true
 		case "clear":
-			concernConfig.GroupConcernAt.ClearAtSomeoneList(ctype)
+			concernConfig.GetGroupConcernAt().ClearAtSomeoneList(ctype)
 			return true
 		case "show":
-			qqList := concernConfig.GroupConcernAt.GetAtSomeoneList(ctype)
+			qqList := concernConfig.GetGroupConcernAt().GetAtSomeoneList(ctype)
 			if len(qqList) == 0 {
 				c.TextReply("当前配置为空")
 				return false
@@ -827,16 +826,16 @@ func operateAtConcernConfig(c *MessageContext, ctype concern.Type, action string
 	}
 }
 
-func operateAtAllConcernConfig(c *MessageContext, ctype concern.Type, on bool) func(concernConfig *concern2.GroupConcernConfig) bool {
-	return func(concernConfig *concern2.GroupConcernConfig) bool {
-		if concernConfig.GroupConcernAt.CheckAtAll(ctype) {
+func operateAtAllConcernConfig(c *MessageContext, ctype concern.Type, on bool) func(concernConfig concern.IConfig) bool {
+	return func(concernConfig concern.IConfig) bool {
+		if concernConfig.GetGroupConcernAt().CheckAtAll(ctype) {
 			if on {
 				// 配置@all，但已经配置了
 				c.TextReply("失败 - 已经配置过了")
 				return false
 			} else {
 				// 取消配置@all
-				concernConfig.GroupConcernAt.AtAll = concernConfig.GroupConcernAt.AtAll.Remove(ctype)
+				concernConfig.GetGroupConcernAt().AtAll = concernConfig.GetGroupConcernAt().AtAll.Remove(ctype)
 				return true
 			}
 		} else {
@@ -846,23 +845,23 @@ func operateAtAllConcernConfig(c *MessageContext, ctype concern.Type, on bool) f
 				return false
 			} else {
 				// 配置@all
-				concernConfig.GroupConcernAt.AtAll = concernConfig.GroupConcernAt.AtAll.Add(ctype)
+				concernConfig.GetGroupConcernAt().AtAll = concernConfig.GetGroupConcernAt().AtAll.Add(ctype)
 				return true
 			}
 		}
 	}
 }
 
-func operateNotifyConcernConfig(c *MessageContext, ctype concern.Type, on bool) func(concernConfig *concern2.GroupConcernConfig) bool {
-	return func(concernConfig *concern2.GroupConcernConfig) bool {
-		if concernConfig.GroupConcernNotify.CheckTitleChangeNotify(ctype) {
+func operateNotifyConcernConfig(c *MessageContext, ctype concern.Type, on bool) func(concernConfig concern.IConfig) bool {
+	return func(concernConfig concern.IConfig) bool {
+		if concernConfig.GetGroupConcernNotify().CheckTitleChangeNotify(ctype) {
 			if on {
 				// 配置推送，但已经配置过了
 				c.TextReply("失败 - 已经配置过了")
 				return false
 			} else {
 				// 取消配置推送
-				concernConfig.GroupConcernNotify.TitleChangeNotify = concernConfig.GroupConcernNotify.TitleChangeNotify.Remove(ctype)
+				concernConfig.GetGroupConcernNotify().TitleChangeNotify = concernConfig.GetGroupConcernNotify().TitleChangeNotify.Remove(ctype)
 				return true
 			}
 		} else {
@@ -872,23 +871,23 @@ func operateNotifyConcernConfig(c *MessageContext, ctype concern.Type, on bool) 
 				return false
 			} else {
 				// 配置推送
-				concernConfig.GroupConcernNotify.TitleChangeNotify = concernConfig.GroupConcernNotify.TitleChangeNotify.Add(ctype)
+				concernConfig.GetGroupConcernNotify().TitleChangeNotify = concernConfig.GetGroupConcernNotify().TitleChangeNotify.Add(ctype)
 				return true
 			}
 		}
 	}
 }
 
-func operateOfflineNotifyConcernConfig(c *MessageContext, ctype concern.Type, on bool) func(concernConfig *concern2.GroupConcernConfig) bool {
-	return func(concernConfig *concern2.GroupConcernConfig) bool {
-		if concernConfig.GroupConcernNotify.CheckOfflineNotify(ctype) {
+func operateOfflineNotifyConcernConfig(c *MessageContext, ctype concern.Type, on bool) func(concernConfig concern.IConfig) bool {
+	return func(concernConfig concern.IConfig) bool {
+		if concernConfig.GetGroupConcernNotify().CheckOfflineNotify(ctype) {
 			if on {
 				// 配置推送，但已经配置过了
 				c.TextReply("失败 - 已经配置过了")
 				return false
 			} else {
 				// 取消配置推送
-				concernConfig.GroupConcernNotify.OfflineNotify = concernConfig.GroupConcernNotify.OfflineNotify.Remove(ctype)
+				concernConfig.GetGroupConcernNotify().OfflineNotify = concernConfig.GetGroupConcernNotify().OfflineNotify.Remove(ctype)
 				return true
 			}
 		} else {
@@ -897,7 +896,7 @@ func operateOfflineNotifyConcernConfig(c *MessageContext, ctype concern.Type, on
 				c.TextReply("失败 - 该配置未设置")
 				return false
 			} else {
-				concernConfig.GroupConcernNotify.OfflineNotify = concernConfig.GroupConcernNotify.OfflineNotify.Add(ctype)
+				concernConfig.GetGroupConcernNotify().OfflineNotify = concernConfig.GetGroupConcernNotify().OfflineNotify.Add(ctype)
 				return true
 			}
 		}

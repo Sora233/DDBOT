@@ -1,6 +1,6 @@
 package concern
 
-type NotifyManager interface {
+type INotifyManager interface {
 	Callback
 	Hook
 }

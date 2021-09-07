@@ -3,6 +3,7 @@ package registry
 import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"golang.org/x/sync/errgroup"
 )
 
 var logger = utils.GetModuleLogger("registry")
@@ -35,4 +36,36 @@ func RegisterConcernManager(c concern.Concern, site string, concernType []concer
 			logger.Errorf("Concern %v - Site %v and Type %v is already registered by Concern %v", c.Name(), site, ctype, lastC.Name())
 		}
 	}
+}
+
+func StartAll() error {
+	all := ListConcernManager()
+	errG := errgroup.Group{}
+	for _, c := range all {
+		errG.Go(func() error {
+			return c.Start()
+		})
+	}
+	return errG.Wait()
+}
+
+func StopAll() {
+	all := ListConcernManager()
+	for _, c := range all {
+		c.Stop()
+	}
+}
+
+func ListConcernManager() []concern.Concern {
+	var resultMap = make(map[concern.Concern]interface{})
+	for _, cmap := range globalCenter.M {
+		for _, c := range cmap {
+			resultMap[c] = struct{}{}
+		}
+	}
+	var result []concern.Concern
+	for k := range resultMap {
+		result = append(result, k)
+	}
+	return result
 }

@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-type Config interface {
+type IConfig interface {
 	GetGroupConcernAt() *GroupConcernAtConfig
 	GetGroupConcernNotify() *GroupConcernNotifyConfig
 	GetGroupConcernFilter() *GroupConcernFilterConfig
