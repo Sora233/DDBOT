@@ -8,10 +8,11 @@ import (
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
-	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/msg"
 	"github.com/Sora233/DDBOT/lsp/permission"
+	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/sliceutil"
@@ -147,20 +148,13 @@ func (c *LspPrivateCommand) ListCommand() {
 	defer func() { log.Info("list command end") }()
 
 	var listCmd struct {
-		Site  string `optional:"" short:"s" help:"已弃用"`
-		Type  string `optional:"" short:"t" help:"已弃用"`
-		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Group int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
 	}
 	_, output := c.parseCommandSyntax(&listCmd, ListCommand)
 	if output != "" {
 		c.textReply(output)
 	}
 	if c.exit {
-		return
-	}
-
-	if listCmd.Site != "" || listCmd.Type != "" {
-		c.textReply("命令已更新，请直接输入/list即可")
 		return
 	}
 
@@ -323,8 +317,8 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 	defer func() { log.Info("watch command end") }()
 
 	var (
-		site      = bilibili.Site
-		watchType = concern.BibiliLive
+		site      string
+		watchType concern.Type
 		err       error
 	)
 
@@ -336,8 +330,8 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 	}
 
 	var watchCmd struct {
-		Site  string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
-		Type  string `optional:"" short:"t" default:"live" help:"news / live"`
+		Site  string `optional:"" short:"s" default:"bilibili" help:"订阅网站"`
+		Type  string `optional:"" short:"t" default:"live" help:"订阅类型"`
 		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
 		Id    string `arg:""`
 	}
@@ -1081,34 +1075,19 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 		return
 	}
 
-	msg := message.NewSendingMessage()
-	msg.Append(localutils.MessageTextf("当前好友数：%v\n", len(c.bot.FriendList)))
-	msg.Append(localutils.MessageTextf("当前群组数：%v\n", len(c.bot.GroupList)))
-	ids, err := c.l.bilibiliConcern.ListIds()
-	if err != nil {
-		msg.Append(localutils.MessageTextf("当前Bilibili订阅数：获取失败\n"))
-	} else {
-		msg.Append(localutils.MessageTextf("当前Bilibili订阅数：%v\n", len(ids)))
+	m := msg.NewMSG()
+	m.Textf("当前好友数：%v\n", len(c.bot.FriendList))
+	m.Textf("当前群组数：%v\n", len(c.bot.GroupList))
+	for _, cm := range registry.ListConcernManager() {
+		ids, err := cm.GetStateManager().ListIds()
+		if err != nil {
+			m.Textf("当前%v订阅数：获取失败\n", cm.Site())
+		} else {
+			m.Textf("当前%v订阅数：%v\n", len(ids), cm.Site())
+		}
+
 	}
-	ids, err = c.l.douyuConcern.ListIds()
-	if err != nil {
-		msg.Append(localutils.MessageTextf("当前Douyu订阅数：获取失败\n"))
-	} else {
-		msg.Append(localutils.MessageTextf("当前Douyu订阅数：%v\n", len(ids)))
-	}
-	ids, err = c.l.youtubeConcern.ListIds()
-	if err != nil {
-		msg.Append(localutils.MessageTextf("当前YTB订阅数：获取失败\n"))
-	} else {
-		msg.Append(localutils.MessageTextf("当前YTB订阅数：%v\n", len(ids)))
-	}
-	ids, err = c.l.huyaConcern.ListIds()
-	if err != nil {
-		msg.Append(localutils.MessageTextf("当前Huya订阅数：获取失败\n"))
-	} else {
-		msg.Append(localutils.MessageTextf("当前Huya订阅数：%v\n", len(ids)))
-	}
-	c.send(msg)
+	c.send(m.ToMessage(c.bot.QQClient, msg.NewPrivateTarget(c.uin())))
 }
 
 func (c *LspPrivateCommand) DebugCheck() bool {

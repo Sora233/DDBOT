@@ -14,10 +14,8 @@ import (
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/douyu"
-	"github.com/Sora233/DDBOT/lsp/huya"
 	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/DDBOT/lsp/youtube"
+	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/local_proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/py"
@@ -29,7 +27,6 @@ import (
 	"math/rand"
 	"runtime"
 	"runtime/debug"
-	"strings"
 	"sync"
 	"time"
 )
@@ -41,17 +38,12 @@ var logger = utils.GetModuleLogger(ModuleName)
 var Debug = false
 
 type Lsp struct {
-	bilibiliConcern *bilibili.Concern
-	// 辣鸡语言毁我青春
-	douyuConcern   *douyu.Concern
-	youtubeConcern *youtube.Concern
-	huyaConcern    *huya.Concern
-	pool           image_pool.Pool
-	concernNotify  chan concern.Notify
-	stop           chan interface{}
-	wg             sync.WaitGroup
-	status         *Status
-	notifyWg       sync.WaitGroup
+	pool          image_pool.Pool
+	concernNotify chan concern.Notify
+	stop          chan interface{}
+	wg            sync.WaitGroup
+	status        *Status
+	notifyWg      sync.WaitGroup
 
 	PermissionStateManager *permission.StateManager
 	LspStateManager        *StateManager
@@ -92,11 +84,6 @@ func (l *Lsp) Init() {
 
 	l.PermissionStateManager = permission.NewStateManager()
 	l.LspStateManager = NewStateManager()
-
-	l.bilibiliConcern = bilibili.NewConcern(l.concernNotify)
-	l.douyuConcern = douyu.NewConcern(l.concernNotify)
-	l.youtubeConcern = youtube.NewConcern(l.concernNotify)
-	l.huyaConcern = huya.NewConcern(l.concernNotify)
 
 	imagePoolType := config.GlobalConfig.GetString("imagePool.type")
 	log = logger.WithField("image_pool_type", imagePoolType)
@@ -326,17 +313,19 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
-		bilibiliIds, _, _ := l.bilibiliConcern.ListByGroup(event.Group.Code, nil)
-		douyuIds, _, _ := l.douyuConcern.ListByGroup(event.Group.Code, nil)
-		huyaIds, _, _ := l.huyaConcern.ListByGroup(event.Group.Code, nil)
-		ytbIds, _, _ := l.youtubeConcern.ListByGroup(event.Group.Code, nil)
 		log := logger.WithField("GroupCode", event.Group.Code).
 			WithField("GroupName", event.Group.Name).
-			WithField("MemberCount", event.Group.MemberCount).
-			WithField("bilibili订阅数", len(bilibiliIds)).
-			WithField("douyu订阅数", len(douyuIds)).
-			WithField("huya订阅数", len(huyaIds)).
-			WithField("ytb订阅数", len(ytbIds))
+			WithField("MemberCount", event.Group.MemberCount)
+		for _, c := range registry.ListConcernManager() {
+			_, ids, _, err := c.GetStateManager().List(func(groupCode int64, id interface{}, p concern.Type) bool {
+				return groupCode == event.Group.Code
+			})
+			if err != nil {
+				log = log.WithField(fmt.Sprintf("%v订阅", c.Site()), "查询失败")
+			} else {
+				log = log.WithField(fmt.Sprintf("%v订阅", c.Site()), len(ids))
+			}
+		}
 		if event.Operator == nil {
 			log.Info("退出群聊")
 		} else {
@@ -415,10 +404,9 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 			}
 		}
 	}()
-	l.bilibiliConcern.Start()
-	l.douyuConcern.Start()
-	l.youtubeConcern.Start()
-	l.huyaConcern.Start()
+	for _, c := range registry.ListConcernManager() {
+		c.GetStateManager().Start()
+	}
 	l.started = true
 	logger.Infof("DDBOT启动完成")
 	logger.Infof("D宝，一款真正人性化的单推BOT")
@@ -441,10 +429,9 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 		close(l.stop)
 	}
 
-	l.bilibiliConcern.Stop()
-	l.douyuConcern.Stop()
-	l.huyaConcern.Stop()
-	l.youtubeConcern.Stop()
+	for _, c := range registry.ListConcernManager() {
+		c.GetStateManager().Stop()
+	}
 	close(l.concernNotify)
 
 	l.wg.Wait()
@@ -501,19 +488,17 @@ func (l *Lsp) checkImage(img *message.GroupImageElement) string {
 }
 
 func (l *Lsp) FreshIndex() {
-	l.bilibiliConcern.FreshIndex()
-	l.douyuConcern.FreshIndex()
-	l.youtubeConcern.FreshIndex()
-	l.huyaConcern.FreshIndex()
+	for _, c := range registry.ListConcernManager() {
+		c.GetStateManager().FreshIndex()
+	}
 	l.PermissionStateManager.FreshIndex()
 	l.LspStateManager.FreshIndex()
 }
 
 func (l *Lsp) RemoveAllByGroup(groupCode int64) {
-	l.bilibiliConcern.RemoveAllByGroupCode(groupCode)
-	l.douyuConcern.RemoveAllByGroupCode(groupCode)
-	l.youtubeConcern.RemoveAllByGroupCode(groupCode)
-	l.huyaConcern.RemoveAllByGroupCode(groupCode)
+	for _, c := range registry.ListConcernManager() {
+		c.GetStateManager().RemoveAllByGroupCode(groupCode)
+	}
 	l.PermissionStateManager.RemoveAllByGroupCode(groupCode)
 }
 
@@ -590,26 +575,6 @@ func (l *Lsp) sendChainGroupMessage(groupCode int64, msgs []*message.SendingMess
 		}
 	}
 	return res
-}
-
-func (l *Lsp) compactTextElements(elements []message.IMessageElement) []message.IMessageElement {
-	var compactMsg []message.IMessageElement
-	sb := strings.Builder{}
-	for _, e := range elements {
-		if e.Type() == message.Text {
-			sb.WriteString(e.(*message.TextElement).Content)
-		} else {
-			if sb.Len() != 0 {
-				compactMsg = append(compactMsg, message.NewText(sb.String()))
-				sb = strings.Builder{}
-			}
-			compactMsg = append(compactMsg, e)
-		}
-	}
-	if sb.Len() != 0 {
-		compactMsg = append(compactMsg, message.NewText(sb.String()))
-	}
-	return compactMsg
 }
 
 //func (l *Lsp) getInnerState(ctype concern.Type) *concern.StateManager {

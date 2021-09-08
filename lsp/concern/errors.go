@@ -7,4 +7,5 @@ var (
 	ErrConcernNotExists     = errors.New("concern not exists")
 	ErrAlreadyExists        = errors.New("already exists")
 	ErrLengthMismatch       = errors.New("length mismatch")
+	ErrIdentityNotFound     = errors.New("identity not found")
 )

@@ -39,7 +39,6 @@ type IStateManager interface {
 
 	List(filter func(groupCode int64, id interface{}, p Type) bool) (idGroups []int64, ids []interface{}, idTypes []Type, err error)
 	GroupTypeById(ids []interface{}, types []Type) ([]interface{}, []Type, error)
-	ListByGroup(groupCode int64, filter func(id interface{}, p Type) bool) (ids []interface{}, idTypes []Type, err error)
 	ListIds() (ids []interface{}, err error)
 
 	FreshIndex(groups ...int64)

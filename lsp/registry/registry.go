@@ -84,3 +84,23 @@ func GetConcernManager(site string, ctype concern.Type) concern.Concern {
 		return sub[ctype]
 	}
 }
+
+func ListSite() []string {
+	resultMap := make(map[string]interface{})
+	for _, c := range ListConcernManager() {
+		resultMap[c.Site()] = struct{}{}
+	}
+	var result []string
+	for k := range resultMap {
+		result = append(result, k)
+	}
+	return result
+}
+
+func ListType(site string) []concern.Type {
+	var result []concern.Type
+	for k := range globalCenter.M[site] {
+		result = append(result, k)
+	}
+	return result
+}

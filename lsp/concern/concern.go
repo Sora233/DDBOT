@@ -138,7 +138,11 @@ type Concern interface {
 	Stop()
 	ParseId(string) (interface{}, error)
 
+	Add(groupCode int64, id interface{}, ctype Type) (IdentityInfo, error)
+	Remove(groupCode int64, id interface{}, ctyp Type) (IdentityInfo, error)
 	List(groupCode int64, ctype Type) []IdentityInfo
+	Get(id interface{}) (IdentityInfo, error)
+
 	GetStateManager() IStateManager
 	FreshIndex(groupCode ...int64)
 }

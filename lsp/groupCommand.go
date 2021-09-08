@@ -368,8 +368,8 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	defer func() { log.Info("watch command end") }()
 
 	var watchCmd struct {
-		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
-		Type string `optional:"" short:"t" default:"live" help:"news / live"`
+		Site string `optional:"" short:"s" default:"bilibili" help:"订阅网站"`
+		Type string `optional:"" short:"t" default:"live" help:"订阅类型"`
 		Id   string `arg:""`
 	}
 	var name string
@@ -407,20 +407,12 @@ func (lgc *LspGroupCommand) ListCommand() {
 	log.Info("run list command")
 	defer func() { log.Info("list command end") }()
 
-	var listCmd struct {
-		Site string `optional:"" short:"s" help:"已弃用"`
-		Type string `optional:"" short:"t" help:"已弃用"`
-	}
+	var listCmd struct{}
 	_, output := lgc.parseCommandSyntax(&listCmd, ListCommand)
 	if output != "" {
 		lgc.textReply(output)
 	}
 	if lgc.exit {
-		return
-	}
-
-	if listCmd.Site != "" || listCmd.Type != "" {
-		lgc.textReply("命令已更新，请直接输入/list即可")
 		return
 	}
 
