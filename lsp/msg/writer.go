@@ -32,15 +32,16 @@ func NewTextf(format string, args ...interface{}) *MSG {
 	return msg
 }
 
-func (m *MSG) append(e message.IMessageElement) {
+func (m *MSG) Append(e message.IMessageElement) *MSG {
 	if e.Type() == message.Text {
 		if textE, ok := e.(*message.TextElement); ok {
 			m.textBuf.WriteString(textE.Content)
-			return
+			return m
 		}
 	}
 	m.flushText()
 	m.elements = append(m.elements, e)
+	return m
 }
 
 func (m *MSG) flushText() {
@@ -61,7 +62,7 @@ func (m *MSG) Textf(format string, args ...interface{}) *MSG {
 }
 
 func (m *MSG) Image(buf *bytes.Reader) *MSG {
-	m.append(NewImage(buf))
+	m.Append(NewImage(buf))
 	return m
 }
 
@@ -72,12 +73,7 @@ func (m *MSG) ImageByUrl(url string, opts ...requests.Option) *MSG {
 	if err == nil {
 		img.Buf = bytes.NewReader(body.Bytes())
 	}
-	m.append(img)
-	return m
-}
-
-func (m *MSG) Raw(e message.IMessageElement) *MSG {
-	m.append(e)
+	m.Append(img)
 	return m
 }
 
