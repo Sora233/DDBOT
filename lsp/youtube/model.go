@@ -2,7 +2,7 @@ package youtube
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
@@ -20,15 +20,13 @@ func (ui *UserInfo) GetChannelName() string {
 	return ui.ChannelName
 }
 
-type EventType int64
-
 const (
-	Video EventType = iota
-	Live
+	Video concern.Type = "news"
+	Live  concern.Type = "live"
 )
 
-type ConcernEvent interface {
-	Type() EventType
+type concernEvent interface {
+	Type() concern.Type
 }
 
 // VideoInfo may be a video or a live, depend on the VideoType
@@ -56,7 +54,7 @@ func (v *VideoInfo) Logger() *logrus.Entry {
 	})
 }
 
-func (v *VideoInfo) Type() EventType {
+func (v *VideoInfo) Type() concern.Type {
 	if v.IsLive() {
 		return Live
 	} else {
@@ -158,9 +156,9 @@ func (notify *ConcernNotify) Logger() *logrus.Entry {
 
 func (notify *ConcernNotify) Type() concern.Type {
 	if notify.IsLive() {
-		return concern.YoutubeLive
+		return Live
 	} else {
-		return concern.YoutubeVideo
+		return Video
 	}
 }
 

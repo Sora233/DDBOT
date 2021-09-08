@@ -20,18 +20,18 @@ func (h *HookResult) PassOrReason(pass bool, reason string) {
 	}
 }
 
-type defaultHook struct {
+type DefaultHook struct {
 }
 
-func (d defaultHook) NewsFilterHook(notify Notify) *HookResult {
+func (d DefaultHook) NewsFilterHook(notify Notify) *HookResult {
 	return defaultHookResult
 }
 
-func (d defaultHook) AtBeforeHook(notify Notify) *HookResult {
+func (d DefaultHook) AtBeforeHook(notify Notify) *HookResult {
 	return defaultHookResult
 }
 
-func (d defaultHook) ShouldSendHook(notify Notify) *HookResult {
+func (d DefaultHook) ShouldSendHook(notify Notify) *HookResult {
 	return defaultHookResult
 }
 

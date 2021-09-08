@@ -6,7 +6,7 @@ import (
 	"errors"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	lru "github.com/hashicorp/golang-lru"
@@ -22,78 +22,8 @@ type NewsInfo struct {
 	Cards         []*Card `json:"-"`
 }
 
-func (n *NewsInfo) Type() EventType {
+func (n *NewsInfo) Type() concern.Type {
 	return News
-}
-
-func (n *NewsInfo) checkIndex(index int) error {
-	if len(n.Cards) <= index || n.Cards[index].GetCard() == "" {
-		return errors.New("card not found or empty")
-	}
-	return nil
-}
-
-func (n *NewsInfo) GetCardWithImage(index int) (*CardWithImage, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithImage()
-}
-
-func (n *NewsInfo) GetCardWithOrig(index int) (*CardWithOrig, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithOrig()
-}
-
-func (n *NewsInfo) GetCardWithVideo(index int) (*CardWithVideo, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithVideo()
-}
-
-func (n *NewsInfo) GetCardTextOnly(index int) (*CardTextOnly, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardTextOnly()
-}
-
-func (n *NewsInfo) GetCardWithPost(index int) (*CardWithPost, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithPost()
-}
-
-func (n *NewsInfo) GetCardWithMusic(index int) (*CardWithMusic, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithMusic()
-}
-
-func (n *NewsInfo) GetCardWithSketch(index int) (*CardWithSketch, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithSketch()
-}
-
-func (n *NewsInfo) GetCardWithLive(index int) (*CardWithLive, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithLive()
-}
-
-func (n *NewsInfo) GetCardWithLiveV2(index int) (*CardWithLiveV2, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithLiveV2()
 }
 
 func (n *NewsInfo) ToString() string {
@@ -110,13 +40,12 @@ func (n *NewsInfo) Logger() *logrus.Entry {
 		"Mid":      n.Mid,
 		"Name":     n.Name,
 		"CardSize": len(n.Cards),
-		"Type":     "News",
+		"Type":     n.Type().String(),
 	})
 }
 
 type ConcernNewsNotify struct {
 	GroupCode int64 `json:"group_code"`
-	// NewsInfo len(Cards)必须为1
 	*UserInfo
 	Card *Card
 
@@ -128,7 +57,7 @@ type ConcernNewsNotify struct {
 }
 
 func (notify *ConcernNewsNotify) Type() concern.Type {
-	return concern.BilibiliNews
+	return News
 }
 
 type ConcernLiveNotify struct {
@@ -137,7 +66,7 @@ type ConcernLiveNotify struct {
 }
 
 func (notify *ConcernLiveNotify) Type() concern.Type {
-	return concern.BibiliLive
+	return Live
 }
 
 type UserStat struct {
@@ -197,7 +126,7 @@ func (l *LiveInfo) Living() bool {
 	return l.Status == LiveStatus_Living
 }
 
-func (l *LiveInfo) Type() EventType {
+func (l *LiveInfo) Type() concern.Type {
 	return Live
 }
 
@@ -217,7 +146,7 @@ func (l *LiveInfo) Logger() *logrus.Entry {
 		"RoomId": l.RoomId,
 		"Title":  l.LiveTitle,
 		"Status": l.Status.String(),
-		"Type":   "Live",
+		"Type":   l.Type().String(),
 	})
 }
 

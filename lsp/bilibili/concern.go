@@ -18,30 +18,40 @@ import (
 
 var logger = utils.GetModuleLogger("bilibili-concern")
 
-type EventType int64
-
 const (
-	Live EventType = iota
-	News
+	Live concern.Type = "live"
+	News concern.Type = "news"
 )
 
-type ConcernEvent interface {
-	Type() EventType
+type concernEvent interface {
+	Type() concern.Type
 }
 
 type Concern struct {
 	*StateManager
 
-	eventChan chan ConcernEvent
+	eventChan chan concernEvent
 	notify    chan<- concern.Notify
 	stop      chan interface{}
 	wg        sync.WaitGroup
 }
 
+func (c *Concern) Name() string {
+	return "bilibili-concern"
+}
+
+func (c *Concern) ParseId(s string) (interface{}, error) {
+	return ParseUid(s)
+}
+
+func (c *Concern) GetStateManager() concern.IStateManager {
+	return c
+}
+
 func NewConcern(notify chan<- concern.Notify) *Concern {
 	c := &Concern{
 		StateManager: NewStateManager(),
-		eventChan:    make(chan ConcernEvent, 500),
+		eventChan:    make(chan concernEvent, 500),
 		notify:       notify,
 		stop:         make(chan interface{}),
 	}
@@ -60,7 +70,7 @@ func (c *Concern) Stop() {
 	logger.Trace("bilibili concern已停止")
 }
 
-func (c *Concern) Start() {
+func (c *Concern) Start() error {
 	err := c.StateManager.Start()
 	if err != nil {
 		logger.Errorf("state manager start err %v", err)
@@ -68,7 +78,7 @@ func (c *Concern) Start() {
 
 	if !IsVerifyGiven() {
 		logger.Errorf("注意：B站配置不完整，B站相关功能无法使用！")
-		return
+		return nil
 	}
 
 	if runtime.NumCPU() >= 3 {
@@ -93,6 +103,7 @@ func (c *Concern) Start() {
 			}
 		}
 	}()
+	return nil
 }
 
 func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo, error) {
@@ -182,7 +193,7 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 		if err != nil {
 			return err
 		}
-		if !ctype.ContainAll(concern.BibiliLive) {
+		if !ctype.ContainAll(Live) {
 			return nil
 		}
 		allCtype, err = c.StateManager.GetConcern(mid)
@@ -191,7 +202,7 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 		}
 		// 如果已经没有watch live的了，此时应该把liveinfo删掉，否则会无法刷新到livelinfo
 		// 如果此时liveinfo是living状态，则此状态会一直保留，下次watch时会以为在living错误推送
-		if !allCtype.ContainAll(concern.BibiliLive) {
+		if !allCtype.ContainAll(Live) {
 			err = c.StateManager.DeleteLiveInfo(mid)
 			if err == buntdb.ErrNotFound {
 				err = nil
@@ -239,7 +250,7 @@ func (c *Concern) notifyLoop() {
 			log.Debugf("new event - live notify")
 
 			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-				return id.(int64) == event.Mid && p.ContainAny(concern.BibiliLive)
+				return id.(int64) == event.Mid && p.ContainAny(Live)
 			})
 			if err != nil {
 				log.Errorf("list id failed %v", err)
@@ -263,7 +274,7 @@ func (c *Concern) notifyLoop() {
 			log.Debugf("new event - news notify")
 
 			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-				return id.(int64) == event.Mid && p.ContainAny(concern.BilibiliNews)
+				return id.(int64) == event.Mid && p.ContainAny(News)
 			})
 			if err != nil {
 				log.Errorf("list id failed %v", err)
@@ -322,7 +333,7 @@ func (c *Concern) watchCore() {
 			}
 
 			_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-				return p.ContainAny(concern.BibiliLive)
+				return p.ContainAny(Live)
 			})
 			if err != nil {
 				logger.Errorf("List error %v", err)

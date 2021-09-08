@@ -1,6 +1,6 @@
 package concern
 
 type INotifyManager interface {
-	Callback
+	ICallback
 	Hook
 }

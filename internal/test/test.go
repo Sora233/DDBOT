@@ -36,12 +36,12 @@ const (
 )
 
 const (
-	BibiliLive concern.Type = 1 << iota
-	BilibiliNews
-	DouyuLive
-	YoutubeLive
-	YoutubeVideo
-	HuyaLive
+	BibiliLive   concern.Type = "bilibiliLive"
+	BilibiliNews concern.Type = "bilibiliNews"
+	DouyuLive    concern.Type = "douyuLive"
+	YoutubeLive  concern.Type = "youtubeLive"
+	YoutubeVideo concern.Type = "youtubeVideo"
+	HuyaLive     concern.Type = "huyaLive"
 )
 
 func InitBuntdb(t *testing.T) {

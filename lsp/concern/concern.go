@@ -139,8 +139,5 @@ type Concern interface {
 	ParseId(string) (interface{}, error)
 
 	GetStateManager() IStateManager
-	GetConfig(groupCode int64, id interface{}, ctype Type) IConfig
-	GetNotifyManager(groupCode int64, id interface{}, ctype Type) INotifyManager
-	FreshIndex()
-	Describe(ctype Type) string
+	FreshIndex(groupCode ...int64)
 }

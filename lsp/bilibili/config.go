@@ -1,21 +1,19 @@
 package bilibili
 
 import (
-	"github.com/Sora233/DDBOT/concern"
-	concern2 "github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/utils"
 	"strconv"
 	"strings"
 )
 
 type GroupConcernConfig struct {
-	concern2.GroupConcernConfig
+	concern.GroupConcernConfig
 	StateManager *StateManager
 }
 
 func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
-	if inotify.Type() != concern.BilibiliNews {
+	if inotify.Type() != News {
 		return
 	}
 	notify := inotify.(*ConcernNewsNotify)
@@ -41,8 +39,8 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 	}
 }
 
-func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern_manager.HookResult) {
-	hook = new(concern_manager.HookResult)
+func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.HookResult) {
+	hook = new(concern.HookResult)
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
 		if !e.Living() {
@@ -60,8 +58,8 @@ func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern_
 	return
 }
 
-func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concern_manager.HookResult) {
-	hook = new(concern_manager.HookResult)
+func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concern.HookResult) {
+	hook = new(concern.HookResult)
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
 		if e.Living() {
@@ -90,8 +88,8 @@ func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concer
 	return g.GroupConcernConfig.ShouldSendHook(notify)
 }
 
-func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concern_manager.HookResult) {
-	hook = new(concern_manager.HookResult)
+func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concern.HookResult) {
+	hook = new(concern.HookResult)
 	switch n := notify.(type) {
 	case *ConcernLiveNotify:
 		hook.Pass = true
@@ -111,7 +109,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 
 		logger := notify.Logger().WithField("FilterType", g.GroupConcernFilter.Type)
 		switch g.GroupConcernFilter.Type {
-		case concern2.FilterTypeText:
+		case concern.FilterTypeText:
 			textFilter, err := g.GroupConcernFilter.GetFilterByText()
 			if err != nil {
 				logger.WithField("GroupConcernTextFilter", g.GroupConcernFilter.Config).
@@ -132,7 +130,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 					logger.Debugf("news notify NewsFilterHook pass")
 				}
 			}
-		case concern2.FilterTypeType, concern2.FilterTypeNotType:
+		case concern.FilterTypeType, concern.FilterTypeNotType:
 			typeFilter, err := g.GroupConcernFilter.GetFilterByType()
 			if err != nil {
 				logger.WithField("GroupConcernFilterConfig", g.GroupConcernFilter.Config).
@@ -152,7 +150,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 
 				var ok bool
 				switch g.GroupConcernFilter.Type {
-				case concern2.FilterTypeType:
+				case concern.FilterTypeType:
 					ok = false
 					for _, tp := range convTypes {
 						if n.Card.GetDesc().GetType() == tp {
@@ -160,7 +158,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 							break
 						}
 					}
-				case concern2.FilterTypeNotType:
+				case concern.FilterTypeNotType:
 					ok = true
 					for _, tp := range convTypes {
 						if n.Card.GetDesc().GetType() == tp {
@@ -188,7 +186,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 	}
 }
 
-func NewGroupConcernConfig(g *concern2.GroupConcernConfig, sm *StateManager) *GroupConcernConfig {
+func NewGroupConcernConfig(g *concern.GroupConcernConfig, sm *StateManager) *GroupConcernConfig {
 	return &GroupConcernConfig{*g, sm}
 }
 

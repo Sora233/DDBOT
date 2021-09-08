@@ -4,8 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/DDBOT/concern"
-	concern2 "github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"runtime"
 	"sync"
@@ -16,10 +15,22 @@ var logger = utils.GetModuleLogger("youtube")
 type Concern struct {
 	*StateManager
 
-	eventChan chan ConcernEvent
+	eventChan chan concernEvent
 	notify    chan<- concern.Notify
 	stop      chan interface{}
 	wg        sync.WaitGroup
+}
+
+func (c *Concern) Name() string {
+	return "youtube-concern"
+}
+
+func (c *Concern) ParseId(s string) (interface{}, error) {
+	return s, nil
+}
+
+func (c *Concern) GetStateManager() concern.IStateManager {
+	return c.StateManager
 }
 
 func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Info, err error) {
@@ -27,7 +38,7 @@ func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Inf
 
 	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
 	if err != nil {
-		if err == concern2.ErrAlreadyExists {
+		if err == concern.ErrAlreadyExists {
 			return nil, errors.New("已经watch过了")
 		}
 		return nil, err
@@ -80,7 +91,7 @@ func (c *Concern) Stop() {
 	logger.Trace("youtube concern已停止")
 }
 
-func (c *Concern) Start() {
+func (c *Concern) Start() error {
 	if err := c.StateManager.Start(); err != nil {
 		logger.Errorf("state manager start err %v", err)
 	}
@@ -94,7 +105,7 @@ func (c *Concern) Start() {
 	}
 
 	go c.EmitFreshCore("youtube", func(ctype concern.Type, id interface{}) error {
-		if ctype.ContainAny(concern.YoutubeLive | concern.YoutubeVideo) {
+		if ctype.ContainAny(Live.Add(Video)) {
 			channelId, ok := id.(string)
 			if !ok {
 				return errors.New("canst fresh id to string failed")
@@ -103,6 +114,7 @@ func (c *Concern) Start() {
 		}
 		return nil
 	})
+	return nil
 }
 
 func (c *Concern) notifyLoop() {
@@ -122,7 +134,7 @@ func (c *Concern) notifyLoop() {
 			log.Errorf("add video err %v", err)
 		}
 		groups, _, idTypes, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-			return id.(string) == event.ChannelId && p.ContainAny(concern.YoutubeLive|concern.YoutubeVideo)
+			return id.(string) == event.ChannelId && p.ContainAny(Live.Add(Video))
 		})
 		if err != nil {
 			logger.Errorf("list id failed %v", err)
@@ -131,12 +143,12 @@ func (c *Concern) notifyLoop() {
 		for index, groupCode := range groups {
 			var doNotify bool
 			ctype := idTypes[index]
-			if ctype.ContainAny(concern.YoutubeLive) && event.IsLive() {
+			if ctype.ContainAny(Live) && event.IsLive() {
 				notify := NewConcernNotify(groupCode, event)
 				c.notify <- notify
 				doNotify = true
 			}
-			if ctype.ContainAny(concern.YoutubeVideo) && event.IsVideo() {
+			if ctype.ContainAny(Video) && event.IsVideo() {
 				notify := NewConcernNotify(groupCode, event)
 				c.notify <- notify
 				doNotify = true
@@ -238,6 +250,6 @@ func NewConcern(notify chan<- concern.Notify) *Concern {
 		StateManager: NewStateManager(),
 		notify:       notify,
 		stop:         make(chan interface{}),
-		eventChan:    make(chan ConcernEvent, 500),
+		eventChan:    make(chan concernEvent, 500),
 	}
 }

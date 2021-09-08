@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"golang.org/x/sync/errgroup"
@@ -26,6 +27,11 @@ func newConcernCenter() *ConcernCenter {
 }
 
 func RegisterConcernManager(c concern.Concern, site string, concernType []concern.Type, opts ...OptFunc) {
+	for _, ctype := range concernType {
+		if !ctype.IsTrivial() {
+			panic(fmt.Sprintf("Concern %v - Site %v: Type %v IsTrivial() must be True", c.Name(), site, ctype))
+		}
+	}
 	if _, found := globalCenter.M[site]; !found {
 		globalCenter.M[site] = make(map[concern.Type]concern.Concern)
 	}
@@ -33,7 +39,7 @@ func RegisterConcernManager(c concern.Concern, site string, concernType []concer
 		if lastC, found := globalCenter.M[site][ctype]; !found {
 			globalCenter.M[site][ctype] = c
 		} else {
-			logger.Errorf("Concern %v - Site %v and Type %v is already registered by Concern %v", c.Name(), site, ctype, lastC.Name())
+			logger.Errorf("Concern %v - Site %v and Type %v is already registered by Concern %v, skip.", c.Name(), site, ctype, lastC.Name())
 		}
 	}
 }

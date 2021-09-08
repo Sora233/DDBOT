@@ -21,6 +21,7 @@ type IStateManager interface {
 	Stop()
 
 	GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig IConfig)
+	GetGroupConcernNotifyManager(groupCode int64, id interface{}) INotifyManager
 	OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig IConfig) bool) error
 
 	GetGroupConcern(groupCode int64, id interface{}) (result Type, err error)
@@ -55,8 +56,7 @@ type StateManager struct {
 	wg        sync.WaitGroup
 }
 
-// GetGroupConcernConfig always return non-nil
-func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig IConfig) {
+func (c *StateManager) getGroupConcernConfig(groupCode int64, id interface{}) (concernConfig *GroupConcernConfig) {
 	var err error
 	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernConfigKey(groupCode, id))
@@ -73,6 +73,15 @@ func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (c
 		concernConfig = new(GroupConcernConfig)
 	}
 	return
+}
+
+// GetGroupConcernConfig always return non-nil
+func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) IConfig {
+	return c.getGroupConcernConfig(groupCode, id)
+}
+
+func (c *StateManager) GetGroupConcernNotifyManager(groupCode int64, id interface{}) INotifyManager {
+	return c.getGroupConcernConfig(groupCode, id)
 }
 
 // OperateGroupConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，如果返回true，就保存GroupConcernConfig，否则就回滚。
@@ -249,7 +258,7 @@ func (c *StateManager) List(filter func(groupCode int64, id interface{}, p Type)
 				return false
 			}
 			ctype := FromString(value)
-			if ctype == Empty {
+			if ctype.Empty() {
 				return true
 			}
 			if filter(groupCode, id, ctype) == true {

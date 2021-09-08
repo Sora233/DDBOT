@@ -4,8 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/DDBOT/concern"
-	concern2 "github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	localutils "github.com/Sora233/DDBOT/utils"
 	jsoniter "github.com/json-iterator/go"
 	"reflect"
@@ -16,23 +15,29 @@ import (
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 var logger = utils.GetModuleLogger("huya-concern")
 
-type EventType int64
-
 const (
-	Live EventType = iota
+	Live concern.Type = "live"
 )
-
-type ConcernEvent interface {
-	Type() EventType
-}
 
 type Concern struct {
 	*StateManager
 
-	eventChan chan ConcernEvent
+	eventChan chan concernEvent
 	notify    chan<- concern.Notify
 	stop      chan interface{}
 	wg        sync.WaitGroup
+}
+
+func (c *Concern) Name() string {
+	return "huya-concern"
+}
+
+func (c *Concern) ParseId(s string) (interface{}, error) {
+	return s, nil
+}
+
+func (c *Concern) GetStateManager() concern.IStateManager {
+	return c.StateManager
 }
 
 func (c *Concern) Stop() {
@@ -48,8 +53,7 @@ func (c *Concern) Stop() {
 	logger.Trace("huya concern已停止")
 }
 
-func (c *Concern) Start() {
-
+func (c *Concern) Start() error {
 	err := c.StateManager.Start()
 	if err != nil {
 		logger.Errorf("state manager start err %v", err)
@@ -68,7 +72,7 @@ func (c *Concern) Start() {
 		if !ok {
 			return fmt.Errorf("cast fresh id type<%v> to string failed", reflect.ValueOf(id).Type().String())
 		}
-		if ctype.ContainAll(concern.HuyaLive) {
+		if ctype.ContainAll(Live) {
 			oldInfo, _ := c.FindRoom(roomid, false)
 			liveInfo, err := c.FindRoom(roomid, true)
 			if err != nil {
@@ -90,6 +94,7 @@ func (c *Concern) Start() {
 		}
 		return nil
 	})
+	return nil
 }
 
 func (c *Concern) Add(groupCode int64, id interface{}, ctype concern.Type) (*LiveInfo, error) {
@@ -98,7 +103,7 @@ func (c *Concern) Add(groupCode int64, id interface{}, ctype concern.Type) (*Liv
 
 	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
 	if err != nil {
-		if err == concern2.ErrAlreadyExists {
+		if err == concern.ErrAlreadyExists {
 			return nil, errors.New("已经watch过了")
 		}
 		return nil, err
@@ -151,7 +156,7 @@ func (c *Concern) notifyLoop() {
 			log.Debugf("debug event")
 
 			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-				return id.(string) == event.RoomId && p.ContainAny(concern.HuyaLive)
+				return id.(string) == event.RoomId && p.ContainAny(Live)
 			})
 			if err != nil {
 				log.Errorf("list id failed %v", err)
@@ -197,7 +202,7 @@ func (c *Concern) FindOrLoadRoom(roomId string) (*LiveInfo, error) {
 func NewConcern(notify chan<- concern.Notify) *Concern {
 	c := &Concern{
 		StateManager: NewStateManager(),
-		eventChan:    make(chan ConcernEvent, 500),
+		eventChan:    make(chan concernEvent, 500),
 		notify:       notify,
 		stop:         make(chan interface{}),
 	}

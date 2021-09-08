@@ -4,16 +4,16 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 )
 
-type Callback interface {
+type ICallback interface {
 	NotifyBeforeCallback(notify Notify)
 	NotifyAfterCallback(notify Notify, message *message.GroupMessage)
 }
 
-type defaultCallback struct {
+type DefaultCallback struct {
 }
 
-func (d defaultCallback) NotifyBeforeCallback(notify Notify) {
+func (d DefaultCallback) NotifyBeforeCallback(notify Notify) {
 }
 
-func (d defaultCallback) NotifyAfterCallback(notify Notify, message *message.GroupMessage) {
+func (d DefaultCallback) NotifyAfterCallback(notify Notify, message *message.GroupMessage) {
 }

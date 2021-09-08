@@ -14,20 +14,28 @@ import (
 var logger = utils.GetModuleLogger("douyu-concern")
 
 const (
-	Live concern.Type = 1 << iota
+	Live concern.Type = "live"
 )
-
-type ConcernEvent interface {
-	Type() concern.Type
-}
 
 type Concern struct {
 	*StateManager
 
-	eventChan chan ConcernEvent
+	eventChan chan concernEvent
 	notify    chan<- concern.Notify
 	stop      chan interface{}
 	wg        sync.WaitGroup
+}
+
+func (c *Concern) Name() string {
+	return "douyu-concern"
+}
+
+func (c *Concern) ParseId(s string) (interface{}, error) {
+	return ParseUid(s)
+}
+
+func (c *Concern) GetStateManager() concern.IStateManager {
+	panic("implement me")
 }
 
 func (c *Concern) Stop() {
@@ -43,8 +51,7 @@ func (c *Concern) Stop() {
 	logger.Trace("douyu concern已停止")
 }
 
-func (c *Concern) Start() {
-
+func (c *Concern) Start() error {
 	err := c.StateManager.Start()
 	if err != nil {
 		logger.Errorf("state manager start err %v", err)
@@ -84,6 +91,7 @@ func (c *Concern) Start() {
 		}
 		return nil
 	})
+	return nil
 }
 
 func (c *Concern) Add(groupCode int64, id int64, ctype concern.Type) (*LiveInfo, error) {
@@ -152,7 +160,7 @@ func (c *Concern) notifyLoop() {
 			log.Debugf("debug event")
 
 			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-				return id.(int64) == event.RoomId && p.ContainAny(concern.DouyuLive)
+				return id.(int64) == event.RoomId && p.ContainAny(Live)
 			})
 			if err != nil {
 				log.Errorf("list id failed %v", err)
@@ -206,7 +214,7 @@ func (c *Concern) FindOrLoadRoom(roomId int64) (*LiveInfo, error) {
 func NewConcern(notify chan<- concern.Notify) *Concern {
 	c := &Concern{
 		StateManager: NewStateManager(),
-		eventChan:    make(chan ConcernEvent, 500),
+		eventChan:    make(chan concernEvent, 500),
 		notify:       notify,
 		stop:         make(chan interface{}),
 	}

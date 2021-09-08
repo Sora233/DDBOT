@@ -11,8 +11,8 @@ type IConfig interface {
 }
 
 type GroupConcernConfig struct {
-	defaultCallback
-	defaultHook
+	DefaultCallback
+	DefaultHook
 	GroupConcernAt     GroupConcernAtConfig     `json:"group_concern_at"`
 	GroupConcernNotify GroupConcernNotifyConfig `json:"group_concern_notify"`
 	GroupConcernFilter GroupConcernFilterConfig `json:"group_concern_filter"`

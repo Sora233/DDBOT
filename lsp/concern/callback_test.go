@@ -5,7 +5,7 @@ import (
 )
 
 func TestDefaultCallback(t *testing.T) {
-	var d defaultCallback
+	var d DefaultCallback
 	d.NotifyBeforeCallback(nil)
 	d.NotifyAfterCallback(nil, nil)
 }

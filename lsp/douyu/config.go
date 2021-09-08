@@ -1,17 +1,15 @@
 package douyu
 
 import (
-	"github.com/Sora233/DDBOT/concern"
-	concern2 "github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/lsp/concern"
 )
 
 type GroupConcernConfig struct {
-	concern2.GroupConcernConfig
+	concern.GroupConcernConfig
 }
 
-func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern_manager.HookResult) {
-	hook = new(concern_manager.HookResult)
+func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.HookResult) {
+	hook = new(concern.HookResult)
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
 		if !e.Living() {
@@ -27,8 +25,8 @@ func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern_
 	return
 }
 
-func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concern_manager.HookResult) {
-	hook = new(concern_manager.HookResult)
+func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concern.HookResult) {
+	hook = new(concern.HookResult)
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
 		if e.Living() {
@@ -53,6 +51,6 @@ func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concer
 	return g.GroupConcernConfig.ShouldSendHook(notify)
 }
 
-func NewGroupConcernConfig(g *concern2.GroupConcernConfig) *GroupConcernConfig {
+func NewGroupConcernConfig(g *concern.GroupConcernConfig) *GroupConcernConfig {
 	return &GroupConcernConfig{*g}
 }

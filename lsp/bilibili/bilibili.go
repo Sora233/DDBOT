@@ -239,6 +239,7 @@ func IsAccountGiven() bool {
 }
 
 func ParseUid(s string) (int64, error) {
+	// 手机端复制的时候会带上UID:前缀，所以支持这个格式
 	s = strings.TrimPrefix(strings.ToUpper(s), "UID:")
 	return strconv.ParseInt(s, 10, 64)
 }

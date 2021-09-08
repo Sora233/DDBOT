@@ -2,11 +2,15 @@ package huya
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 )
+
+type concernEvent interface {
+	Type() concern.Type
+}
 
 type LiveInfo struct {
 	RoomId   string `json:"room_id"`
@@ -27,7 +31,7 @@ func (m *LiveInfo) GetName() string {
 	return m.Name
 }
 
-func (m *LiveInfo) Type() EventType {
+func (m *LiveInfo) Type() concern.Type {
 	return Live
 }
 
@@ -89,7 +93,7 @@ func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
 }
 
 func (notify *ConcernLiveNotify) Type() concern.Type {
-	return concern.HuyaLive
+	return Live
 }
 
 func NewConcernLiveNotify(groupCode int64, l *LiveInfo) *ConcernLiveNotify {
