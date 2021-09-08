@@ -36,8 +36,8 @@ type Concern struct {
 	wg        sync.WaitGroup
 }
 
-func (c *Concern) Name() string {
-	return "bilibili-concern"
+func (c *Concern) Site() string {
+	return "bilibili"
 }
 
 func (c *Concern) ParseId(s string) (interface{}, error) {
@@ -219,8 +219,8 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo, []concern.Type, error) {
 	log := logger.WithFields(localutils.GroupLogFields(groupCode))
 
-	mids, ctypes, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
-		return p.ContainAny(ctype)
+	_, mids, ctypes, err := c.StateManager.List(func(_groupCode int64, id interface{}, p concern.Type) bool {
+		return groupCode == _groupCode && p.ContainAny(ctype)
 	})
 	if err != nil {
 		return nil, nil, err

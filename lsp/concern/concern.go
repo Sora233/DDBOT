@@ -133,11 +133,19 @@ func FromString(s string) Type {
 }
 
 type Concern interface {
-	Name() string
+	Site() string
 	Start() error
 	Stop()
 	ParseId(string) (interface{}, error)
 
+	List(groupCode int64, ctype Type) []IdentityInfo
 	GetStateManager() IStateManager
 	FreshIndex(groupCode ...int64)
+}
+
+// IdentityInfo 表示订阅对象的信息，包括名字，ID，type
+type IdentityInfo interface {
+	Id() interface{}
+	Name() string
+	Type() Type
 }

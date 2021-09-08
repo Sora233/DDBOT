@@ -26,8 +26,8 @@ type Concern struct {
 	wg        sync.WaitGroup
 }
 
-func (c *Concern) Name() string {
-	return "douyu-concern"
+func (c *Concern) Site() string {
+	return "douyu"
 }
 
 func (c *Concern) ParseId(s string) (interface{}, error) {

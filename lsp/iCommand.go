@@ -11,6 +11,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/douyu"
 	"github.com/Sora233/DDBOT/lsp/huya"
 	"github.com/Sora233/DDBOT/lsp/permission"
+	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
@@ -54,93 +55,31 @@ func NewMessageContext() *MessageContext {
 }
 
 func IList(c *MessageContext, groupCode int64) {
-	log := c.Log
-
 	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ListCommand) {
 		c.DisabledReply()
 		return
 	}
 
-	var success bool
+	var empty = true
 
 	listMsg := message.NewSendingMessage()
 
-	{
-		// bilibili
-		userInfos, ctypes, err := c.Lsp.bilibiliConcern.ListWatching(groupCode, concern.BilibiliNews|concern.BibiliLive)
-		if err != nil {
-			listMsg.Append(message.NewText("bilibili订阅：\n查询失败\n"))
-			log.Errorf("bilibili ListWatching error %v ", err)
-		} else {
-			success = true
-			if len(userInfos) != 0 {
-				listMsg.Append(message.NewText("bilibili订阅：\n"))
-				for index := range userInfos {
-					listMsg.Append(utils.MessageTextf("%v %v %v\n", userInfos[index].Name, userInfos[index].Mid, ctypes[index].Description()))
-				}
+	for _, c := range registry.ListConcernManager() {
+		infos := c.List(groupCode, concern.Empty)
+		if len(infos) > 0 {
+			empty = false
+			listMsg.Append(utils.MessageTextf("%v订阅：\n", c.Site()))
+			for _, info := range infos {
+				listMsg.Append(utils.MessageTextf("%v %v %v\n", info.Name(), info.Id(), info.Type().String()))
 			}
-		}
-
-	}
-
-	{
-		// douyu
-		info, ctypes, err := c.Lsp.douyuConcern.ListWatching(groupCode, concern.DouyuLive)
-		if err != nil {
-			listMsg.Append(message.NewText("douyu订阅：\n查询失败\n"))
-			log.Errorf("douyu ListWatching error %v ", err)
-		} else {
-			success = true
-			if len(info) != 0 {
-				listMsg.Append(message.NewText("douyu订阅：\n"))
-				for index := range info {
-					listMsg.Append(utils.MessageTextf("%v %v %v\n", info[index].Nickname, info[index].RoomId, ctypes[index].Description()))
-				}
-			}
+			listMsg.Append(message.NewText("\n"))
 		}
 	}
 
-	{
-		// huya
-		info, ctypes, err := c.Lsp.huyaConcern.ListWatching(groupCode, concern.HuyaLive)
-		if err != nil {
-			listMsg.Append(message.NewText("huya订阅：\n查询失败\n"))
-			log.Errorf("huya ListWatching error %v ", err)
-		} else {
-			success = true
-			if len(info) != 0 {
-				listMsg.Append(message.NewText("huya订阅：\n"))
-				for index := range info {
-					listMsg.Append(utils.MessageTextf("%v %v %v\n", info[index].Name, info[index].RoomId, ctypes[index].Description()))
-				}
-			}
-		}
+	if empty {
+		listMsg.Append(message.NewText("暂无订阅，可以使用/watch命令订阅"))
 	}
-
-	{
-		// youtube
-		info, ctypes, err := c.Lsp.youtubeConcern.ListWatching(groupCode, concern.YoutubeLive|concern.YoutubeVideo)
-		if err != nil {
-			listMsg.Append(message.NewText("ytb订阅：\n查询失败\n"))
-			log.Errorf("youtube ListWatching error %v ", err)
-		} else {
-			success = true
-			if len(info) != 0 {
-				listMsg.Append(message.NewText("ytb订阅：\n"))
-				for index := range info {
-					listMsg.Append(utils.MessageTextf("%v %v %v\n", info[index].ChannelName, info[index].ChannelId, ctypes[index].Description()))
-				}
-			}
-		}
-	}
-	if !success {
-		c.TextReply("查询失败，请重试")
-	} else {
-		if len(listMsg.Elements) == 0 {
-			listMsg.Append(message.NewText("暂无订阅，可以使用/watch命令订阅"))
-		}
-		c.Send(listMsg)
-	}
+	c.Send(listMsg)
 }
 
 func IWatch(c *MessageContext, groupCode int64, id string, site string, watchType concern.Type, remove bool) {

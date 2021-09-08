@@ -26,10 +26,11 @@ func newConcernCenter() *ConcernCenter {
 	return cc
 }
 
-func RegisterConcernManager(c concern.Concern, site string, concernType []concern.Type, opts ...OptFunc) {
+func RegisterConcernManager(c concern.Concern, concernType []concern.Type, opts ...OptFunc) {
+	site := c.Site()
 	for _, ctype := range concernType {
 		if !ctype.IsTrivial() {
-			panic(fmt.Sprintf("Concern %v - Site %v: Type %v IsTrivial() must be True", c.Name(), site, ctype))
+			panic(fmt.Sprintf("Concern %v: Type %v IsTrivial() must be True", site, ctype))
 		}
 	}
 	if _, found := globalCenter.M[site]; !found {
@@ -39,7 +40,7 @@ func RegisterConcernManager(c concern.Concern, site string, concernType []concer
 		if lastC, found := globalCenter.M[site][ctype]; !found {
 			globalCenter.M[site][ctype] = c
 		} else {
-			logger.Errorf("Concern %v - Site %v and Type %v is already registered by Concern %v, skip.", c.Name(), site, ctype, lastC.Name())
+			logger.Errorf("Concern %v: Type %v is already registered by Concern %v, skip.", site, ctype, lastC.Site())
 		}
 	}
 }
@@ -74,4 +75,12 @@ func ListConcernManager() []concern.Concern {
 		result = append(result, k)
 	}
 	return result
+}
+
+func GetConcernManager(site string, ctype concern.Type) concern.Concern {
+	if sub, found := globalCenter.M[site]; !found {
+		return nil
+	} else {
+		return sub[ctype]
+	}
 }

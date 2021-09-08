@@ -282,36 +282,6 @@ func (c *StateManager) List(filter func(groupCode int64, id interface{}, p Type)
 	return
 }
 
-func (c *StateManager) ListByGroup(groupCode int64, filter func(id interface{}, p Type) bool) (ids []interface{}, idTypes []Type, err error) {
-	err = c.RCoverTx(func(tx *buntdb.Tx) error {
-		var iterErr error
-		err := tx.Ascend(c.GroupConcernStateKey(groupCode), func(key, value string) bool {
-			var id interface{}
-			_, id, iterErr = c.ParseGroupConcernStateKey(key)
-			if iterErr != nil {
-				return false
-			}
-			ctype := FromString(value)
-			if filter == nil || filter(id, ctype) == true {
-				ids = append(ids, id)
-				idTypes = append(idTypes, ctype)
-			}
-			return true
-		})
-		if err != nil {
-			return err
-		}
-		if iterErr != nil {
-			return iterErr
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-	return
-}
-
 func (c *StateManager) ListIds() (ids []interface{}, err error) {
 	var idSet = make(map[interface{}]bool)
 	_, _, _, err = c.List(func(groupCode int64, id interface{}, p Type) bool {
