@@ -77,17 +77,12 @@ func (m *MSG) ImageByUrl(url string, opts ...requests.Option) *MSG {
 	return m
 }
 
-func (m *MSG) ToMessage(client *client.QQClient, target Target) (*message.SendingMessage, []func()) {
+func (m *MSG) ToMessage(client *client.QQClient, target Target) *message.SendingMessage {
 	var sending = message.NewSendingMessage()
-	var f []func()
 	m.flushText()
 	for _, e := range m.elements {
 		if custom, ok := e.(CustomElement); ok {
 			packed := custom.PackToElement(client, target)
-			if packed.Type() == Fn {
-				f = append(f, packed.(*FnElement).f)
-				continue
-			}
 			if packed != nil {
 				sending.Append(packed)
 			}
@@ -95,23 +90,5 @@ func (m *MSG) ToMessage(client *client.QQClient, target Target) (*message.Sendin
 		}
 		sending.Append(e)
 	}
-	return sending, f
+	return sending
 }
-
-//// Send 根据TargetType返回message.GroupMessage或者message.PrivateMessage
-//func (m *MSG) Send(client *client.QQClient, target Target) interface{} {
-//	msg, callback := m.ToMessage(client, target)
-//	var result interface{}
-//	switch target.TargetType() {
-//	case TargetGroup:
-//		result = client.SendGroupMessage(target.TargetCode(), msg)
-//	case TargetPrivate:
-//		result = client.SendPrivateMessage(target.TargetCode(), msg)
-//	default:
-//		panic("MSG Send: unknown target type")
-//	}
-//	for _,f := range callback {
-//		f()
-//	}
-//	return result
-//}
