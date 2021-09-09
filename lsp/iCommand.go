@@ -8,6 +8,8 @@ import (
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/douyu"
 	"github.com/Sora233/DDBOT/lsp/huya"
 	"github.com/Sora233/DDBOT/lsp/permission"
@@ -65,14 +67,18 @@ func IList(c *MessageContext, groupCode int64) {
 	listMsg := message.NewSendingMessage()
 
 	for _, c := range registry.ListConcernManager() {
-		infos := c.List(groupCode, concern.Empty)
-		if len(infos) > 0 {
-			empty = false
-			listMsg.Append(utils.MessageTextf("%v订阅：\n", c.Site()))
-			for _, info := range infos {
-				listMsg.Append(utils.MessageTextf("%v %v %v\n", info.Name(), info.Id(), info.Type().String()))
+		infos, ctypes, err := c.List(groupCode, concern_type.Empty)
+		if err != nil {
+			listMsg.Append(utils.MessageTextf("%v订阅查询失败 - %v\n", c.Site(), err))
+		} else {
+			if len(infos) > 0 {
+				empty = false
+				listMsg.Append(utils.MessageTextf("%v订阅：\n", c.Site()))
+				for index, info := range infos {
+					listMsg.Append(utils.MessageTextf("%v %v %v\n", info.GetName(), info.GetUid(), ctypes[index].String()))
+				}
+				listMsg.Append(message.NewText("\n"))
 			}
-			listMsg.Append(message.NewText("\n"))
 		}
 	}
 
@@ -82,7 +88,7 @@ func IList(c *MessageContext, groupCode int64) {
 	c.Send(listMsg)
 }
 
-func IWatch(c *MessageContext, groupCode int64, id string, site string, watchType concern.Type, remove bool) {
+func IWatch(c *MessageContext, groupCode int64, id string, site string, watchType concern_type.Type, remove bool) {
 	log := c.Log
 
 	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, WatchCommand) {
@@ -116,7 +122,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 				if err == buntdb.ErrNotFound {
 					c.TextReply(fmt.Sprintf("unwatch失败 - 未找到该用户"))
 				} else {
-					log.Errorf("concern remove failed %v", err)
+					log.Errorf("concern_manager remove failed %v", err)
 					c.TextReply(fmt.Sprintf("unwatch失败 - 内部错误"))
 				}
 			} else {
@@ -137,7 +143,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			c.TextReply(fmt.Sprintf("watch失败 - %v", err))
 			return
 		}
-		if watchType.ContainAny(concern.BibiliLive) {
+		if watchType.ContainAny(concern_manager.BibiliLive) {
 			// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
 			liveInfo, _ := c.Lsp.bilibiliConcern.GetLiveInfo(mid)
 			if liveInfo != nil && liveInfo.Living() {
@@ -152,7 +158,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		log = log.WithField("name", userInfo.Name)
 		log.Debugf("watch success")
 		const followerCap = 50
-		if userInfo != nil && userInfo.UserStat != nil && watchType.ContainAny(concern.BibiliLive) && userInfo.UserStat.Follower < followerCap {
+		if userInfo != nil && userInfo.UserStat != nil && watchType.ContainAny(concern_manager.BibiliLive) && userInfo.UserStat.Follower < followerCap {
 			c.TextReply(fmt.Sprintf("watch成功 - Bilibili用户 %v\n注意：检测到该用户粉丝数少于%v，请确认您的订阅目标是否正确，注意使用UID而非直播间ID", userInfo.Name, followerCap))
 		} else {
 			c.TextReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", userInfo.Name))
@@ -172,7 +178,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 				if err == buntdb.ErrNotFound {
 					c.TextReply(fmt.Sprintf("unwatch失败 - 未找到该用户"))
 				} else {
-					log.Errorf("concern remove failed %v", err)
+					log.Errorf("concern_manager remove failed %v", err)
 					c.TextReply(fmt.Sprintf("unwatch失败 - 内部错误"))
 				}
 			} else {
@@ -205,7 +211,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 				if err == buntdb.ErrNotFound {
 					c.TextReply(fmt.Sprintf("unwatch失败 - 未找到该用户"))
 				} else {
-					log.Errorf("concern remove failed %v", err)
+					log.Errorf("concern_manager remove failed %v", err)
 					c.TextReply(fmt.Sprintf("unwatch失败 - 内部错误"))
 				}
 			} else {
@@ -241,7 +247,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 				if err == buntdb.ErrNotFound {
 					c.TextReply(fmt.Sprintf("unwatch失败 - 未找到该用户"))
 				} else {
-					log.Errorf("concern remove failed %v", err)
+					log.Errorf("concern_manager remove failed %v", err)
 					c.TextReply(fmt.Sprintf("unwatch失败 - 内部错误"))
 				}
 			} else {
@@ -418,7 +424,7 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 	c.TextReply("成功")
 }
 
-func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, action string, QQ []int64) {
+func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, action string, QQ []int64) {
 	g := bot.Instance.FindGroup(groupCode)
 	if g == nil {
 		// 可能没找到吗
@@ -454,7 +460,7 @@ func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ct
 	}
 }
 
-func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
+func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, on bool) {
 	err := iConfigCmd(c, groupCode, id, site, ctype, operateAtAllConcernConfig(c, ctype, on))
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
@@ -466,7 +472,7 @@ func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string,
 	}
 }
 
-func IConfigTitleNotifyCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
+func IConfigTitleNotifyCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, on bool) {
 	err := iConfigCmd(c, groupCode, id, site, ctype, operateNotifyConcernConfig(c, ctype, on))
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
@@ -478,7 +484,7 @@ func IConfigTitleNotifyCmd(c *MessageContext, groupCode int64, id string, site s
 	}
 }
 
-func IConfigOfflineNotifyCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, on bool) {
+func IConfigOfflineNotifyCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, on bool) {
 	err := iConfigCmd(c, groupCode, id, site, ctype, operateOfflineNotifyConcernConfig(c, ctype, on))
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
@@ -490,12 +496,12 @@ func IConfigOfflineNotifyCmd(c *MessageContext, groupCode int64, id string, site
 	}
 }
 
-func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, types []string) {
+func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, types []string) {
 	if len(types) == 0 {
 		c.TextReply("失败 - 没有指定过滤类型")
 		return
 	}
-	if ctype != concern.BilibiliNews {
+	if ctype != concern_manager.BilibiliNews {
 		c.TextReply("失败 - 暂不支持")
 		return
 	}
@@ -520,12 +526,12 @@ func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site st
 	}
 }
 
-func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, types []string) {
+func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, types []string) {
 	if len(types) == 0 {
 		c.TextReply("失败 - 没有指定过滤类型")
 		return
 	}
-	if ctype != concern.BilibiliNews {
+	if ctype != concern_manager.BilibiliNews {
 		c.TextReply("失败 - 暂不支持")
 		return
 	}
@@ -551,7 +557,7 @@ func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site
 	}
 }
 
-func IConfigFilterCmdText(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, keywords []string) {
+func IConfigFilterCmdText(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, keywords []string) {
 	if len(keywords) == 0 {
 		c.TextReply("失败 - 没有指定过滤关键字")
 		return
@@ -572,7 +578,7 @@ func IConfigFilterCmdText(c *MessageContext, groupCode int64, id string, site st
 	}
 }
 
-func IConfigFilterCmdClear(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type) {
+func IConfigFilterCmdClear(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type) {
 	err := iConfigCmd(c, groupCode, id, site, ctype, func(config concern.IConfig) bool {
 		*config.GetGroupConcernFilter() = concern.GroupConcernFilterConfig{}
 		return true
@@ -587,7 +593,7 @@ func IConfigFilterCmdClear(c *MessageContext, groupCode int64, id string, site s
 	}
 }
 
-func IConfigFilterCmdShow(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type) {
+func IConfigFilterCmdShow(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type) {
 	err := iConfigCmd(c, groupCode, id, site, ctype, func(config concern.IConfig) bool {
 		if config.GetGroupConcernFilter().Empty() {
 			c.TextReply("当前配置为空")
@@ -638,7 +644,7 @@ func IConfigFilterCmdShow(c *MessageContext, groupCode int64, id string, site st
 	}
 }
 
-func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, f func(config concern.IConfig) bool) (err error) {
+func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, f func(config concern.IConfig) bool) (err error) {
 	log := c.Log
 	if err := configCmdGroupCommonCheck(c, groupCode); err != nil {
 		return err
@@ -738,7 +744,7 @@ func configCmdGroupCommonCheck(c *MessageContext, groupCode int64) error {
 	return nil
 }
 
-func operateAtConcernConfig(c *MessageContext, ctype concern.Type, action string, QQ []int64) func(concernConfig concern.IConfig) bool {
+func operateAtConcernConfig(c *MessageContext, ctype concern_type.Type, action string, QQ []int64) func(concernConfig concern.IConfig) bool {
 	return func(concernConfig concern.IConfig) bool {
 		switch action {
 		case "add":
@@ -765,7 +771,7 @@ func operateAtConcernConfig(c *MessageContext, ctype concern.Type, action string
 	}
 }
 
-func operateAtAllConcernConfig(c *MessageContext, ctype concern.Type, on bool) func(concernConfig concern.IConfig) bool {
+func operateAtAllConcernConfig(c *MessageContext, ctype concern_type.Type, on bool) func(concernConfig concern.IConfig) bool {
 	return func(concernConfig concern.IConfig) bool {
 		if concernConfig.GetGroupConcernAt().CheckAtAll(ctype) {
 			if on {
@@ -791,7 +797,7 @@ func operateAtAllConcernConfig(c *MessageContext, ctype concern.Type, on bool) f
 	}
 }
 
-func operateNotifyConcernConfig(c *MessageContext, ctype concern.Type, on bool) func(concernConfig concern.IConfig) bool {
+func operateNotifyConcernConfig(c *MessageContext, ctype concern_type.Type, on bool) func(concernConfig concern.IConfig) bool {
 	return func(concernConfig concern.IConfig) bool {
 		if concernConfig.GetGroupConcernNotify().CheckTitleChangeNotify(ctype) {
 			if on {
@@ -817,7 +823,7 @@ func operateNotifyConcernConfig(c *MessageContext, ctype concern.Type, on bool) 
 	}
 }
 
-func operateOfflineNotifyConcernConfig(c *MessageContext, ctype concern.Type, on bool) func(concernConfig concern.IConfig) bool {
+func operateOfflineNotifyConcernConfig(c *MessageContext, ctype concern_type.Type, on bool) func(concernConfig concern.IConfig) bool {
 	return func(concernConfig concern.IConfig) bool {
 		if concernConfig.GetGroupConcernNotify().CheckOfflineNotify(ctype) {
 			if on {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Sora233/DDBOT/lsp/command"
-	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/alecthomas/kong"
@@ -53,7 +53,7 @@ func (r *Runtime) parseCommandSyntax(ast interface{}, name string, options ...ko
 	return ctx, ""
 }
 
-func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, concern.Type, error) {
+func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, concern_type.Type, error) {
 	var (
 		site  string
 		_type string
@@ -64,7 +64,7 @@ func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, c
 	rawType = strings.Trim(rawType, `"`)
 	site, err = r.ParseRawSite(rawSite)
 	if err != nil {
-		return "", concern.Empty, err
+		return "", concern_type.Empty, err
 	}
 	var sTypes []string
 	for _, t := range registry.ListType(site) {
@@ -72,9 +72,9 @@ func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, c
 	}
 	_type, found = utils.PrefixMatch(sTypes, rawType)
 	if !found {
-		return "", concern.Empty, errors.New("不支持的类型参数")
+		return "", concern_type.Empty, errors.New("不支持的类型参数")
 	}
-	return site, concern.Type(_type), nil
+	return site, concern_type.Type(_type), nil
 }
 
 func (r *Runtime) ParseRawSite(rawSite string) (string, error) {

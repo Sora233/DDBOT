@@ -7,6 +7,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
 	"golang.org/x/sync/errgroup"
@@ -19,12 +20,12 @@ import (
 var logger = utils.GetModuleLogger("bilibili-concern")
 
 const (
-	Live concern.Type = "live"
-	News concern.Type = "news"
+	Live concern_type.Type = "live"
+	News concern_type.Type = "news"
 )
 
 type concernEvent interface {
-	Type() concern.Type
+	Type() concern_type.Type
 }
 
 type Concern struct {
@@ -45,7 +46,7 @@ func (c *Concern) ParseId(s string) (interface{}, error) {
 }
 
 func (c *Concern) GetStateManager() concern.IStateManager {
-	return c
+	return c.StateManager
 }
 
 func NewConcern(notify chan<- concern.Notify) *Concern {
@@ -106,7 +107,8 @@ func (c *Concern) Start() error {
 	return nil
 }
 
-func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo, error) {
+func (c *Concern) Add(groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	mid := _id.(int64)
 	var err error
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("mid", mid)
 
@@ -177,19 +179,23 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 	if err != nil {
 		log.Errorf("SetUidFirstTimestampIfNotExist failed %v", err)
 	}
-
 	_ = c.StateManager.AddUserInfo(userInfo)
-	return userInfo, nil
+	return concern.NewIdentity(mid, userInfo.GetName()), nil
 }
 
-func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concern.Type, error) {
-	var newCtype concern.Type
+func (c *Concern) Remove(groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	mid := _id.(int64)
+	var identityInfo concern.IdentityInfo
 	err := c.StateManager.RWCoverTx(func(tx *buntdb.Tx) error {
 		var (
 			err      error
-			allCtype concern.Type
+			allCtype concern_type.Type
 		)
-		newCtype, err = c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
+		userInfo, _ := c.StateManager.GetUserInfo(mid)
+		if userInfo != nil {
+			identityInfo = concern.NewIdentity(mid, userInfo.GetName())
+		}
+		_, err = c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
 		if err != nil {
 			return err
 		}
@@ -213,27 +219,40 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 		}
 		return nil
 	})
-	return newCtype, err
+
+	return identityInfo, err
 }
 
-func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo, []concern.Type, error) {
+func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
+	userInfo, err := c.FindUser(id.(int64), false)
+	if err != nil {
+		return nil, err
+	}
+	return concern.NewIdentity(id, userInfo.GetName()), nil
+}
+
+func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
 	log := logger.WithFields(localutils.GroupLogFields(groupCode))
 
-	_, mids, ctypes, err := c.StateManager.List(func(_groupCode int64, id interface{}, p concern.Type) bool {
+	_, mids, ctypes, err := c.StateManager.List(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
 		return groupCode == _groupCode && p.ContainAny(ctype)
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-	var result = make([]*UserInfo, 0, len(mids))
-	var resultTypes = make([]concern.Type, 0, len(mids))
+	mids, ctypes, err = c.StateManager.GroupTypeById(mids, ctypes)
+	if err != nil {
+		return nil, nil, err
+	}
+	var result = make([]concern.IdentityInfo, 0, len(mids))
+	var resultTypes = make([]concern_type.Type, 0, len(mids))
 	for index, mid := range mids {
 		userInfo, err := c.StateManager.GetUserInfo(mid.(int64))
 		if err != nil {
 			log.WithField("mid", mid).Errorf("GetUserInfo error %v", err)
 			continue
 		}
-		result = append(result, userInfo)
+		result = append(result, concern.NewIdentity(userInfo.Mid, userInfo.GetName()))
 		resultTypes = append(resultTypes, ctypes[index])
 	}
 	return result, resultTypes, nil
@@ -249,7 +268,7 @@ func (c *Concern) notifyLoop() {
 			log := event.Logger()
 			log.Debugf("new event - live notify")
 
-			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 				return id.(int64) == event.Mid && p.ContainAny(Live)
 			})
 			if err != nil {
@@ -273,7 +292,7 @@ func (c *Concern) notifyLoop() {
 			log := event.Logger()
 			log.Debugf("new event - news notify")
 
-			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 				return id.(int64) == event.Mid && p.ContainAny(News)
 			})
 			if err != nil {
@@ -332,7 +351,7 @@ func (c *Concern) watchCore() {
 				liveInfoMap[info.Mid] = info
 			}
 
-			_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+			_, ids, types, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 				return p.ContainAny(Live)
 			})
 			if err != nil {
@@ -594,7 +613,7 @@ func (c *Concern) SyncSub() {
 	}
 	var midSet = make(map[int64]bool)
 	var attentionMidSet = make(map[int64]bool)
-	_, _, _, err = c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+	_, _, _, err = c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 		midSet[id.(int64)] = true
 		return true
 	})

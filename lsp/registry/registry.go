@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -15,18 +16,18 @@ type option struct {
 type OptFunc func(opt *option) *option
 
 type ConcernCenter struct {
-	M map[string]map[concern.Type]concern.Concern
+	M map[string]map[concern_type.Type]concern.Concern
 }
 
 var globalCenter = newConcernCenter()
 
 func newConcernCenter() *ConcernCenter {
 	cc := new(ConcernCenter)
-	cc.M = make(map[string]map[concern.Type]concern.Concern)
+	cc.M = make(map[string]map[concern_type.Type]concern.Concern)
 	return cc
 }
 
-func RegisterConcernManager(c concern.Concern, concernType []concern.Type, opts ...OptFunc) {
+func RegisterConcernManager(c concern.Concern, concernType []concern_type.Type, opts ...OptFunc) {
 	site := c.Site()
 	for _, ctype := range concernType {
 		if !ctype.IsTrivial() {
@@ -34,7 +35,7 @@ func RegisterConcernManager(c concern.Concern, concernType []concern.Type, opts 
 		}
 	}
 	if _, found := globalCenter.M[site]; !found {
-		globalCenter.M[site] = make(map[concern.Type]concern.Concern)
+		globalCenter.M[site] = make(map[concern_type.Type]concern.Concern)
 	}
 	for _, ctype := range concernType {
 		if lastC, found := globalCenter.M[site][ctype]; !found {
@@ -77,7 +78,7 @@ func ListConcernManager() []concern.Concern {
 	return result
 }
 
-func GetConcernManager(site string, ctype concern.Type) concern.Concern {
+func GetConcernManager(site string, ctype concern_type.Type) concern.Concern {
 	if sub, found := globalCenter.M[site]; !found {
 		return nil
 	} else {
@@ -97,8 +98,8 @@ func ListSite() []string {
 	return result
 }
 
-func ListType(site string) []concern.Type {
-	var result []concern.Type
+func ListType(site string) []concern_type.Type {
+	var result []concern_type.Type
 	for k := range globalCenter.M[site] {
 		result = append(result, k)
 	}

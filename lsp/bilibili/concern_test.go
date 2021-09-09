@@ -52,19 +52,19 @@ func TestConcern_ListWatching(t *testing.T) {
 	_, err = c.AddGroupConcern(test.G1, test.UID1, test.BibiliLive)
 	assert.Nil(t, err)
 
-	userInfos, ctypes, err := c.ListWatching(test.G1, test.BibiliLive)
+	userInfos, ctypes, err := c.List(test.G1, test.BibiliLive)
 	assert.Nil(t, err)
 	assert.Len(t, userInfos, 1)
 	assert.Len(t, ctypes, 1)
 	assert.Equal(t, origUserInfo, userInfos[0])
 	assert.Equal(t, test.BibiliLive, ctypes[0])
 
-	userInfos, ctypes, err = c.ListWatching(test.G1, test.BilibiliNews)
+	userInfos, ctypes, err = c.List(test.G1, test.BilibiliNews)
 	assert.Nil(t, err)
 	assert.Len(t, userInfos, 0)
 	assert.Len(t, ctypes, 0)
 
-	userInfos, ctypes, err = c.ListWatching(test.G2, test.BibiliLive)
+	userInfos, ctypes, err = c.List(test.G2, test.BibiliLive)
 	assert.Nil(t, err)
 	assert.Len(t, userInfos, 0)
 	assert.Len(t, ctypes, 0)

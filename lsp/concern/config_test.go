@@ -2,6 +2,7 @@ package concern
 
 import (
 	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -19,7 +20,7 @@ func TestGroupConcernAtConfig_CheckAtAll(t *testing.T) {
 
 func TestNewGroupConcernConfigFromString(t *testing.T) {
 	var testCase = []string{
-		`{"group_concern_at":{"at_all":1,"at_someone":[{"ctype":1, "at_list":[1,2,3,4,5]}]}}`,
+		`{"group_concern_at":{"at_all":"bilibiliLive","at_someone":[{"ctype":"bilibiliLive", "at_list":[1,2,3,4,5]}]}}`,
 	}
 	var expected = []*GroupConcernConfig{
 		{
@@ -63,11 +64,11 @@ func TestGroupConcernConfig_ToString(t *testing.T) {
 	var expected = []string{
 		`{
 			"group_concern_at":{
-				"at_all":1,
-				"at_someone":[{"ctype":1, "at_list":[1,2,3,4,5]}]
+				"at_all":"bilibiliLive",
+				"at_someone":[{"ctype":"bilibiliLive", "at_list":[1,2,3,4,5]}]
 			},
 			"group_concern_notify":{
-				"title_change_notify": 1, "offline_notify": 4
+				"title_change_notify": "bilibiliLive", "offline_notify": "douyuLive"
 			},
 			"group_concern_filter": {
 				"type": "", "config":""
@@ -115,7 +116,7 @@ func TestGroupConcernAtConfig_GetAtSomeoneList(t *testing.T) {
 
 func TestGroupConcernNotifyConfig_CheckTitleChangeNotify(t *testing.T) {
 	var g = &GroupConcernNotifyConfig{
-		TitleChangeNotify: test.BibiliLive | test.DouyuLive,
+		TitleChangeNotify: concern_type.Empty.Add(test.BibiliLive, test.DouyuLive),
 	}
 	assert.True(t, g.CheckTitleChangeNotify(test.BibiliLive))
 	assert.True(t, g.CheckTitleChangeNotify(test.DouyuLive))
@@ -124,7 +125,7 @@ func TestGroupConcernNotifyConfig_CheckTitleChangeNotify(t *testing.T) {
 
 func TestGroupConcernAtConfig_ClearAtSomeoneList(t *testing.T) {
 	var g = &GroupConcernAtConfig{
-		AtAll: 0,
+		AtAll: concern_type.Empty,
 		AtSomeone: []*AtSomeone{
 			{
 				Ctype:  test.BibiliLive,
@@ -142,7 +143,7 @@ func TestGroupConcernAtConfig_ClearAtSomeoneList(t *testing.T) {
 
 func TestGroupConcernAtConfig_RemoveAtSomeoneList(t *testing.T) {
 	var g = &GroupConcernAtConfig{
-		AtAll: 0,
+		AtAll: concern_type.Empty,
 		AtSomeone: []*AtSomeone{
 			{
 				Ctype:  test.BibiliLive,
@@ -163,7 +164,7 @@ func TestGroupConcernAtConfig_RemoveAtSomeoneList(t *testing.T) {
 
 func TestGroupConcernAtConfig_MergeAtSomeoneList(t *testing.T) {
 	var g = &GroupConcernAtConfig{
-		AtAll:     0,
+		AtAll:     concern_type.Empty,
 		AtSomeone: nil,
 	}
 
@@ -180,7 +181,7 @@ func TestGroupConcernAtConfig_MergeAtSomeoneList(t *testing.T) {
 
 func TestGroupConcernAtConfig_SetAtSomeoneList(t *testing.T) {
 	var g = &GroupConcernAtConfig{
-		AtAll:     0,
+		AtAll:     concern_type.Empty,
 		AtSomeone: nil,
 	}
 
@@ -201,7 +202,7 @@ func TestGroupConcernAtConfig_SetAtSomeoneList(t *testing.T) {
 
 func TestGroupConcernNotifyConfig_CheckOfflineNotify(t *testing.T) {
 	var g = &GroupConcernNotifyConfig{
-		OfflineNotify: test.BibiliLive | test.DouyuLive,
+		OfflineNotify: concern_type.Empty.Add(test.BibiliLive, test.DouyuLive),
 	}
 	assert.True(t, g.CheckOfflineNotify(test.BibiliLive))
 	assert.True(t, g.CheckOfflineNotify(test.DouyuLive))

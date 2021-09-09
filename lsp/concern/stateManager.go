@@ -6,6 +6,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
@@ -13,7 +14,7 @@ import (
 	"time"
 )
 
-var logger = utils.GetModuleLogger("concern_manager")
+var logger = utils.GetModuleLogger("concern")
 var ErrEmitQNotInit = errors.New("emit queue not enabled")
 
 type IStateManager interface {
@@ -24,25 +25,24 @@ type IStateManager interface {
 	GetGroupConcernNotifyManager(groupCode int64, id interface{}) INotifyManager
 	OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig IConfig) bool) error
 
-	GetGroupConcern(groupCode int64, id interface{}) (result Type, err error)
-	GetConcern(id interface{}) (result Type, err error)
+	GetGroupConcern(groupCode int64, id interface{}) (result concern_type.Type, err error)
+	GetConcern(id interface{}) (result concern_type.Type, err error)
 
 	CheckAndSetAtAllMark(groupCode int64, id interface{}) (result bool)
-	CheckGroupConcern(groupCode int64, id interface{}, ctype Type) error
-	CheckConcern(id interface{}, ctype Type) error
+	CheckGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) error
+	CheckConcern(id interface{}, ctype concern_type.Type) error
 	CheckFresh(id interface{}, setTTL bool) (result bool, err error)
 
-	AddGroupConcern(groupCode int64, id interface{}, ctype Type) (newCtype Type, err error)
-	RemoveGroupConcern(groupCode int64, id interface{}, ctype Type) (newCtype Type, err error)
+	AddGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error)
+	RemoveGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error)
 	RemoveAllByGroupCode(groupCode int64) (err error)
 	RemoveAllById(_id interface{}) (err error)
 
-	List(filter func(groupCode int64, id interface{}, p Type) bool) (idGroups []int64, ids []interface{}, idTypes []Type, err error)
-	GroupTypeById(ids []interface{}, types []Type) ([]interface{}, []Type, error)
-	ListIds() (ids []interface{}, err error)
+	List(filter func(groupCode int64, id interface{}, p concern_type.Type) bool) (idGroups []int64, ids []interface{}, idTypes []concern_type.Type, err error)
+	GroupTypeById(ids []interface{}, types []concern_type.Type) ([]interface{}, []concern_type.Type, error)
 
 	FreshIndex(groups ...int64)
-	EmitFreshCore(name string, fresher func(ctype Type, id interface{}) error)
+	EmitFreshCore(name string, fresher func(ctype concern_type.Type, id interface{}) error)
 }
 
 type StateManager struct {
@@ -127,11 +127,11 @@ func (c *StateManager) CheckAndSetAtAllMark(groupCode int64, id interface{}) (re
 	return
 }
 
-func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype Type) error {
+func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) error {
 	return c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
 		if err == nil {
-			if FromString(val).ContainAll(ctype) {
+			if concern_type.FromString(val).ContainAll(ctype) {
 				return ErrAlreadyExists
 			}
 		}
@@ -139,7 +139,7 @@ func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype 
 	})
 }
 
-func (c *StateManager) CheckConcern(id interface{}, ctype Type) error {
+func (c *StateManager) CheckConcern(id interface{}, ctype concern_type.Type) error {
 	state, err := c.GetConcern(id)
 	if err != nil {
 		return err
@@ -150,15 +150,15 @@ func (c *StateManager) CheckConcern(id interface{}, ctype Type) error {
 	return nil
 }
 
-func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype Type) (newCtype Type, err error) {
+func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
 	groupStateKey := c.GroupConcernStateKey(groupCode, id)
 	oldCtype, err := c.GetConcern(id)
 	if err != nil {
-		return Empty, err
+		return concern_type.Empty, err
 	}
 	newCtype, err = c.upsertConcernType(groupStateKey, ctype)
 	if err != nil {
-		return Empty, err
+		return concern_type.Empty, err
 	}
 
 	if c.useEmit && oldCtype.Empty() {
@@ -169,16 +169,16 @@ func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype Ty
 	return
 }
 
-func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype Type) (newCtype Type, err error) {
+func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
 	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
 		groupStateKey := c.GroupConcernStateKey(groupCode, id)
 		val, err := tx.Get(groupStateKey)
 		if err != nil {
 			return err
 		}
-		oldState := FromString(val)
+		oldState := concern_type.FromString(val)
 		newCtype = oldState.Remove(ctype)
-		if newCtype == Empty {
+		if newCtype == concern_type.Empty {
 			_, err = tx.Delete(groupStateKey)
 		} else {
 			_, _, err = tx.Set(groupStateKey, newCtype.String(), nil)
@@ -222,22 +222,22 @@ func (c *StateManager) RemoveAllById(_id interface{}) (err error) {
 	})
 }
 
-// GetGroupConcern return the concern.Type in specific group for an id
-func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result Type, err error) {
+// GetGroupConcern return the concern_type.Type in specific group for an id
+func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result concern_type.Type, err error) {
 	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
 		if err != nil {
 			return err
 		}
-		result = FromString(val)
+		result = concern_type.FromString(val)
 		return nil
 	})
 	return result, err
 }
 
-// GetConcern 查询一个id在所有group内的 concern.Type
-func (c *StateManager) GetConcern(id interface{}) (result Type, err error) {
-	_, _, _, err = c.List(func(groupCode int64, _id interface{}, p Type) bool {
+// GetConcern 查询一个id在所有group内的 concern_type.Type
+func (c *StateManager) GetConcern(id interface{}) (result concern_type.Type, err error) {
+	_, _, _, err = c.List(func(groupCode int64, _id interface{}, p concern_type.Type) bool {
 		if id == _id {
 			result = result.Add(p)
 		}
@@ -246,7 +246,7 @@ func (c *StateManager) GetConcern(id interface{}) (result Type, err error) {
 	return
 }
 
-func (c *StateManager) List(filter func(groupCode int64, id interface{}, p Type) bool) (idGroups []int64, ids []interface{}, idTypes []Type, err error) {
+func (c *StateManager) List(filter func(groupCode int64, id interface{}, p concern_type.Type) bool) (idGroups []int64, ids []interface{}, idTypes []concern_type.Type, err error) {
 	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		var iterErr error
 		err := tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
@@ -256,7 +256,7 @@ func (c *StateManager) List(filter func(groupCode int64, id interface{}, p Type)
 			if iterErr != nil {
 				return false
 			}
-			ctype := FromString(value)
+			ctype := concern_type.FromString(value)
 			if ctype.Empty() {
 				return true
 			}
@@ -281,29 +281,14 @@ func (c *StateManager) List(filter func(groupCode int64, id interface{}, p Type)
 	return
 }
 
-func (c *StateManager) ListIds() (ids []interface{}, err error) {
-	var idSet = make(map[interface{}]bool)
-	_, _, _, err = c.List(func(groupCode int64, id interface{}, p Type) bool {
-		idSet[id] = true
-		return true
-	})
-	if err != nil {
-		return nil, err
-	}
-	for k := range idSet {
-		ids = append(ids, k)
-	}
-	return ids, nil
-}
-
-func (c *StateManager) GroupTypeById(ids []interface{}, types []Type) ([]interface{}, []Type, error) {
+func (c *StateManager) GroupTypeById(ids []interface{}, types []concern_type.Type) ([]interface{}, []concern_type.Type, error) {
 	if len(ids) != len(types) {
 		return nil, nil, ErrLengthMismatch
 	}
 	var (
-		idTypeMap  = make(map[interface{}]Type)
+		idTypeMap  = make(map[interface{}]concern_type.Type)
 		result     []interface{}
-		resultType []Type
+		resultType []concern_type.Type
 	)
 	for index := range ids {
 		id := ids[index]
@@ -361,7 +346,7 @@ func (c *StateManager) FreshIndex(groups ...int64) {
 			groupSet[g] = struct{}{}
 		}
 	}
-	c.List(func(groupCode int64, id interface{}, p Type) bool {
+	c.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 		groupSet[groupCode] = struct{}{}
 		return true
 	})
@@ -373,14 +358,14 @@ func (c *StateManager) FreshIndex(groups ...int64) {
 	}
 }
 
-func (c *StateManager) upsertConcernType(key string, ctype Type) (newCtype Type, err error) {
+func (c *StateManager) upsertConcernType(key string, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
 	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(key)
 		if err == buntdb.ErrNotFound {
 			newCtype = ctype
 			_, _, err = tx.Set(key, ctype.String(), nil)
 		} else if err == nil {
-			newCtype = FromString(val).Add(ctype)
+			newCtype = concern_type.FromString(val).Add(ctype)
 			_, _, err = tx.Set(key, newCtype.String(), nil)
 		} else {
 			return err
@@ -399,7 +384,7 @@ func (c *StateManager) Stop() {
 
 func (c *StateManager) Start() error {
 	if c.useEmit {
-		_, ids, types, err := c.List(func(groupCode int64, id interface{}, p Type) bool {
+		_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 			return true
 		})
 		if err != nil {
@@ -418,7 +403,7 @@ func (c *StateManager) Start() error {
 	return nil
 }
 
-func (c *StateManager) EmitFreshCore(name string, fresher func(ctype Type, id interface{}) error) {
+func (c *StateManager) EmitFreshCore(name string, fresher func(ctype concern_type.Type, id interface{}) error) {
 	if !c.useEmit {
 		return
 	}

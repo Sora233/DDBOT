@@ -3,7 +3,8 @@ package lsp
 import (
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"runtime/debug"
@@ -35,9 +36,9 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				continue
 			}
 
-			innertState := l.getInnerState(inotify.Type())
-			cfg := l.getConcernConfig(inotify.GetGroupCode(), inotify.GetUid(), inotify.Type())
-			notifyManager := l.getConcernConfigNotifyManager(inotify.Type(), cfg)
+			c := registry.GetConcernManager(inotify.Site(), inotify.Type())
+			cfg := c.GetStateManager().GetGroupConcernConfig(inotify.GetGroupCode(), inotify.GetUid())
+			notifyManager := c.GetStateManager().GetGroupConcernNotifyManager(inotify.GetGroupCode(), inotify.GetUid())
 
 			sendHookResult := notifyManager.ShouldSendHook(inotify)
 			if !sendHookResult.Pass {
@@ -58,8 +59,8 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 			} else {
 				// 有@全体成员 或者 @Someone
 				var qqadmin = atBeforeHook.Pass && l.PermissionStateManager.CheckGroupAdministrator(inotify.GetGroupCode(), bot.Uin)
-				var checkAtAll = qqadmin && cfg.GroupConcernAt.CheckAtAll(inotify.Type())
-				var atAllMark = checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
+				var checkAtAll = qqadmin && cfg.GetGroupConcernAt().CheckAtAll(inotify.Type())
+				var atAllMark = checkAtAll && c.GetStateManager().CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
 				nLogger.WithFields(logrus.Fields{
 					"atBeforeHook": atBeforeHook,
 					"qqAdmin":      qqadmin,
@@ -70,7 +71,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					nLogger = nLogger.WithField("at_all", true)
 					chainMsg = append(chainMsg, newAtAllMsg())
 				} else {
-					ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
+					ids := cfg.GetGroupConcernAt().GetAtSomeoneList(inotify.Type())
 					nLogger = nLogger.WithField("at_QQ", ids)
 					if len(ids) != 0 {
 						chainMsg = append(chainMsg, newAtIdsMsg(ids))
@@ -110,7 +111,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 								continue
 							}
 							// @全体成员失败了，可能是次数到了，尝试@列表
-							ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
+							ids := cfg.GetGroupConcernAt().GetAtSomeoneList(inotify.Type())
 							if len(ids) != 0 {
 								nLogger = nLogger.WithField("at_QQ", ids)
 								nLogger.Debug("notify atAll failed, try at someone")

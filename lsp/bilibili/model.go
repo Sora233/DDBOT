@@ -6,7 +6,7 @@ import (
 	"errors"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	lru "github.com/hashicorp/golang-lru"
@@ -22,7 +22,7 @@ type NewsInfo struct {
 	Cards         []*Card `json:"-"`
 }
 
-func (n *NewsInfo) Type() concern.Type {
+func (n *NewsInfo) Type() concern_type.Type {
 	return News
 }
 
@@ -56,17 +56,9 @@ type ConcernNewsNotify struct {
 	videoOriginMark bool
 }
 
-func (notify *ConcernNewsNotify) Type() concern.Type {
-	return News
-}
-
 type ConcernLiveNotify struct {
 	GroupCode int64 `json:"group_code"`
 	LiveInfo
-}
-
-func (notify *ConcernLiveNotify) Type() concern.Type {
-	return Live
 }
 
 type UserStat struct {
@@ -126,7 +118,7 @@ func (l *LiveInfo) Living() bool {
 	return l.Status == LiveStatus_Living
 }
 
-func (l *LiveInfo) Type() concern.Type {
+func (l *LiveInfo) Type() concern_type.Type {
 	return Live
 }
 
@@ -722,6 +714,15 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 	notify.messageCache = result
 	return result
 }
+
+func (notify *ConcernNewsNotify) Type() concern_type.Type {
+	return News
+}
+
+func (notify *ConcernNewsNotify) Site() string {
+	return Site
+}
+
 func (notify *ConcernNewsNotify) GetGroupCode() int64 {
 	return notify.GroupCode
 }
@@ -740,6 +741,7 @@ func (notify *ConcernNewsNotify) Logger() *logrus.Entry {
 			"Name":      notify.Name,
 			"DynamicId": notify.Card.GetDesc().GetDynamicIdStr(),
 			"DescType":  notify.Card.GetDesc().GetType().String(),
+			"Type":      notify.Type().String(),
 		})
 }
 
@@ -765,7 +767,12 @@ func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
 	if notify == nil {
 		return logger
 	}
-	return notify.LiveInfo.Logger().WithFields(localutils.GroupLogFields(notify.GroupCode))
+	return notify.LiveInfo.Logger().
+		WithFields(localutils.GroupLogFields(notify.GroupCode))
+}
+
+func (notify *ConcernLiveNotify) Site() string {
+	return Site
 }
 
 func (notify *ConcernLiveNotify) GetGroupCode() int64 {

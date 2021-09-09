@@ -3,6 +3,7 @@ package concern
 import (
 	"github.com/Sora233/DDBOT/internal/test"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
 	"testing"
@@ -44,7 +45,7 @@ func TestNewStateManager(t *testing.T) {
 	sm := newStateManager(t)
 
 	sm.Start()
-	sm.EmitFreshCore("name", func(ctype Type, id interface{}) error {
+	sm.EmitFreshCore("name", func(ctype concern_type.Type, id interface{}) error {
 		return nil
 	})
 }
@@ -86,7 +87,7 @@ func TestStateManager_GroupConcernConfig(t *testing.T) {
 	})
 
 	err = sm.OperateGroupConcernConfig(test.G1, test.UID1, func(concernConfig IConfig) bool {
-		concernConfig.GetGroupConcernNotify().TitleChangeNotify = Empty
+		concernConfig.GetGroupConcernNotify().TitleChangeNotify = concern_type.Empty
 		return false
 	})
 	assert.EqualValues(t, localdb.ErrRollback, err)
@@ -195,7 +196,7 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G2, test.UID1, test.HuyaLive))
 
 	// 列出所有有hlive的记录，应该只有UID G2
-	groups, ids, ctypes, err := sm.List(func(groupCode int64, id interface{}, p Type) bool {
+	groups, ids, ctypes, err := sm.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 		return p.ContainAny(test.HuyaLive)
 	})
 	assert.Nil(t, err)
@@ -211,8 +212,8 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.EqualValues(t, test.DouyuLive, ctype)
 
 	// G1中有 UID1:blive UID2:dlive
-	ids, ctypes, err = sm.ListByGroup(test.G1, func(id interface{}, p Type) bool {
-		return true
+	_, ids, ctypes, err = sm.List(func(g int64, id interface{}, p concern_type.Type) bool {
+		return g == test.G1
 	})
 	assert.Nil(t, err)
 	assert.EqualValues(t, 2, len(ids))
@@ -231,7 +232,7 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	ids, ctypes, err = sm.GroupTypeById(ids, ctypes)
 	assert.Nil(t, err)
 
-	ids, err = sm.ListIds()
+	ids, err = listIds(sm)
 	assert.Nil(t, err)
 	assert.EqualValues(t, 2, len(ids))
 	assert.Contains(t, ids, test.UID1)
@@ -241,7 +242,7 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.Nil(t, err)
 	ctype, err = sm.GetConcern(test.UID1)
 	assert.Nil(t, err)
-	assert.EqualValues(t, 0, ctype)
+	assert.EqualValues(t, concern_type.Empty, ctype)
 
 	err = sm.RemoveAllByGroupCode(test.G2)
 	assert.Nil(t, err)
@@ -250,4 +251,20 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.EqualValues(t, test.DouyuLive, ctype)
 	ctype, err = sm.GetGroupConcern(test.G2, test.UID2)
 	assert.EqualValues(t, buntdb.ErrNotFound, err)
+}
+
+func listIds(sm *StateManager) ([]interface{}, error) {
+	var m = make(map[interface{}]interface{})
+	_, _, _, err := sm.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+		m[id] = struct{}{}
+		return true
+	})
+	if err != nil {
+		return nil, err
+	}
+	var ids []interface{}
+	for k := range m {
+		ids = append(ids, k)
+	}
+	return ids, nil
 }

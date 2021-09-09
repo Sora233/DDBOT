@@ -2,7 +2,7 @@ package test
 
 import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -36,12 +36,12 @@ const (
 )
 
 const (
-	BibiliLive   concern.Type = "bilibiliLive"
-	BilibiliNews concern.Type = "bilibiliNews"
-	DouyuLive    concern.Type = "douyuLive"
-	YoutubeLive  concern.Type = "youtubeLive"
-	YoutubeVideo concern.Type = "youtubeVideo"
-	HuyaLive     concern.Type = "huyaLive"
+	BibiliLive   concern_type.Type = "bilibiliLive"
+	BilibiliNews concern_type.Type = "bilibiliNews"
+	DouyuLive    concern_type.Type = "douyuLive"
+	YoutubeLive  concern_type.Type = "youtubeLive"
+	YoutubeVideo concern_type.Type = "youtubeVideo"
+	HuyaLive     concern_type.Type = "huyaLive"
 )
 
 func InitBuntdb(t *testing.T) {

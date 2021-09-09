@@ -1,8 +1,6 @@
 package concern
 
-import (
-	"github.com/Mrs4s/MiraiGo/message"
-)
+import "github.com/Mrs4s/MiraiGo/message"
 
 type ICallback interface {
 	NotifyBeforeCallback(notify Notify)

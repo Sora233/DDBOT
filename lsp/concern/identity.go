@@ -1,27 +1,21 @@
 package concern
 
 type Identity struct {
-	id    interface{}
-	name  string
-	type1 Type
+	id   interface{}
+	name string
 }
 
-func (i *Identity) Id() interface{} {
+func (i *Identity) GetUid() interface{} {
 	return i.id
 }
 
-func (i *Identity) Name() string {
+func (i *Identity) GetName() string {
 	return i.name
 }
 
-func (i *Identity) Type() Type {
-	return i.type1
-}
-
-func NewIdentity(id interface{}, name string, ctype Type) *Identity {
+func NewIdentity(id interface{}, name string) *Identity {
 	return &Identity{
-		id:    id,
-		name:  name,
-		type1: ctype,
+		id:   id,
+		name: name,
 	}
 }

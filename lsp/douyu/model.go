@@ -2,14 +2,14 @@ package douyu
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 )
 
 type concernEvent interface {
-	Type() concern.Type
+	Type() concern_type.Type
 }
 
 type LiveInfo struct {
@@ -40,7 +40,7 @@ func (m *LiveInfo) Living() bool {
 	return m.ShowStatus == ShowStatus_Living && m.VideoLoop == VideoLoopStatus_Off
 }
 
-func (m *LiveInfo) Type() concern.Type {
+func (m *LiveInfo) Type() concern_type.Type {
 	return Live
 }
 
@@ -115,7 +115,7 @@ type ConcernLiveNotify struct {
 	GroupCode int64 `json:"group_code"`
 }
 
-func (notify *ConcernLiveNotify) Type() concern.Type {
+func (notify *ConcernLiveNotify) Type() concern_type.Type {
 	return Live
 }
 func (notify *ConcernLiveNotify) GetGroupCode() int64 {
@@ -123,6 +123,10 @@ func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 }
 func (notify *ConcernLiveNotify) GetUid() interface{} {
 	return notify.RoomId
+}
+
+func (notify *ConcernLiveNotify) Site() string {
+	return Site
 }
 
 func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {

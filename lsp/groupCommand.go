@@ -11,7 +11,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/aliyun"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/proxy_pool"
@@ -359,7 +359,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	var (
 		groupCode = lgc.groupCode()
 		site      = bilibili.Site
-		watchType = concern.Type("live")
+		watchType = concern_type.Type("live")
 		err       error
 	)
 
@@ -389,7 +389,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	site, watchType, err = lgc.ParseRawSiteAndType(watchCmd.Site, watchCmd.Type)
 	if err != nil {
 		log = log.WithField("args", lgc.GetArgs())
-		log.Errorf("parse raw concern failed %v", err)
+		log.Errorf("parse raw concern_manager failed %v", err)
 		lgc.textReply(fmt.Sprintf("参数错误 - %v", err))
 		return
 	}

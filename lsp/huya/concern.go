@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	localutils "github.com/Sora233/DDBOT/utils"
 	jsoniter "github.com/json-iterator/go"
 	"reflect"
@@ -16,7 +17,7 @@ var json = jsoniter.ConfigCompatibleWithStandardLibrary
 var logger = utils.GetModuleLogger("huya-concern")
 
 const (
-	Live concern.Type = "live"
+	Live concern_type.Type = "live"
 )
 
 type Concern struct {
@@ -67,7 +68,7 @@ func (c *Concern) Start() error {
 		go c.notifyLoop()
 	}
 
-	go c.EmitFreshCore("huya", func(ctype concern.Type, id interface{}) error {
+	go c.EmitFreshCore(Site, func(ctype concern_type.Type, id interface{}) error {
 		roomid, ok := id.(string)
 		if !ok {
 			return fmt.Errorf("cast fresh id type<%v> to string failed", reflect.ValueOf(id).Type().String())
@@ -97,7 +98,7 @@ func (c *Concern) Start() error {
 	return nil
 }
 
-func (c *Concern) Add(groupCode int64, id interface{}, ctype concern.Type) (*LiveInfo, error) {
+func (c *Concern) Add(groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	var err error
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
 
@@ -109,7 +110,7 @@ func (c *Concern) Add(groupCode int64, id interface{}, ctype concern.Type) (*Liv
 		return nil, err
 	}
 
-	liveInfo, err := RoomPage(id.(string))
+	liveInfo, err := c.FindOrLoadRoom(id.(string))
 	if err != nil {
 		log.Error(err)
 		return nil, fmt.Errorf("查询房间信息失败 %v - %v", id, err)
@@ -118,27 +119,42 @@ func (c *Concern) Add(groupCode int64, id interface{}, ctype concern.Type) (*Liv
 	if err != nil {
 		return nil, err
 	}
-	return liveInfo, nil
+	return concern.NewIdentity(liveInfo.RoomId, liveInfo.GetName()), nil
 }
 
-func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*LiveInfo, []concern.Type, error) {
+func (c *Concern) Remove(groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	id := _id.(string)
+	identity, _ := c.Get(id)
+	_, err := c.StateManager.RemoveGroupConcern(groupCode, id, ctype)
+	return identity, err
+}
+
+func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
+	liveInfo, err := c.FindRoom(id.(string), false)
+	if err != nil {
+		return nil, err
+	}
+	return concern.NewIdentity(liveInfo.RoomId, liveInfo.GetName()), nil
+}
+
+func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
 	log := logger.WithFields(localutils.GroupLogFields(groupCode))
 
-	ids, ctypes, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
-		return p.ContainAny(ctype)
+	_, ids, ctypes, err := c.StateManager.List(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
+		return groupCode == _groupCode && p.ContainAny(ctype)
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-	var resultTypes = make([]concern.Type, 0, len(ids))
-	var result = make([]*LiveInfo, 0, len(ids))
+	var resultTypes = make([]concern_type.Type, 0, len(ids))
+	var result = make([]concern.IdentityInfo, 0, len(ids))
 	for index, id := range ids {
 		liveInfo, err := c.FindOrLoadRoom(id.(string))
 		if err != nil {
 			log.WithField("id", id).Errorf("get LiveInfo err %v", err)
 			continue
 		}
-		result = append(result, liveInfo)
+		result = append(result, concern.NewIdentity(liveInfo.RoomName, liveInfo.GetName()))
 		resultTypes = append(resultTypes, ctypes[index])
 	}
 
@@ -155,7 +171,7 @@ func (c *Concern) notifyLoop() {
 			log := event.Logger()
 			log.Debugf("debug event")
 
-			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 				return id.(string) == event.RoomId && p.ContainAny(Live)
 			})
 			if err != nil {

@@ -14,6 +14,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/proxy_pool"
@@ -317,7 +318,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			WithField("GroupName", event.Group.Name).
 			WithField("MemberCount", event.Group.MemberCount)
 		for _, c := range registry.ListConcernManager() {
-			_, ids, _, err := c.GetStateManager().List(func(groupCode int64, id interface{}, p concern.Type) bool {
+			_, ids, _, err := c.GetStateManager().List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 				return groupCode == event.Group.Code
 			})
 			if err != nil {
@@ -576,60 +577,6 @@ func (l *Lsp) sendChainGroupMessage(groupCode int64, msgs []*message.SendingMess
 	}
 	return res
 }
-
-//func (l *Lsp) getInnerState(ctype concern.Type) *concern.StateManager {
-//	switch ctype {
-//	case concern.BilibiliNews, concern.BibiliLive:
-//		return l.bilibiliConcern.StateManager.StateManager
-//	case concern.DouyuLive:
-//		return l.douyuConcern.StateManager.StateManager
-//	case concern.YoutubeVideo, concern.YoutubeLive:
-//		return l.youtubeConcern.StateManager.StateManager
-//	case concern.HuyaLive:
-//		return l.huyaConcern.StateManager.StateManager
-//	default:
-//		return nil
-//	}
-//}
-//
-//func (l *Lsp) getConcernConfig(groupCode int64, id interface{}, ctype concern.Type) *concern2.GroupConcernConfig {
-//	state := l.getInnerState(ctype)
-//	if state == nil {
-//		return nil
-//	}
-//	return state.GetGroupConcernConfig(groupCode, id)
-//}
-//
-//func (l *Lsp) getConcernConfigNotifyManager(ctype concern.Type, concernConfig *concern2.GroupConcernConfig) concern.INotifyManager {
-//	if concernConfig == nil {
-//		return nil
-//	}
-//	switch ctype {
-//	case concern.BibiliLive, concern.BilibiliNews:
-//		return bilibili.NewGroupConcernConfig(concernConfig, l.bilibiliConcern.StateManager)
-//	case concern.DouyuLive:
-//		return douyu.NewGroupConcernConfig(concernConfig)
-//	case concern.YoutubeLive, concern.YoutubeVideo:
-//		return youtube.NewGroupConcernConfig(concernConfig)
-//	case concern.HuyaLive:
-//		return huya.NewGroupConcernConfig(concernConfig)
-//	default:
-//		return concernConfig
-//	}
-//}
-
-//
-//func (l *Lsp) IsPublicMode() bool {
-//	return l.LspStateManager.IsPublicMode()
-//}
-//
-//func (l *Lsp) IsProtectMode() bool {
-//	return l.LspStateManager.IsProtectMode()
-//}
-//
-//func (l *Lsp) IsPrivateMode() bool {
-//	return l.LspStateManager.IsPrivateMode()
-//}
 
 var Instance *Lsp
 

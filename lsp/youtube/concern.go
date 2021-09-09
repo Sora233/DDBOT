@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"runtime"
 	"sync"
@@ -33,7 +34,7 @@ func (c *Concern) GetStateManager() concern.IStateManager {
 	return c.StateManager
 }
 
-func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Info, err error) {
+func (c *Concern) Add(groupCode int64, id string, ctype concern_type.Type) (info *Info, err error) {
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
 
 	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
@@ -55,17 +56,17 @@ func (c *Concern) Add(groupCode int64, id string, ctype concern.Type) (info *Inf
 	return NewInfo(videoInfo), nil
 }
 
-func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo, []concern.Type, error) {
+func (c *Concern) ListWatching(groupCode int64, ctype concern_type.Type) ([]*UserInfo, []concern_type.Type, error) {
 	log := logger.WithFields(localutils.GroupLogFields(groupCode))
 
-	ids, ctypes, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
-		return p.ContainAny(ctype)
+	_, ids, ctypes, err := c.StateManager.List(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
+		return groupCode == _groupCode && p.ContainAny(ctype)
 	})
 	if err != nil {
 		return nil, nil, err
 	}
 	var result = make([]*UserInfo, 0, len(ids))
-	var resultTypes = make([]concern.Type, 0, len(ids))
+	var resultTypes = make([]concern_type.Type, 0, len(ids))
 	for index, id := range ids {
 		info, err := c.FindOrLoad(id.(string))
 		if err != nil {
@@ -104,7 +105,7 @@ func (c *Concern) Start() error {
 		go c.notifyLoop()
 	}
 
-	go c.EmitFreshCore("youtube", func(ctype concern.Type, id interface{}) error {
+	go c.EmitFreshCore("youtube", func(ctype concern_type.Type, id interface{}) error {
 		if ctype.ContainAny(Live.Add(Video)) {
 			channelId, ok := id.(string)
 			if !ok {
@@ -133,7 +134,7 @@ func (c *Concern) notifyLoop() {
 		if err := c.StateManager.AddVideo(event); err != nil {
 			log.Errorf("add video err %v", err)
 		}
-		groups, _, idTypes, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+		groups, _, idTypes, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 			return id.(string) == event.ChannelId && p.ContainAny(Live.Add(Video))
 		})
 		if err != nil {
