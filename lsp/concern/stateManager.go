@@ -437,10 +437,11 @@ func NewStateManager(keySet KeySet, useEmit bool) *StateManager {
 	}
 	if useEmit {
 		var interval time.Duration
-		if config.GlobalConfig == nil {
-			interval = time.Second * 5
-		} else {
+		if config.GlobalConfig != nil {
 			interval = config.GlobalConfig.GetDuration("concern.emitInterval")
+		}
+		if interval == 0 {
+			interval = time.Second * 5
 		}
 		sm.emitQueue = localutils.NewEmitQueue(sm.emitChan, interval)
 	}
