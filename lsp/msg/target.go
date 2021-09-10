@@ -7,6 +7,14 @@ const (
 	TargetPrivate
 )
 
+func (t TargetType) IsGroup() bool {
+	return t == TargetGroup
+}
+
+func (t TargetType) IsPrivate() bool {
+	return t == TargetPrivate
+}
+
 type Target interface {
 	TargetType() TargetType
 	TargetCode() int64

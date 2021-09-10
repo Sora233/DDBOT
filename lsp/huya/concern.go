@@ -6,6 +6,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/msg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	jsoniter "github.com/json-iterator/go"
 	"reflect"
@@ -98,7 +99,7 @@ func (c *Concern) Start() error {
 	return nil
 }
 
-func (c *Concern) Add(groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	var err error
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
 
@@ -112,7 +113,7 @@ func (c *Concern) Add(groupCode int64, id interface{}, ctype concern_type.Type) 
 
 	liveInfo, err := c.FindOrLoadRoom(id.(string))
 	if err != nil {
-		log.Error(err)
+		log.Errorf("FindOrLoadRoom error %v", err)
 		return nil, fmt.Errorf("查询房间信息失败 %v - %v", id, err)
 	}
 	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
@@ -122,7 +123,7 @@ func (c *Concern) Add(groupCode int64, id interface{}, ctype concern_type.Type) 
 	return concern.NewIdentity(liveInfo.RoomId, liveInfo.GetName()), nil
 }
 
-func (c *Concern) Remove(groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Remove(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	id := _id.(string)
 	identity, _ := c.Get(id)
 	_, err := c.StateManager.RemoveGroupConcern(groupCode, id, ctype)

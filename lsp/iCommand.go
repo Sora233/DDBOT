@@ -9,51 +9,16 @@ import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/douyu"
-	"github.com/Sora233/DDBOT/lsp/huya"
+	"github.com/Sora233/DDBOT/lsp/msg"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/registry"
-	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/utils"
-	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"strings"
 	"time"
 )
 
 var errNilParam = errors.New("内部参数错误")
-
-type SourceType int
-
-const (
-	SourceTypeGroup SourceType = iota
-	SourceTypePrivate
-)
-
-type MessageContext struct {
-	TextReply           func(text string) interface{}
-	Reply               func(sendingMessage *message.SendingMessage) interface{}
-	Send                func(sendingMessage *message.SendingMessage) interface{}
-	NoPermissionReply   func() interface{}
-	DisabledReply       func() interface{}
-	GlobalDisabledReply func() interface{}
-	Lsp                 *Lsp
-	Log                 *logrus.Entry
-	Sender              *message.Sender
-	Source              SourceType
-}
-
-func (c *MessageContext) IsFromPrivate() bool {
-	return c.Source == SourceTypePrivate
-}
-
-func (c *MessageContext) IsFromGroup() bool {
-	return c.Source == SourceTypeGroup
-}
-
-func NewMessageContext() *MessageContext {
-	return new(MessageContext)
-}
 
 func IList(c *MessageContext, groupCode int64) {
 	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ListCommand) {
@@ -63,20 +28,20 @@ func IList(c *MessageContext, groupCode int64) {
 
 	var empty = true
 
-	listMsg := message.NewSendingMessage()
+	listMsg := msg.NewMSG()
 
 	for _, c := range registry.ListConcernManager() {
 		infos, ctypes, err := c.List(groupCode, concern_type.Empty)
 		if err != nil {
-			listMsg.Append(utils.MessageTextf("%v订阅查询失败 - %v\n", c.Site(), err))
+			listMsg.Textf("%v订阅查询失败 - %v\n", c.Site(), err)
 		} else {
 			if len(infos) > 0 {
 				empty = false
-				listMsg.Append(utils.MessageTextf("%v订阅：\n", c.Site()))
+				listMsg.Textf("%v订阅：\n", c.Site())
 				for index, info := range infos {
-					listMsg.Append(utils.MessageTextf("%v %v %v\n", info.GetName(), info.GetUid(), ctypes[index].String()))
+					listMsg.Textf("%v %v %v\n", info.GetName(), info.GetUid(), ctypes[index].String())
 				}
-				listMsg.Append(message.NewText("\n"))
+				listMsg.Text("\n")
 			}
 		}
 	}
@@ -106,173 +71,44 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		return
 	}
 
-	switch site {
-	case bilibili.Site:
-		mid, err := bilibili.ParseUid(id)
-		if err != nil {
-			c.TextReply("失败 - bilibili uid格式错误")
-			return
-		}
-		log = log.WithField("mid", mid)
-		if remove {
-			// unwatch
-			userInfo, _ := c.Lsp.bilibiliConcern.FindUser(mid, false)
-			if _, err := c.Lsp.bilibiliConcern.Remove(groupCode, mid, watchType); err != nil {
-				if err == buntdb.ErrNotFound {
-					c.TextReply(fmt.Sprintf("unwatch失败 - 未找到该用户"))
-				} else {
-					log.Errorf("concern_manager remove failed %v", err)
-					c.TextReply(fmt.Sprintf("unwatch失败 - 内部错误"))
-				}
-			} else {
-				if userInfo == nil {
-					c.TextReply("unwatch成功")
-				} else {
-					log = log.WithField("name", userInfo.Name)
-					c.TextReply(fmt.Sprintf("unwatch成功 - bilibili用户 %v", userInfo.Name))
-				}
-				log.Debugf("unwatch success")
-			}
-			return
-		}
-		// watch
-		userInfo, err := c.Lsp.bilibiliConcern.Add(groupCode, mid, watchType)
-		if err != nil {
-			log.Errorf("watch error %v", err)
-			c.TextReply(fmt.Sprintf("watch失败 - %v", err))
-			return
-		}
-		if watchType.ContainAny(concern_manager.BibiliLive) {
-			// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
-			liveInfo, _ := c.Lsp.bilibiliConcern.GetLiveInfo(mid)
-			if liveInfo != nil && liveInfo.Living() {
-				if c.IsFromGroup() {
-					defer c.Lsp.bilibiliConcern.GroupWatchNotify(groupCode, mid)
-				}
-				if c.IsFromPrivate() {
-					defer c.TextReply("检测到该用户正在直播，但由于您目前处于私聊模式，因此不会在群内推送本次直播，将在该用户下次直播时推送")
-				}
-			}
-		}
-		log = log.WithField("name", userInfo.Name)
-		log.Debugf("watch success")
-		const followerCap = 50
-		if userInfo != nil && userInfo.UserStat != nil && watchType.ContainAny(concern_manager.BibiliLive) && userInfo.UserStat.Follower < followerCap {
-			c.TextReply(fmt.Sprintf("watch成功 - Bilibili用户 %v\n注意：检测到该用户粉丝数少于%v，请确认您的订阅目标是否正确，注意使用UID而非直播间ID", userInfo.Name, followerCap))
-		} else {
-			c.TextReply(fmt.Sprintf("watch成功 - Bilibili用户 %v", userInfo.Name))
-		}
-	case douyu.Site:
-		mid, err := douyu.ParseUid(id)
-		if err != nil {
-			log.WithField("id", id).Errorf("not a int")
-			c.TextReply("失败 - douyu id格式错误")
-			return
-		}
-		log = log.WithField("mid", mid)
-		if remove {
-			// unwatch
-			info, _ := c.Lsp.douyuConcern.FindRoom(mid, false)
-			if _, err := c.Lsp.douyuConcern.RemoveGroupConcern(groupCode, mid, watchType); err != nil {
-				if err == buntdb.ErrNotFound {
-					c.TextReply(fmt.Sprintf("unwatch失败 - 未找到该用户"))
-				} else {
-					log.Errorf("concern_manager remove failed %v", err)
-					c.TextReply(fmt.Sprintf("unwatch失败 - 内部错误"))
-				}
-			} else {
-				if info == nil {
-					c.TextReply("unwatch成功")
-				} else {
-					log = log.WithField("name", info.Nickname)
-					c.TextReply(fmt.Sprintf("unwatch成功 - 斗鱼用户 %v", info.Nickname))
-				}
-				log.Debugf("unwatch success")
-			}
-			return
-		}
-		// watch
-		userInfo, err := c.Lsp.douyuConcern.Add(groupCode, mid, watchType)
-		if err != nil {
-			log.Errorf("watch error %v", err)
-			c.TextReply(fmt.Sprintf("watch失败 - %v", err))
-			break
-		}
-		log = log.WithField("name", userInfo.Nickname)
-		log.Debugf("watch success")
-		c.TextReply(fmt.Sprintf("watch成功 - 斗鱼用户 %v", userInfo.Nickname))
-	case youtube.Site:
-		log = log.WithField("id", id)
-		if remove {
-			// unwatch
-			info, _ := c.Lsp.youtubeConcern.FindInfo(id, false)
-			if _, err := c.Lsp.youtubeConcern.RemoveGroupConcern(groupCode, id, watchType); err != nil {
-				if err == buntdb.ErrNotFound {
-					c.TextReply(fmt.Sprintf("unwatch失败 - 未找到该用户"))
-				} else {
-					log.Errorf("concern_manager remove failed %v", err)
-					c.TextReply(fmt.Sprintf("unwatch失败 - 内部错误"))
-				}
-			} else {
-				if info == nil {
-					c.TextReply("unwatch成功")
-				} else {
-					log = log.WithField("name", info.ChannelName)
-					c.TextReply(fmt.Sprintf("unwatch成功 - YTB用户 %v", info.ChannelName))
-				}
-				log.Debugf("unwatch success")
-			}
-			return
-		}
-		info, err := c.Lsp.youtubeConcern.Add(groupCode, id, watchType)
-		if err != nil {
-			log.Errorf("watch error %v", err)
-			c.TextReply(fmt.Sprintf("watch失败 - %v", err))
-			break
-		}
-		log = log.WithField("name", info.ChannelName)
-		log.Debugf("watch success")
-		if info.ChannelName == "" {
-			c.TextReply(fmt.Sprintf("watch成功 - YTB用户，该用户未发任何布直播/视频，无法获取名字"))
-		} else {
-			c.TextReply(fmt.Sprintf("watch成功 - YTB用户 %v", info.ChannelName))
-		}
-	case huya.Site:
-		log = log.WithField("id", id)
-		if remove {
-			// unwatch
-			info, _ := c.Lsp.huyaConcern.FindRoom(id, false)
-			if _, err := c.Lsp.huyaConcern.RemoveGroupConcern(groupCode, id, watchType); err != nil {
-				if err == buntdb.ErrNotFound {
-					c.TextReply(fmt.Sprintf("unwatch失败 - 未找到该用户"))
-				} else {
-					log.Errorf("concern_manager remove failed %v", err)
-					c.TextReply(fmt.Sprintf("unwatch失败 - 内部错误"))
-				}
-			} else {
-				if info == nil {
-					c.TextReply("unwatch成功")
-				} else {
-					log = log.WithField("name", info.Name)
-					c.TextReply(fmt.Sprintf("unwatch成功 - 虎牙用户 %v", info.Name))
-				}
-				log.Debugf("unwatch success")
-			}
-			return
-		}
-		info, err := c.Lsp.huyaConcern.Add(groupCode, id, watchType)
-		if err != nil {
-			log.Errorf("watch error %v", err)
-			c.TextReply(fmt.Sprintf("watch失败 - %v", err))
-			break
-		}
-		log = log.WithField("name", info.Name)
-		log.Debugf("watch success")
-		c.TextReply(fmt.Sprintf("watch成功 - 虎牙用户 %v", info.Name))
-	default:
-		log.WithField("site", site).Error("unsupported")
-		c.TextReply("未支持的网站")
+	cm := registry.GetConcernManager(site, watchType)
+
+	mid, err := cm.ParseId(id)
+	if err != nil {
+		log.Errorf("Parseid error %v", err)
+		c.TextReply(fmt.Sprintf("失败 - 解析%v id格式错误", cm.Site()))
+		return
 	}
+	log = log.WithField("mid", mid)
+	if remove {
+		// unwatch
+		userInfo, _ := cm.Get(mid)
+		if _, err := cm.Remove(c, groupCode, mid, watchType); err != nil {
+			if err == buntdb.ErrNotFound {
+				c.TextReply(fmt.Sprintf("unwatch失败 - 未找到该用户"))
+			} else {
+				log.Errorf("site %v remove failed %v", site, err)
+				c.TextReply(fmt.Sprintf("unwatch失败 - 内部错误"))
+			}
+		} else {
+			if userInfo == nil {
+				c.TextReply("unwatch成功")
+			} else {
+				log = log.WithField("name", userInfo.GetName())
+				c.TextReply(fmt.Sprintf("unwatch成功 - %v用户 %v", site, userInfo.GetName()))
+			}
+			log.Debugf("unwatch success")
+		}
+		return
+	}
+	// watch
+	userInfo, err := cm.Add(c, groupCode, mid, watchType)
+	if err != nil {
+		log.Errorf("watch error %v", err)
+		c.TextReply(fmt.Sprintf("watch失败 - %v", err))
+		return
+	}
+	c.TextReply(fmt.Sprintf("watch成功 - %v用户 %v", site, userInfo))
 	return
 }
 
@@ -454,7 +290,7 @@ func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ct
 		c.TextReply(err.Error())
 	} else {
 		if action != "show" {
-			ReplyUserInfo(c, site, id)
+			ReplyUserInfo(c, id, site, ctype)
 		}
 	}
 }
@@ -467,7 +303,7 @@ func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string,
 	if err != nil {
 		c.TextReply(err.Error())
 	} else {
-		ReplyUserInfo(c, site, id)
+		ReplyUserInfo(c, id, site, ctype)
 	}
 }
 
@@ -479,7 +315,7 @@ func IConfigTitleNotifyCmd(c *MessageContext, groupCode int64, id string, site s
 	if err != nil {
 		c.TextReply(err.Error())
 	} else {
-		ReplyUserInfo(c, site, id)
+		ReplyUserInfo(c, id, site, ctype)
 	}
 }
 
@@ -491,7 +327,7 @@ func IConfigOfflineNotifyCmd(c *MessageContext, groupCode int64, id string, site
 	if err != nil {
 		c.TextReply(err.Error())
 	} else {
-		ReplyUserInfo(c, site, id)
+		ReplyUserInfo(c, id, site, ctype)
 	}
 }
 
@@ -521,7 +357,7 @@ func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site st
 	if err != nil {
 		c.TextReply(err.Error())
 	} else {
-		ReplyUserInfo(c, site, id)
+		ReplyUserInfo(c, id, site, ctype)
 	}
 }
 
@@ -552,7 +388,7 @@ func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site
 	if err != nil {
 		c.TextReply(err.Error())
 	} else {
-		ReplyUserInfo(c, site, id)
+		ReplyUserInfo(c, id, site, ctype)
 	}
 }
 
@@ -573,7 +409,7 @@ func IConfigFilterCmdText(c *MessageContext, groupCode int64, id string, site st
 	if err != nil {
 		c.TextReply(err.Error())
 	} else {
-		ReplyUserInfo(c, site, id)
+		ReplyUserInfo(c, id, site, ctype)
 	}
 }
 
@@ -588,7 +424,7 @@ func IConfigFilterCmdClear(c *MessageContext, groupCode int64, id string, site s
 	if err != nil {
 		c.TextReply(err.Error())
 	} else {
-		ReplyUserInfo(c, site, id)
+		ReplyUserInfo(c, id, site, ctype)
 	}
 }
 
@@ -639,90 +475,86 @@ func IConfigFilterCmdShow(c *MessageContext, groupCode int64, id string, site st
 	if err != nil {
 		c.TextReply(err.Error())
 	} else {
-		ReplyUserInfo(c, site, id)
+		ReplyUserInfo(c, id, site, ctype)
 	}
 }
 
 func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, f func(config concern.IConfig) bool) (err error) {
-	log := c.Log
 	if err := configCmdGroupCommonCheck(c, groupCode); err != nil {
 		return err
 	}
-	switch site {
-	case bilibili.Site:
-		var mid int64
-		mid, err = bilibili.ParseUid(id)
-		if err != nil {
-			log.WithField("id", id).Errorf("parse failed")
-			err = errors.New("失败 - bilibili uid格式错误")
-			return
-		}
-		err = c.Lsp.bilibiliConcern.CheckGroupConcern(groupCode, mid, ctype)
-		if err != concern.ErrAlreadyExists {
-			return errors.New("失败 - 该id尚未watch")
-		}
-		err = c.Lsp.bilibiliConcern.OperateGroupConcernConfig(groupCode, mid, f)
-	case douyu.Site:
-		var uid int64
-		uid, err = douyu.ParseUid(id)
-		if err != nil {
-			log.WithField("id", id).Errorf("parse failed")
-			return errors.New("失败 - douyu id格式错误")
-		}
-		err = c.Lsp.douyuConcern.CheckGroupConcern(groupCode, uid, ctype)
-		if err != concern.ErrAlreadyExists {
-			return errors.New("失败 - 该id尚未watch")
-		}
-		err = c.Lsp.douyuConcern.OperateGroupConcernConfig(groupCode, uid, f)
-	case youtube.Site:
-		err = c.Lsp.youtubeConcern.CheckGroupConcern(groupCode, id, ctype)
-		if err != concern.ErrAlreadyExists {
-			return errors.New("失败 - 该id尚未watch")
-		}
-		err = c.Lsp.youtubeConcern.OperateGroupConcernConfig(groupCode, id, f)
-	case huya.Site:
-		err = c.Lsp.huyaConcern.CheckGroupConcern(groupCode, id, ctype)
-		if err != concern.ErrAlreadyExists {
-			return errors.New("失败 - 该id尚未watch")
-		}
-		err = c.Lsp.huyaConcern.OperateGroupConcernConfig(groupCode, id, f)
+	cm := registry.GetConcernManager(site, ctype)
+	if cm == nil {
+		return errors.New("<nil>")
 	}
-	if err != nil && !localdb.IsRollback(err) {
-		log.Errorf("OperateGroupConcernConfig failed %v", err)
-		err = errors.New("失败 - 内部错误")
+	mid, err := cm.ParseId(id)
+	if err != nil {
+		return fmt.Errorf("%v解析Id失败 - %v", cm.Site(), err)
 	}
+	cm.GetStateManager().OperateGroupConcernConfig(groupCode, mid, f)
+
+	//switch site {
+	//case bilibili.Site:
+	//	var mid int64
+	//	mid, err = bilibili.ParseUid(id)
+	//	if err != nil {
+	//		log.WithField("id", id).Errorf("parse failed")
+	//		err = errors.New("失败 - bilibili uid格式错误")
+	//		return
+	//	}
+	//	err = c.Lsp.bilibiliConcern.CheckGroupConcern(groupCode, mid, ctype)
+	//	if err != concern.ErrAlreadyExists {
+	//		return errors.New("失败 - 该id尚未watch")
+	//	}
+	//	err = c.Lsp.bilibiliConcern.OperateGroupConcernConfig(groupCode, mid, f)
+	//case douyu.Site:
+	//	var uid int64
+	//	uid, err = douyu.ParseUid(id)
+	//	if err != nil {
+	//		log.WithField("id", id).Errorf("parse failed")
+	//		return errors.New("失败 - douyu id格式错误")
+	//	}
+	//	err = c.Lsp.douyuConcern.CheckGroupConcern(groupCode, uid, ctype)
+	//	if err != concern.ErrAlreadyExists {
+	//		return errors.New("失败 - 该id尚未watch")
+	//	}
+	//	err = c.Lsp.douyuConcern.OperateGroupConcernConfig(groupCode, uid, f)
+	//case youtube.Site:
+	//	err = c.Lsp.youtubeConcern.CheckGroupConcern(groupCode, id, ctype)
+	//	if err != concern.ErrAlreadyExists {
+	//		return errors.New("失败 - 该id尚未watch")
+	//	}
+	//	err = c.Lsp.youtubeConcern.OperateGroupConcernConfig(groupCode, id, f)
+	//case huya.Site:
+	//	err = c.Lsp.huyaConcern.CheckGroupConcern(groupCode, id, ctype)
+	//	if err != concern.ErrAlreadyExists {
+	//		return errors.New("失败 - 该id尚未watch")
+	//	}
+	//	err = c.Lsp.huyaConcern.OperateGroupConcernConfig(groupCode, id, f)
+	//}
+	//if err != nil && !localdb.IsRollback(err) {
+	//	log.Errorf("OperateGroupConcernConfig failed %v", err)
+	//	err = errors.New("失败 - 内部错误")
+	//}
 	return
 }
 
-func ReplyUserInfo(c *MessageContext, site string, id string) {
-	switch site {
-	case bilibili.Site:
-		mid, err := bilibili.ParseUid(id)
-		if err != nil {
-			c.Log.Errorf("ReplyUserInfo bilibili got wrong id %v", id)
-			return
-		}
-		userInfo, _ := c.Lsp.bilibiliConcern.GetUserInfo(mid)
-		c.TextReply(fmt.Sprintf("成功 - Bilibili用户 %v", userInfo.GetName()))
-		c.Log.WithField("name", userInfo.GetName()).Debug("reply user info")
-	case douyu.Site:
-		mid, err := douyu.ParseUid(id)
-		if err != nil {
-			c.Log.Errorf("ReplyUserInfo douyu got wrong id %v", id)
-			return
-		}
-		userInfo, _ := c.Lsp.douyuConcern.FindRoom(mid, false)
-		c.TextReply(fmt.Sprintf("成功 - 斗鱼用户 %v", userInfo.GetNickname()))
-		c.Log.WithField("name", userInfo.GetNickname()).Debug("reply user info")
-	case youtube.Site:
-		userInfo, _ := c.Lsp.youtubeConcern.FindInfo(id, false)
-		c.TextReply(fmt.Sprintf("成功 - YTB用户 %v", userInfo.GetChannelName()))
-		c.Log.WithField("name", userInfo.GetChannelName()).Debug("reply user info")
-	case huya.Site:
-		userInfo, _ := c.Lsp.huyaConcern.FindRoom(id, false)
-		c.TextReply(fmt.Sprintf("成功 - 虎牙用户 %v", userInfo.GetName()))
-		c.Log.WithField("name", userInfo.GetName()).Debug("reply user info")
+func ReplyUserInfo(c *MessageContext, id string, site string, ctype concern_type.Type) {
+	cm := registry.GetConcernManager(site, ctype)
+	mid, err := cm.ParseId(id)
+	if err != nil {
+		c.Log.Errorf("ReplyUserInfo %v got wrong id %v", site, id)
+		c.TextReply(fmt.Sprintf("成功 - %v用户", site))
+		return
 	}
+	info, err := cm.Get(mid)
+	if err != nil || info == nil {
+		c.Log.Errorf("ReplyUserInfo %v Get IdentityInfo error %v", site, err)
+		c.TextReply(fmt.Sprintf("成功 - %v用户", site))
+		return
+	}
+	c.Log.WithField("name", info.GetName()).Debug("reply user info")
+	c.TextReply(fmt.Sprintf("成功 - %v用户 %v", site, info.GetName()))
 }
 
 func configCmdGroupCommonCheck(c *MessageContext, groupCode int64) error {

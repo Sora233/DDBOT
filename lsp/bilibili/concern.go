@@ -8,6 +8,7 @@ import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/msg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
 	"golang.org/x/sync/errgroup"
@@ -107,7 +108,7 @@ func (c *Concern) Start() error {
 	return nil
 }
 
-func (c *Concern) Add(groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := _id.(int64)
 	var err error
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("mid", mid)
@@ -180,10 +181,27 @@ func (c *Concern) Add(groupCode int64, _id interface{}, ctype concern_type.Type)
 		log.Errorf("SetUidFirstTimestampIfNotExist failed %v", err)
 	}
 	_ = c.StateManager.AddUserInfo(userInfo)
+	if ctype.ContainAny(Live) {
+		// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
+		liveInfo, _ := c.GetLiveInfo(mid)
+		if liveInfo != nil && liveInfo.Living() {
+			if ctx.GetTarget().TargetType().IsGroup() {
+				defer c.GroupWatchNotify(groupCode, mid)
+			}
+			if ctx.GetTarget().TargetType().IsPrivate() {
+				defer ctx.Send(msg.NewText("检测到该用户正在直播，但由于您目前处于私聊模式，因此不会在群内推送本次直播，将在该用户下次直播时推送"))
+			}
+		}
+	}
+	const followerCap = 50
+	if userInfo != nil && userInfo.UserStat != nil && ctype.ContainAny(Live) && userInfo.UserStat.Follower < followerCap {
+		ctx.Send(msg.NewTextf("注意：检测到用户【%v】粉丝数少于%v，请确认您的订阅目标是否正确，注意使用UID而非直播间ID", userInfo.Name, followerCap))
+	}
+
 	return concern.NewIdentity(mid, userInfo.GetName()), nil
 }
 
-func (c *Concern) Remove(groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Remove(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := _id.(int64)
 	var identityInfo concern.IdentityInfo
 	err := c.StateManager.RWCoverTx(func(tx *buntdb.Tx) error {
@@ -191,10 +209,7 @@ func (c *Concern) Remove(groupCode int64, _id interface{}, ctype concern_type.Ty
 			err      error
 			allCtype concern_type.Type
 		)
-		userInfo, _ := c.StateManager.GetUserInfo(mid)
-		if userInfo != nil {
-			identityInfo = concern.NewIdentity(mid, userInfo.GetName())
-		}
+		identityInfo, _ = c.Get(mid)
 		_, err = c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
 		if err != nil {
 			return err

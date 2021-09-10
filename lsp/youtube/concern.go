@@ -6,6 +6,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/msg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"runtime"
 	"sync"
@@ -34,29 +35,45 @@ func (c *Concern) GetStateManager() concern.IStateManager {
 	return c.StateManager
 }
 
-func (c *Concern) Add(groupCode int64, id string, ctype concern_type.Type) (info *Info, err error) {
+func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	id := _id.(string)
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
 
-	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
+	err := c.StateManager.CheckGroupConcern(groupCode, id, ctype)
 	if err != nil {
 		if err == concern.ErrAlreadyExists {
 			return nil, errors.New("已经watch过了")
 		}
 		return nil, err
 	}
-	videoInfo, err := XFetchInfo(id)
+	info, err := c.FindOrLoad(id)
 	if err != nil {
-		log.Errorf("XFetchInfo failed %v", err)
+		log.Errorf("FindOrLoad error %v", err)
 		return nil, fmt.Errorf("查询channel信息失败 %v - %v", id, err)
 	}
 	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
 	if err != nil {
 		return nil, err
 	}
-	return NewInfo(videoInfo), nil
+	return concern.NewIdentity(info.ChannelId, info.ChannelName), nil
 }
 
-func (c *Concern) ListWatching(groupCode int64, ctype concern_type.Type) ([]*UserInfo, []concern_type.Type, error) {
+func (c *Concern) Remove(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	id := _id.(string)
+	identity, _ := c.Get(id)
+	_, err := c.StateManager.RemoveGroupConcern(groupCode, id, ctype)
+	return identity, err
+}
+
+func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
+	info, err := c.FindInfo(id.(string), false)
+	if err != nil {
+		return nil, err
+	}
+	return concern.NewIdentity(info.ChannelId, info.ChannelName), nil
+}
+
+func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
 	log := logger.WithFields(localutils.GroupLogFields(groupCode))
 
 	_, ids, ctypes, err := c.StateManager.List(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
@@ -65,7 +82,7 @@ func (c *Concern) ListWatching(groupCode int64, ctype concern_type.Type) ([]*Use
 	if err != nil {
 		return nil, nil, err
 	}
-	var result = make([]*UserInfo, 0, len(ids))
+	var result = make([]concern.IdentityInfo, 0, len(ids))
 	var resultTypes = make([]concern_type.Type, 0, len(ids))
 	for index, id := range ids {
 		info, err := c.FindOrLoad(id.(string))
@@ -73,7 +90,7 @@ func (c *Concern) ListWatching(groupCode int64, ctype concern_type.Type) ([]*Use
 			log.WithField("id", id.(string)).Errorf("FindInfo failed %v", err)
 			continue
 		}
-		result = append(result, NewUserInfo(info.ChannelId, info.ChannelName))
+		result = append(result, concern.NewIdentity(info.ChannelId, info.ChannelName))
 		resultTypes = append(resultTypes, ctypes[index])
 	}
 	return result, resultTypes, nil

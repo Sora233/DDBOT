@@ -34,11 +34,11 @@ func TestConcern_Remove(t *testing.T) {
 	_, err := c.AddGroupConcern(test.G1, test.UID1, test.BibiliLive)
 	assert.Nil(t, err)
 
-	_, err = c.Remove(test.G1, test.UID1, test.BibiliLive)
+	_, err = c.Remove(nil, test.G1, test.UID1, test.BibiliLive)
 	assert.Nil(t, err)
 }
 
-func TestConcern_ListWatching(t *testing.T) {
+func TestConcern_List(t *testing.T) {
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 

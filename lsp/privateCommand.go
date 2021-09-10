@@ -782,13 +782,13 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 		return
 	}
 
-	msg := strings.Join(groupRequestCmd.Message, " ")
+	rmsg := strings.Join(groupRequestCmd.Message, " ")
 
 	log = log.WithFields(logrus.Fields{
 		"Requestid": groupRequestCmd.RequestId,
 		"Reject":    groupRequestCmd.Reject,
 		"All":       groupRequestCmd.All,
-		"Message":   msg,
+		"Message":   rmsg,
 	})
 
 	if groupRequestCmd.RequestId == 0 {
@@ -816,7 +816,7 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 			log.Info("确认拒绝全部加群邀请")
 			for _, req := range requests {
 				log.Debugf("正在拒绝%v(%v)的加群%v(%v)邀请", req.InvitorNick, req.InvitorUin, req.GroupName, req.GroupCode)
-				c.bot.SolveGroupJoinRequest(req, false, false, msg)
+				c.bot.SolveGroupJoinRequest(req, false, false, rmsg)
 				if err := c.l.LspStateManager.DeleteGroupInvitedRequest(req.RequestId); err != nil {
 					log.Errorf("DeleteGroupInvitedRequest error %v", err)
 				}
@@ -868,7 +868,7 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 			"InvitorNick": request.InvitorNick,
 		})
 		if groupRequestCmd.Reject {
-			c.bot.SolveGroupJoinRequest(request, false, false, msg)
+			c.bot.SolveGroupJoinRequest(request, false, false, rmsg)
 			log.Info("拒绝加群邀请成功")
 			c.textReply(fmt.Sprintf("成功- 已拒绝 %v(%v) 邀请加群 %v(%v)", request.InvitorNick, request.InvitorUin, request.GroupName, request.GroupCode))
 		} else {
@@ -1158,17 +1158,17 @@ func (c *LspPrivateCommand) name() string {
 
 func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
 	ctx := NewMessageContext()
-	ctx.Source = SourceTypePrivate
+	ctx.Target = msg.NewPrivateTarget(c.uin())
 	ctx.Lsp = c.l
 	ctx.Log = log
-	ctx.TextReply = func(text string) interface{} {
+	ctx.TextReplyFunc = func(text string) interface{} {
 		return c.textReply(text)
 	}
-	ctx.Send = func(msg *message.SendingMessage) interface{} {
-		return c.send(msg)
+	ctx.SendFunc = func(m *msg.MSG) interface{} {
+		return c.send(m.ToMessage(c.bot.QQClient, ctx.Target))
 	}
-	ctx.Reply = ctx.Send
-	ctx.NoPermissionReply = func() interface{} {
+	ctx.ReplyFunc = ctx.SendFunc
+	ctx.NoPermissionReplyFunc = func() interface{} {
 		return c.noPermission()
 	}
 	ctx.DisabledReply = func() interface{} {
