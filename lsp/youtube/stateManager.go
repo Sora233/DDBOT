@@ -65,6 +65,10 @@ func (s *StateManager) AddVideo(v *VideoInfo) error {
 	})
 }
 
+func (s *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(s.StateManager.GetGroupConcernConfig(groupCode, id))
+}
+
 func (s *StateManager) Start() error {
 	db, err := localdb.GetClient()
 	if err == nil {

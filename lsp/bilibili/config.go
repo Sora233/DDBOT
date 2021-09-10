@@ -8,7 +8,7 @@ import (
 )
 
 type GroupConcernConfig struct {
-	concern.GroupConcernConfig
+	concern.IConfig
 	StateManager *StateManager
 }
 
@@ -70,22 +70,22 @@ func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concer
 			}
 			if e.LiveTitleChanged {
 				// 直播间标题改了，检查改标题推送配置
-				hook.PassOrReason(g.GroupConcernNotify.CheckTitleChangeNotify(notify.Type()), "CheckTitleChangeNotify is false")
+				hook.PassOrReason(g.GetGroupConcernNotify().CheckTitleChangeNotify(notify.Type()), "CheckTitleChangeNotify is false")
 				return
 			}
 		} else {
 			if e.LiveStatusChanged {
 				// 下播了，检查下播推送配置
-				hook.PassOrReason(g.GroupConcernNotify.CheckOfflineNotify(notify.Type()), "CheckOfflineNotify is false")
+				hook.PassOrReason(g.GetGroupConcernNotify().CheckOfflineNotify(notify.Type()), "CheckOfflineNotify is false")
 				return
 			}
 		}
-		return g.GroupConcernConfig.ShouldSendHook(notify)
+		return g.IConfig.ShouldSendHook(notify)
 	case *ConcernNewsNotify:
 		hook.Pass = true
 		return
 	}
-	return g.GroupConcernConfig.ShouldSendHook(notify)
+	return g.IConfig.ShouldSendHook(notify)
 }
 
 func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concern.HookResult) {
@@ -102,17 +102,17 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 		}
 
 		// 没设置过滤，pass
-		if g.GroupConcernFilter.Empty() {
+		if g.GetGroupConcernFilter().Empty() {
 			hook.Pass = true
 			return
 		}
 
-		logger := notify.Logger().WithField("FilterType", g.GroupConcernFilter.Type)
-		switch g.GroupConcernFilter.Type {
+		logger := notify.Logger().WithField("FilterType", g.GetGroupConcernFilter().Type)
+		switch g.GetGroupConcernFilter().Type {
 		case concern.FilterTypeText:
-			textFilter, err := g.GroupConcernFilter.GetFilterByText()
+			textFilter, err := g.GetGroupConcernFilter().GetFilterByText()
 			if err != nil {
-				logger.WithField("GroupConcernTextFilter", g.GroupConcernFilter.Config).
+				logger.WithField("GroupConcernTextFilter", g.GetGroupConcernFilter().Config).
 					Errorf("get text filter error %v", err)
 				hook.Pass = true
 			} else {
@@ -131,9 +131,9 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 				}
 			}
 		case concern.FilterTypeType, concern.FilterTypeNotType:
-			typeFilter, err := g.GroupConcernFilter.GetFilterByType()
+			typeFilter, err := g.GetGroupConcernFilter().GetFilterByType()
 			if err != nil {
-				logger.WithField("GroupConcernFilterConfig", g.GroupConcernFilter.Config).
+				logger.WithField("GroupConcernFilterConfig", g.GetGroupConcernFilter().Config).
 					Errorf("get type filter error %v", err)
 				hook.Pass = true
 			} else {
@@ -149,7 +149,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 				}
 
 				var ok bool
-				switch g.GroupConcernFilter.Type {
+				switch g.GetGroupConcernFilter().Type {
 				case concern.FilterTypeType:
 					ok = false
 					for _, tp := range convTypes {
@@ -186,8 +186,8 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 	}
 }
 
-func NewGroupConcernConfig(g *concern.GroupConcernConfig, sm *StateManager) *GroupConcernConfig {
-	return &GroupConcernConfig{*g, sm}
+func NewGroupConcernConfig(g concern.IConfig, sm *StateManager) *GroupConcernConfig {
+	return &GroupConcernConfig{g, sm}
 }
 
 const (

@@ -22,7 +22,6 @@ type IStateManager interface {
 	Stop()
 
 	GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig IConfig)
-	GetGroupConcernNotifyManager(groupCode int64, id interface{}) INotifyManager
 	OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig IConfig) bool) error
 
 	GetGroupConcern(groupCode int64, id interface{}) (result concern_type.Type, err error)
@@ -76,10 +75,6 @@ func (c *StateManager) getGroupConcernConfig(groupCode int64, id interface{}) (c
 
 // GetGroupConcernConfig always return non-nil
 func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) IConfig {
-	return c.getGroupConcernConfig(groupCode, id)
-}
-
-func (c *StateManager) GetGroupConcernNotifyManager(groupCode int64, id interface{}) INotifyManager {
 	return c.getGroupConcernConfig(groupCode, id)
 }
 

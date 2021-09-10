@@ -2,6 +2,7 @@ package bilibili
 
 import (
 	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -56,7 +57,7 @@ func TestConcern_ListWatching(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, userInfos, 1)
 	assert.Len(t, ctypes, 1)
-	assert.Equal(t, origUserInfo, userInfos[0])
+	assert.Equal(t, concern.NewIdentity(origUserInfo.Mid, origUserInfo.Name), userInfos[0])
 	assert.Equal(t, test.BibiliLive, ctypes[0])
 
 	userInfos, ctypes, err = c.List(test.G1, test.BilibiliNews)

@@ -73,26 +73,28 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 		notify = append(notify, card)
 	}
 	var testCase = []*GroupConcernConfig{
-		{},
 		{
-			GroupConcernConfig: concern.GroupConcernConfig{
+			IConfig: &concern.GroupConcernConfig{},
+		},
+		{
+			IConfig: &concern.GroupConcernConfig{
 				GroupConcernNotify: concern.GroupConcernNotifyConfig{
-					TitleChangeNotify: test.BibiliLive,
+					TitleChangeNotify: Live,
 				},
 			},
 		},
 		{
-			GroupConcernConfig: concern.GroupConcernConfig{
+			IConfig: &concern.GroupConcernConfig{
 				GroupConcernNotify: concern.GroupConcernNotifyConfig{
-					OfflineNotify: test.BibiliLive,
+					OfflineNotify: Live,
 				},
 			},
 		},
 		{
-			GroupConcernConfig: concern.GroupConcernConfig{
+			IConfig: &concern.GroupConcernConfig{
 				GroupConcernNotify: concern.GroupConcernNotifyConfig{
-					OfflineNotify:     test.BibiliLive,
-					TitleChangeNotify: test.BibiliLive,
+					OfflineNotify:     Live,
+					TitleChangeNotify: Live,
 				},
 			},
 		},
@@ -149,7 +151,7 @@ func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 		// 开播了改了标题 推
 		newLiveInfo(test.UID1, true, true, true),
 	}
-	var g = new(GroupConcernConfig)
+	var g = NewGroupConcernConfig(new(concern.GroupConcernConfig), nil)
 	var expected = []bool{
 		false, false, false, false,
 		false, false, true, true,
@@ -163,7 +165,7 @@ func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 
 func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 	var notifies = newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
-	var g = new(GroupConcernConfig)
+	var g = NewGroupConcernConfig(new(concern.GroupConcernConfig), nil)
 
 	// 默认应该不过滤
 	for _, notify := range notifies {
@@ -223,11 +225,13 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 
 	testFn := func(index int, tp string, expected []DynamicDescType) {
 		notifies := newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
-		var g = new(GroupConcernConfig)
-		g.GroupConcernFilter = concern.GroupConcernFilterConfig{
-			Type:   tp,
-			Config: typeFilter[index].ToString(),
-		}
+		var g = NewGroupConcernConfig(&concern.GroupConcernConfig{
+			GroupConcernFilter: concern.GroupConcernFilterConfig{
+				Type:   tp,
+				Config: typeFilter[index].ToString(),
+			},
+		}, nil)
+
 		var resultType []DynamicDescType
 		for _, notify := range notifies {
 			hookResult := g.NewsFilterHook(notify)

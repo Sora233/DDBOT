@@ -8,6 +8,8 @@ type IConfig interface {
 	GetGroupConcernAt() *GroupConcernAtConfig
 	GetGroupConcernNotify() *GroupConcernNotifyConfig
 	GetGroupConcernFilter() *GroupConcernFilterConfig
+	ICallback
+	Hook
 }
 
 type GroupConcernConfig struct {

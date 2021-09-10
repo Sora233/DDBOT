@@ -14,6 +14,10 @@ type StateManager struct {
 	*extraKey
 }
 
+func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id), c)
+}
+
 func (c *StateManager) AddUserInfo(userInfo *UserInfo) error {
 	if userInfo == nil {
 		return errors.New("nil UserInfo")

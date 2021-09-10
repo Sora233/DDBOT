@@ -5,7 +5,7 @@ import (
 )
 
 type GroupConcernConfig struct {
-	concern.GroupConcernConfig
+	concern.IConfig
 }
 
 func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.HookResult) {
@@ -24,7 +24,7 @@ func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.
 		hook.Pass = true
 		return
 	}
-	return g.GroupConcernConfig.AtBeforeHook(notify)
+	return g.IConfig.AtBeforeHook(notify)
 }
 
 func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concern.HookResult) {
@@ -34,9 +34,9 @@ func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concer
 		hook.Pass = true
 		return
 	}
-	return g.GroupConcernConfig.ShouldSendHook(notify)
+	return g.IConfig.ShouldSendHook(notify)
 }
 
-func NewGroupConcernConfig(g *concern.GroupConcernConfig) *GroupConcernConfig {
-	return &GroupConcernConfig{*g}
+func NewGroupConcernConfig(g concern.IConfig) *GroupConcernConfig {
+	return &GroupConcernConfig{g}
 }

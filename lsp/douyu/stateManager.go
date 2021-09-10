@@ -47,6 +47,10 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	})
 }
 
+func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id))
+}
+
 func (c *StateManager) Start() error {
 	db, err := localdb.GetClient()
 	if err == nil {
