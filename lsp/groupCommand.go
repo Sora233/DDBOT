@@ -1085,9 +1085,6 @@ func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	ctx.Target = msg.NewGroupTarget(lgc.groupCode())
 	ctx.Lsp = lgc.l
 	ctx.Log = log
-	ctx.TextReplyFunc = func(text string) interface{} {
-		return lgc.textReply(text)
-	}
 	ctx.SendFunc = func(m *msg.MSG) interface{} {
 		return lgc.send(m.ToMessage(lgc.bot.QQClient, ctx.Target))
 	}

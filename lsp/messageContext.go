@@ -7,7 +7,6 @@ import (
 )
 
 type MessageContext struct {
-	TextReplyFunc         func(text string) interface{}
 	ReplyFunc             func(m *msg.MSG) interface{}
 	SendFunc              func(m *msg.MSG) interface{}
 	NoPermissionReplyFunc func() interface{}
@@ -19,8 +18,12 @@ type MessageContext struct {
 	Sender                *message.Sender
 }
 
+func (c *MessageContext) TextSend(text string) interface{} {
+	return c.SendFunc(msg.NewText(text))
+}
+
 func (c *MessageContext) TextReply(text string) interface{} {
-	return c.TextReplyFunc(text)
+	return c.ReplyFunc(msg.NewText(text))
 }
 
 func (c *MessageContext) Reply(m *msg.MSG) interface{} {

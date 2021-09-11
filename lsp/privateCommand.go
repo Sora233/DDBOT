@@ -1161,9 +1161,6 @@ func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	ctx.Target = msg.NewPrivateTarget(c.uin())
 	ctx.Lsp = c.l
 	ctx.Log = log
-	ctx.TextReplyFunc = func(text string) interface{} {
-		return c.textReply(text)
-	}
 	ctx.SendFunc = func(m *msg.MSG) interface{} {
 		return c.send(m.ToMessage(c.bot.QQClient, ctx.Target))
 	}

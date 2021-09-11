@@ -6,6 +6,7 @@ import (
 )
 
 type IMsgCtx interface {
+	TextSend(text string) interface{}
 	TextReply(text string) interface{}
 	Reply(m *MSG) interface{}
 	Send(m *MSG) interface{}
