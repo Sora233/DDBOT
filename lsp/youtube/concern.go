@@ -209,6 +209,11 @@ func (c *Concern) freshInfo(channelId string) {
 			for _, oldV := range oldInfo.VideoInfo {
 				if newV.VideoId == oldV.VideoId {
 					found = true
+					if newV.IsVideo() && oldV.IsLive() {
+						// 应该是下播了吧？
+						log.Debug("offline notify")
+						c.eventChan <- newV
+					}
 					if newV.IsLive() && oldV.IsLive() {
 						if newV.IsWaiting() && oldV.IsWaiting() && newV.VideoTimestamp != oldV.VideoTimestamp {
 							// live time changed, notify

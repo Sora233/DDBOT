@@ -169,7 +169,7 @@ func (c *Concern) notifyLoop() {
 		case Live:
 			event := ievent.(*LiveInfo)
 			log := event.Logger()
-			log.Debugf("debug event")
+			log.Debugf("new event - live notify")
 
 			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 				return id.(int64) == event.RoomId && p.ContainAny(Live)
