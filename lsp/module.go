@@ -40,7 +40,7 @@ var Debug = false
 
 type Lsp struct {
 	pool          image_pool.Pool
-	concernNotify chan concern.Notify
+	concernNotify <-chan concern.Notify
 	stop          chan interface{}
 	wg            sync.WaitGroup
 	status        *Status
@@ -172,6 +172,7 @@ func (l *Lsp) Init() {
 }
 
 func (l *Lsp) PostInit() {
+	registry.StartAll()
 }
 
 func (l *Lsp) Serve(bot *bot.Bot) {
@@ -430,10 +431,7 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 		close(l.stop)
 	}
 
-	for _, c := range registry.ListConcernManager() {
-		c.GetStateManager().Stop()
-	}
-	close(l.concernNotify)
+	registry.StopAll()
 
 	l.wg.Wait()
 	logger.Debug("等待所有推送发送完毕")
@@ -582,7 +580,7 @@ var Instance *Lsp
 
 func init() {
 	Instance = &Lsp{
-		concernNotify: make(chan concern.Notify, 500),
+		concernNotify: registry.ReadNotifyChan(),
 		stop:          make(chan interface{}),
 		status:        NewStatus(),
 	}

@@ -8,6 +8,7 @@ import (
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/msg"
@@ -288,6 +289,11 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		if err != nil {
 			log.WithField("site", configCmd.Filter.Site).Errorf("ParseRawSiteAndType failed %v", err)
 			c.textSend(fmt.Sprintf("失败 - %v", err.Error()))
+			return
+		}
+		if site != bilibili.Site || ctype != bilibili.News {
+			log.WithField("site", site).WithField("ctype", ctype.String()).Errorf("not supported")
+			c.textSend("失败 - 暂不支持")
 			return
 		}
 		switch filterCmd {

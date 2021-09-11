@@ -108,7 +108,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		c.TextReply(fmt.Sprintf("watch失败 - %v", err))
 		return
 	}
-	c.TextReply(fmt.Sprintf("watch成功 - %v用户 %v", site, userInfo))
+	c.TextReply(fmt.Sprintf("watch成功 - %v用户 %v", site, userInfo.GetName()))
 	return
 }
 
@@ -336,10 +336,6 @@ func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site st
 		c.TextReply("失败 - 没有指定过滤类型")
 		return
 	}
-	if ctype != concern_manager.BilibiliNews {
-		c.TextReply("失败 - 暂不支持")
-		return
-	}
 	var invalid = bilibili.CheckTypeDefine(types)
 	if len(invalid) != 0 {
 		c.TextReply(fmt.Sprintf("失败 - 未定义的类型：\n%v", strings.Join(invalid, " ")))
@@ -364,10 +360,6 @@ func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site st
 func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, types []string) {
 	if len(types) == 0 {
 		c.TextReply("失败 - 没有指定过滤类型")
-		return
-	}
-	if ctype != concern_manager.BilibiliNews {
-		c.TextReply("失败 - 暂不支持")
 		return
 	}
 	var invalid = bilibili.CheckTypeDefine(types)

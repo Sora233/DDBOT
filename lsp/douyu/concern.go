@@ -37,7 +37,7 @@ func (c *Concern) ParseId(s string) (interface{}, error) {
 }
 
 func (c *Concern) GetStateManager() concern.IStateManager {
-	panic("implement me")
+	return c.StateManager
 }
 
 func (c *Concern) Stop() {

@@ -14,6 +14,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/msg"
 	"github.com/Sora233/DDBOT/lsp/permission"
+	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/utils"
@@ -379,7 +380,8 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	} else {
 		name = "watch"
 	}
-	_, output := lgc.parseCommandSyntax(&watchCmd, name)
+
+	_, output := lgc.parseCommandSyntax(&watchCmd, name, kong.Description(fmt.Sprintf("当前支持的网站：%v", strings.Join(registry.ListSite(), "/"))))
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -390,7 +392,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	site, watchType, err = lgc.ParseRawSiteAndType(watchCmd.Site, watchCmd.Type)
 	if err != nil {
 		log = log.WithField("args", lgc.GetArgs())
-		log.Errorf("parse raw concern_manager failed %v", err)
+		log.Errorf("ParseRawSiteAndType failed %v", err)
 		lgc.textReply(fmt.Sprintf("参数错误 - %v", err))
 		return
 	}
@@ -716,7 +718,7 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		}
 		if site == youtube.Site {
 			log.WithField("site", configCmd.OfflineNotify.Site).Errorf("not supported")
-			lgc.textSend(fmt.Sprintf("失败 - %v", "暂不支持YTB"))
+			lgc.textSend("失败 - 暂不支持")
 			return
 		}
 		var on = utils.Switch2Bool(configCmd.OfflineNotify.Switch)
@@ -728,6 +730,11 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		if err != nil {
 			log.WithField("site", configCmd.Filter.Site).Errorf("ParseRawSiteAndType failed %v", err)
 			lgc.textSend(fmt.Sprintf("失败 - %v", err.Error()))
+			return
+		}
+		if site != bilibili.Site || ctype != bilibili.News {
+			log.WithField("site", site).WithField("ctype", ctype.String()).Errorf("not supported")
+			lgc.textSend("失败 - 暂不支持")
 			return
 		}
 		switch filterCmd {

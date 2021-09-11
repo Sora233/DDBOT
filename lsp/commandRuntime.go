@@ -1,13 +1,11 @@
 package lsp
 
 import (
-	"errors"
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Sora233/DDBOT/lsp/command"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/registry"
-	"github.com/Sora233/DDBOT/utils"
 	"github.com/alecthomas/kong"
 	"strings"
 )
@@ -54,40 +52,11 @@ func (r *Runtime) parseCommandSyntax(ast interface{}, name string, options ...ko
 }
 
 func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, concern_type.Type, error) {
-	var (
-		site  string
-		_type string
-		found bool
-		err   error
-	)
-	rawSite = strings.Trim(rawSite, `"`)
-	rawType = strings.Trim(rawType, `"`)
-	site, err = r.ParseRawSite(rawSite)
-	if err != nil {
-		return "", concern_type.Empty, err
-	}
-	var sTypes []string
-	for _, t := range registry.ListType(site) {
-		sTypes = append(sTypes, t.String())
-	}
-	_type, found = utils.PrefixMatch(sTypes, rawType)
-	if !found {
-		return "", concern_type.Empty, errors.New("不支持的类型参数")
-	}
-	return site, concern_type.Type(_type), nil
+	return registry.ParseRawSiteAndType(rawSite, rawType)
 }
 
 func (r *Runtime) ParseRawSite(rawSite string) (string, error) {
-	var (
-		found bool
-		site  string
-	)
-
-	site, found = utils.PrefixMatch(registry.ListSite(), rawSite)
-	if !found {
-		return "", errors.New("不支持的网站参数")
-	}
-	return site, nil
+	return registry.ParseRawSite(rawSite)
 }
 
 func NewRuntime(bot *miraiBot.Bot, l *Lsp) *Runtime {

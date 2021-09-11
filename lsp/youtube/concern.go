@@ -219,8 +219,10 @@ func (c *Concern) freshInfo(channelId string) {
 							newV.LiveStatusChanged = true
 							c.eventChan <- newV
 							log.Debugf("live begin notify")
+						} else if newV.VideoTitle != oldV.VideoTitle {
+							newV.LiveTitleChanged = true
+							c.eventChan <- newV
 						}
-						// any other case?
 					}
 				}
 			}

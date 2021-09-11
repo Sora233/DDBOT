@@ -38,22 +38,21 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 
 			c := registry.GetConcernManager(inotify.Site(), inotify.Type())
 			cfg := c.GetStateManager().GetGroupConcernConfig(inotify.GetGroupCode(), inotify.GetUid())
-			notifyManager := c.GetStateManager().GetGroupConcernNotifyManager(inotify.GetGroupCode(), inotify.GetUid())
 
-			sendHookResult := notifyManager.ShouldSendHook(inotify)
+			sendHookResult := cfg.ShouldSendHook(inotify)
 			if !sendHookResult.Pass {
 				nLogger.WithField("Reason", sendHookResult.Reason).Info("notify filtered by hook ShouldSendHook")
 				continue
 			}
 
-			newsFilterHook := notifyManager.NewsFilterHook(inotify)
+			newsFilterHook := cfg.NewsFilterHook(inotify)
 			if !newsFilterHook.Pass {
 				nLogger.WithField("Reason", newsFilterHook.Reason).Info("notify filtered by hook NewsFilterHook")
 				continue
 			}
 
 			// atConfig
-			var atBeforeHook = notifyManager.AtBeforeHook(inotify)
+			var atBeforeHook = cfg.AtBeforeHook(inotify)
 			if !atBeforeHook.Pass {
 				nLogger.WithField("Reason", atBeforeHook.Reason).Debug("notify @at filtered by hook AtBeforeHook")
 			} else {
@@ -79,7 +78,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				}
 			}
 
-			notifyManager.NotifyBeforeCallback(inotify)
+			cfg.NotifyBeforeCallback(inotify)
 
 			chainMsg = append([]*message.SendingMessage{l.NotifyMessage(inotify)}, chainMsg...)
 
@@ -96,9 +95,9 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				}()
 				msgs := l.sendChainGroupMessage(inotify.GetGroupCode(), chainMsg)
 				if len(msgs) > 0 {
-					notifyManager.NotifyAfterCallback(inotify, msgs[0])
+					cfg.NotifyAfterCallback(inotify, msgs[0])
 				} else {
-					notifyManager.NotifyAfterCallback(inotify, nil)
+					cfg.NotifyAfterCallback(inotify, nil)
 				}
 				if atBeforeHook.Pass {
 					for _, msg := range msgs {

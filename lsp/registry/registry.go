@@ -9,6 +9,8 @@ import (
 )
 
 var logger = utils.GetModuleLogger("registry")
+var globalCenter = newConcernCenter()
+var notifyChan = make(chan concern.Notify, 500)
 
 type option struct {
 }
@@ -18,8 +20,6 @@ type OptFunc func(opt *option) *option
 type ConcernCenter struct {
 	M map[string]map[concern_type.Type]concern.Concern
 }
-
-var globalCenter = newConcernCenter()
 
 func newConcernCenter() *ConcernCenter {
 	cc := new(ConcernCenter)
@@ -50,7 +50,9 @@ func StartAll() error {
 	all := ListConcernManager()
 	errG := errgroup.Group{}
 	for _, c := range all {
+		site := c.Site()
 		errG.Go(func() error {
+			logger.Debugf("启动Concern %v模块", site)
 			return c.Start()
 		})
 	}
@@ -62,6 +64,7 @@ func StopAll() {
 	for _, c := range all {
 		c.Stop()
 	}
+	close(notifyChan)
 }
 
 func ListConcernManager() []concern.Concern {
@@ -96,6 +99,14 @@ func ListSite() []string {
 		result = append(result, k)
 	}
 	return result
+}
+
+func GetNotifyChan() chan<- concern.Notify {
+	return notifyChan
+}
+
+func ReadNotifyChan() <-chan concern.Notify {
+	return notifyChan
 }
 
 func ListType(site string) []concern_type.Type {

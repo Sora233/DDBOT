@@ -11,7 +11,15 @@ type DefaultCallback struct {
 }
 
 func (d DefaultCallback) NotifyBeforeCallback(notify Notify) {
+	if notify == nil {
+		return
+	}
+	notify.Logger().Trace("default NotifyBeforeCallback")
 }
 
 func (d DefaultCallback) NotifyAfterCallback(notify Notify, message *message.GroupMessage) {
+	if notify == nil {
+		return
+	}
+	notify.Logger().Trace("default NotifyAfterCallback")
 }

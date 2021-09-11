@@ -19,7 +19,7 @@ func NewGroupElement(e message.IMessageElement) *TypedElement {
 }
 
 func NewPrivateElement(e message.IMessageElement) *TypedElement {
-	return NewTypedElement().OnGroup(e)
+	return NewTypedElement().OnPrivate(e)
 }
 
 func (t *TypedElement) Type() message.ElementType {

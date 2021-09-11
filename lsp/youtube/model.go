@@ -40,6 +40,7 @@ type VideoInfo struct {
 	VideoTimestamp int64       `json:"video_timestamp"`
 
 	LiveStatusChanged bool `json:"-"`
+	LiveTitleChanged  bool `json:"-"`
 }
 
 func (v *VideoInfo) Logger() *logrus.Entry {
