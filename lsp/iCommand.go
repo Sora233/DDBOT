@@ -27,21 +27,28 @@ func IList(c *MessageContext, groupCode int64) {
 	}
 
 	var empty = true
+	var first = true
 
 	listMsg := msg.NewMSG()
 
 	for _, c := range registry.ListConcernManager() {
 		infos, ctypes, err := c.List(groupCode, concern_type.Empty)
 		if err != nil {
-			listMsg.Textf("%v订阅查询失败 - %v\n", c.Site(), err)
+			listMsg.Textf("%v订阅查询失败 - %v", c.Site(), err)
 		} else {
 			if len(infos) > 0 {
 				empty = false
-				listMsg.Textf("%v订阅：\n", c.Site())
-				for index, info := range infos {
-					listMsg.Textf("%v %v %v\n", info.GetName(), info.GetUid(), ctypes[index].String())
+				if first {
+					first = false
+				} else {
+					listMsg.Text("\n")
 				}
-				listMsg.Text("\n")
+				listMsg.Textf("%v订阅：", c.Site())
+				for index, info := range infos {
+					listMsg.Text("\n")
+					listMsg.Textf("%v %v %v", info.GetName(), info.GetUid(), ctypes[index].String())
+				}
+
 			}
 		}
 	}

@@ -1078,15 +1078,18 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 	m := msg.NewMSG()
 	m.Textf("当前好友数：%v\n", len(c.bot.FriendList))
 	m.Textf("当前群组数：%v\n", len(c.bot.GroupList))
-	for _, cm := range registry.ListConcernManager() {
+	for index, cm := range registry.ListConcernManager() {
 		_, ids, ctypes, err := cm.GetStateManager().List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 			return true
 		})
+		if index > 0 {
+			m.Text("\n")
+		}
 		ids, ctypes, err = cm.GetStateManager().GroupTypeById(ids, ctypes)
 		if err != nil {
-			m.Textf("当前%v订阅数：获取失败\n", cm.Site())
+			m.Textf("当前%v订阅数：获取失败", cm.Site())
 		} else {
-			m.Textf("当前%v订阅数：%v\n", len(ids), cm.Site())
+			m.Textf("当前%v订阅数：%v", cm.Site(), len(ids))
 		}
 	}
 	c.send(m.ToMessage(c.bot.QQClient, msg.NewPrivateTarget(c.uin())))
