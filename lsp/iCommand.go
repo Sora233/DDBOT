@@ -472,7 +472,7 @@ func IConfigFilterCmdShow(c *MessageContext, groupCode int64, id string, site st
 }
 
 func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, f func(config concern.IConfig) bool) (err error) {
-	if err := configCmdGroupCommonCheck(c, groupCode); err != nil {
+	if err = configCmdGroupCommonCheck(c, groupCode); err != nil {
 		return err
 	}
 	cm := registry.GetConcernManager(site, ctype)
@@ -483,51 +483,15 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 	if err != nil {
 		return fmt.Errorf("%v解析Id失败 - %v", cm.Site(), err)
 	}
-	cm.GetStateManager().OperateGroupConcernConfig(groupCode, mid, f)
-
-	//switch site {
-	//case bilibili.Site:
-	//	var mid int64
-	//	mid, err = bilibili.ParseUid(id)
-	//	if err != nil {
-	//		log.WithField("id", id).Errorf("parse failed")
-	//		err = errors.New("失败 - bilibili uid格式错误")
-	//		return
-	//	}
-	//	err = c.Lsp.bilibiliConcern.CheckGroupConcern(groupCode, mid, ctype)
-	//	if err != concern.ErrAlreadyExists {
-	//		return errors.New("失败 - 该id尚未watch")
-	//	}
-	//	err = c.Lsp.bilibiliConcern.OperateGroupConcernConfig(groupCode, mid, f)
-	//case douyu.Site:
-	//	var uid int64
-	//	uid, err = douyu.ParseUid(id)
-	//	if err != nil {
-	//		log.WithField("id", id).Errorf("parse failed")
-	//		return errors.New("失败 - douyu id格式错误")
-	//	}
-	//	err = c.Lsp.douyuConcern.CheckGroupConcern(groupCode, uid, ctype)
-	//	if err != concern.ErrAlreadyExists {
-	//		return errors.New("失败 - 该id尚未watch")
-	//	}
-	//	err = c.Lsp.douyuConcern.OperateGroupConcernConfig(groupCode, uid, f)
-	//case youtube.Site:
-	//	err = c.Lsp.youtubeConcern.CheckGroupConcern(groupCode, id, ctype)
-	//	if err != concern.ErrAlreadyExists {
-	//		return errors.New("失败 - 该id尚未watch")
-	//	}
-	//	err = c.Lsp.youtubeConcern.OperateGroupConcernConfig(groupCode, id, f)
-	//case huya.Site:
-	//	err = c.Lsp.huyaConcern.CheckGroupConcern(groupCode, id, ctype)
-	//	if err != concern.ErrAlreadyExists {
-	//		return errors.New("失败 - 该id尚未watch")
-	//	}
-	//	err = c.Lsp.huyaConcern.OperateGroupConcernConfig(groupCode, id, f)
-	//}
-	//if err != nil && !localdb.IsRollback(err) {
-	//	log.Errorf("OperateGroupConcernConfig failed %v", err)
-	//	err = errors.New("失败 - 内部错误")
-	//}
+	err = cm.GetStateManager().CheckGroupConcern(groupCode, mid, ctype)
+	if err != concern.ErrAlreadyExists {
+		return errors.New("失败 - 该id尚未watch")
+	}
+	err = cm.GetStateManager().OperateGroupConcernConfig(groupCode, mid, f)
+	if err != nil && !localdb.IsRollback(err) {
+		c.GetLog().Errorf("OperateGroupConcernConfig failed %v", err)
+		err = errors.New("失败 - 内部错误")
+	}
 	return
 }
 

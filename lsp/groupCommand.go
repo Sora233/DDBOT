@@ -15,7 +15,6 @@ import (
 	"github.com/Sora233/DDBOT/lsp/msg"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/registry"
-	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/sliceutil"
@@ -714,11 +713,6 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		if err != nil {
 			log.WithField("site", configCmd.OfflineNotify.Site).Errorf("ParseRawSiteAndType failed %v", err)
 			lgc.textSend(fmt.Sprintf("失败 - %v", err.Error()))
-			return
-		}
-		if site == youtube.Site {
-			log.WithField("site", configCmd.OfflineNotify.Site).Errorf("not supported")
-			lgc.textSend("失败 - 暂不支持")
 			return
 		}
 		var on = utils.Switch2Bool(configCmd.OfflineNotify.Switch)
