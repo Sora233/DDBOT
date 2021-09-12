@@ -50,15 +50,16 @@ func StartAll() error {
 	all := ListConcernManager()
 	errG := errgroup.Group{}
 	for _, c := range all {
-		site := c.Site()
+		c := c
 		errG.Go(func() error {
-			logger.Debugf("启动Concern %v模块", site)
+			logger.Debugf("启动Concern %v模块", c.Site())
 			return c.Start()
 		})
 	}
 	return errG.Wait()
 }
 
+// StopAll 停止所有Concern模块，会关闭notifyChan，所以停止后禁止再向notifyChan中写入数据
 func StopAll() {
 	all := ListConcernManager()
 	for _, c := range all {
