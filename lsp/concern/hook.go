@@ -24,7 +24,7 @@ type DefaultHook struct {
 }
 
 func (d DefaultHook) NewsFilterHook(notify Notify) *HookResult {
-	return defaultHookResult
+	return HookResultPass
 }
 
 func (d DefaultHook) AtBeforeHook(notify Notify) *HookResult {
@@ -32,7 +32,7 @@ func (d DefaultHook) AtBeforeHook(notify Notify) *HookResult {
 }
 
 func (d DefaultHook) ShouldSendHook(notify Notify) *HookResult {
-	return defaultHookResult
+	return HookResultPass
 }
 
 var defaultHookResult = &HookResult{

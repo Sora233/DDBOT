@@ -52,6 +52,7 @@ func StartAll() error {
 	for _, c := range all {
 		c := c
 		errG.Go(func() error {
+			c.FreshIndex()
 			logger.Debugf("启动Concern %v模块", c.Site())
 			return c.Start()
 		})

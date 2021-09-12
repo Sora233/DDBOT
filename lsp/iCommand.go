@@ -34,6 +34,11 @@ func IList(c *MessageContext, groupCode int64) {
 	for _, c := range registry.ListConcernManager() {
 		infos, ctypes, err := c.List(groupCode, concern_type.Empty)
 		if err != nil {
+			if first {
+				first = false
+			} else {
+				listMsg.Text("\n")
+			}
 			listMsg.Textf("%v订阅查询失败 - %v", c.Site(), err)
 		} else {
 			if len(infos) > 0 {

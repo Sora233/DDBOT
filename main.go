@@ -25,7 +25,6 @@ import (
 
 	_ "github.com/Sora233/DDBOT/logging"
 	_ "github.com/Sora233/DDBOT/lsp"
-	_ "github.com/Sora233/DDBOT/lsp/bilibili"
 	_ "github.com/Sora233/DDBOT/lsp/douyu"
 	_ "github.com/Sora233/DDBOT/lsp/huya"
 	_ "github.com/Sora233/DDBOT/lsp/youtube"

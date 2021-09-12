@@ -172,7 +172,6 @@ func (l *Lsp) Init() {
 }
 
 func (l *Lsp) PostInit() {
-	registry.StartAll()
 }
 
 func (l *Lsp) Serve(bot *bot.Bot) {
@@ -406,9 +405,7 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 			}
 		}
 	}()
-	for _, c := range registry.ListConcernManager() {
-		c.GetStateManager().Start()
-	}
+	registry.StartAll()
 	l.started = true
 	logger.Infof("DDBOT启动完成")
 	logger.Infof("D宝，一款真正人性化的单推BOT")
