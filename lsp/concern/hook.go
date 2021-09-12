@@ -1,7 +1,7 @@
 package concern
 
 type Hook interface {
-	NewsFilterHook(notify Notify) *HookResult
+	FilterHook(notify Notify) *HookResult
 	AtBeforeHook(notify Notify) *HookResult
 	ShouldSendHook(notify Notify) *HookResult
 }
@@ -23,7 +23,7 @@ func (h *HookResult) PassOrReason(pass bool, reason string) {
 type DefaultHook struct {
 }
 
-func (d DefaultHook) NewsFilterHook(notify Notify) *HookResult {
+func (d DefaultHook) FilterHook(notify Notify) *HookResult {
 	return HookResultPass
 }
 

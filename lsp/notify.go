@@ -45,9 +45,9 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				continue
 			}
 
-			newsFilterHook := cfg.NewsFilterHook(inotify)
+			newsFilterHook := cfg.FilterHook(inotify)
 			if !newsFilterHook.Pass {
-				nLogger.WithField("Reason", newsFilterHook.Reason).Info("notify filtered by hook NewsFilterHook")
+				nLogger.WithField("Reason", newsFilterHook.Reason).Info("notify filtered by hook FilterHook")
 				continue
 			}
 

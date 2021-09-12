@@ -88,7 +88,7 @@ func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concer
 	return g.IConfig.ShouldSendHook(notify)
 }
 
-func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concern.HookResult) {
+func (g *GroupConcernConfig) FilterHook(notify concern.Notify) (hook *concern.HookResult) {
 	hook = new(concern.HookResult)
 	switch n := notify.(type) {
 	case *ConcernLiveNotify:
@@ -127,7 +127,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 						Debug("news notify filtered by textFilter")
 					hook.Reason = "TextFilter All pattern match failed"
 				} else {
-					logger.Debugf("news notify NewsFilterHook pass")
+					logger.Debugf("news notify FilterHook pass")
 				}
 			}
 		case concern.FilterTypeType, concern.FilterTypeNotType:
@@ -168,11 +168,11 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 					}
 				}
 				if ok {
-					logger.Debugf("news notify NewsFilterHook pass")
+					logger.Debugf("news notify FilterHook pass")
 					hook.Pass = true
 				} else {
 					logger.WithField("TypeFilter", convTypes).
-						Debug("news notify NewsFilterHook filtered")
+						Debug("news notify FilterHook filtered")
 					hook.Reason = "filtered by TypeFilter"
 				}
 			}

@@ -169,7 +169,7 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 
 	// 默认应该不过滤
 	for _, notify := range notifies {
-		assert.True(t, g.NewsFilterHook(notify).Pass)
+		assert.True(t, g.FilterHook(notify).Pass)
 	}
 
 	var typeFilter = []*concern.GroupConcernFilterConfigByType{
@@ -234,7 +234,7 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 
 		var resultType []DynamicDescType
 		for _, notify := range notifies {
-			hookResult := g.NewsFilterHook(notify)
+			hookResult := g.FilterHook(notify)
 			if hookResult.Pass {
 				resultType = append(resultType, notify.Card.GetDesc().GetType())
 			}
