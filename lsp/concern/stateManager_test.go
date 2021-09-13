@@ -32,7 +32,7 @@ func (t *testKeySet) ParseGroupConcernStateKey(key string) (groupCode int64, id 
 }
 
 func newStateManager(t *testing.T) *StateManager {
-	sm := NewStateManager(&testKeySet{}, false)
+	sm := NewStateManagerWithCustomKey(&testKeySet{}, false)
 	assert.NotNil(t, sm)
 	sm.FreshIndex(test.G1, test.G2)
 	return sm

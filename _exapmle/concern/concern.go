@@ -113,7 +113,7 @@ func (c *exampleConcern) FreshIndex(groupCode ...int64) {
 
 func NewConcern() *exampleConcern {
 	return &exampleConcern{
-		StateManager: concern.NewStateManager(concern.NewPrefixKeySetWithStringID("example"), true),
+		StateManager: concern.NewStateManagerWithStringID("example", true),
 		notifyChan:   registry.GetNotifyChan(),
 	}
 }

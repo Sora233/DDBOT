@@ -428,7 +428,7 @@ func (c *StateManager) EmitFreshCore(name string, fresher func(ctype concern_typ
 	}
 }
 
-func NewStateManager(keySet KeySet, useEmit bool) *StateManager {
+func NewStateManagerWithCustomKey(keySet KeySet, useEmit bool) *StateManager {
 	sm := &StateManager{
 		emitChan: make(chan *localutils.EmitE),
 		KeySet:   keySet,
@@ -446,4 +446,12 @@ func NewStateManager(keySet KeySet, useEmit bool) *StateManager {
 		sm.emitQueue = localutils.NewEmitQueue(sm.emitChan, interval)
 	}
 	return sm
+}
+
+func NewStateManagerWithStringID(name string, useEmit bool) *StateManager {
+	return NewStateManagerWithCustomKey(NewPrefixKeySetWithStringID(name), useEmit)
+}
+
+func NewStateManagerWithInt64ID(name string, useEmit bool) *StateManager {
+	return NewStateManagerWithCustomKey(NewPrefixKeySetWithInt64ID(name), useEmit)
 }
