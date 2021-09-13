@@ -11,6 +11,7 @@ import (
 var logger = utils.GetModuleLogger("example-concern")
 
 const (
+	Site    string            = "example"
 	Example concern_type.Type = "example"
 )
 
@@ -20,7 +21,7 @@ type exampleConcern struct {
 }
 
 func (c *exampleConcern) Site() string {
-	return "example"
+	return Site
 }
 
 func (c *exampleConcern) Start() error {
@@ -100,6 +101,10 @@ func (c *exampleConcern) Get(id interface{}) (concern.IdentityInfo, error) {
 
 func (c *exampleConcern) GetStateManager() concern.IStateManager {
 	return c.StateManager
+}
+
+func (c *exampleConcern) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id))
 }
 
 func (c *exampleConcern) FreshIndex(groupCode ...int64) {

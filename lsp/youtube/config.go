@@ -55,7 +55,8 @@ func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concer
 			return
 		}
 	}
-	return g.IConfig.ShouldSendHook(notify)
+	hook.Reason = "nothing changed"
+	return
 }
 
 func NewGroupConcernConfig(g concern.IConfig) *GroupConcernConfig {

@@ -31,7 +31,7 @@ type Concern interface {
 	FreshIndex(groupCode ...int64)
 }
 
-// IdentityInfo 表示订阅对象的信息，包括名字，ID，type
+// IdentityInfo 表示订阅对象的信息，包括名字，ID
 type IdentityInfo interface {
 	GetUid() interface{}
 	GetName() string

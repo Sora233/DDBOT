@@ -15,7 +15,7 @@ type notify struct {
 }
 
 func (n *notify) Site() string {
-	return "example"
+	return Site
 }
 
 func (n *notify) Type() concern_type.Type {
