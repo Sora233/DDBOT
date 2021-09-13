@@ -80,12 +80,12 @@ func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concer
 				return
 			}
 		}
-		return g.IConfig.ShouldSendHook(notify)
 	case *ConcernNewsNotify:
 		hook.Pass = true
 		return
 	}
-	return g.IConfig.ShouldSendHook(notify)
+	hook.Reason = "nothing changed"
+	return
 }
 
 func (g *GroupConcernConfig) FilterHook(notify concern.Notify) (hook *concern.HookResult) {

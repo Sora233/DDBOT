@@ -127,7 +127,7 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 		for index2, liveInfo := range notify {
 			result := g.ShouldSendHook(liveInfo)
 			assert.NotNil(t, result)
-			assert.Equal(t, expected[index1][index2], result.Pass)
+			assert.Equalf(t, expected[index1][index2], result.Pass, "%v and %v check fail", index1, index2)
 		}
 	}
 }
@@ -159,7 +159,7 @@ func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 	assert.Equal(t, len(expected), len(liveInfos))
 	for index, liveInfo := range liveInfos {
 		result := g.AtBeforeHook(liveInfo)
-		assert.Equal(t, expected[index], result.Pass)
+		assert.Equalf(t, expected[index], result.Pass, "%v check fail", index)
 	}
 }
 
