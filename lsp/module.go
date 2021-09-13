@@ -11,7 +11,6 @@ import (
 	"github.com/Sora233/DDBOT/image_pool/local_pool"
 	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
 	"github.com/Sora233/DDBOT/lsp/aliyun"
-	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
@@ -71,8 +70,6 @@ func (l *Lsp) Init() {
 	if err := localdb.InitBuntDB(""); err != nil {
 		panic(err)
 	}
-
-	bilibili.Init()
 
 	keyId := config.GlobalConfig.GetString("aliyun.accessKeyID")
 	keySecret := config.GlobalConfig.GetString("aliyun.accessKeySecret")
