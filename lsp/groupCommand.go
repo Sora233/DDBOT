@@ -1022,8 +1022,6 @@ func (lgc *LspGroupCommand) groupDisabled(command string) bool {
 	return lgc.l.PermissionStateManager.CheckGroupCommandDisabled(lgc.groupCode(), command)
 }
 
-// all send method should not be called from inside a rw transaction
-
 func (lgc *LspGroupCommand) textReply(text string) *message.GroupMessage {
 	sendingMsg := message.NewSendingMessage()
 	sendingMsg.Append(message.NewText(text))

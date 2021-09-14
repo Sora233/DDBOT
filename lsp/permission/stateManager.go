@@ -7,6 +7,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/client"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"strings"
 	"time"
@@ -246,19 +247,24 @@ func (c *StateManager) CheckGlobalCommandFunc(command string, f func(val string,
 }
 
 func (c *StateManager) CheckGroupAdministrator(groupCode int64, caller int64) bool {
+	log := logger.WithFields(logrus.Fields{
+		"GroupCode": groupCode,
+		"Caller":    caller,
+	})
 	b := bot.Instance
 	if b == nil {
-		logger.Errorf("bot not init")
+		log.Errorf("bot not init")
 		return false
 	}
 	groupInfo := b.FindGroup(groupCode)
 	if groupInfo == nil {
-		logger.Errorf("nil group info")
+		log.Errorf("nil group info")
 		return false
 	}
+	log = log.WithField("GroupName", groupInfo.Name)
 	groupMemberInfo := groupInfo.FindMember(caller)
 	if groupMemberInfo == nil {
-		logger.Errorf("nil member info")
+		log.Errorf("nil member info")
 		return false
 	}
 	return groupMemberInfo.Permission == client.Administrator || groupMemberInfo.Permission == client.Owner
