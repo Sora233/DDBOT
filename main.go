@@ -57,7 +57,7 @@ func main() {
 	var cli struct {
 		Play         bool  `optional:"" help:"运行play函数，适用于测试和开发"`
 		Debug        bool  `optional:"" help:"启动debug模式"`
-		SetAdmin     int64 `optional:"" xor:"c" help:"这只admin权限"`
+		SetAdmin     int64 `optional:"" xor:"c" help:"设置admin权限"`
 		Version      bool  `optional:"" xor:"c" short:"v" help:"打印版本信息"`
 		SyncBilibili bool  `optional:"" xor:"c" help:"同步b站帐号的关注，适用于更换或迁移b站帐号的时候"`
 	}
@@ -86,7 +86,7 @@ func main() {
 		sm := permission.NewStateManager()
 		err := sm.GrantRole(cli.SetAdmin, permission.Admin)
 		if err != nil {
-			fmt.Printf("set role failed %v\n", err)
+			fmt.Printf("设置Admin权限失败 %v\n", err)
 		}
 		return
 	}
@@ -161,7 +161,7 @@ func main() {
 	lsp.Instance.PostStart(bot.Instance)
 
 	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
 	bot.Stop()
 }
