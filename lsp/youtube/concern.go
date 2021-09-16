@@ -112,7 +112,8 @@ func (c *Concern) notifyLoop() {
 		event := ievent.(*VideoInfo)
 		log := event.Logger()
 		if prev, err := c.StateManager.GetVideo(event.ChannelId, event.VideoId); err == nil {
-			if prev.VideoStatus == event.VideoStatus && prev.VideoType == event.VideoType {
+			if prev.VideoStatus == event.VideoStatus && prev.VideoType == event.VideoType &&
+				prev.VideoTimestamp == event.VideoTimestamp && prev.VideoTitle == event.VideoTitle {
 				log.Debugf("duplicate event")
 				continue
 			}
