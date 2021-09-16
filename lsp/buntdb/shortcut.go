@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/modern-go/gls"
 	"github.com/tidwall/buntdb"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -115,6 +116,39 @@ func (s *ShortCut) JsonGet(key string, obj interface{}) error {
 	})
 }
 
+func (s *ShortCut) SeqNext(key string) (int64, error) {
+	var result int64
+	err := s.RWCoverTx(func(tx *buntdb.Tx) error {
+		oldV, err := tx.Get(key)
+		if err == buntdb.ErrNotFound {
+			oldV = "0"
+		} else if err != nil {
+			return err
+		}
+		old, err := strconv.ParseInt(oldV, 10, 64)
+		if err != nil {
+			return err
+		}
+		_, _, err = tx.Set(key, strconv.FormatInt(old+1, 10), nil)
+		if err == nil {
+			result = old + 1
+		}
+		return err
+	})
+	return result, err
+}
+
+func (s *ShortCut) SeqClear(key string) error {
+	err := s.RWCoverTx(func(tx *buntdb.Tx) error {
+		_, err := tx.Delete(key)
+		if err == buntdb.ErrNotFound {
+			err = nil
+		}
+		return err
+	})
+	return err
+}
+
 func RWCoverTx(f func(tx *buntdb.Tx) error) error {
 	return shortCut.RWCoverTx(f)
 }
@@ -139,6 +173,15 @@ func JsonSave(key string, obj interface{}, opt ...*buntdb.SetOptions) error {
 	return shortCut.JsonSave(key, obj, opt...)
 }
 
+func SeqNext(key string) (int64, error) {
+	return shortCut.SeqNext(key)
+}
+
+func SeqClear(key string) error {
+	return shortCut.SeqClear(key)
+}
+
+// ExpireOption 是一个创建expire的函数糖
 func ExpireOption(duration time.Duration) *buntdb.SetOptions {
 	if duration == 0 {
 		return nil

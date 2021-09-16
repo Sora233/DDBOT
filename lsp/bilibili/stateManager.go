@@ -231,40 +231,16 @@ func (c *StateManager) MarkDynamicId(dynamic int64) (replaced bool, err error) {
 	return
 }
 
-func (c *StateManager) IncNotLiveCount(uid int64) (result int) {
-	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.NotLiveKey(uid)
-		oldV, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			oldV = "0"
-		} else if err != nil {
-			return err
-		}
-		old, err := strconv.Atoi(oldV)
-		if err != nil {
-			return err
-		}
-		_, _, err = tx.Set(key, strconv.Itoa(old+1), localdb.ExpireOption(time.Minute*30))
-		if err == nil {
-			result = old + 1
-		}
-		return err
-	})
+func (c *StateManager) IncNotLiveCount(uid int64) int64 {
+	result, err := c.SeqNext(c.NotLiveKey(uid))
 	if err != nil {
 		result = 0
 	}
-	return
+	return result
 }
 
 func (c *StateManager) ClearNotLiveCount(uid int64) error {
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.NotLiveKey(uid)
-		_, err := tx.Delete(key)
-		if err == buntdb.ErrNotFound {
-			err = nil
-		}
-		return err
-	})
+	return c.SeqClear(c.NotLiveKey(uid))
 }
 
 func (c *StateManager) SetUidFirstTimestampIfNotExist(uid int64, timestamp int64) error {

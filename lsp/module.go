@@ -282,7 +282,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 				return err
 			}
 			for _, req := range requests {
-				if req.RequesterUin == req.RequesterUin {
+				if req.RequesterUin == event.Friend.Uin {
 					l.LspStateManager.DeleteNewFriendRequest(req.RequestId)
 				}
 			}
