@@ -27,7 +27,8 @@ import (
 )
 
 type LspPrivateCommand struct {
-	msg *message.PrivateMessage
+	msg    *message.PrivateMessage
+	prefix string
 
 	*Runtime
 }
@@ -36,6 +37,7 @@ func NewLspPrivateCommand(bot *miraiBot.Bot, l *Lsp, msg *message.PrivateMessage
 	c := &LspPrivateCommand{
 		msg:     msg,
 		Runtime: NewRuntime(bot, l),
+		prefix:  l.commandPrefix,
 	}
 	c.Parse(c.msg.Elements)
 	return c
@@ -49,7 +51,7 @@ func (c *LspPrivateCommand) Execute() {
 			c.textSend("エラー発生：看到该信息表示BOT出了一些问题，该问题已记录")
 		}
 	}()
-	if !strings.HasPrefix(c.GetCmd(), "/") {
+	if !strings.HasPrefix(c.GetCmd(), c.prefix) {
 		return
 	}
 

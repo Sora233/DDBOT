@@ -30,7 +30,8 @@ import (
 )
 
 type LspGroupCommand struct {
-	msg *message.GroupMessage
+	msg    *message.GroupMessage
+	prefix string
 
 	*Runtime
 }
@@ -39,6 +40,7 @@ func NewLspGroupCommand(bot *miraiBot.Bot, l *Lsp, msg *message.GroupMessage) *L
 	c := &LspGroupCommand{
 		Runtime: NewRuntime(bot, l),
 		msg:     msg,
+		prefix:  l.commandPrefix,
 	}
 	c.Parse(msg.Elements)
 	return c
@@ -68,7 +70,7 @@ func (lgc *LspGroupCommand) Execute() {
 		}
 	}()
 
-	if lgc.GetCmd() != "" && !strings.HasPrefix(lgc.GetCmd(), "/") {
+	if !strings.HasPrefix(lgc.GetCmd(), lgc.prefix) {
 		return
 	}
 
@@ -86,60 +88,60 @@ func (lgc *LspGroupCommand) Execute() {
 
 	log.Debug("execute command")
 
-	switch lgc.GetCmd() {
-	case "/lsp":
+	switch lgc.GetCmd()[1:] {
+	case LspCommand:
 		if lgc.requireNotDisable(LspCommand) {
 			lgc.LspCommand()
 		}
-	case "/色图":
+	case SetuCommand:
 		if lgc.requireEnable(SetuCommand) {
 			lgc.SetuCommand(false)
 		}
-	case "/黄图":
+	case HuangtuCommand:
 		if lgc.requireEnable(HuangtuCommand) {
 			if lgc.l.PermissionStateManager.RequireAny(permission.AdminRoleRequireOption(lgc.uin())) {
 				lgc.SetuCommand(true)
 			}
 		}
-	case "/watch":
+	case WatchCommand:
 		if lgc.requireNotDisable(WatchCommand) {
 			lgc.WatchCommand(false)
 		}
-	case "/unwatch":
+	case UnwatchCommand:
 		if lgc.requireNotDisable(WatchCommand) {
 			lgc.WatchCommand(true)
 		}
-	case "/list":
+	case ListCommand:
 		if lgc.requireNotDisable(ListCommand) {
 			lgc.ListCommand()
 		}
-	case "/config":
+	case ConfigCommand:
 		if lgc.requireNotDisable(ConfigCommand) {
 			lgc.ConfigCommand()
 		}
-	case "/签到":
+	case CheckinCommand:
 		if lgc.requireNotDisable(CheckinCommand) {
 			lgc.CheckinCommand()
 		}
-	case "/roll":
+	case RollCommand:
 		if lgc.requireNotDisable(RollCommand) {
 			lgc.RollCommand()
 		}
-	case "/grant":
+	case GrantCommand:
 		lgc.GrantCommand()
-	case "/enable":
+	case EnableCommand:
 		lgc.EnableCommand(false)
-	case "/disable":
+	case DisableCommand:
 		lgc.EnableCommand(true)
-	case "/face":
+	case FaceCommand:
 		if lgc.requireNotDisable(FaceCommand) {
 			lgc.FaceCommand()
 		}
-	case "/倒放":
+	case ReverseCommand:
 		if lgc.requireNotDisable(ReverseCommand) {
 			lgc.ReverseCommand()
 		}
-	case "/help":
+	case HelpCommand:
 		if lgc.requireNotDisable(HelpCommand) {
 			lgc.HelpCommand()
 		}

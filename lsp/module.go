@@ -41,6 +41,7 @@ type Lsp struct {
 	wg            sync.WaitGroup
 	status        *Status
 	notifyWg      sync.WaitGroup
+	commandPrefix string
 
 	PermissionStateManager *permission.StateManager
 	LspStateManager        *StateManager
@@ -66,6 +67,11 @@ func (l *Lsp) Init() {
 	}
 	if err := localdb.InitBuntDB(""); err != nil {
 		panic(err)
+	}
+
+	l.commandPrefix = config.GlobalConfig.GetString("bot.commandPrefix")
+	if len(l.commandPrefix) == 0 {
+		l.commandPrefix = "/"
 	}
 
 	l.PermissionStateManager = permission.NewStateManager()
