@@ -116,7 +116,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 	userInfo, err := cm.Add(c, groupCode, mid, watchType)
 	if err != nil {
 		log.Errorf("watch error %v", err)
-		c.TextReply(fmt.Sprintf("watch失败 - %v", err))
+		c.TextReply(fmt.Sprintf("watch失败 - 内部错误"))
 		return
 	}
 	c.TextReply(fmt.Sprintf("watch成功 - %v用户 %v", site, userInfo.GetName()))
