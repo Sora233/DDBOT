@@ -460,11 +460,14 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 	defer func() {
 		if e := recover(); e != nil {
 			if len(recovered) == 0 {
+				logger.WithField("content", localutils.MsgToString(msg.Elements)).
+					WithField("stack", string(debug.Stack())).
+					Errorf("sendGroupMessage panic recovered")
 				res = l.sendGroupMessage(groupCode, msg, true)
 			} else {
 				logger.WithField("content", localutils.MsgToString(msg.Elements)).
 					WithField("stack", string(debug.Stack())).
-					Errorf("sendGroupMessage panic recovered %v", e)
+					Errorf("sendGroupMessage panic recovered but panic again %v", e)
 				res = &message.GroupMessage{Id: -1, Elements: msg.Elements}
 			}
 		}
