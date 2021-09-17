@@ -70,40 +70,40 @@ func (c *LspPrivateCommand) Execute() {
 	log.Debug("execute command")
 
 	// all permission will be checked later
-	switch c.GetCmd() {
-	case "/ping":
+	switch strings.TrimPrefix(c.GetCmd(), c.prefix) {
+	case PingCommand:
 		c.PingCommand()
-	case "/help":
+	case HelpCommand:
 		c.HelpCommand()
-	case "/block":
+	case BlockCommand:
 		c.BlockCommand()
-	case "/watch":
+	case WatchCommand:
 		c.WatchCommand(false)
-	case "/unwatch":
+	case UnwatchCommand:
 		c.WatchCommand(true)
-	case "/enable":
+	case EnableCommand:
 		c.EnableCommand(false)
-	case "/disable":
+	case DisableCommand:
 		c.EnableCommand(true)
-	case "/grant":
+	case GrantCommand:
 		c.GrantCommand()
-	case "/log":
+	case LogCommand:
 		c.LogCommand()
-	case "/list":
+	case ListCommand:
 		c.ListCommand()
-	case "/sysinfo":
+	case SysinfoCommand:
 		c.SysinfoCommand()
-	case "/config":
+	case ConfigCommand:
 		c.ConfigCommand()
-	case "/whosyourdaddy":
+	case WhosyourdaddyCommand:
 		c.WhosyourdaddyCommand()
-	case "/quit":
+	case QuitCommand:
 		c.QuitCommand()
-	case "/mode":
+	case ModeCommand:
 		c.ModeCommand()
-	case "/群邀请":
+	case GroupRequestCommand:
 		c.GroupRequestCommand()
-	case "/好友申请":
+	case FriendRequestCommand:
 		c.FriendRequestCommand()
 	default:
 		c.textReply("阁下似乎输入了一个无法识别的命令，请使用/help命令查看帮助。")

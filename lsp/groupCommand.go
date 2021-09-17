@@ -88,7 +88,7 @@ func (lgc *LspGroupCommand) Execute() {
 
 	log.Debug("execute command")
 
-	switch lgc.GetCmd()[1:] {
+	switch strings.TrimPrefix(lgc.GetCmd(), lgc.prefix) {
 	case LspCommand:
 		if lgc.requireNotDisable(LspCommand) {
 			lgc.LspCommand()
