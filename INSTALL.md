@@ -141,6 +141,7 @@ logLevel: info
 bot:
   account: # bot账号
   password: # bot密码
+  commandPrefix: # bot命令前缀，默认为单斜杠 /
 
 # 请注意，bot将使用您b站帐号的以下功能，建议使用新注册的小号：
 # 关注用户 / 取消关注用户 / 查看关注列表

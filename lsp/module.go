@@ -24,6 +24,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"runtime"
 	"runtime/debug"
+	"strings"
 	"sync"
 	"time"
 )
@@ -69,7 +70,7 @@ func (l *Lsp) Init() {
 		panic(err)
 	}
 
-	l.commandPrefix = config.GlobalConfig.GetString("bot.commandPrefix")
+	l.commandPrefix = strings.TrimSpace(config.GlobalConfig.GetString("bot.commandPrefix"))
 	if len(l.commandPrefix) == 0 {
 		l.commandPrefix = "/"
 	}
