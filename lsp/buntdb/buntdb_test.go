@@ -294,6 +294,7 @@ func TestSeqNext(t *testing.T) {
 	err = InitBuntDB(MEMORYDB)
 	assert.Nil(t, err)
 	defer Close()
+
 	seq1 := "seq1"
 	seq2 := "seq2"
 
@@ -303,7 +304,25 @@ func TestSeqNext(t *testing.T) {
 		assert.EqualValuesf(t, i+1, s, "Seq %v times must eq %v", i+1, i+1)
 	}
 
-	s, err := SeqNext(seq2)
+	assert.Nil(t, SeqClear(seq1))
+
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 100000; i++ {
+				_, err := SeqNext(seq1)
+				assert.Nil(t, err)
+			}
+		}()
+	}
+	wg.Wait()
+	s, err := SeqNext(seq1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 1000001, s)
+
+	s, err = SeqNext(seq2)
 	assert.Nil(t, err)
 	assert.EqualValues(t, 1, s)
 
@@ -324,5 +343,50 @@ func TestSeqNext(t *testing.T) {
 	assert.Nil(t, err)
 
 	_, err = SeqNext(seq1)
+	assert.NotNil(t, err)
+}
+
+type testJson struct {
+	A string   `json:"a"`
+	B int      `json:"b"`
+	C []string `json:"c"`
+}
+
+func TestJsonGet(t *testing.T) {
+	var err error
+	err = InitBuntDB(MEMORYDB)
+	assert.Nil(t, err)
+	defer Close()
+
+	var expected = []*testJson{
+		{
+			A: "a1",
+			B: 1,
+			C: []string{"c1", "c1"},
+		},
+		{
+			A: "a2",
+			B: 2,
+			C: []string{"c2", "c2"},
+		},
+	}
+	var keys = []string{
+		"key1",
+		"key2",
+	}
+	err = RWCover(func() error {
+		for index, exp := range expected {
+			var tmp = new(testJson)
+			assert.Nil(t, JsonSave(keys[index], exp))
+			assert.Nil(t, JsonGet(keys[index], tmp))
+			assert.EqualValues(t, exp, tmp)
+		}
+		return nil
+	})
+	assert.Nil(t, err)
+
+	err = RCover(func() error {
+		return JsonSave(keys[0], expected[0])
+	})
 	assert.NotNil(t, err)
 }
