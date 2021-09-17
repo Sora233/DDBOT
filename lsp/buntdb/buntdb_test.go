@@ -288,3 +288,41 @@ func TestRWTxCover2(t *testing.T) {
 	}()
 	wg.Wait()
 }
+
+func TestSeqNext(t *testing.T) {
+	var err error
+	err = InitBuntDB(MEMORYDB)
+	assert.Nil(t, err)
+	defer Close()
+	seq1 := "seq1"
+	seq2 := "seq2"
+
+	for i := 0; i < 100000; i++ {
+		s, err := SeqNext(seq1)
+		assert.Nil(t, err)
+		assert.EqualValuesf(t, i+1, s, "Seq %v times must eq %v", i+1, i+1)
+	}
+
+	s, err := SeqNext(seq2)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 1, s)
+
+	assert.Nil(t, SeqClear(seq1))
+
+	s, err = SeqNext(seq2)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 2, s)
+
+	s, err = SeqNext(seq1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 1, s)
+
+	err = RWCoverTx(func(tx *buntdb.Tx) error {
+		_, _, err := tx.Set(seq1, "wrong", nil)
+		return err
+	})
+	assert.Nil(t, err)
+
+	_, err = SeqNext(seq1)
+	assert.NotNil(t, err)
+}

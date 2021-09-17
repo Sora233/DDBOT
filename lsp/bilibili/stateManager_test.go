@@ -165,16 +165,16 @@ func TestStateManager_IncNotLiveCount(t *testing.T) {
 
 	c := initStateManager(t)
 
-	assert.Equal(t, 1, c.IncNotLiveCount(test.UID1))
-	assert.Equal(t, 2, c.IncNotLiveCount(test.UID1))
-	assert.Equal(t, 3, c.IncNotLiveCount(test.UID1))
-	assert.Equal(t, 4, c.IncNotLiveCount(test.UID1))
-	assert.Equal(t, 5, c.IncNotLiveCount(test.UID1))
-	assert.Equal(t, 6, c.IncNotLiveCount(test.UID1))
+	assert.EqualValues(t, 1, c.IncNotLiveCount(test.UID1))
+	assert.EqualValues(t, 2, c.IncNotLiveCount(test.UID1))
+	assert.EqualValues(t, 3, c.IncNotLiveCount(test.UID1))
+	assert.EqualValues(t, 4, c.IncNotLiveCount(test.UID1))
+	assert.EqualValues(t, 5, c.IncNotLiveCount(test.UID1))
+	assert.EqualValues(t, 6, c.IncNotLiveCount(test.UID1))
 
 	assert.Nil(t, c.ClearNotLiveCount(test.UID1))
-	assert.Equal(t, 1, c.IncNotLiveCount(test.UID1))
-	assert.Equal(t, 2, c.IncNotLiveCount(test.UID1))
+	assert.EqualValues(t, 1, c.IncNotLiveCount(test.UID1))
+	assert.EqualValues(t, 2, c.IncNotLiveCount(test.UID1))
 }
 
 func TestStateManager_SetUidFirstTimestampIfNotExist(t *testing.T) {
@@ -218,7 +218,7 @@ func TestStateManager_ClearByMid(t *testing.T) {
 	assert.Nil(t, c.AddLiveInfo(origLiveInfo))
 	assert.Nil(t, c.AddNewsInfo(origNewsInfo))
 	assert.Nil(t, c.SetUidFirstTimestampIfNotExist(test.UID1, test.TIMESTAMP1))
-	assert.Equal(t, 1, c.IncNotLiveCount(test.UID1))
+	assert.EqualValues(t, 1, c.IncNotLiveCount(test.UID1))
 
 	assert.Nil(t, c.ClearByMid(test.UID1))
 
@@ -236,7 +236,7 @@ func TestStateManager_ClearByMid(t *testing.T) {
 
 	_, err = c.GetUidFirstTimestamp(test.UID1)
 	assert.NotNil(t, err)
-	assert.Equal(t, 1, c.IncNotLiveCount(test.UID1))
+	assert.EqualValues(t, 1, c.IncNotLiveCount(test.UID1))
 
 }
 
