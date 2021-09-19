@@ -398,6 +398,9 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 	bot.OnDisconnected(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
 		logger.Errorf("收到OnDisconnected事件 %v", event.Message)
+		if config.GlobalConfig.GetString("bot.onDisconnected") == "exit" {
+			logger.Fatalf("onDisconnected设置为exit，bot将自动退出")
+		}
 		if err := bot.ReLogin(event); err != nil {
 			logger.Fatalf("重连时发生错误%v，bot将自动退出", err)
 		}

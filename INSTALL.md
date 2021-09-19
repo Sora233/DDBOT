@@ -145,6 +145,7 @@ logLevel: info
 bot:
   account: # bot账号
   password: # bot密码
+  onDisconnected: "exit" # 设置掉线时处理方式，exit为退出，不填或者其他值为尝试重连
 
 # 请注意，bot将使用您b站帐号的以下功能，建议使用新注册的小号：
 # 关注用户 / 取消关注用户 / 查看关注列表
