@@ -164,7 +164,7 @@ func main() {
 	lsp.Instance.PostStart(bot.Instance)
 
 	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	<-ch
 	bot.Stop()
 }
