@@ -128,7 +128,9 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 			infoResp.GetData().GetName(),
 			infoResp.GetData().GetLiveRoom().GetUrl(),
 		)
+		log = log.WithField("name", userInfo.GetName())
 	} else {
+		log = log.WithField("name", userInfo.GetName())
 		log.Debugf("UserInfo cache hit")
 	}
 
