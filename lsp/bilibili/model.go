@@ -123,7 +123,6 @@ type ConcernNewsNotify struct {
 	// messageCache 导致ConcernNewsNotify的ToMessage()变得线程不安全
 	messageCache []message.IMessageElement
 	// 用于联合投稿防止多人同时推送
-	originMark    bool
 	shouldCompact bool
 }
 
@@ -309,7 +308,7 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 		date       = localutils.TimestampFormat(card.GetDesc().GetTimestamp())
 	)
 	// 推送一条简化动态防止刷屏，主要是联合投稿和转发的时候
-	if notify.shouldCompact && !notify.originMark {
+	if notify.shouldCompact {
 		switch notify.Card.GetDesc().GetType() {
 		case DynamicDescType_WithVideo:
 			videoCard, _ := notify.Card.GetCardWithVideo()
@@ -331,8 +330,8 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 					dynamicUrl,
 				),
 			)
+			return result
 		}
-		notify.messageCache = nil
 	}
 	if notify.messageCache != nil {
 		return notify.messageCache

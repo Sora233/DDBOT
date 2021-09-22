@@ -2,6 +2,7 @@ package bilibili
 
 import (
 	"github.com/Sora233/DDBOT/concern"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/Sora233/DDBOT/utils"
 	"strconv"
@@ -29,20 +30,17 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 			return
 		}
 
-		notify.shouldCompact = true
 		// 解决联合投稿的时候刷屏
-
 		err = g.StateManager.SetGroupVideoOriginMarkIfNotExist(notify.GetGroupCode(), videoOrigin.GetBvid())
-		if err == nil {
-			notify.originMark = true
+		if localdb.IsRollback(err) {
+			notify.shouldCompact = true
 		}
 	case DynamicDescType_WithOrigin:
-		notify.shouldCompact = true
-		// 一起转发的时候刷屏
+		// 解决一起转发的时候刷屏
 		origDyId := notify.Card.GetDesc().GetOrigDyIdStr()
 		err := g.StateManager.SetGroupOriginMarkIfNotExist(notify.GetGroupCode(), origDyId)
-		if err == nil {
-			notify.originMark = true
+		if localdb.IsRollback(err) {
+			notify.shouldCompact = true
 		}
 	}
 }
