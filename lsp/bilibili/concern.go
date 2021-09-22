@@ -474,6 +474,8 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 	var liveInfo []*LiveInfo
 	var infoSet = make(map[int64]bool)
 	var page = 1
+	var maxPage int32 = 1
+	var zeroCount = 0
 	for {
 		resp, err := FeedList(FeedPageOpt(page))
 		if err != nil {
@@ -483,7 +485,16 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 			logger.Errorf("freshLive FeedList code %v msg %v", resp.GetCode(), resp.GetMessage())
 			return nil, err
 		}
-		pageSize, _ := strconv.ParseInt(resp.GetData().GetPagesize(), 10, 0)
+		var (
+			dataSize    = len(resp.GetData().GetList())
+			pageSize, _ = strconv.ParseInt(resp.GetData().GetPagesize(), 10, 32)
+			curTotal    = resp.GetData().GetResults()
+			curMaxPage  = (curTotal-1)/int32(pageSize) + 1
+		)
+		logger.WithField("CurTotal", curTotal).WithField("PageSize", pageSize).WithField("CurMaxPage", curMaxPage).WithField("maxPage", maxPage).Trace("debug")
+		if curMaxPage > maxPage {
+			maxPage = curMaxPage
+		}
 		for _, l := range resp.GetData().GetList() {
 			if infoSet[l.GetUid()] {
 				continue
@@ -503,10 +514,15 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 			}
 			liveInfo = append(liveInfo, info)
 		}
-		if (int(pageSize) != 0 && len(resp.GetData().GetList()) != int(pageSize)) || len(resp.GetData().GetList()) == 0 {
+		if dataSize != 0 {
+			zeroCount = 0
+			page++
+		} else {
+			zeroCount += 1
+		}
+		if int32(page) > maxPage || zeroCount >= 3 {
 			break
 		}
-		page++
 	}
 	logger.WithField("cost", time.Now().Sub(start)).WithField("Page", page).WithField("LiveInfo Size", len(liveInfo)).Tracef("freshLive done")
 	return liveInfo, nil

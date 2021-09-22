@@ -125,7 +125,7 @@ message FeedListResponse {
   int32 code = 1;
   string message = 2;
   message Data {
-    int32 result = 1;
+    int32 results = 1;
     string page = 2;
     string pagesize = 3;
     message ListInfo {
@@ -244,7 +244,7 @@ message Card {
     UserProfile user_profile = 14;
     string pre_dy_id_str = 15;
     string orig_dy_id_str = 16;
-    string rid_str= 17;
+    string rid_str = 17;
   }
   message Extra {
     int32 is_space_top = 1;
