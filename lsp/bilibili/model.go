@@ -309,6 +309,7 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 	)
 	// 推送一条简化动态防止刷屏，主要是联合投稿和转发的时候
 	if notify.shouldCompact {
+		log.WithField("CardType", notify.Card.GetDesc().GetType().String()).Debug("compact notify")
 		switch notify.Card.GetDesc().GetType() {
 		case DynamicDescType_WithVideo:
 			videoCard, _ := notify.Card.GetCardWithVideo()
