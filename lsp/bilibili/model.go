@@ -123,8 +123,8 @@ type ConcernNewsNotify struct {
 	// messageCache 导致ConcernNewsNotify的ToMessage()变得线程不安全
 	messageCache []message.IMessageElement
 	// 用于联合投稿防止多人同时推送
-	videoOrigin     *CardWithVideo_Origin
-	videoOriginMark bool
+	originMark    bool
+	shouldCompact bool
 }
 
 func (notify *ConcernNewsNotify) Type() concern.Type {
@@ -308,11 +308,31 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 		dynamicUrl = DynamicUrl(card.GetDesc().GetDynamicIdStr())
 		date       = localutils.TimestampFormat(card.GetDesc().GetTimestamp())
 	)
-	// 如果短时间有多个联合投稿，则推送一条简化动态
-	if notify.videoOrigin != nil && !notify.videoOriginMark {
-		videoCard, _ := notify.Card.GetCardWithVideo()
-		result = append(result, localutils.MessageTextf("%v%v：\n%v\n%v", notify.Name, notify.Card.GetDisplay().GetUsrActionTxt(), videoCard.GetTitle(), dynamicUrl))
-		return result
+	// 推送一条简化动态防止刷屏，主要是联合投稿和转发的时候
+	if notify.shouldCompact && !notify.originMark {
+		switch notify.Card.GetDesc().GetType() {
+		case DynamicDescType_WithVideo:
+			videoCard, _ := notify.Card.GetCardWithVideo()
+			result = append(result,
+				localutils.MessageTextf("%v%v：\n%v\n%v",
+					notify.Name,
+					notify.Card.GetDisplay().GetUsrActionTxt(),
+					videoCard.GetTitle(),
+					dynamicUrl),
+			)
+			return result
+		case DynamicDescType_WithOrigin:
+			origCard, _ := notify.Card.GetCardWithOrig()
+			result = append(result,
+				localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v",
+					notify.Name,
+					origCard.GetOriginUser().GetInfo().GetUname(),
+					origCard.GetItem().GetContent(),
+					dynamicUrl,
+				),
+			)
+		}
+		notify.messageCache = nil
 	}
 	if notify.messageCache != nil {
 		return notify.messageCache

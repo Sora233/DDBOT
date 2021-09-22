@@ -242,6 +242,9 @@ message Card {
     string dynamic_id_str = 12;
     int64 uid = 13;
     UserProfile user_profile = 14;
+    string pre_dy_id_str = 15;
+    string orig_dy_id_str = 16;
+    string rid_str= 17;
   }
   message Extra {
     int32 is_space_top = 1;

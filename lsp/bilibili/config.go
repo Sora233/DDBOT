@@ -18,25 +18,32 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 		return
 	}
 	notify := inotify.(*ConcernNewsNotify)
-	if notify.Card.GetDesc().GetType() != DynamicDescType_WithVideo {
-		return
-	}
-	videoCard, err := notify.Card.GetCardWithVideo()
-	if err != nil {
-		return
-	}
-	videoOrigin := videoCard.GetOrigin()
-	if videoOrigin == nil {
-		return
-	}
+	switch notify.Card.GetDesc().GetType() {
+	case DynamicDescType_WithVideo:
+		videoCard, err := notify.Card.GetCardWithVideo()
+		if err != nil {
+			return
+		}
+		videoOrigin := videoCard.GetOrigin()
+		if videoOrigin == nil {
+			return
+		}
 
-	// 主要是解决联合投稿的时候刷屏
+		notify.shouldCompact = true
+		// 解决联合投稿的时候刷屏
 
-	notify.videoOrigin = videoOrigin
-
-	err = g.StateManager.SetGroupVideoOriginMarkIfNotExist(notify.GetGroupCode(), videoOrigin.GetBvid())
-	if err == nil {
-		notify.videoOriginMark = true
+		err = g.StateManager.SetGroupVideoOriginMarkIfNotExist(notify.GetGroupCode(), videoOrigin.GetBvid())
+		if err == nil {
+			notify.originMark = true
+		}
+	case DynamicDescType_WithOrigin:
+		notify.shouldCompact = true
+		// 一起转发的时候刷屏
+		origDyId := notify.Card.GetDesc().GetOrigDyIdStr()
+		err := g.StateManager.SetGroupOriginMarkIfNotExist(notify.GetGroupCode(), origDyId)
+		if err == nil {
+			notify.originMark = true
+		}
 	}
 }
 

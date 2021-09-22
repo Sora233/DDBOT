@@ -301,6 +301,20 @@ func (c *StateManager) SetGroupVideoOriginMarkIfNotExist(groupCode int64, bvid s
 	})
 }
 
+func (c *StateManager) SetGroupOriginMarkIfNotExist(groupCode int64, dynamicIdStr string) error {
+	return localdb.RWCoverTx(func(tx *buntdb.Tx) error {
+		key := localdb.BilibiliOriginMarkKey(groupCode, dynamicIdStr)
+		_, replaced, err := tx.Set(key, "", localdb.ExpireOption(time.Minute*15))
+		if err != nil {
+			return err
+		}
+		if replaced {
+			return localdb.ErrRollback
+		}
+		return nil
+	})
+}
+
 func SetCookieInfo(username string, cookieInfo *LoginResponse_Data_CookieInfo) error {
 	if cookieInfo == nil {
 		return errors.New("<nil> cookieInfo")
