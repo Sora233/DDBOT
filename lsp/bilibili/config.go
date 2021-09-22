@@ -42,6 +42,12 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
+	default:
+		// 其他动态也设置一下
+		err := g.StateManager.SetGroupOriginMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
+		if err != nil && !localdb.IsRollback(err) {
+			logger.Errorf("SetGroupOriginMarkIfNotExist error %v", err)
+		}
 	}
 }
 
