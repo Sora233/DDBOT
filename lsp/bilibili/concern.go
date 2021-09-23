@@ -9,6 +9,7 @@ import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"golang.org/x/sync/errgroup"
 	"runtime"
@@ -491,7 +492,13 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 			curTotal    = resp.GetData().GetResults()
 			curMaxPage  = (curTotal-1)/int32(pageSize) + 1
 		)
-		logger.WithField("CurTotal", curTotal).WithField("PageSize", pageSize).WithField("CurMaxPage", curMaxPage).WithField("maxPage", maxPage).Trace("debug")
+		logger.WithFields(logrus.Fields{
+			"CurTotal":   curTotal,
+			"PageSize":   pageSize,
+			"CurMaxPage": curMaxPage,
+			"maxPage":    maxPage,
+			"page":       page,
+		}).Trace("freshLive debug")
 		if curMaxPage > maxPage {
 			maxPage = curMaxPage
 		}
