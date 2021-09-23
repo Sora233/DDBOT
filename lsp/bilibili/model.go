@@ -829,7 +829,7 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 		}
 	}
 	log.WithField("dynamicUrl", dynamicUrl).Debug("create notify")
-	result = append(result, message.NewText(dynamicUrl+"\n"))
+	result = append(result, message.NewText(dynamicUrl))
 	notify.messageCache = result
 	return result
 }
