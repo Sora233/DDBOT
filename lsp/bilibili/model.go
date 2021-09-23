@@ -514,7 +514,7 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 			origin := new(CardWithMylist)
 			err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
 			if err != nil {
-				log.WithField("orogin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithMylist failed %v", err)
+				log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithMylist failed %v", err)
 				return
 			}
 			result = append(result, localutils.MessageTextf("%v\n", origin.GetTitle()))
@@ -529,6 +529,26 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 		case DynamicDescType_WithOrigin:
 			// 麻了，套起来了
 			result = append(result, localutils.MessageTextf("%v转发了%v的动态：%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+		case DynamicDescType_WithCourse:
+			origin := new(CardWithCourse)
+			err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
+			if err != nil {
+				log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithCourse failed %v", err)
+				return
+			}
+			result = append(result, localutils.MessageTextf("%v转发了%v的%v：\n%v\n%v\n\n原课程：\n%v", notify.Name,
+				origin.GetUpInfo().GetName(),
+				origin.GetBadge().GetText(),
+				date,
+				cardOrigin.GetItem().GetContent(),
+				origin.GetTitle(),
+			))
+			groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetCover(), false, proxy_pool.PreferNone)
+			if err != nil {
+				log.WithField("origin", cardOrigin.GetOrigin()).Errorf("upload CardWithCourse cover failed %v", err)
+			} else {
+				result = append(result, groupImage)
+			}
 		default:
 			// 试试media
 			origin := new(CardWithMedia)

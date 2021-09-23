@@ -86,3 +86,12 @@ func (m *Card) GetCardWithLiveV2() (*CardWithLiveV2, error) {
 	}
 	return nil, ErrCardTypeMismatch
 }
+
+func (m *Card) GetCardWithCourse() (*CardWithCourse, error) {
+	if m.GetDesc().GetType() == DynamicDescType_WithCourse {
+		var card = new(CardWithCourse)
+		err := json.Unmarshal([]byte(m.GetCard()), card)
+		return card, err
+	}
+	return nil, ErrCardTypeMismatch
+}
