@@ -7,6 +7,7 @@ import "github.com/Sora233/sliceutil"
 const (
 	RollCommand         = "roll"
 	CheckinCommand      = "签到"
+	ScoreCommand        = "查询积分"
 	GrantCommand        = "grant"
 	LspCommand          = "lsp"
 	WatchCommand        = "watch"
@@ -42,7 +43,7 @@ var allGroupCommand = [...]string{
 	ListCommand, SetuCommand, HuangtuCommand,
 	EnableCommand, DisableCommand, ImageContentCommand,
 	FaceCommand, ReverseCommand, ConfigCommand,
-	HelpCommand,
+	HelpCommand, ScoreCommand,
 }
 
 var allPrivateOperate = [...]string{

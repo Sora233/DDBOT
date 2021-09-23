@@ -132,6 +132,10 @@ func (lgc *LspGroupCommand) Execute() {
 		if lgc.requireNotDisable(CheckinCommand) {
 			lgc.CheckinCommand()
 		}
+	case "/查询积分":
+		if lgc.requireNotDisable(ScoreCommand) {
+			lgc.ScoreCommand()
+		}
 	case "/roll":
 		if lgc.requireNotDisable(RollCommand) {
 			lgc.RollCommand()
@@ -550,6 +554,35 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		lgc.textSend("失败 - 内部错误")
 		log.Errorf("checkin error %v", err)
 	}
+}
+
+func (lgc *LspGroupCommand) ScoreCommand() {
+	log := lgc.DefaultLoggerWithCommand(ScoreCommand)
+	log.Infof("run score command")
+	defer func() { log.Info("score command end") }()
+
+	var scoreCmd struct{}
+	_, output := lgc.parseCommandSyntax(&scoreCmd, ScoreCommand)
+	if output != "" {
+		lgc.textReply(output)
+	}
+	if lgc.exit {
+		return
+	}
+
+	var scoreS string
+
+	localdb.RCoverTx(func(tx *buntdb.Tx) error {
+		key := localdb.Key("Score", lgc.groupCode(), lgc.uin())
+		scoreS, _ = tx.Get(key)
+		return nil
+	})
+
+	if len(scoreS) == 0 {
+		scoreS = "0"
+	}
+	score, _ := strconv.ParseInt(scoreS, 0, 64)
+	lgc.textReplyF("当前积分为%v", score)
 }
 
 func (lgc *LspGroupCommand) EnableCommand(disable bool) {
