@@ -815,3 +815,15 @@ pong
 ```shell
 /群邀请 --all --reject
 ```
+
+### /admin
+
+*从v0.1.3版本开始支持*
+
+用于查看当前的Admin权限，显示所有拥有Admin权限的人。
+
+- 查看Admin
+
+```shell
+/admin
+```

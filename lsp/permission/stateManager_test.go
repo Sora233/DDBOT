@@ -224,12 +224,28 @@ func TestStateManager_CheckNoAdmin(t *testing.T) {
 
 	assert.Nil(t, c.GrantRole(test.UID1, Admin))
 	assert.False(t, c.CheckNoAdmin())
+	ids := c.ListAdmin()
+	assert.Len(t, ids, 1)
+	assert.EqualValues(t, test.UID1, ids[0])
 	assert.Nil(t, c.UngrantRole(test.UID1, Admin))
 	assert.True(t, c.CheckNoAdmin())
+	ids = c.ListAdmin()
+	assert.Empty(t, ids)
 
 	assert.Nil(t, c.GrantGroupRole(test.G1, test.UID1, GroupAdmin))
 	assert.True(t, c.CheckNoAdmin())
+	ids = c.ListAdmin()
+	assert.Empty(t, ids)
 	assert.Nil(t, c.GrantRole(test.UID1, Admin))
 	assert.False(t, c.CheckNoAdmin())
+	ids = c.ListAdmin()
+	assert.Len(t, ids, 1)
+	assert.EqualValues(t, test.UID1, ids[0])
 
+	assert.Nil(t, c.GrantRole(test.UID2, Admin))
+	assert.False(t, c.CheckNoAdmin())
+	ids = c.ListAdmin()
+	assert.Len(t, ids, 2)
+	assert.Contains(t, ids, test.UID1)
+	assert.Contains(t, ids, test.UID2)
 }

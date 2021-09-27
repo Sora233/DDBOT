@@ -9,6 +9,7 @@ import (
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -349,6 +350,32 @@ func (c *StateManager) CheckNoAdmin() bool {
 	if err != nil {
 		result = false
 		logger.Errorf("CheckNoAdmin error %v", err)
+	}
+	return result
+}
+
+func (c *StateManager) ListAdmin() []int64 {
+	var result []int64
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
+		return tx.Ascend(c.PermissionKey(), func(key, value string) bool {
+			splits := strings.Split(key, ":")
+			if len(splits) != 3 {
+				return true
+			}
+			if NewRoleFromString(splits[2]) == Admin {
+				i, err := strconv.ParseInt(splits[1], 0, 64)
+				if err != nil {
+					logger.WithField("Key", key).Errorf("Parse PermissionKey error %v", err)
+				} else {
+					result = append(result, i)
+				}
+			}
+			return true
+		})
+	})
+	if err != nil {
+		result = nil
+		logger.Errorf("ListAdmin error %v", err)
 	}
 	return result
 }
