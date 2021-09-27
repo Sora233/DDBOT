@@ -56,6 +56,9 @@ func DynamicSrvDynamicNew() (*DynamicSvrDynamicNewResponse, error) {
 	err = resp.Json(dynamicNewResp)
 	if err != nil {
 		content, _ := resp.Content()
+		if len(content) > 100 {
+			content = content[len(content)-100:]
+		}
 		logger.WithField("content", string(content)).Errorf("DynamicSrvDynamicNew response json failed")
 		return nil, err
 	}
