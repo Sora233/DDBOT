@@ -77,7 +77,7 @@ func (l *Lsp) Init() {
 		log.Infof("设置logLevel为%v", lev.String())
 	}
 	if err := localdb.InitBuntDB(""); err != nil {
-		panic(err)
+		log.Fatalf("无法正常初始化数据库！请检查.lsp.db文件权限是否正确，如无问题则为数据库文件损坏，请阅读文档获得帮助。")
 	}
 
 	bilibili.Init()
