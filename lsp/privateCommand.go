@@ -1048,6 +1048,7 @@ func (c *LspPrivateCommand) AdminCommand() {
 		sb.WriteString(fmt.Sprintf("\n%v %v", id, name))
 	}
 	msg.Append(message.NewText(sb.String()))
+	c.send(msg)
 }
 
 func (c *LspPrivateCommand) PingCommand() {
