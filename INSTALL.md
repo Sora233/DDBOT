@@ -118,7 +118,9 @@ DDBOT运行时的配置文件，可以用记事本打开修改，如果检测到
 ```yaml
 bot:
   account:  # 你的qq号，不填则使用扫码登陆
-  password: # 你的qq密码
+  password: # 你bot的qq密码
+  onJoinGroup:
+    rename: "【bot】"  # BOT进群后自动改名，默认改名为“【bot】”，如果留空则不自动改名
 
 # b站相关的功能需要一个b站账号，建议使用新注册的小号
 # bot将使用您b站帐号的以下功能：
@@ -146,6 +148,8 @@ bot:
   account: # bot账号
   password: # bot密码
   onDisconnected: "exit" # 设置掉线时处理方式，exit为退出，不填或者其他值为尝试重连
+  onJoinGroup:
+    rename: "【bot】"     # BOT进群后自动改名，默认改名为“【bot】”，如果留空则不自动改名
 
 # 请注意，bot将使用您b站帐号的以下功能，建议使用新注册的小号：
 # 关注用户 / 取消关注用户 / 查看关注列表

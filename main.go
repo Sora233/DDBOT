@@ -172,6 +172,8 @@ var exampleConfig = func() string {
 bot:
   account:  # 你bot的qq号，不填则使用扫码登陆
   password: # 你bot的qq密码
+  onJoinGroup: 
+    rename: "【bot】"  # BOT进群后自动改名，默认改名为“【bot】”，如果留空则不自动改名
 
 # b站相关的功能需要一个b站账号，建议使用小号
 # bot将使用您b站帐号的以下功能：

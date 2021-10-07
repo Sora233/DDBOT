@@ -305,9 +305,15 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		})
 		log.Info("进入新群聊")
 
-		minfo := info.FindMember(bot.Uin)
-		if minfo != nil {
-			minfo.EditCard("【bot】")
+		rename := config.GlobalConfig.GetString("bot.onJoinGroup.rename")
+		if len(rename) > 0 {
+			if len(rename) > 60 {
+				rename = rename[:60]
+			}
+			minfo := info.FindMember(bot.Uin)
+			if minfo != nil {
+				minfo.EditCard(rename)
+			}
 		}
 
 		l.LspStateManager.RWCover(func() error {
