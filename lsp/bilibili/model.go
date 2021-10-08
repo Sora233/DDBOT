@@ -378,7 +378,7 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 			if !skip {
 				for _, pic := range origin.GetItem().GetPictures() {
 					var isNorm = false
-					if pic.GetImgHeight() > 1200 && pic.GetImgWidth() > 1200 {
+					if pic.ImgHeight > 2560 && pic.ImgWidth > 2560 {
 						isNorm = true
 					}
 					groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), isNorm, proxy_pool.PreferNone)
@@ -940,13 +940,18 @@ func shouldCombineImage(pic []*CardWithImage_Item_Picture) bool {
 			return true
 		}
 	}
-	// 有超过一半的图片尺寸一样
+	// 有超过一半的近似矩形图片尺寸一样
 	var size = make(map[int64]int)
-	for idx, i := range pic {
-		if idx == 0 {
-			continue
+	for _, i := range pic {
+		var gap float64
+		if i.ImgHeight < i.ImgWidth {
+			gap = float64(i.ImgHeight) / float64(i.ImgWidth)
+		} else {
+			gap = float64(i.ImgWidth) / float64(i.ImgHeight)
 		}
-		size[int64(i.ImgWidth)*int64(i.ImgHeight)] += 1
+		if gap >= 0.95 {
+			size[int64(i.ImgWidth)*int64(i.ImgHeight)] += 1
+		}
 	}
 	var sizeMerge bool
 	for _, count := range size {
