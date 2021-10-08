@@ -384,15 +384,6 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnPrivateMessage(func(qqClient *client.QQClient, msg *message.PrivateMessage) {
-		// TODO 这个问题已经过已经修复了，再观察一段时间
-		if msg.Time < int32(time.Now().Add(time.Hour*-1).Unix()) {
-			logger.WithField("Sender", msg.Sender.DisplayName()).
-				WithField("time", time.Unix(int64(msg.Time), 0)).
-				WithField("MessageID", msg.Id).
-				Debug("past private message got, skip.")
-			// 有时候消息会再触发一次，应该是tx的问题
-			return
-		}
 		if len(msg.Elements) == 0 {
 			return
 		}
