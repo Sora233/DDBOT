@@ -541,7 +541,11 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 		} else {
 			zeroCount += 1
 		}
-		if int32(page) > maxPage || zeroCount >= 3 {
+		if int32(page) > maxPage {
+			break
+		}
+		if zeroCount >= 3 {
+			logger.Errorf("freshLive end unexpectedly due to zero count")
 			break
 		}
 	}
