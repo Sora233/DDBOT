@@ -208,14 +208,16 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 		}
 		return nil
 	})
-	if config.GlobalConfig.GetBool("bilibili.unsub") && allCtype.Empty() {
-		resp, err := c.ModifyUserRelation(mid, ActUnsub)
-		if err != nil {
-			logger.Errorf("取消关注失败 - %v", err)
-		} else if resp.GetCode() != 0 {
-			logger.Errorf("取消关注失败 - %v - %v", resp.GetCode(), resp.GetMessage())
-		} else {
-			logger.WithField("mid", mid).Info("取消关注成功")
+	if config.GlobalConfig != nil {
+		if config.GlobalConfig.GetBool("bilibili.unsub") && allCtype.Empty() {
+			resp, err := c.ModifyUserRelation(mid, ActUnsub)
+			if err != nil {
+				logger.Errorf("取消关注失败 - %v", err)
+			} else if resp.GetCode() != 0 {
+				logger.Errorf("取消关注失败 - %v - %v", resp.GetCode(), resp.GetMessage())
+			} else {
+				logger.WithField("mid", mid).Info("取消关注成功")
+			}
 		}
 	}
 	return newCtype, err

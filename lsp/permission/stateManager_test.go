@@ -249,3 +249,43 @@ func TestStateManager_CheckNoAdmin(t *testing.T) {
 	assert.Contains(t, ids, test.UID1)
 	assert.Contains(t, ids, test.UID2)
 }
+
+func TestStateManager_CheckGlobalSilence(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+	c := initStateManager(t)
+
+	assert.False(t, c.CheckGlobalSilence())
+	assert.Nil(t, c.GlobalSilence())
+	assert.Nil(t, c.GlobalSilence())
+	assert.True(t, c.CheckGlobalSilence())
+	assert.True(t, c.CheckGlobalSilence())
+
+	assert.Nil(t, c.UndoGlobalSilence())
+	assert.Nil(t, c.UndoGlobalSilence())
+	assert.False(t, c.CheckGlobalSilence())
+	assert.False(t, c.CheckGlobalSilence())
+}
+
+func TestStateManager_CheckGroupSilence(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+	c := initStateManager(t)
+
+	assert.False(t, c.CheckGroupSilence(test.G1))
+	assert.False(t, c.CheckGroupSilence(test.G2))
+
+	assert.Nil(t, c.GroupSilence(test.G1))
+
+	assert.True(t, c.CheckGroupSilence(test.G1))
+	assert.False(t, c.CheckGroupSilence(test.G2))
+
+	assert.Nil(t, c.UndoGroupSilence(test.G1))
+
+	assert.False(t, c.CheckGroupSilence(test.G1))
+	assert.False(t, c.CheckGroupSilence(test.G2))
+
+	assert.Nil(t, c.GlobalSilence())
+	assert.True(t, c.CheckGroupSilence(test.G1))
+	assert.True(t, c.CheckGroupSilence(test.G2))
+}

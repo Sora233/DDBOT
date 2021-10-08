@@ -12,6 +12,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/alecthomas/kong"
+	"io"
 	"strings"
 )
 
@@ -20,8 +21,9 @@ type Runtime struct {
 	l   *Lsp
 	*command.Parser
 
-	debug bool
-	exit  bool
+	debug   bool
+	exit    bool
+	silence bool
 }
 
 func (r *Runtime) Exit(int) {
@@ -42,7 +44,11 @@ func (r *Runtime) parseCommandSyntax(ast interface{}, name string, options ...ko
 		r.Exit(0)
 		return nil, ""
 	}
-	k.Stdout = cmdOut
+	if r.silence {
+		k.Stdout = io.Discard
+	} else {
+		k.Stdout = cmdOut
+	}
 	ctx, err := k.Parse(args)
 	if r.exit {
 		logger.WithField("content", args).Debug("exit")
@@ -51,7 +57,11 @@ func (r *Runtime) parseCommandSyntax(ast interface{}, name string, options ...ko
 	if err != nil {
 		logger.WithField("content", args).Errorf("kong parse failed %v", err)
 		r.Exit(0)
-		return nil, fmt.Sprintf("参数解析失败 - %v", err)
+		var out string
+		if !r.silence {
+			out = fmt.Sprintf("参数解析失败 - %v", err)
+		}
+		return nil, out
 	}
 	return ctx, ""
 }
@@ -115,11 +125,14 @@ func (r *Runtime) ParseRawSite(rawSite string) (string, error) {
 	return site, nil
 }
 
-func NewRuntime(bot *miraiBot.Bot, l *Lsp) *Runtime {
+func NewRuntime(bot *miraiBot.Bot, l *Lsp, silence ...bool) *Runtime {
 	r := &Runtime{
 		bot:    bot,
 		l:      l,
 		Parser: command.NewParser(),
+	}
+	if len(silence) > 0 {
+		r.silence = silence[0]
 	}
 	return r
 }

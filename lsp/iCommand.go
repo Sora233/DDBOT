@@ -345,6 +345,12 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 		return
 	}
 
+	if len(command) == 0 {
+		c.TextReply("失败 - 没有指定要操作的命令名")
+		log.Errorf("empty command")
+		return
+	}
+
 	command = CombineCommand(command)
 
 	if !CheckOperateableCommand(command) {
@@ -438,11 +444,7 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 	var err error
 	command = CombineCommand(command)
 	log := c.Log.WithField("command", command)
-	if !CheckOperateableCommand(command) {
-		log.Errorf("unknown command")
-		c.TextReply(fmt.Sprintf("失败 - 【%v】无效命令", command))
-		return
-	}
+
 	if !c.Lsp.PermissionStateManager.RequireAny(
 		permission.AdminRoleRequireOption(c.Sender.Uin),
 		permission.GroupAdminRoleRequireOption(groupCode, c.Sender.Uin),
@@ -451,6 +453,13 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 		c.NoPermissionReply()
 		return
 	}
+
+	if !CheckOperateableCommand(command) {
+		log.Errorf("unknown command")
+		c.TextReply(fmt.Sprintf("失败 - 【%v】无效命令", command))
+		return
+	}
+
 	if bot.Instance.FindGroup(groupCode).FindMember(grantTo) != nil {
 		if del {
 			err = c.Lsp.PermissionStateManager.UngrantPermission(groupCode, grantTo, command)
@@ -480,30 +489,80 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 	c.TextReply("成功")
 }
 
-func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, action string, QQ []int64) {
-	g := bot.Instance.FindGroup(groupCode)
-	if g == nil {
-		// 可能没找到吗
-		return
-	}
-	if action != "show" && action != "clear" && len(QQ) == 0 {
-		c.TextReply("失败 - 没有要操作的指定QQ号")
-		return
-	}
-	if action == "add" {
-		var failed []int64
-		for _, qq := range QQ {
-			member := g.FindMember(qq)
-			if member == nil {
-				failed = append(failed, qq)
-			}
-		}
-		if len(failed) != 0 {
-			c.TextReply(fmt.Sprintf("失败 - 没有找到QQ号：\n%v", utils.JoinInt64(failed, "\n")))
+func ISilenceCmd(c *MessageContext, groupCode int64, delete bool) {
+	var err error
+	if groupCode == 0 {
+		if !c.Lsp.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(c.Sender.Uin),
+		) {
+			c.NoPermissionReply()
 			return
 		}
+		if delete {
+			err = c.Lsp.PermissionStateManager.UndoGlobalSilence()
+		} else {
+			err = c.Lsp.PermissionStateManager.GlobalSilence()
+		}
+		if err == nil {
+			c.TextReply("成功")
+		} else {
+			c.TextReply(fmt.Sprintf("失败 - %v", err))
+		}
+		return
 	}
-	err := iConfigCmd(c, groupCode, id, site, ctype, operateAtConcernConfig(c, ctype, action, QQ))
+
+	if !c.Lsp.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.Sender.Uin),
+		permission.GroupAdminRoleRequireOption(groupCode, c.Sender.Uin),
+	) {
+		c.NoPermissionReply()
+		return
+	}
+
+	if c.Lsp.PermissionStateManager.CheckGlobalSilence() {
+		c.TextReply("失败 - 管理员已开启全局设置，无法操作")
+		return
+	}
+
+	if delete {
+		err = c.Lsp.PermissionStateManager.UndoGroupSilence(groupCode)
+	} else {
+		err = c.Lsp.PermissionStateManager.GroupSilence(groupCode)
+	}
+	if err == nil {
+		c.TextReply("成功")
+	} else {
+		c.TextReply(fmt.Sprintf("失败 - %v", err))
+	}
+}
+
+func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, action string, QQ []int64) {
+	err := configCmdGroupCommonCheck(c, groupCode)
+	if err == nil {
+		g := bot.Instance.FindGroup(groupCode)
+		if g == nil {
+			// 可能没找到吗
+			return
+		}
+		if action != "show" && action != "clear" && len(QQ) == 0 {
+			c.TextReply("失败 - 没有要操作的指定QQ号")
+			return
+		}
+		if action == "add" {
+			var failed []int64
+			for _, qq := range QQ {
+				member := g.FindMember(qq)
+				if member == nil {
+					failed = append(failed, qq)
+				}
+			}
+			if len(failed) != 0 {
+				c.TextReply(fmt.Sprintf("失败 - 没有找到QQ号：\n%v", utils.JoinInt64(failed, "\n")))
+				return
+			}
+		}
+		err = iConfigCmd(c, groupCode, id, site, ctype, operateAtConcernConfig(c, ctype, action, QQ))
+	}
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
 	}
@@ -553,25 +612,28 @@ func IConfigOfflineNotifyCmd(c *MessageContext, groupCode int64, id string, site
 }
 
 func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, types []string) {
-	if len(types) == 0 {
-		c.TextReply("失败 - 没有指定过滤类型")
-		return
+	err := configCmdGroupCommonCheck(c, groupCode)
+	if err == nil {
+		if len(types) == 0 {
+			c.TextReply("失败 - 没有指定过滤类型")
+			return
+		}
+		if ctype != concern.BilibiliNews {
+			c.TextReply("失败 - 暂不支持")
+			return
+		}
+		var invalid = bilibili.CheckTypeDefine(types)
+		if len(invalid) != 0 {
+			c.TextReply(fmt.Sprintf("失败 - 未定义的类型：\n%v", strings.Join(invalid, " ")))
+			return
+		}
+		err = iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
+			config.GroupConcernFilter.Type = concern_manager.FilterTypeType
+			filterConfig := &concern_manager.GroupConcernFilterConfigByType{Type: types}
+			config.GroupConcernFilter.Config = filterConfig.ToString()
+			return true
+		})
 	}
-	if ctype != concern.BilibiliNews {
-		c.TextReply("失败 - 暂不支持")
-		return
-	}
-	var invalid = bilibili.CheckTypeDefine(types)
-	if len(invalid) != 0 {
-		c.TextReply(fmt.Sprintf("失败 - 未定义的类型：\n%v", strings.Join(invalid, " ")))
-		return
-	}
-	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
-		config.GroupConcernFilter.Type = concern_manager.FilterTypeType
-		filterConfig := &concern_manager.GroupConcernFilterConfigByType{Type: types}
-		config.GroupConcernFilter.Config = filterConfig.ToString()
-		return true
-	})
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
 	}
@@ -583,26 +645,29 @@ func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site st
 }
 
 func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, types []string) {
-	if len(types) == 0 {
-		c.TextReply("失败 - 没有指定过滤类型")
-		return
-	}
-	if ctype != concern.BilibiliNews {
-		c.TextReply("失败 - 暂不支持")
-		return
-	}
-	var invalid = bilibili.CheckTypeDefine(types)
-	if len(invalid) != 0 {
-		c.TextReply(fmt.Sprintf("失败 - 未定义的类型：\n%v", strings.Join(invalid, " ")))
-		return
-	}
+	err := configCmdGroupCommonCheck(c, groupCode)
+	if err == nil {
+		if len(types) == 0 {
+			c.TextReply("失败 - 没有指定过滤类型")
+			return
+		}
+		if ctype != concern.BilibiliNews {
+			c.TextReply("失败 - 暂不支持")
+			return
+		}
+		var invalid = bilibili.CheckTypeDefine(types)
+		if len(invalid) != 0 {
+			c.TextReply(fmt.Sprintf("失败 - 未定义的类型：\n%v", strings.Join(invalid, " ")))
+			return
+		}
 
-	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
-		config.GroupConcernFilter.Type = concern_manager.FilterTypeNotType
-		filterConfig := &concern_manager.GroupConcernFilterConfigByType{Type: types}
-		config.GroupConcernFilter.Config = filterConfig.ToString()
-		return true
-	})
+		err = iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
+			config.GroupConcernFilter.Type = concern_manager.FilterTypeNotType
+			filterConfig := &concern_manager.GroupConcernFilterConfigByType{Type: types}
+			config.GroupConcernFilter.Config = filterConfig.ToString()
+			return true
+		})
+	}
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
 	}
@@ -614,16 +679,19 @@ func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site
 }
 
 func IConfigFilterCmdText(c *MessageContext, groupCode int64, id string, site string, ctype concern.Type, keywords []string) {
-	if len(keywords) == 0 {
-		c.TextReply("失败 - 没有指定过滤关键字")
-		return
+	err := configCmdGroupCommonCheck(c, groupCode)
+	if err == nil {
+		if len(keywords) == 0 {
+			c.TextReply("失败 - 没有指定过滤关键字")
+			return
+		}
+		err = iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
+			config.GroupConcernFilter.Type = concern_manager.FilterTypeText
+			filterConfig := &concern_manager.GroupConcernFilterConfigByText{Text: keywords}
+			config.GroupConcernFilter.Config = filterConfig.ToString()
+			return true
+		})
 	}
-	err := iConfigCmd(c, groupCode, id, site, ctype, func(config *concern_manager.GroupConcernConfig) bool {
-		config.GroupConcernFilter.Type = concern_manager.FilterTypeText
-		filterConfig := &concern_manager.GroupConcernFilterConfigByText{Text: keywords}
-		config.GroupConcernFilter.Config = filterConfig.ToString()
-		return true
-	})
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
 	}

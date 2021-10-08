@@ -247,6 +247,98 @@ func (c *StateManager) CheckGlobalCommandFunc(command string, f func(val string,
 	return result
 }
 
+func (c *StateManager) CheckGlobalSilence() bool {
+	var result bool
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
+		key := c.GlobalSilenceKey()
+		_, err := tx.Get(key)
+		if err != nil && err != buntdb.ErrNotFound {
+			return err
+		}
+		if err == nil {
+			result = true
+		}
+		return nil
+	})
+	if err != nil {
+		result = false
+	}
+	return result
+}
+
+func (c *StateManager) GlobalSilence() error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
+		key := c.GlobalSilenceKey()
+		_, _, err := tx.Set(key, "", nil)
+		return err
+	})
+}
+
+func (c *StateManager) UndoGlobalSilence() error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
+		key := c.GlobalSilenceKey()
+		_, err := tx.Delete(key)
+		if err == buntdb.ErrNotFound {
+			err = nil
+		}
+		return err
+	})
+}
+
+func (c *StateManager) CheckGroupSilence(groupCode int64) bool {
+	var result bool
+	var globalResult bool
+	err := c.RCover(func() error {
+		globalResult = c.CheckGlobalSilence()
+		err := c.RCoverTx(func(tx *buntdb.Tx) error {
+			key := c.GroupSilenceKey(groupCode)
+			_, err := tx.Get(key)
+			if err != nil && err != buntdb.ErrNotFound {
+				return err
+			}
+			if err == nil {
+				result = true
+			}
+			return nil
+		})
+		if err != nil {
+			result = false
+		}
+		return nil
+	})
+	if err != nil {
+		return false
+	}
+	result = globalResult || result
+	logger.WithFields(localutils.GroupLogFields(groupCode)).Tracef("CheckGroupSilence result %v", result)
+	return result
+}
+
+func (c *StateManager) GroupSilence(groupCode int64) error {
+	if c.CheckGlobalSilence() {
+		return ErrGlobalSilenced
+	}
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
+		key := c.GroupSilenceKey(groupCode)
+		_, _, err := tx.Set(key, "", nil)
+		return err
+	})
+}
+
+func (c *StateManager) UndoGroupSilence(groupCode int64) error {
+	if c.CheckGlobalSilence() {
+		return ErrGlobalSilenced
+	}
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
+		key := c.GroupSilenceKey(groupCode)
+		_, err := tx.Delete(key)
+		if err == buntdb.ErrNotFound {
+			err = nil
+		}
+		return err
+	})
+}
+
 func (c *StateManager) CheckGroupAdministrator(groupCode int64, caller int64) bool {
 	log := logger.WithFields(logrus.Fields{
 		"GroupCode": groupCode,

@@ -37,7 +37,7 @@ type LspGroupCommand struct {
 
 func NewLspGroupCommand(bot *miraiBot.Bot, l *Lsp, msg *message.GroupMessage) *LspGroupCommand {
 	c := &LspGroupCommand{
-		Runtime: NewRuntime(bot, l),
+		Runtime: NewRuntime(bot, l, l.PermissionStateManager.CheckGroupSilence(msg.GroupCode)),
 		msg:     msg,
 	}
 	c.Parse(msg.Elements)
@@ -146,6 +146,8 @@ func (lgc *LspGroupCommand) Execute() {
 		lgc.EnableCommand(false)
 	case "/disable":
 		lgc.EnableCommand(true)
+	case "/silence":
+		lgc.SilenceCommand()
 	case "/face":
 		if lgc.requireNotDisable(FaceCommand) {
 			lgc.FaceCommand()
@@ -607,12 +609,6 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 		return
 	}
 
-	if len(enableCmd.Command) == 0 {
-		lgc.textReply("失败 - 没有指定要操作的命令名")
-		log.Errorf("empty command")
-		return
-	}
-
 	log = log.WithField("targetCommand", enableCmd.Command)
 
 	IEnable(lgc.NewMessageContext(log), groupCode, enableCmd.Command, disable)
@@ -652,6 +648,26 @@ func (lgc *LspGroupCommand) GrantCommand() {
 	} else if grantCmd.Role != "" {
 		IGrantRole(lgc.NewMessageContext(log), lgc.groupCode(), permission.NewRoleFromString(grantCmd.Role), grantTo, del)
 	}
+}
+
+func (lgc *LspGroupCommand) SilenceCommand() {
+	log := lgc.DefaultLoggerWithCommand(SilenceCommand)
+	log.Info("run silence command")
+	defer func() { log.Info("silence command end") }()
+
+	var silenceCmd struct {
+		Delete bool `optional:"" short:"d" help:"取消设置"`
+	}
+
+	_, output := lgc.parseCommandSyntax(&silenceCmd, SilenceCommand, kong.Description("设置沉默模式"), kong.UsageOnError())
+	if output != "" {
+		lgc.textReply(output)
+	}
+	if lgc.exit {
+		return
+	}
+
+	ISilenceCmd(lgc.NewMessageContext(log), lgc.groupCode(), silenceCmd.Delete)
 }
 
 func (lgc *LspGroupCommand) ConfigCommand() {
@@ -1133,7 +1149,11 @@ func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 		return lgc.reply(sendingMessage)
 	}
 	ctx.NoPermissionReply = func() interface{} {
-		return lgc.noPermissionReply()
+		ctx.Log.Debugf("no permission")
+		if !lgc.l.PermissionStateManager.CheckGroupSilence(lgc.groupCode()) {
+			return lgc.noPermissionReply()
+		}
+		return nil
 	}
 	ctx.DisabledReply = func() interface{} {
 		ctx.Log.Debugf("disabled")
@@ -1141,7 +1161,10 @@ func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	}
 	ctx.GlobalDisabledReply = func() interface{} {
 		ctx.Log.Debugf("global disabled")
-		return lgc.globalDisabledReply()
+		if !lgc.l.PermissionStateManager.CheckGroupSilence(lgc.groupCode()) {
+			return lgc.globalDisabledReply()
+		}
+		return nil
 	}
 	ctx.Sender = lgc.sender()
 	return ctx

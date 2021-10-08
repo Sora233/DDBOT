@@ -8,6 +8,7 @@ var (
 	ErrPermissionDenied   = errors.New("permission denied")
 	ErrDisabled           = errors.New("disabled")
 	ErrGlobalDisabled     = errors.New("global disabled")
+	ErrGlobalSilenced     = errors.New("global silenced")
 )
 
 func IsPermissionError(err error) bool {

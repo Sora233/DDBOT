@@ -104,6 +104,8 @@ func (c *LspPrivateCommand) Execute() {
 		c.FriendRequestCommand()
 	case "/admin":
 		c.AdminCommand()
+	case "/silence":
+		c.SilenceCommand()
 	default:
 		c.textReply("阁下似乎输入了一个无法识别的命令，请使用/help命令查看帮助。")
 		log.Debug("no command matched")
@@ -1049,6 +1051,34 @@ func (c *LspPrivateCommand) AdminCommand() {
 	}
 	msg.Append(message.NewText(sb.String()))
 	c.send(msg)
+}
+
+func (c *LspPrivateCommand) SilenceCommand() {
+	log := c.DefaultLoggerWithCommand(SilenceCommand)
+	log.Info("run silence command")
+	defer func() { log.Info("silence command end") }()
+
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
+	var silenceCmd struct {
+		Group  int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Delete bool  `optional:"" short:"d" help:"取消设置"`
+	}
+
+	_, output := c.parseCommandSyntax(&silenceCmd, SilenceCommand, kong.Description("设置沉默模式"), kong.UsageOnError())
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	ISilenceCmd(c.NewMessageContext(log), silenceCmd.Group, silenceCmd.Delete)
 }
 
 func (c *LspPrivateCommand) PingCommand() {

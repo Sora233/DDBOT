@@ -151,6 +151,12 @@ func GlobalEnabledKey(keys ...interface{}) string {
 func GroupMessageImageKey(keys ...interface{}) string {
 	return NamedKey("GroupMessageImage", keys)
 }
+func GroupSilenceKey(keys ...interface{}) string {
+	return NamedKey("GroupSilence", keys)
+}
+func GlobalSilenceKey(keys ...interface{}) string {
+	return NamedKey("GlobalSilence", keys)
+}
 func GroupMuteKey(keys ...interface{}) string {
 	return NamedKey("GroupMute", keys)
 }
