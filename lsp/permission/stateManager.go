@@ -309,9 +309,7 @@ func (c *StateManager) CheckGroupSilence(groupCode int64) bool {
 	if err != nil {
 		return false
 	}
-	result = globalResult || result
-	logger.WithFields(localutils.GroupLogFields(groupCode)).Tracef("CheckGroupSilence result %v", result)
-	return result
+	return globalResult || result
 }
 
 func (c *StateManager) GroupSilence(groupCode int64) error {
