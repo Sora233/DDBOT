@@ -146,13 +146,17 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 	if err != nil {
 		log.Errorf("GetConcern error %v", err)
 	} else if oldCtype.Empty() {
-		resp, err := c.ModifyUserRelation(mid, ActSub)
+		var actType = ActSub
+		if config.GlobalConfig.GetBool("bilibili.hiddenSub") {
+			actType = ActHiddenSub
+		}
+		resp, err := c.ModifyUserRelation(mid, actType)
 		if err != nil {
 			if err == ErrVerifyRequired {
 				log.Errorf("ModifyUserRelation error %v", err)
 				return nil, fmt.Errorf("关注用户失败 - 未配置B站")
 			} else {
-				log.WithField("action", ActSub).Errorf("ModifyUserRelation error %v", err)
+				log.WithField("action", actType).Errorf("ModifyUserRelation error %v", err)
 				return nil, fmt.Errorf("关注用户失败 - 内部错误")
 			}
 		}
@@ -177,11 +181,9 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 
 func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concern.Type, error) {
 	var newCtype concern.Type
+	var allCtype concern.Type
 	err := c.StateManager.RWCoverTx(func(tx *buntdb.Tx) error {
-		var (
-			err      error
-			allCtype concern.Type
-		)
+		var err error
 		newCtype, err = c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
 		if err != nil {
 			return err
@@ -206,6 +208,16 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 		}
 		return nil
 	})
+	if config.GlobalConfig.GetBool("bilibili.unsub") && allCtype.Empty() {
+		resp, err := c.ModifyUserRelation(mid, ActUnsub)
+		if err != nil {
+			logger.Errorf("取消关注失败 - %v", err)
+		} else if resp.GetCode() != 0 {
+			logger.Errorf("取消关注失败 - %v - %v", resp.GetCode(), resp.GetMessage())
+		} else {
+			logger.WithField("mid", mid).Info("取消关注成功")
+		}
+	}
 	return newCtype, err
 }
 
@@ -621,9 +633,15 @@ func (c *Concern) SyncSub() {
 	for _, attentionMid := range resp.GetData().GetList() {
 		attentionMidSet[attentionMid] = true
 	}
+
+	var actType = ActSub
+	if config.GlobalConfig.GetBool("bilibili.hiddenSub") {
+		actType = ActHiddenSub
+	}
+
 	for mid := range midSet {
 		if _, found := attentionMidSet[mid]; !found {
-			resp, err := c.ModifyUserRelation(mid, ActSub)
+			resp, err := c.ModifyUserRelation(mid, actType)
 			if err == nil && resp.Code == 22002 {
 				// 可能是被拉黑了
 				logger.WithField("ModifyUserRelation Code", 22002).
