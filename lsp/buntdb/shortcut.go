@@ -193,8 +193,9 @@ func ExpireOption(duration time.Duration) *buntdb.SetOptions {
 }
 
 // RemoveByPrefixAndIndex 遍历每个index，如果一个key满足任意prefix，则删掉
-func RemoveByPrefixAndIndex(prefixKey []string, indexKey []string) error {
-	return RWCoverTx(func(tx *buntdb.Tx) error {
+func RemoveByPrefixAndIndex(prefixKey []string, indexKey []string) ([]string, error) {
+	var deletedKey []string
+	err := RWCoverTx(func(tx *buntdb.Tx) error {
 		var removeKey = make(map[string]interface{})
 		var iterErr error
 		for _, index := range indexKey {
@@ -212,8 +213,12 @@ func RemoveByPrefixAndIndex(prefixKey []string, indexKey []string) error {
 			}
 		}
 		for key := range removeKey {
-			tx.Delete(key)
+			_, err := tx.Delete(key)
+			if err == nil {
+				deletedKey = append(deletedKey, key)
+			}
 		}
 		return nil
 	})
+	return deletedKey, err
 }

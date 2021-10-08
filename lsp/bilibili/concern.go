@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -210,14 +211,7 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 	})
 	if config.GlobalConfig != nil {
 		if config.GlobalConfig.GetBool("bilibili.unsub") && allCtype.Empty() {
-			resp, err := c.ModifyUserRelation(mid, ActUnsub)
-			if err != nil {
-				logger.Errorf("取消关注失败 - %v", err)
-			} else if resp.GetCode() != 0 {
-				logger.Errorf("取消关注失败 - %v - %v", resp.GetCode(), resp.GetMessage())
-			} else {
-				logger.WithField("mid", mid).Info("取消关注成功")
-			}
+			c.unsubUser(mid)
 		}
 	}
 	return newCtype, err
@@ -728,5 +722,48 @@ func (c *Concern) GroupWatchNotify(groupCode, mid int64) {
 	if liveInfo.Living() {
 		liveInfo.LiveStatusChanged = true
 		c.notify <- NewConcernLiveNotify(groupCode, liveInfo)
+	}
+}
+
+func (c *Concern) RemoveAllByGroupCode(groupCode int64) ([]string, error) {
+	keys, err := c.StateManager.RemoveAllByGroupCode(groupCode)
+	if config.GlobalConfig != nil && config.GlobalConfig.GetBool("bilibili.unsub") {
+		var changedIdSet = make(map[int64]interface{})
+		if err == nil {
+			for _, key := range keys {
+				if !strings.HasPrefix(key, c.GroupConcernStateKey()) {
+					continue
+				}
+				_, id, err := c.ParseGroupConcernStateKey(key)
+				if err != nil {
+					continue
+				}
+				changedIdSet[id.(int64)] = true
+			}
+		}
+		go func() {
+			for id := range changedIdSet {
+				ctype, err := c.ListById(id)
+				if err != nil {
+					continue
+				}
+				if ctype.Empty() {
+					c.unsubUser(id)
+					time.Sleep(time.Second * 3)
+				}
+			}
+		}()
+	}
+	return keys, err
+}
+
+func (c *Concern) unsubUser(mid int64) {
+	resp, err := c.ModifyUserRelation(mid, ActUnsub)
+	if err != nil {
+		logger.Errorf("取消关注失败 - %v", err)
+	} else if resp.GetCode() != 0 {
+		logger.Errorf("取消关注失败 - %v - %v", resp.GetCode(), resp.GetMessage())
+	} else {
+		logger.WithField("mid", mid).Info("取消关注成功")
 	}
 }

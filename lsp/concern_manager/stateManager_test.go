@@ -244,7 +244,7 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.Nil(t, err)
 	assert.EqualValues(t, 0, ctype)
 
-	err = sm.RemoveAllByGroupCode(test.G2)
+	_, err = sm.RemoveAllByGroupCode(test.G2)
 	assert.Nil(t, err)
 	ctype, err = sm.GetGroupConcern(test.G1, test.UID2)
 	assert.Nil(t, err)

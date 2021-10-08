@@ -542,7 +542,7 @@ func (c *StateManager) RequireAny(option ...RequireOption) bool {
 	return false
 }
 
-func (c *StateManager) RemoveAllByGroupCode(groupCode int64) error {
+func (c *StateManager) RemoveAllByGroupCode(groupCode int64) ([]string, error) {
 	var indexKey = []string{
 		c.GroupPermissionKey(),
 		c.PermissionKey(),

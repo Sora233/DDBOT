@@ -156,7 +156,7 @@ func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype
 	return
 }
 
-func (c *StateManager) RemoveAllByGroupCode(groupCode int64) (err error) {
+func (c *StateManager) RemoveAllByGroupCode(groupCode int64) (keys []string, err error) {
 	var indexKey = []string{
 		c.GroupConcernStateKey(),
 		c.GroupConcernConfigKey(),
