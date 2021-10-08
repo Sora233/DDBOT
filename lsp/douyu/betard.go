@@ -2,7 +2,6 @@ package douyu
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
@@ -36,10 +35,10 @@ func Betard(id int64) (*BetardResponse, error) {
 	err = json.Unmarshal(content, betardResp)
 	if err != nil {
 		if strings.Contains(string(content), "没有开放") {
-			return nil, errors.New("房间不存在")
+			return nil, ErrRoomNotExist
 		}
-		if resp.Proxy != "" {
-			proxy_pool.Delete(resp.Proxy)
+		if strings.Contains(string(content), "已被关闭") {
+			return nil, ErrRoomBanned
 		}
 		return nil, err
 	}
