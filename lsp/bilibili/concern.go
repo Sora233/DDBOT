@@ -172,7 +172,7 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 		return nil, fmt.Errorf("关注用户失败 - 内部错误")
 	}
 	err = c.StateManager.SetUidFirstTimestampIfNotExist(mid, time.Now().Add(-time.Second*30).Unix())
-	if err != nil {
+	if err != nil && !localdb.IsRollback(err) {
 		log.Errorf("SetUidFirstTimestampIfNotExist failed %v", err)
 	}
 

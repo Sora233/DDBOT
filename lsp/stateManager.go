@@ -156,11 +156,12 @@ func (s *StateManager) PopGroupInvitor(groupCode int64) (target int64, err error
 }
 
 func (s *StateManager) FreshIndex() {
-	db := localdb.MustGetClient()
-	db.CreateIndex(s.GroupMessageImageKey(), s.GroupMessageImageKey("*"), buntdb.IndexString)
-	db.CreateIndex(s.GroupMuteKey(), s.GroupMuteKey("*"), buntdb.IndexString)
-	db.CreateIndex(s.NewFriendRequestKey(), s.NewFriendRequestKey("*"), buntdb.IndexString)
-	db.CreateIndex(s.GroupInvitedKey(), s.GroupInvitedKey("*"), buntdb.IndexString)
+	for _, pattern := range []localdb.KeyPatternFunc{
+		s.GroupMessageImageKey, s.GroupMuteKey,
+		s.NewFriendRequestKey, s.GroupInvitedKey,
+	} {
+		s.CreatePatternIndex(pattern, nil)
+	}
 }
 
 type Mode string

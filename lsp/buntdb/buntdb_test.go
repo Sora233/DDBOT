@@ -158,40 +158,48 @@ func TestNestedCover(t *testing.T) {
 	}
 
 	var val string
-
-	err = RWCoverTx(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set("d", "e", nil)
-		if err != nil {
-			return err
-		}
-		err = setBfn()
-		if err != nil {
-			return err
-		}
-		err = setAfn()
-		if err != nil {
-			return err
-		}
-		val, err = readBfn()
-		if err != nil {
-			return err
-		}
-		return nil
+	err = RWCover(func() error {
+		return RWCover(func() error {
+			return RWCoverTx(func(tx *buntdb.Tx) error {
+				return RWCoverTx(func(tx *buntdb.Tx) error {
+					_, _, err := tx.Set("d", "e", nil)
+					if err != nil {
+						return err
+					}
+					err = setBfn()
+					if err != nil {
+						return err
+					}
+					err = setAfn()
+					if err != nil {
+						return err
+					}
+					val, err = readBfn()
+					if err != nil {
+						return err
+					}
+					return nil
+				})
+			})
+		})
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, "c", val)
-
-	err = RCoverTx(func(tx *buntdb.Tx) error {
-		val, err := tx.Get("a")
-		assert.Nil(t, err)
-		assert.Equal(t, "b", val)
-		val, err = tx.Get("b")
-		assert.Nil(t, err)
-		assert.Equal(t, "c", val)
-		val, err = tx.Get("d")
-		assert.Nil(t, err)
-		assert.Equal(t, "e", val)
-		return nil
+	err = RCover(func() error {
+		return RCover(func() error {
+			return RCoverTx(func(tx *buntdb.Tx) error {
+				val, err := tx.Get("a")
+				assert.Nil(t, err)
+				assert.Equal(t, "b", val)
+				val, err = tx.Get("b")
+				assert.Nil(t, err)
+				assert.Equal(t, "c", val)
+				val, err = tx.Get("d")
+				assert.Nil(t, err)
+				assert.Equal(t, "e", val)
+				return nil
+			})
+		})
 	})
 
 	err = RCoverTx(func(tx *buntdb.Tx) error {
@@ -389,4 +397,96 @@ func TestJsonGet(t *testing.T) {
 		return JsonSave(keys[0], expected[0])
 	})
 	assert.NotNil(t, err)
+}
+
+func TestRemoveByPrefixAndIndex(t *testing.T) {
+	var err error
+	err = InitBuntDB(MEMORYDB)
+	assert.Nil(t, err)
+	defer Close()
+
+	err = RWCoverTx(func(tx *buntdb.Tx) error {
+		_, _, err := tx.Set(BilibiliGroupConcernStateKey("1"), "", nil)
+		assert.Nil(t, err)
+		_, _, err = tx.Set(BilibiliGroupConcernStateKey("2"), "", nil)
+		assert.Nil(t, err)
+		_, _, err = tx.Set(BilibiliGroupConcernStateKey("3"), "", nil)
+		assert.Nil(t, err)
+		_, _, err = tx.Set(DouyuGroupConcernStateKey("4"), "", nil)
+		assert.Nil(t, err)
+		_, _, err = tx.Set(HuyaGroupConcernStateKey("5"), "", nil)
+		assert.Nil(t, err)
+		createIndex := func(patternFunc KeyPatternFunc) {
+			assert.Nil(t, tx.CreateIndex(patternFunc(), patternFunc("*"), buntdb.IndexString))
+		}
+		for _, pattern := range []KeyPatternFunc{BilibiliGroupConcernStateKey, DouyuGroupConcernStateKey, HuyaGroupConcernStateKey} {
+			createIndex(pattern)
+		}
+		return nil
+	})
+	assert.Nil(t, err)
+	deletedKeys, err := RemoveByPrefixAndIndex([]string{BilibiliGroupConcernStateKey(), DouyuGroupConcernStateKey()}, []string{BilibiliGroupConcernStateKey(), DouyuGroupConcernStateKey()})
+	assert.Nil(t, err)
+	assert.Len(t, deletedKeys, 4)
+	err = RCoverTx(func(tx *buntdb.Tx) error {
+		assertNotExist := func(key string) {
+			_, err := tx.Get(key)
+			assert.Equal(t, buntdb.ErrNotFound, err)
+		}
+		assertNotExist(BilibiliGroupConcernStateKey("1"))
+		assertNotExist(BilibiliGroupConcernStateKey("2"))
+		assertNotExist(BilibiliGroupConcernStateKey("3"))
+		assertNotExist(DouyuGroupConcernStateKey("4"))
+		_, err := tx.Get(HuyaGroupConcernStateKey("5"))
+		assert.Nil(t, err)
+		return nil
+	})
+	assert.Nil(t, err)
+}
+
+func TestSetIfNotExist(t *testing.T) {
+	var err error
+	err = InitBuntDB(MEMORYDB)
+	assert.Nil(t, err)
+	defer Close()
+
+	const (
+		key1 = "key1"
+		key2 = "key2"
+	)
+
+	assert.Nil(t, SetIfNotExist(key1, "1"))
+	assert.True(t, IsRollback(SetIfNotExist(key1, "2")))
+	assert.Nil(t, SetIfNotExist(key2, "1", ExpireOption(time.Hour)))
+}
+
+func TestCreatePatternIndex(t *testing.T) {
+	var err error
+	err = InitBuntDB(MEMORYDB)
+	assert.Nil(t, err)
+	defer Close()
+
+	assert.Nil(t, CreatePatternIndex(BilibiliGroupConcernStateKey, nil))
+	err = RCoverTx(func(tx *buntdb.Tx) error {
+		indexes, err := tx.Indexes()
+		assert.Nil(t, err)
+		assert.Len(t, indexes, 1)
+		assert.Contains(t, indexes, BilibiliGroupConcernStateKey())
+		return nil
+	})
+	assert.Nil(t, err)
+
+	var suffix = []interface{}{"a", "1"}
+
+	assert.Nil(t, CreatePatternIndex(BilibiliGroupConcernStateKey, suffix, buntdb.IndexBinary))
+	err = RCoverTx(func(tx *buntdb.Tx) error {
+		indexes, err := tx.Indexes()
+		assert.Nil(t, err)
+		assert.Len(t, indexes, 2)
+		assert.Contains(t, indexes, BilibiliGroupConcernStateKey(suffix...))
+		return nil
+	})
+	assert.Nil(t, err)
+
+	assert.EqualValues(t, []interface{}{"a", "1"}, suffix)
 }

@@ -352,14 +352,11 @@ func (c *StateManager) FreshCheck(id interface{}, setTTL bool) (result bool, err
 }
 
 func (c *StateManager) FreshIndex(groups ...int64) {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return
+	for _, pattern := range []localdb.KeyPatternFunc{
+		c.GroupConcernStateKey, c.GroupConcernConfigKey,
+		c.GroupAtAllMarkKey, c.FreshKey} {
+		c.CreatePatternIndex(pattern, nil)
 	}
-	db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.GroupConcernConfigKey(), c.GroupConcernConfigKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.GroupAtAllMarkKey(), c.GroupAtAllMarkKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
 	var groupSet = make(map[int64]interface{})
 	if len(groups) == 0 {
 		for _, groupInfo := range miraiBot.Instance.GroupList {
@@ -375,10 +372,11 @@ func (c *StateManager) FreshIndex(groups ...int64) {
 		return true
 	})
 	for g := range groupSet {
-		db.CreateIndex(c.GroupConcernStateKey(g), c.GroupConcernStateKey(g, "*"), buntdb.IndexString)
-		db.CreateIndex(c.GroupConcernConfigKey(g), c.GroupConcernConfigKey(g, "*"), buntdb.IndexString)
-		db.CreateIndex(c.GroupAtAllMarkKey(g), c.GroupAtAllMarkKey(g, "*"), buntdb.IndexString)
-		db.CreateIndex(c.FreshKey(g), c.FreshKey(g, "*"), buntdb.IndexString)
+		for _, pattern := range []localdb.KeyPatternFunc{
+			c.GroupConcernStateKey, c.GroupConcernConfigKey,
+			c.GroupAtAllMarkKey, c.FreshKey} {
+			c.CreatePatternIndex(pattern, []interface{}{g})
+		}
 	}
 }
 

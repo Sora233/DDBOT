@@ -149,6 +149,37 @@ func (s *ShortCut) SeqClear(key string) error {
 	return err
 }
 
+// SetIfNotExist 使用opt设置key value，如果key已经存在，则回滚并返回 ErrRollback
+func (s *ShortCut) SetIfNotExist(key, value string, opt ...*buntdb.SetOptions) error {
+	return s.RWCoverTx(func(tx *buntdb.Tx) error {
+		var (
+			replaced bool
+			err      error
+		)
+		if len(opt) == 0 {
+			_, replaced, err = tx.Set(key, value, nil)
+		} else {
+			_, replaced, err = tx.Set(key, value, opt[0])
+		}
+		if err != nil {
+			return err
+		}
+		if replaced {
+			return ErrRollback
+		}
+		return nil
+	})
+}
+
+func (s *ShortCut) CreatePatternIndex(patternFunc KeyPatternFunc, suffix []interface{}, less ...func(a, b string) bool) error {
+	return s.RWCoverTx(func(tx *buntdb.Tx) error {
+		if len(less) == 0 {
+			return tx.CreateIndex(patternFunc(suffix...), patternFunc(append(suffix[:], "*")...), buntdb.IndexString)
+		}
+		return tx.CreateIndex(patternFunc(suffix...), patternFunc(append(suffix[:], "*")...), less...)
+	})
+}
+
 func RWCoverTx(f func(tx *buntdb.Tx) error) error {
 	return shortCut.RWCoverTx(f)
 }
@@ -179,6 +210,10 @@ func SeqNext(key string) (int64, error) {
 
 func SeqClear(key string) error {
 	return shortCut.SeqClear(key)
+}
+
+func SetIfNotExist(key, value string, opt ...*buntdb.SetOptions) error {
+	return shortCut.SetIfNotExist(key, value, opt...)
 }
 
 // ExpireOption 是一个创建expire的函数糖
@@ -221,4 +256,8 @@ func RemoveByPrefixAndIndex(prefixKey []string, indexKey []string) ([]string, er
 		return nil
 	})
 	return deletedKey, err
+}
+
+func CreatePatternIndex(patternFunc KeyPatternFunc, suffix []interface{}, less ...func(a, b string) bool) error {
+	return shortCut.CreatePatternIndex(patternFunc, suffix, less...)
 }

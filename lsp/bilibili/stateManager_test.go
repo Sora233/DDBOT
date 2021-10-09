@@ -192,7 +192,7 @@ func TestStateManager_SetUidFirstTimestampIfNotExist(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, test.TIMESTAMP1, ts1)
 
-	assert.Nil(t, c.SetUidFirstTimestampIfNotExist(test.UID1, test.TIMESTAMP2))
+	assert.True(t, localdb.IsRollback(c.SetUidFirstTimestampIfNotExist(test.UID1, test.TIMESTAMP2)))
 	ts1, err = c.GetUidFirstTimestamp(test.UID1)
 	assert.Nil(t, err)
 	assert.Equal(t, test.TIMESTAMP1, ts1)
@@ -316,4 +316,14 @@ func TestStateManager_SetGroupVideoOriginMarkIfNotExist(t *testing.T) {
 
 	assert.Nil(t, c.SetGroupVideoOriginMarkIfNotExist(test.G1, test.BVID1))
 	assert.NotNil(t, c.SetGroupVideoOriginMarkIfNotExist(test.G1, test.BVID1))
+}
+
+func TestStateManager_SetGroupOriginMarkIfNotExist(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	c := initStateManager(t)
+
+	assert.Nil(t, c.SetGroupOriginMarkIfNotExist(test.G1, test.BVID1))
+	assert.NotNil(t, c.SetGroupOriginMarkIfNotExist(test.G1, test.BVID1))
 }

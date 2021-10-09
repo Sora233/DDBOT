@@ -1,10 +1,8 @@
 package permission
 
 import (
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/test"
 	"github.com/stretchr/testify/assert"
-	"github.com/tidwall/buntdb"
 	"testing"
 	"time"
 )
@@ -192,9 +190,8 @@ func TestStateManager_RemoveAllByGroup(t *testing.T) {
 	defer test.CloseBuntdb(t)
 	c := initStateManager(t)
 
-	db := localdb.MustGetClient()
-	db.CreateIndex(c.GroupPermissionKey(test.G1), c.GroupPermissionKey(test.G1, "*"), buntdb.IndexString)
-	db.CreateIndex(c.GroupPermissionKey(test.G2), c.GroupPermissionKey(test.G2, "*"), buntdb.IndexString)
+	c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{test.G1})
+	c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{test.G2})
 
 	assert.Nil(t, c.GrantGroupRole(test.G1, test.UID1, GroupAdmin))
 	assert.Nil(t, c.GrantGroupRole(test.G2, test.UID1, GroupAdmin))

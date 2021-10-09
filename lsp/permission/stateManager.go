@@ -557,13 +557,12 @@ func (c *StateManager) RemoveAllByGroupCode(groupCode int64) ([]string, error) {
 }
 
 func (c *StateManager) FreshIndex() {
-	db := localdb.MustGetClient()
-	db.CreateIndex(c.PermissionKey(), c.PermissionKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.GroupPermissionKey(), c.GroupPermissionKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.GroupEnabledKey(), c.GroupPermissionKey("*"), buntdb.IndexString)
+	for _, pattern := range []localdb.KeyPatternFunc{c.PermissionKey, c.GroupPermissionKey, c.GroupEnabledKey} {
+		c.CreatePatternIndex(pattern, nil)
+	}
 	if bot.Instance != nil {
 		for _, group := range bot.Instance.GroupList {
-			db.CreateIndex(c.GroupPermissionKey(group.Code), c.GroupPermissionKey(group.Code, "*"), buntdb.IndexString)
+			c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{group.Code})
 		}
 	}
 }

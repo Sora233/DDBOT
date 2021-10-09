@@ -26,11 +26,13 @@ func TestFromString(t *testing.T) {
 	var testCase = []string{
 		"Admin",
 		"GroupAdmin",
+		"User",
 		"",
 	}
 	var expected = []RoleType{
 		Admin,
 		GroupAdmin,
+		User,
 		Unknown,
 	}
 	assert.Equal(t, len(expected), len(testCase))

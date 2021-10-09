@@ -20,34 +20,21 @@ func (s *StateManager) AddInfo(info *Info) error {
 	})
 }
 
-func (s *StateManager) GetInfo(channelId string) (info *Info, err error) {
-	err = s.RCoverTx(func(tx *buntdb.Tx) error {
-		infoKey := s.InfoKey(channelId)
-		val, err := tx.Get(infoKey)
-		if err != nil {
-			return err
-		}
-		info = new(Info)
-		return json.Unmarshal([]byte(val), info)
-	})
+func (s *StateManager) GetInfo(channelId string) (*Info, error) {
+	info := new(Info)
+	err := s.JsonGet(s.InfoKey(channelId), info)
 	if err != nil {
+		logger.Errorf("JsonGet info failed")
 		return nil, err
 	}
-	return
+	return info, nil
 }
 
 func (s *StateManager) GetVideo(channelId string, videoId string) (*VideoInfo, error) {
 	var v = new(VideoInfo)
-	err := s.RCoverTx(func(tx *buntdb.Tx) error {
-		key := s.VideoKey(channelId, videoId)
-		val, err := tx.Get(key)
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal([]byte(val), v)
-		return err
-	})
+	err := s.JsonGet(s.VideoKey(channelId, videoId), v)
 	if err != nil {
+		logger.Errorf("JsonGet video info failed")
 		return nil, err
 	}
 	return v, nil
@@ -66,11 +53,8 @@ func (s *StateManager) AddVideo(v *VideoInfo) error {
 }
 
 func (s *StateManager) Start() error {
-	db, err := localdb.GetClient()
-	if err == nil {
-		db.CreateIndex(s.GroupConcernStateKey(), s.GroupConcernStateKey("*"), buntdb.IndexString)
-		db.CreateIndex(s.FreshKey(), s.FreshKey("*"), buntdb.IndexString)
-		db.CreateIndex(s.UserInfoKey(), s.UserInfoKey("*"), buntdb.IndexString)
+	for _, pattern := range []localdb.KeyPatternFunc{s.GroupConcernStateKey, s.UserInfoKey, s.FreshKey} {
+		s.CreatePatternIndex(pattern, nil)
 	}
 	return s.StateManager.Start()
 }
