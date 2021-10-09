@@ -9,6 +9,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/msg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/sirupsen/logrus"
 	"reflect"
 	"runtime"
 	"sync"
@@ -77,6 +78,13 @@ func (c *Concern) Start() error {
 		if ctype.ContainAll(Live) {
 			oldInfo, _ := c.FindRoom(roomid, false)
 			liveInfo, err := c.FindRoom(roomid, true)
+			if err == ErrRoomNotExist || err == ErrRoomBanned {
+				logger.WithFields(logrus.Fields{
+					"RoomId":   roomid,
+					"RoomName": oldInfo.GetName(),
+				}).Debugf("直播间不存在或被封禁")
+				return nil
+			}
 			if err != nil {
 				return fmt.Errorf("load liveinfo failed %v", err)
 			}

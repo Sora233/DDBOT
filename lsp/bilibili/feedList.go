@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	PathRelationFeedList = "/relation/v1/feed/feed_list"
+	PathRelationFeedList = "/xlive/web-ucenter/v1/xfetter/FeedList"
 )
 
 type RelationFeedRequest struct {

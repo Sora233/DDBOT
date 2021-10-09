@@ -38,6 +38,9 @@ func Betard(id int64) (*BetardResponse, error) {
 		if strings.Contains(body.String(), "没有开放") {
 			return nil, errors.New("房间不存在")
 		}
+		if strings.Contains(body.String(), "已被关闭") {
+			return nil, ErrRoomBanned
+		}
 		return nil, err
 	}
 	return betardResp, nil

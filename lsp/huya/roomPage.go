@@ -31,7 +31,10 @@ func RoomPage(roomId string) (*LiveInfo, error) {
 		return nil, err
 	}
 	if strings.Contains(body.String(), "找不到这个主播") {
-		return nil, errors.New("房间不存在")
+		return nil, ErrRoomNotExist
+	}
+	if strings.Contains(body.String(), "涉嫌违规") {
+		return nil, ErrRoomBanned
 	}
 	ri := new(LiveInfo)
 	ri.RoomId = roomId

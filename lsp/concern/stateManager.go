@@ -34,7 +34,7 @@ type IStateManager interface {
 
 	AddGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error)
 	RemoveGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error)
-	RemoveAllByGroupCode(groupCode int64) (err error)
+	RemoveAllByGroupCode(groupCode int64) (keys []string, err error)
 	RemoveAllById(_id interface{}) (err error)
 
 	List(filter func(groupCode int64, id interface{}, p concern_type.Type) bool) (idGroups []int64, ids []interface{}, idTypes []concern_type.Type, err error)
@@ -183,7 +183,7 @@ func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype
 	return
 }
 
-func (c *StateManager) RemoveAllByGroupCode(groupCode int64) (err error) {
+func (c *StateManager) RemoveAllByGroupCode(groupCode int64) (keys []string, err error) {
 	var indexKey = []string{
 		c.GroupConcernStateKey(),
 		c.GroupConcernConfigKey(),
@@ -323,14 +323,11 @@ func (c *StateManager) CheckFresh(id interface{}, setTTL bool) (result bool, err
 }
 
 func (c *StateManager) FreshIndex(groups ...int64) {
-	db, err := localdb.GetClient()
-	if err != nil {
-		return
+	for _, pattern := range []localdb.KeyPatternFunc{
+		c.GroupConcernStateKey, c.GroupConcernConfigKey,
+		c.GroupAtAllMarkKey, c.FreshKey} {
+		c.CreatePatternIndex(pattern, nil)
 	}
-	db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.GroupConcernConfigKey(), c.GroupConcernConfigKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.GroupAtAllMarkKey(), c.GroupAtAllMarkKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
 	var groupSet = make(map[int64]interface{})
 	if len(groups) == 0 {
 		for _, groupInfo := range miraiBot.Instance.GroupList {
@@ -346,10 +343,11 @@ func (c *StateManager) FreshIndex(groups ...int64) {
 		return true
 	})
 	for g := range groupSet {
-		db.CreateIndex(c.GroupConcernStateKey(g), c.GroupConcernStateKey(g, "*"), buntdb.IndexString)
-		db.CreateIndex(c.GroupConcernConfigKey(g), c.GroupConcernConfigKey(g, "*"), buntdb.IndexString)
-		db.CreateIndex(c.GroupAtAllMarkKey(g), c.GroupAtAllMarkKey(g, "*"), buntdb.IndexString)
-		db.CreateIndex(c.FreshKey(g), c.FreshKey(g, "*"), buntdb.IndexString)
+		for _, pattern := range []localdb.KeyPatternFunc{
+			c.GroupConcernStateKey, c.GroupConcernConfigKey,
+			c.GroupAtAllMarkKey, c.FreshKey} {
+			c.CreatePatternIndex(pattern, []interface{}{g})
+		}
 	}
 }
 

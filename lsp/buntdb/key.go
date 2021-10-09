@@ -79,6 +79,9 @@ func BilibiliGroupAtAllMarkKey(keys ...interface{}) string {
 func BilibiliVideoOriginMarkKey(keys ...interface{}) string {
 	return NamedKey("VideoOriginMark", keys)
 }
+func BilibiliOriginMarkKey(keys ...interface{}) string {
+	return NamedKey("OriginMark", keys)
+}
 func DouyuGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("DouyuConcernState", keys)
 }
@@ -147,6 +150,12 @@ func GlobalEnabledKey(keys ...interface{}) string {
 }
 func GroupMessageImageKey(keys ...interface{}) string {
 	return NamedKey("GroupMessageImage", keys)
+}
+func GroupSilenceKey(keys ...interface{}) string {
+	return NamedKey("GroupSilence", keys)
+}
+func GlobalSilenceKey(keys ...interface{}) string {
+	return NamedKey("GlobalSilence", keys)
 }
 func GroupMuteKey(keys ...interface{}) string {
 	return NamedKey("GroupMute", keys)

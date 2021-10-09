@@ -38,7 +38,7 @@ type LspGroupCommand struct {
 
 func NewLspGroupCommand(bot *miraiBot.Bot, l *Lsp, msg *message.GroupMessage) *LspGroupCommand {
 	c := &LspGroupCommand{
-		Runtime: NewRuntime(bot, l),
+		Runtime: NewRuntime(bot, l, l.PermissionStateManager.CheckGroupSilence(msg.GroupCode)),
 		msg:     msg,
 		prefix:  l.commandPrefix,
 	}
@@ -127,12 +127,18 @@ func (lgc *LspGroupCommand) Execute() {
 		if lgc.requireNotDisable(RollCommand) {
 			lgc.RollCommand()
 		}
+	case ScoreCommand:
+		if lgc.requireNotDisable(ScoreCommand) {
+			lgc.ScoreCommand()
+		}
 	case GrantCommand:
 		lgc.GrantCommand()
 	case EnableCommand:
 		lgc.EnableCommand(false)
 	case DisableCommand:
 		lgc.EnableCommand(true)
+	case SilenceCommand:
+		lgc.SilenceCommand()
 	case FaceCommand:
 		if lgc.requireNotDisable(FaceCommand) {
 			lgc.FaceCommand()
@@ -536,6 +542,35 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 	}
 }
 
+func (lgc *LspGroupCommand) ScoreCommand() {
+	log := lgc.DefaultLoggerWithCommand(ScoreCommand)
+	log.Infof("run score command")
+	defer func() { log.Info("score command end") }()
+
+	var scoreCmd struct{}
+	_, output := lgc.parseCommandSyntax(&scoreCmd, ScoreCommand)
+	if output != "" {
+		lgc.textReply(output)
+	}
+	if lgc.exit {
+		return
+	}
+
+	var scoreS string
+
+	localdb.RCoverTx(func(tx *buntdb.Tx) error {
+		key := localdb.Key("Score", lgc.groupCode(), lgc.uin())
+		scoreS, _ = tx.Get(key)
+		return nil
+	})
+
+	if len(scoreS) == 0 {
+		scoreS = "0"
+	}
+	score, _ := strconv.ParseInt(scoreS, 0, 64)
+	lgc.textReplyF("当前积分为%v", score)
+}
+
 func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 	groupCode := lgc.groupCode()
 	log := lgc.DefaultLoggerWithCommand(EnableCommand).WithField("disable", disable)
@@ -555,12 +590,6 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 		lgc.textReply(output)
 	}
 	if lgc.exit {
-		return
-	}
-
-	if len(enableCmd.Command) == 0 {
-		lgc.textReply("失败 - 没有指定要操作的命令名")
-		log.Errorf("empty command")
 		return
 	}
 
@@ -603,6 +632,26 @@ func (lgc *LspGroupCommand) GrantCommand() {
 	} else if grantCmd.Role != "" {
 		IGrantRole(lgc.NewMessageContext(log), lgc.groupCode(), permission.NewRoleFromString(grantCmd.Role), grantTo, del)
 	}
+}
+
+func (lgc *LspGroupCommand) SilenceCommand() {
+	log := lgc.DefaultLoggerWithCommand(SilenceCommand)
+	log.Info("run silence command")
+	defer func() { log.Info("silence command end") }()
+
+	var silenceCmd struct {
+		Delete bool `optional:"" short:"d" help:"取消设置"`
+	}
+
+	_, output := lgc.parseCommandSyntax(&silenceCmd, SilenceCommand, kong.Description("设置沉默模式"), kong.UsageOnError())
+	if output != "" {
+		lgc.textReply(output)
+	}
+	if lgc.exit {
+		return
+	}
+
+	ISilenceCmd(lgc.NewMessageContext(log), lgc.groupCode(), silenceCmd.Delete)
 }
 
 func (lgc *LspGroupCommand) ConfigCommand() {
@@ -979,8 +1028,6 @@ func (lgc *LspGroupCommand) groupDisabled(command string) bool {
 	return lgc.l.PermissionStateManager.CheckGroupCommandDisabled(lgc.groupCode(), command)
 }
 
-// all send method should not be called from inside a rw transaction
-
 func (lgc *LspGroupCommand) textReply(text string) *message.GroupMessage {
 	sendingMsg := message.NewSendingMessage()
 	sendingMsg.Append(message.NewText(text))
@@ -1056,7 +1103,11 @@ func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 		return lgc.reply(m.ToMessage(lgc.bot.QQClient, ctx.Target))
 	}
 	ctx.NoPermissionReplyFunc = func() interface{} {
-		return lgc.noPermissionReply()
+		ctx.Log.Debugf("no permission")
+		if !lgc.l.PermissionStateManager.CheckGroupSilence(lgc.groupCode()) {
+			return lgc.noPermissionReply()
+		}
+		return nil
 	}
 	ctx.DisabledReply = func() interface{} {
 		ctx.Log.Debugf("disabled")
@@ -1064,7 +1115,10 @@ func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	}
 	ctx.GlobalDisabledReply = func() interface{} {
 		ctx.Log.Debugf("global disabled")
-		return lgc.globalDisabledReply()
+		if !lgc.l.PermissionStateManager.CheckGroupSilence(lgc.groupCode()) {
+			return lgc.globalDisabledReply()
+		}
+		return nil
 	}
 	ctx.Sender = lgc.sender()
 	return ctx

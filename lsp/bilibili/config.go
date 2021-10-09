@@ -1,6 +1,7 @@
 package bilibili
 
 import (
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/utils"
 	"strconv"
@@ -17,25 +18,35 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 		return
 	}
 	notify := inotify.(*ConcernNewsNotify)
-	if notify.Card.GetDesc().GetType() != DynamicDescType_WithVideo {
-		return
-	}
-	videoCard, err := notify.Card.GetCardWithVideo()
-	if err != nil {
-		return
-	}
-	videoOrigin := videoCard.GetOrigin()
-	if videoOrigin == nil {
-		return
-	}
+	switch notify.Card.GetDesc().GetType() {
+	case DynamicDescType_WithVideo:
+		videoCard, err := notify.Card.GetCardWithVideo()
+		if err != nil {
+			return
+		}
+		videoOrigin := videoCard.GetOrigin()
+		if videoOrigin == nil {
+			return
+		}
 
-	// 主要是解决联合投稿的时候刷屏
-
-	notify.videoOrigin = videoOrigin
-
-	err = g.StateManager.SetGroupVideoOriginMarkIfNotExist(notify.GetGroupCode(), videoOrigin.GetBvid())
-	if err == nil {
-		notify.videoOriginMark = true
+		// 解决联合投稿的时候刷屏
+		err = g.StateManager.SetGroupVideoOriginMarkIfNotExist(notify.GetGroupCode(), videoOrigin.GetBvid())
+		if localdb.IsRollback(err) {
+			notify.shouldCompact = true
+		}
+	case DynamicDescType_WithOrigin:
+		// 解决一起转发的时候刷屏
+		origDyId := notify.Card.GetDesc().GetOrigDyIdStr()
+		err := g.StateManager.SetGroupOriginMarkIfNotExist(notify.GetGroupCode(), origDyId)
+		if localdb.IsRollback(err) {
+			notify.shouldCompact = true
+		}
+	default:
+		// 其他动态也设置一下
+		err := g.StateManager.SetGroupOriginMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
+		if err != nil && !localdb.IsRollback(err) {
+			logger.Errorf("SetGroupOriginMarkIfNotExist error %v", err)
+		}
 	}
 }
 

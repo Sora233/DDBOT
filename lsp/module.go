@@ -67,7 +67,7 @@ func (l *Lsp) Init() {
 		log.Infof("设置logLevel为%v", lev.String())
 	}
 	if err := localdb.InitBuntDB(""); err != nil {
-		panic(err)
+		log.Fatalf("无法正常初始化数据库！请检查.lsp.db文件权限是否正确，如无问题则为数据库文件损坏，请阅读文档获得帮助。")
 	}
 
 	l.commandPrefix = strings.TrimSpace(config.GlobalConfig.GetString("bot.commandPrefix"))
@@ -261,7 +261,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 				return err
 			}
 			for _, req := range requests {
-				if req.RequesterUin == req.RequesterUin {
+				if req.RequesterUin == event.Friend.Uin {
 					l.LspStateManager.DeleteNewFriendRequest(req.RequestId)
 				}
 			}
@@ -284,9 +284,15 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		})
 		log.Info("进入新群聊")
 
-		minfo := info.FindMember(bot.Uin)
-		if minfo != nil {
-			minfo.EditCard("【bot】")
+		rename := config.GlobalConfig.GetString("bot.onJoinGroup.rename")
+		if len(rename) > 0 {
+			if len(rename) > 60 {
+				rename = rename[:60]
+			}
+			minfo := info.FindMember(bot.Uin)
+			if minfo != nil {
+				minfo.EditCard(rename)
+			}
 		}
 
 		l.LspStateManager.RWCover(func() error {
@@ -359,15 +365,6 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnPrivateMessage(func(qqClient *client.QQClient, msg *message.PrivateMessage) {
-		// TODO 这个问题已经过已经修复了，再观察一段时间
-		if msg.Time < int32(time.Now().Add(time.Hour*-1).Unix()) {
-			logger.WithField("Sender", msg.Sender.DisplayName()).
-				WithField("time", time.Unix(int64(msg.Time), 0)).
-				WithField("MessageID", msg.Id).
-				Debug("past private message got, skip.")
-			// 有时候消息会再触发一次，应该是tx的问题
-			return
-		}
 		if len(msg.Elements) == 0 {
 			return
 		}
@@ -379,6 +376,9 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 	bot.OnDisconnected(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
 		logger.Errorf("收到OnDisconnected事件 %v", event.Message)
+		if config.GlobalConfig.GetString("bot.onDisconnected") == "exit" {
+			logger.Fatalf("onDisconnected设置为exit，bot将自动退出")
+		}
 		if err := bot.ReLogin(event); err != nil {
 			logger.Fatalf("重连时发生错误%v，bot将自动退出", err)
 		}

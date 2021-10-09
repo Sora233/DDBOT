@@ -31,20 +31,9 @@ func (c *StateManager) AddUserInfo(userInfo *UserInfo) error {
 
 func (c *StateManager) GetUserInfo(mid int64) (*UserInfo, error) {
 	var userInfo = &UserInfo{}
-
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.UserInfoKey(mid))
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal([]byte(val), userInfo)
-		if err != nil {
-			logger.WithField("val", val).Errorf("user info json unmarshal failed")
-			return err
-		}
-		return nil
-	})
+	err := c.JsonGet(c.UserInfoKey(mid), userInfo)
 	if err != nil {
+		logger.Errorf("JsonGet user info failed")
 		return nil, err
 	}
 	return userInfo, nil
@@ -62,20 +51,9 @@ func (c *StateManager) AddUserStat(userStat *UserStat, opt *buntdb.SetOptions) e
 
 func (c *StateManager) GetUserStat(mid int64) (*UserStat, error) {
 	var userStat = &UserStat{}
-
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.UserStatKey(mid))
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal([]byte(val), userStat)
-		if err != nil {
-			logger.WithField("val", val).Errorf("user stat json unmarshal failed")
-			return err
-		}
-		return nil
-	})
+	err := c.JsonGet(c.UserStatKey(mid), userStat)
 	if err != nil {
+		logger.Errorf("JsonGet user stat failed")
 		return nil, err
 	}
 	return userStat, nil
@@ -98,20 +76,9 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 
 func (c *StateManager) GetLiveInfo(mid int64) (*LiveInfo, error) {
 	var liveInfo = &LiveInfo{}
-
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.CurrentLiveKey(mid))
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal([]byte(val), liveInfo)
-		if err != nil {
-			logger.WithField("val", val).Errorf("json Unmarshal live info error %v", err)
-			return err
-		}
-		return nil
-	})
+	err := c.JsonGet(c.CurrentLiveKey(mid), liveInfo)
 	if err != nil {
+		logger.Errorf("JsonGet live info failed")
 		return nil, err
 	}
 	return liveInfo, nil
@@ -180,20 +147,9 @@ func (c *StateManager) ClearByMid(mid int64) error {
 
 func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 	var newsInfo = &NewsInfo{}
-
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.CurrentNewsKey(mid))
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal([]byte(val), newsInfo)
-		if err != nil {
-			logger.WithField("mid", mid).WithField("dbval", val).Errorf("Unmarshal error %v", err)
-			return err
-		}
-		return nil
-	})
+	err := c.JsonGet(c.CurrentNewsKey(mid), newsInfo)
 	if err != nil {
+		logger.Errorf("JsonGet news info failed")
 		return nil, err
 	}
 	return newsInfo, nil
@@ -235,58 +191,20 @@ func (c *StateManager) MarkDynamicId(dynamic int64) (replaced bool, err error) {
 	return
 }
 
-func (c *StateManager) IncNotLiveCount(uid int64) (result int) {
-	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.NotLiveKey(uid)
-		oldV, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			oldV = "0"
-		} else if err != nil {
-			return err
-		}
-		old, err := strconv.Atoi(oldV)
-		if err != nil {
-			return err
-		}
-		_, _, err = tx.Set(key, strconv.Itoa(old+1), localdb.ExpireOption(time.Minute*30))
-		if err == nil {
-			result = old + 1
-		}
-		return err
-	})
+func (c *StateManager) IncNotLiveCount(uid int64) int64 {
+	result, err := c.SeqNext(c.NotLiveKey(uid))
 	if err != nil {
 		result = 0
 	}
-	return
+	return result
 }
 
 func (c *StateManager) ClearNotLiveCount(uid int64) error {
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.NotLiveKey(uid)
-		_, err := tx.Delete(key)
-		if err == buntdb.ErrNotFound {
-			err = nil
-		}
-		return err
-	})
+	return c.SeqClear(c.NotLiveKey(uid))
 }
 
 func (c *StateManager) SetUidFirstTimestampIfNotExist(uid int64, timestamp int64) error {
-	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.UidFirstTimestamp(uid)
-		_, replaced, err := tx.Set(key, strconv.FormatInt(timestamp, 10), nil)
-		if err != nil {
-			return err
-		}
-		if replaced {
-			return localdb.ErrRollback
-		}
-		return nil
-	})
-	if err == localdb.ErrRollback {
-		err = nil
-	}
-	return err
+	return c.SetIfNotExist(c.UidFirstTimestamp(uid), strconv.FormatInt(timestamp, 10), nil)
 }
 
 func (c *StateManager) UnsetUidFirstTimestamp(uid int64) error {
@@ -316,17 +234,19 @@ func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err err
 }
 
 func (c *StateManager) SetGroupVideoOriginMarkIfNotExist(groupCode int64, bvid string) error {
-	return localdb.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := localdb.BilibiliVideoOriginMarkKey(groupCode, bvid)
-		_, replaced, err := tx.Set(key, "", localdb.ExpireOption(time.Minute*15))
-		if err != nil {
-			return err
-		}
-		if replaced {
-			return localdb.ErrRollback
-		}
-		return nil
-	})
+	return localdb.SetIfNotExist(
+		localdb.BilibiliVideoOriginMarkKey(groupCode, bvid),
+		"",
+		localdb.ExpireOption(time.Minute*15),
+	)
+}
+
+func (c *StateManager) SetGroupOriginMarkIfNotExist(groupCode int64, dynamicIdStr string) error {
+	return localdb.SetIfNotExist(
+		localdb.BilibiliOriginMarkKey(groupCode, dynamicIdStr),
+		"",
+		localdb.ExpireOption(time.Minute*15),
+	)
 }
 
 func SetCookieInfo(username string, cookieInfo *LoginResponse_Data_CookieInfo) error {
@@ -369,13 +289,11 @@ func GetCookieInfo(username string) (cookieInfo *LoginResponse_Data_CookieInfo, 
 }
 
 func (c *StateManager) Start() error {
-	db := localdb.MustGetClient()
-	db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.UserInfoKey(), c.UserInfoKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.UserStatKey(), c.UserStatKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.DynamicIdKey(), c.DynamicIdKey("*"), buntdb.IndexString)
+	for _, pattern := range []localdb.KeyPatternFunc{
+		c.GroupConcernStateKey, c.CurrentLiveKey, c.FreshKey,
+		c.UserInfoKey, c.UserStatKey, c.DynamicIdKey} {
+		c.CreatePatternIndex(pattern, nil)
+	}
 	return c.StateManager.Start()
 }
 

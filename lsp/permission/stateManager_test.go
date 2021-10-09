@@ -2,9 +2,7 @@ package permission
 
 import (
 	"github.com/Sora233/DDBOT/internal/test"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/stretchr/testify/assert"
-	"github.com/tidwall/buntdb"
 	"testing"
 	"time"
 )
@@ -192,9 +190,8 @@ func TestStateManager_RemoveAllByGroup(t *testing.T) {
 	defer test.CloseBuntdb(t)
 	c := initStateManager(t)
 
-	db := localdb.MustGetClient()
-	db.CreateIndex(c.GroupPermissionKey(test.G1), c.GroupPermissionKey(test.G1, "*"), buntdb.IndexString)
-	db.CreateIndex(c.GroupPermissionKey(test.G2), c.GroupPermissionKey(test.G2, "*"), buntdb.IndexString)
+	c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{test.G1})
+	c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{test.G2})
 
 	assert.Nil(t, c.GrantGroupRole(test.G1, test.UID1, GroupAdmin))
 	assert.Nil(t, c.GrantGroupRole(test.G2, test.UID1, GroupAdmin))
@@ -208,7 +205,8 @@ func TestStateManager_RemoveAllByGroup(t *testing.T) {
 	//assert.True(t, gcadminOpt1.Validate(c))
 	assert.True(t, gcadminOpt2.Validate(c))
 
-	assert.Nil(t, c.RemoveAllByGroupCode(test.G1))
+	_, err := c.RemoveAllByGroupCode(test.G1)
+	assert.Nil(t, err)
 
 	assert.False(t, gadminOpt1.Validate(c))
 	//assert.False(t, gcadminOpt1.Validate(c))
@@ -224,12 +222,68 @@ func TestStateManager_CheckNoAdmin(t *testing.T) {
 
 	assert.Nil(t, c.GrantRole(test.UID1, Admin))
 	assert.False(t, c.CheckNoAdmin())
+	ids := c.ListAdmin()
+	assert.Len(t, ids, 1)
+	assert.EqualValues(t, test.UID1, ids[0])
 	assert.Nil(t, c.UngrantRole(test.UID1, Admin))
 	assert.True(t, c.CheckNoAdmin())
+	ids = c.ListAdmin()
+	assert.Empty(t, ids)
 
 	assert.Nil(t, c.GrantGroupRole(test.G1, test.UID1, GroupAdmin))
 	assert.True(t, c.CheckNoAdmin())
+	ids = c.ListAdmin()
+	assert.Empty(t, ids)
 	assert.Nil(t, c.GrantRole(test.UID1, Admin))
 	assert.False(t, c.CheckNoAdmin())
+	ids = c.ListAdmin()
+	assert.Len(t, ids, 1)
+	assert.EqualValues(t, test.UID1, ids[0])
 
+	assert.Nil(t, c.GrantRole(test.UID2, Admin))
+	assert.False(t, c.CheckNoAdmin())
+	ids = c.ListAdmin()
+	assert.Len(t, ids, 2)
+	assert.Contains(t, ids, test.UID1)
+	assert.Contains(t, ids, test.UID2)
+}
+
+func TestStateManager_CheckGlobalSilence(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+	c := initStateManager(t)
+
+	assert.False(t, c.CheckGlobalSilence())
+	assert.Nil(t, c.GlobalSilence())
+	assert.Nil(t, c.GlobalSilence())
+	assert.True(t, c.CheckGlobalSilence())
+	assert.True(t, c.CheckGlobalSilence())
+
+	assert.Nil(t, c.UndoGlobalSilence())
+	assert.Nil(t, c.UndoGlobalSilence())
+	assert.False(t, c.CheckGlobalSilence())
+	assert.False(t, c.CheckGlobalSilence())
+}
+
+func TestStateManager_CheckGroupSilence(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+	c := initStateManager(t)
+
+	assert.False(t, c.CheckGroupSilence(test.G1))
+	assert.False(t, c.CheckGroupSilence(test.G2))
+
+	assert.Nil(t, c.GroupSilence(test.G1))
+
+	assert.True(t, c.CheckGroupSilence(test.G1))
+	assert.False(t, c.CheckGroupSilence(test.G2))
+
+	assert.Nil(t, c.UndoGroupSilence(test.G1))
+
+	assert.False(t, c.CheckGroupSilence(test.G1))
+	assert.False(t, c.CheckGroupSilence(test.G2))
+
+	assert.Nil(t, c.GlobalSilence())
+	assert.True(t, c.CheckGroupSilence(test.G1))
+	assert.True(t, c.CheckGroupSilence(test.G2))
 }

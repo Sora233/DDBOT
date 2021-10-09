@@ -1,27 +1,35 @@
 package permission
 
-import "github.com/Sora233/DDBOT/lsp/buntdb"
+import localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 
 type KeySet struct{}
 
 func (k *KeySet) PermissionKey(keys ...interface{}) string {
-	return buntdb.PermissionKey(keys...)
+	return localdb.PermissionKey(keys...)
 }
 
 func (k *KeySet) GroupPermissionKey(keys ...interface{}) string {
-	return buntdb.GroupPermissionKey(keys...)
+	return localdb.GroupPermissionKey(keys...)
 }
 
 func (k *KeySet) GroupEnabledKey(keys ...interface{}) string {
-	return buntdb.GroupEnabledKey(keys...)
+	return localdb.GroupEnabledKey(keys...)
 }
 
 func (k *KeySet) GlobalEnabledKey(keys ...interface{}) string {
-	return buntdb.GlobalEnabledKey(keys...)
+	return localdb.GlobalEnabledKey(keys...)
+}
+
+func (k *KeySet) GroupSilenceKey(keys ...interface{}) string {
+	return localdb.GroupSilenceKey(keys...)
+}
+
+func (k *KeySet) GlobalSilenceKey(keys ...interface{}) string {
+	return localdb.GlobalSilenceKey(keys...)
 }
 
 func (k *KeySet) BlockListKey(keys ...interface{}) string {
-	return buntdb.BlockListKey(keys...)
+	return localdb.BlockListKey(keys...)
 }
 
 func NewKeySet() *KeySet {

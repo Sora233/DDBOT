@@ -7,6 +7,7 @@ import "github.com/Sora233/sliceutil"
 const (
 	RollCommand    = "roll"
 	CheckinCommand = "签到"
+	ScoreCommand   = "查询积分"
 	GrantCommand   = "grant"
 	LspCommand     = "lsp"
 	WatchCommand   = "watch"
@@ -33,6 +34,8 @@ const (
 	ModeCommand          = "mode"
 	GroupRequestCommand  = "群邀请"
 	FriendRequestCommand = "好友申请"
+	AdminCommand         = "admin"
+	SilenceCommand       = "silence"
 )
 
 var allGroupCommand = [...]string{
@@ -41,7 +44,8 @@ var allGroupCommand = [...]string{
 	ListCommand, SetuCommand, HuangtuCommand,
 	EnableCommand, DisableCommand,
 	FaceCommand, ReverseCommand, ConfigCommand,
-	HelpCommand,
+	HelpCommand, ScoreCommand, AdminCommand,
+	SilenceCommand,
 }
 
 var allPrivateOperate = [...]string{
@@ -50,14 +54,16 @@ var allPrivateOperate = [...]string{
 	WatchCommand, UnwatchCommand, DisableCommand,
 	EnableCommand, GrantCommand, ConfigCommand,
 	WhosyourdaddyCommand, QuitCommand, ModeCommand,
-	GroupRequestCommand, FriendRequestCommand,
+	GroupRequestCommand, FriendRequestCommand, AdminCommand,
+	SilenceCommand,
 }
 
 var nonOprateable = [...]string{
 	EnableCommand, DisableCommand, GrantCommand,
 	BlockCommand, LogCommand, PingCommand,
 	WhosyourdaddyCommand, QuitCommand, ModeCommand,
-	GroupRequestCommand, FriendRequestCommand,
+	GroupRequestCommand, FriendRequestCommand, AdminCommand,
+	SilenceCommand,
 }
 
 func CheckValidCommand(command string) bool {

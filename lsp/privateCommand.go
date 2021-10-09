@@ -105,6 +105,10 @@ func (c *LspPrivateCommand) Execute() {
 		c.GroupRequestCommand()
 	case FriendRequestCommand:
 		c.FriendRequestCommand()
+	case AdminCommand:
+		c.AdminCommand()
+	case SilenceCommand:
+		c.SilenceCommand()
 	default:
 		c.textReply("阁下似乎输入了一个无法识别的命令，请使用/help命令查看帮助。")
 		log.Debug("no command matched")
@@ -1003,6 +1007,74 @@ func (c *LspPrivateCommand) FriendRequestCommand() {
 			log.Errorf("DeleteNewFriendRequest error %v", err)
 		}
 	}
+}
+
+func (c *LspPrivateCommand) AdminCommand() {
+	log := c.DefaultLoggerWithCommand(AdminCommand)
+	log.Info("run admin command")
+	defer func() { log.Info("admin command end") }()
+
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
+	_, output := c.parseCommandSyntax(&struct{}{}, AdminCommand, kong.Description("查看当前Admin权限"), kong.UsageOnError())
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	ids := c.l.PermissionStateManager.ListAdmin()
+	if len(ids) == 0 {
+		c.textReply("未查询到Admin，如果bot刚刚启动，请稍后重试。")
+		return
+	}
+	msg := message.NewSendingMessage()
+	msg.Append(message.NewText("当前Admin："))
+	var name string
+	var sb strings.Builder
+	for _, id := range ids {
+		fi := c.bot.FindFriend(id)
+		if fi != nil {
+			name = fi.Nickname
+		}
+		sb.WriteString(fmt.Sprintf("\n%v %v", id, name))
+	}
+	msg.Append(message.NewText(sb.String()))
+	c.send(msg)
+}
+
+func (c *LspPrivateCommand) SilenceCommand() {
+	log := c.DefaultLoggerWithCommand(SilenceCommand)
+	log.Info("run silence command")
+	defer func() { log.Info("silence command end") }()
+
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
+	var silenceCmd struct {
+		Group  int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Delete bool  `optional:"" short:"d" help:"取消设置"`
+	}
+
+	_, output := c.parseCommandSyntax(&silenceCmd, SilenceCommand, kong.Description("设置沉默模式"), kong.UsageOnError())
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	ISilenceCmd(c.NewMessageContext(log), silenceCmd.Group, silenceCmd.Delete)
 }
 
 func (c *LspPrivateCommand) PingCommand() {

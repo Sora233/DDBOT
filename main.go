@@ -60,7 +60,7 @@ func main() {
 	var cli struct {
 		Play         bool  `optional:"" help:"运行play函数，适用于测试和开发"`
 		Debug        bool  `optional:"" help:"启动debug模式"`
-		SetAdmin     int64 `optional:"" xor:"c" help:"这只admin权限"`
+		SetAdmin     int64 `optional:"" xor:"c" help:"设置admin权限"`
 		Version      bool  `optional:"" xor:"c" short:"v" help:"打印版本信息"`
 		SyncBilibili bool  `optional:"" xor:"c" help:"同步b站帐号的关注，适用于更换或迁移b站帐号的时候"`
 	}
@@ -89,7 +89,7 @@ func main() {
 		sm := permission.NewStateManager()
 		err := sm.GrantRole(cli.SetAdmin, permission.Admin)
 		if err != nil {
-			fmt.Printf("set role failed %v\n", err)
+			fmt.Printf("设置Admin权限失败 %v\n", err)
 		}
 		return
 	}
@@ -175,6 +175,8 @@ var exampleConfig = func() string {
 bot:
   account:  # 你bot的qq号，不填则使用扫码登陆
   password: # 你bot的qq密码
+  onJoinGroup: 
+    rename: "【bot】"  # BOT进群后自动改名，默认改名为“【bot】”，如果留空则不自动改名
 
 # b站相关的功能需要一个b站账号，建议使用小号
 # bot将使用您b站帐号的以下功能：

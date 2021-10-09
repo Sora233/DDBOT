@@ -7,7 +7,9 @@ import (
 	"github.com/Mrs4s/MiraiGo/client"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -245,20 +247,115 @@ func (c *StateManager) CheckGlobalCommandFunc(command string, f func(val string,
 	return result
 }
 
+func (c *StateManager) CheckGlobalSilence() bool {
+	var result bool
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
+		key := c.GlobalSilenceKey()
+		_, err := tx.Get(key)
+		if err != nil && err != buntdb.ErrNotFound {
+			return err
+		}
+		if err == nil {
+			result = true
+		}
+		return nil
+	})
+	if err != nil {
+		result = false
+	}
+	return result
+}
+
+func (c *StateManager) GlobalSilence() error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
+		key := c.GlobalSilenceKey()
+		_, _, err := tx.Set(key, "", nil)
+		return err
+	})
+}
+
+func (c *StateManager) UndoGlobalSilence() error {
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
+		key := c.GlobalSilenceKey()
+		_, err := tx.Delete(key)
+		if err == buntdb.ErrNotFound {
+			err = nil
+		}
+		return err
+	})
+}
+
+func (c *StateManager) CheckGroupSilence(groupCode int64) bool {
+	var result bool
+	var globalResult bool
+	err := c.RCover(func() error {
+		globalResult = c.CheckGlobalSilence()
+		err := c.RCoverTx(func(tx *buntdb.Tx) error {
+			key := c.GroupSilenceKey(groupCode)
+			_, err := tx.Get(key)
+			if err != nil && err != buntdb.ErrNotFound {
+				return err
+			}
+			if err == nil {
+				result = true
+			}
+			return nil
+		})
+		if err != nil {
+			result = false
+		}
+		return nil
+	})
+	if err != nil {
+		return false
+	}
+	return globalResult || result
+}
+
+func (c *StateManager) GroupSilence(groupCode int64) error {
+	if c.CheckGlobalSilence() {
+		return ErrGlobalSilenced
+	}
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
+		key := c.GroupSilenceKey(groupCode)
+		_, _, err := tx.Set(key, "", nil)
+		return err
+	})
+}
+
+func (c *StateManager) UndoGroupSilence(groupCode int64) error {
+	if c.CheckGlobalSilence() {
+		return ErrGlobalSilenced
+	}
+	return c.RWCoverTx(func(tx *buntdb.Tx) error {
+		key := c.GroupSilenceKey(groupCode)
+		_, err := tx.Delete(key)
+		if err == buntdb.ErrNotFound {
+			err = nil
+		}
+		return err
+	})
+}
+
 func (c *StateManager) CheckGroupAdministrator(groupCode int64, caller int64) bool {
+	log := logger.WithFields(logrus.Fields{
+		"GroupCode": groupCode,
+		"Caller":    caller,
+	})
 	b := bot.Instance
 	if b == nil {
-		logger.Errorf("bot not init")
+		log.Errorf("bot not init")
 		return false
 	}
 	groupInfo := b.FindGroup(groupCode)
 	if groupInfo == nil {
-		logger.Errorf("nil group info")
+		log.Errorf("nil group info")
 		return false
 	}
+	log = log.WithField("GroupName", groupInfo.Name)
 	groupMemberInfo := groupInfo.FindMember(caller)
 	if groupMemberInfo == nil {
-		logger.Errorf("nil member info")
+		log.Errorf("nil member info")
 		return false
 	}
 	return groupMemberInfo.Permission == client.Administrator || groupMemberInfo.Permission == client.Owner
@@ -347,6 +444,32 @@ func (c *StateManager) CheckNoAdmin() bool {
 	return result
 }
 
+func (c *StateManager) ListAdmin() []int64 {
+	var result []int64
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
+		return tx.Ascend(c.PermissionKey(), func(key, value string) bool {
+			splits := strings.Split(key, ":")
+			if len(splits) != 3 {
+				return true
+			}
+			if NewRoleFromString(splits[2]) == Admin {
+				i, err := strconv.ParseInt(splits[1], 0, 64)
+				if err != nil {
+					logger.WithField("Key", key).Errorf("Parse PermissionKey error %v", err)
+				} else {
+					result = append(result, i)
+				}
+			}
+			return true
+		})
+	})
+	if err != nil {
+		result = nil
+		logger.Errorf("ListAdmin error %v", err)
+	}
+	return result
+}
+
 func (c *StateManager) GrantGroupRole(groupCode int64, target int64, role RoleType) error {
 	if role.String() == "" {
 		return errors.New("error role")
@@ -419,7 +542,7 @@ func (c *StateManager) RequireAny(option ...RequireOption) bool {
 	return false
 }
 
-func (c *StateManager) RemoveAllByGroupCode(groupCode int64) error {
+func (c *StateManager) RemoveAllByGroupCode(groupCode int64) ([]string, error) {
 	var indexKey = []string{
 		c.GroupPermissionKey(),
 		c.PermissionKey(),
@@ -434,13 +557,12 @@ func (c *StateManager) RemoveAllByGroupCode(groupCode int64) error {
 }
 
 func (c *StateManager) FreshIndex() {
-	db := localdb.MustGetClient()
-	db.CreateIndex(c.PermissionKey(), c.PermissionKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.GroupPermissionKey(), c.GroupPermissionKey("*"), buntdb.IndexString)
-	db.CreateIndex(c.GroupEnabledKey(), c.GroupPermissionKey("*"), buntdb.IndexString)
+	for _, pattern := range []localdb.KeyPatternFunc{c.PermissionKey, c.GroupPermissionKey, c.GroupEnabledKey} {
+		c.CreatePatternIndex(pattern, nil)
+	}
 	if bot.Instance != nil {
 		for _, group := range bot.Instance.GroupList {
-			db.CreateIndex(c.GroupPermissionKey(group.Code), c.GroupPermissionKey(group.Code, "*"), buntdb.IndexString)
+			c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{group.Code})
 		}
 	}
 }

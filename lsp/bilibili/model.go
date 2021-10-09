@@ -52,8 +52,7 @@ type ConcernNewsNotify struct {
 	// messageCache 导致ConcernNewsNotify的ToMessage()变得线程不安全
 	messageCache []message.IMessageElement
 	// 用于联合投稿防止多人同时推送
-	videoOrigin     *CardWithVideo_Origin
-	videoOriginMark bool
+	shouldCompact bool
 }
 
 type ConcernLiveNotify struct {
@@ -229,11 +228,32 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 		dynamicUrl = DynamicUrl(card.GetDesc().GetDynamicIdStr())
 		date       = localutils.TimestampFormat(card.GetDesc().GetTimestamp())
 	)
-	// 如果短时间有多个联合投稿，则推送一条简化动态
-	if notify.videoOrigin != nil && !notify.videoOriginMark {
-		videoCard, _ := notify.Card.GetCardWithVideo()
-		result = append(result, localutils.MessageTextf("%v%v：\n%v\n%v", notify.Name, notify.Card.GetDisplay().GetUsrActionTxt(), videoCard.GetTitle(), dynamicUrl))
-		return result
+	// 推送一条简化动态防止刷屏，主要是联合投稿和转发的时候
+	if notify.shouldCompact {
+		log.Debug("compact notify")
+		switch notify.Card.GetDesc().GetType() {
+		case DynamicDescType_WithVideo:
+			videoCard, _ := notify.Card.GetCardWithVideo()
+			result = append(result,
+				localutils.MessageTextf("%v%v：\n%v\n%v",
+					notify.Name,
+					notify.Card.GetDisplay().GetUsrActionTxt(),
+					videoCard.GetTitle(),
+					dynamicUrl),
+			)
+			return result
+		case DynamicDescType_WithOrigin:
+			origCard, _ := notify.Card.GetCardWithOrig()
+			result = append(result,
+				localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v",
+					notify.Name,
+					origCard.GetOriginUser().GetInfo().GetUname(),
+					origCard.GetItem().GetContent(),
+					dynamicUrl,
+				),
+			)
+			return result
+		}
 	}
 	if notify.messageCache != nil {
 		return notify.messageCache
@@ -279,7 +299,7 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 			if !skip {
 				for _, pic := range origin.GetItem().GetPictures() {
 					var isNorm = false
-					if pic.GetImgHeight() > 1200 && pic.GetImgWidth() > 1200 {
+					if pic.ImgHeight > 2560 && pic.ImgWidth > 2560 {
 						isNorm = true
 					}
 					groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, pic.GetImgSrc(), isNorm, proxy_pool.PreferNone)
@@ -415,7 +435,7 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 			origin := new(CardWithMylist)
 			err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
 			if err != nil {
-				log.WithField("orogin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithMylist failed %v", err)
+				log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithMylist failed %v", err)
 				return
 			}
 			result = append(result, localutils.MessageTextf("%v\n", origin.GetTitle()))
@@ -430,6 +450,26 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 		case DynamicDescType_WithOrigin:
 			// 麻了，套起来了
 			result = append(result, localutils.MessageTextf("%v转发了%v的动态：%v\n%v\n", notify.Name, originName, date, cardOrigin.GetItem().GetContent()))
+		case DynamicDescType_WithCourse:
+			origin := new(CardWithCourse)
+			err := json.Unmarshal([]byte(cardOrigin.GetOrigin()), origin)
+			if err != nil {
+				log.WithField("origin", cardOrigin.GetOrigin()).Errorf("Unmarshal origin CardWithCourse failed %v", err)
+				return
+			}
+			result = append(result, localutils.MessageTextf("%v转发了%v的%v：\n%v\n%v\n\n原课程：\n%v", notify.Name,
+				origin.GetUpInfo().GetName(),
+				origin.GetBadge().GetText(),
+				date,
+				cardOrigin.GetItem().GetContent(),
+				origin.GetTitle(),
+			))
+			groupImage, err := localutils.UploadGroupImageByUrl(notify.GroupCode, origin.GetCover(), false, proxy_pool.PreferNone)
+			if err != nil {
+				log.WithField("origin", cardOrigin.GetOrigin()).Errorf("upload CardWithCourse cover failed %v", err)
+			} else {
+				result = append(result, groupImage)
+			}
 		default:
 			// 试试media
 			origin := new(CardWithMedia)
@@ -710,7 +750,7 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 		}
 	}
 	log.WithField("dynamicUrl", dynamicUrl).Debug("create notify")
-	result = append(result, message.NewText(dynamicUrl+"\n"))
+	result = append(result, message.NewText(dynamicUrl))
 	notify.messageCache = result
 	return result
 }
@@ -836,13 +876,18 @@ func shouldCombineImage(pic []*CardWithImage_Item_Picture) bool {
 			return true
 		}
 	}
-	// 有超过一半的图片尺寸一样
+	// 有超过一半的近似矩形图片尺寸一样
 	var size = make(map[int64]int)
-	for idx, i := range pic {
-		if idx == 0 {
-			continue
+	for _, i := range pic {
+		var gap float64
+		if i.ImgHeight < i.ImgWidth {
+			gap = float64(i.ImgHeight) / float64(i.ImgWidth)
+		} else {
+			gap = float64(i.ImgWidth) / float64(i.ImgHeight)
 		}
-		size[int64(i.ImgWidth)*int64(i.ImgHeight)] += 1
+		if gap >= 0.95 {
+			size[int64(i.ImgWidth)*int64(i.ImgHeight)] += 1
+		}
 	}
 	var sizeMerge bool
 	for _, count := range size {

@@ -10,10 +10,12 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/msg"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"golang.org/x/sync/errgroup"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -142,7 +144,9 @@ func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype c
 			infoResp.GetData().GetName(),
 			infoResp.GetData().GetLiveRoom().GetUrl(),
 		)
+		log = log.WithField("name", userInfo.GetName())
 	} else {
+		log = log.WithField("name", userInfo.GetName())
 		log.Debugf("UserInfo cache hit")
 	}
 
@@ -157,13 +161,17 @@ func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype c
 	if err != nil {
 		log.Errorf("GetConcern error %v", err)
 	} else if oldCtype.Empty() {
-		resp, err := c.ModifyUserRelation(mid, ActSub)
+		var actType = ActSub
+		if config.GlobalConfig.GetBool("bilibili.hiddenSub") {
+			actType = ActHiddenSub
+		}
+		resp, err := c.ModifyUserRelation(mid, actType)
 		if err != nil {
 			if err == ErrVerifyRequired {
 				log.Errorf("ModifyUserRelation error %v", err)
 				return nil, fmt.Errorf("关注用户失败 - 未配置B站")
 			} else {
-				log.WithField("action", ActSub).Errorf("ModifyUserRelation error %v", err)
+				log.WithField("action", actType).Errorf("ModifyUserRelation error %v", err)
 				return nil, fmt.Errorf("关注用户失败 - 内部错误")
 			}
 		}
@@ -178,7 +186,7 @@ func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype c
 		return nil, fmt.Errorf("关注用户失败 - 内部错误")
 	}
 	err = c.StateManager.SetUidFirstTimestampIfNotExist(mid, time.Now().Add(-time.Second*30).Unix())
-	if err != nil {
+	if err != nil && !localdb.IsRollback(err) {
 		log.Errorf("SetUidFirstTimestampIfNotExist failed %v", err)
 	}
 	_ = c.StateManager.AddUserInfo(userInfo)
@@ -205,11 +213,9 @@ func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype c
 func (c *Concern) Remove(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := _id.(int64)
 	var identityInfo concern.IdentityInfo
+	var allCtype concern_type.Type
 	err := c.StateManager.RWCoverTx(func(tx *buntdb.Tx) error {
-		var (
-			err      error
-			allCtype concern_type.Type
-		)
+		var err error
 		identityInfo, _ = c.Get(mid)
 		_, err = c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
 		if err != nil {
@@ -235,7 +241,11 @@ func (c *Concern) Remove(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctyp
 		}
 		return nil
 	})
-
+	if config.GlobalConfig != nil {
+		if config.GlobalConfig.GetBool("bilibili.unsub") && allCtype.Empty() {
+			c.unsubUser(mid)
+		}
+	}
 	return identityInfo, err
 }
 
@@ -517,6 +527,8 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 	var liveInfo []*LiveInfo
 	var infoSet = make(map[int64]bool)
 	var page = 1
+	var maxPage int32 = 1
+	var zeroCount = 0
 	for {
 		resp, err := FeedList(FeedPageOpt(page))
 		if err != nil {
@@ -526,7 +538,22 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 			logger.Errorf("freshLive FeedList code %v msg %v", resp.GetCode(), resp.GetMessage())
 			return nil, err
 		}
-		pageSize, _ := strconv.ParseInt(resp.GetData().GetPagesize(), 10, 0)
+		var (
+			dataSize    = len(resp.GetData().GetList())
+			pageSize, _ = strconv.ParseInt(resp.GetData().GetPagesize(), 10, 32)
+			curTotal    = resp.GetData().GetResults()
+			curMaxPage  = (curTotal-1)/int32(pageSize) + 1
+		)
+		logger.WithFields(logrus.Fields{
+			"CurTotal":   curTotal,
+			"PageSize":   pageSize,
+			"CurMaxPage": curMaxPage,
+			"maxPage":    maxPage,
+			"page":       page,
+		}).Trace("freshLive debug")
+		if curMaxPage > maxPage {
+			maxPage = curMaxPage
+		}
 		for _, l := range resp.GetData().GetList() {
 			if infoSet[l.GetUid()] {
 				continue
@@ -546,10 +573,19 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 			}
 			liveInfo = append(liveInfo, info)
 		}
-		if (int(pageSize) != 0 && len(resp.GetData().GetList()) != int(pageSize)) || len(resp.GetData().GetList()) == 0 {
+		if dataSize != 0 {
+			zeroCount = 0
+			page++
+		} else {
+			zeroCount += 1
+		}
+		if int32(page) > maxPage {
 			break
 		}
-		page++
+		if zeroCount >= 3 {
+			logger.Errorf("freshLive end unexpectedly due to zero count")
+			break
+		}
 	}
 	logger.WithField("cost", time.Now().Sub(start)).WithField("Page", page).WithField("LiveInfo Size", len(liveInfo)).Tracef("freshLive done")
 	return liveInfo, nil
@@ -641,9 +677,15 @@ func (c *Concern) SyncSub() {
 	for _, attentionMid := range resp.GetData().GetList() {
 		attentionMidSet[attentionMid] = true
 	}
+
+	var actType = ActSub
+	if config.GlobalConfig.GetBool("bilibili.hiddenSub") {
+		actType = ActHiddenSub
+	}
+
 	for mid := range midSet {
 		if _, found := attentionMidSet[mid]; !found {
-			resp, err := c.ModifyUserRelation(mid, ActSub)
+			resp, err := c.ModifyUserRelation(mid, actType)
 			if err == nil && resp.Code == 22002 {
 				// 可能是被拉黑了
 				logger.WithField("ModifyUserRelation Code", 22002).
@@ -724,5 +766,55 @@ func (c *Concern) GroupWatchNotify(groupCode, mid int64) {
 	if liveInfo.Living() {
 		liveInfo.LiveStatusChanged = true
 		c.notify <- NewConcernLiveNotify(groupCode, liveInfo)
+	}
+}
+
+func (c *Concern) RemoveAllByGroupCode(groupCode int64) ([]string, error) {
+	keys, err := c.StateManager.RemoveAllByGroupCode(groupCode)
+	if config.GlobalConfig != nil && config.GlobalConfig.GetBool("bilibili.unsub") {
+		var changedIdSet = make(map[int64]interface{})
+		if err == nil {
+			for _, key := range keys {
+				if !strings.HasPrefix(key, c.GroupConcernStateKey()) {
+					continue
+				}
+				_, id, err := c.ParseGroupConcernStateKey(key)
+				if err != nil {
+					continue
+				}
+				changedIdSet[id.(int64)] = true
+			}
+		}
+		go func() {
+			for id := range changedIdSet {
+				var ctype concern_type.Type
+				_, _, _, err := c.StateManager.List(func(groupCode int64, _id interface{}, p concern_type.Type) bool {
+					if _id == id {
+						ctype = ctype.Add(p)
+					}
+					return true
+				})
+				if err != nil {
+					continue
+				}
+
+				if ctype.Empty() {
+					c.unsubUser(id)
+					time.Sleep(time.Second * 3)
+				}
+			}
+		}()
+	}
+	return keys, err
+}
+
+func (c *Concern) unsubUser(mid int64) {
+	resp, err := c.ModifyUserRelation(mid, ActUnsub)
+	if err != nil {
+		logger.Errorf("取消关注失败 - %v", err)
+	} else if resp.GetCode() != 0 {
+		logger.Errorf("取消关注失败 - %v - %v", resp.GetCode(), resp.GetMessage())
+	} else {
+		logger.WithField("mid", mid).Info("取消关注成功")
 	}
 }

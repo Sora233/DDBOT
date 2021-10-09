@@ -45,6 +45,8 @@ enum DynamicDescType {
   WithLive = 4200;
   // XXX的收藏夹，收藏夹居然也可以发动态？
   WithMylist = 4300;
+  // (付费?)课程
+  WithCourse = 4302;
   WithLiveV2 = 4308;
 }
 
@@ -125,7 +127,7 @@ message FeedListResponse {
   int32 code = 1;
   string message = 2;
   message Data {
-    int32 result = 1;
+    int32 results = 1;
     string page = 2;
     string pagesize = 3;
     message ListInfo {
@@ -242,6 +244,9 @@ message Card {
     string dynamic_id_str = 12;
     int64 uid = 13;
     UserProfile user_profile = 14;
+    string pre_dy_id_str = 15;
+    string orig_dy_id_str = 16;
+    string rid_str = 17;
   }
   message Extra {
     int32 is_space_top = 1;
@@ -649,4 +654,23 @@ message CardWithLiveV2 {
   LivePlayInfo live_play_info = 1;
   int64 style = 2;
   int64 type = 3;
+}
+
+message CardWithCourse {
+  message Badge  {
+    string text = 1;
+  }
+  message UpInfo {
+    string avatar = 1;
+    string name = 2;
+  }
+  Badge badge = 1;
+  string cover = 2;
+  int32 ep_count = 3;
+  string subtitle = 4;
+  string title = 5;
+  UpInfo up_info = 6;
+  int32 update_count = 7;
+  string update_info = 8;
+  string url = 9;
 }

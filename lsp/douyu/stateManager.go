@@ -15,21 +15,9 @@ type StateManager struct {
 
 func (c *StateManager) GetLiveInfo(id int64) (*LiveInfo, error) {
 	var liveInfo = &LiveInfo{}
-
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.CurrentLiveKey(id))
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal([]byte(val), liveInfo)
-		if err != nil {
-			logger.WithField("id", id).WithField("dbval", val).Errorf("Unmarshal error %v", err)
-			return err
-		}
-		return nil
-
-	})
+	err := c.JsonGet(c.CurrentLiveKey(id), liveInfo)
 	if err != nil {
+		logger.Errorf("JsonGet live info failed")
 		return nil, err
 	}
 	return liveInfo, nil
@@ -43,7 +31,6 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	return c.RWCoverTx(func(tx *buntdb.Tx) error {
 		_, _, err := tx.Set(c.CurrentLiveKey(liveInfo.RoomId), liveInfo.ToString(), localdb.ExpireOption(time.Hour*24*7))
 		return err
-
 	})
 }
 
@@ -52,11 +39,8 @@ func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (c
 }
 
 func (c *StateManager) Start() error {
-	db, err := localdb.GetClient()
-	if err == nil {
-		db.CreateIndex(c.GroupConcernStateKey(), c.GroupConcernStateKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.CurrentLiveKey(), c.CurrentLiveKey("*"), buntdb.IndexString)
-		db.CreateIndex(c.FreshKey(), c.FreshKey("*"), buntdb.IndexString)
+	for _, pattern := range []localdb.KeyPatternFunc{c.GroupConcernStateKey, c.CurrentLiveKey, c.FreshKey} {
+		c.CreatePatternIndex(pattern, nil)
 	}
 	return c.StateManager.Start()
 }
