@@ -359,6 +359,9 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if err := l.LspStateManager.SaveMessageImageUrl(msg.GroupCode, msg.Id, msg.Elements); err != nil {
 			logger.Errorf("SaveMessageImageUrl failed %v", err)
 		}
+		if !l.atCheck(msg.Elements[0]) {
+			return
+		}
 		cmd := NewLspGroupCommand(bot, l, msg)
 		if Debug {
 			cmd.Debug()
@@ -652,6 +655,13 @@ func (l *Lsp) getConcernConfigNotifyManager(ctype concern.Type, concernConfig *c
 	default:
 		return concernConfig
 	}
+}
+
+func (l *Lsp) atCheck(e message.IMessageElement) bool {
+	if at, ok := e.(*message.AtElement); ok {
+		return at.Target == bot.Instance.Uin
+	}
+	return true
 }
 
 //
