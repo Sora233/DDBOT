@@ -737,16 +737,24 @@ func (c *Concern) RemoveAllByGroupCode(groupCode int64) ([]string, error) {
 				}
 				changedIdSet[id.(int64)] = true
 			}
+			c.RWCover(func() error {
+				for mid := range changedIdSet {
+					ctype, err := c.GetConcern(mid)
+					if err != nil {
+						continue
+					}
+					if !ctype.ContainAll(concern.BibiliLive) {
+						c.StateManager.DeleteLiveInfo(mid)
+					}
+				}
+				return nil
+			})
 		}
 		go func() {
-			for id := range changedIdSet {
-				ctype, err := c.GetConcern(id)
-				if err != nil {
-					continue
-				}
-				if ctype.Empty() {
-					c.unsubUser(id)
-					time.Sleep(time.Second * 3)
+			// 考虑到unsub是个网络操作，还是不要占用事务了
+			for mid := range changedIdSet {
+				if ctype, err := c.GetConcern(mid); err == nil && ctype.Empty() {
+					c.unsubUser(mid)
 				}
 			}
 		}()
