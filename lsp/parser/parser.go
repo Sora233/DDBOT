@@ -1,4 +1,4 @@
-package command
+package parser
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"

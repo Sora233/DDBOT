@@ -6,9 +6,9 @@ import (
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
-	"github.com/Sora233/DDBOT/lsp/command"
 	"github.com/Sora233/DDBOT/lsp/douyu"
 	"github.com/Sora233/DDBOT/lsp/huya"
+	"github.com/Sora233/DDBOT/lsp/parser"
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/alecthomas/kong"
@@ -19,7 +19,7 @@ import (
 type Runtime struct {
 	bot *miraiBot.Bot
 	l   *Lsp
-	*command.Parser
+	*parser.Parser
 
 	debug   bool
 	exit    bool
@@ -129,7 +129,7 @@ func NewRuntime(bot *miraiBot.Bot, l *Lsp, silence ...bool) *Runtime {
 	r := &Runtime{
 		bot:    bot,
 		l:      l,
-		Parser: command.NewParser(),
+		Parser: parser.NewParser(),
 	}
 	if len(silence) > 0 {
 		r.silence = silence[0]
