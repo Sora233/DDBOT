@@ -360,6 +360,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			logger.Errorf("SaveMessageImageUrl failed %v", err)
 		}
 		if !l.atCheck(msg.Elements[0]) {
+			logger.Debug("at check failed, skip")
 			return
 		}
 		cmd := NewLspGroupCommand(bot, l, msg)
