@@ -2,8 +2,8 @@ package buntdb
 
 import (
 	"encoding/json"
+	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/modern-go/gls"
-	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"reflect"
 	"strconv"
@@ -16,6 +16,8 @@ type ShortCut struct{}
 var shortCut = new(ShortCut)
 
 var TxKey = new(struct{})
+
+var logger = utils.GetModuleLogger("localdb")
 
 // RWCoverTx 在一个RW事务中执行f，注意f的返回值不一定是RWCoverTx的返回值
 // 有可能f返回nil，但RWTxCover返回non-nil
@@ -115,7 +117,7 @@ func (s *ShortCut) JsonGet(key string, obj interface{}) error {
 		}
 		err = json.Unmarshal([]byte(val), obj)
 		if err != nil {
-			logrus.Errorf("JsonGet %v failed %v", reflect.TypeOf(obj).Name(), err)
+			logger.Errorf("JsonGet %v failed %v", reflect.TypeOf(obj).Name(), err)
 		}
 		return err
 	})

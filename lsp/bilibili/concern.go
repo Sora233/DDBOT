@@ -206,7 +206,7 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 		}
 		return nil
 	})
-	if config.GlobalConfig != nil {
+	if err == nil && config.GlobalConfig != nil {
 		if config.GlobalConfig.GetBool("bilibili.unsub") && allCtype.Empty() {
 			c.unsubUser(mid)
 		}
