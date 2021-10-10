@@ -3,7 +3,9 @@ package buntdb
 import (
 	"encoding/json"
 	"github.com/modern-go/gls"
+	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -112,6 +114,9 @@ func (s *ShortCut) JsonGet(key string, obj interface{}) error {
 			return err
 		}
 		err = json.Unmarshal([]byte(val), obj)
+		if err != nil {
+			logrus.Errorf("JsonGet %v failed %v", reflect.TypeOf(obj).Name(), err)
+		}
 		return err
 	})
 }

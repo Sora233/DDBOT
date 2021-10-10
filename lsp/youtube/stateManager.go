@@ -24,7 +24,6 @@ func (s *StateManager) GetInfo(channelId string) (*Info, error) {
 	info := new(Info)
 	err := s.JsonGet(s.InfoKey(channelId), info)
 	if err != nil {
-		logger.Errorf("JsonGet info failed")
 		return nil, err
 	}
 	return info, nil
@@ -34,7 +33,6 @@ func (s *StateManager) GetVideo(channelId string, videoId string) (*VideoInfo, e
 	var v = new(VideoInfo)
 	err := s.JsonGet(s.VideoKey(channelId, videoId), v)
 	if err != nil {
-		logger.Errorf("JsonGet video info failed")
 		return nil, err
 	}
 	return v, nil

@@ -17,7 +17,6 @@ func (c *StateManager) GetLiveInfo(id int64) (*LiveInfo, error) {
 	var liveInfo = &LiveInfo{}
 	err := c.JsonGet(c.CurrentLiveKey(id), liveInfo)
 	if err != nil {
-		logger.Errorf("JsonGet live info failed")
 		return nil, err
 	}
 	return liveInfo, nil
