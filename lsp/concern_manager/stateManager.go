@@ -146,7 +146,7 @@ func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype
 		}
 		oldState := concern.FromString(val)
 		newCtype = oldState.Remove(ctype)
-		if newCtype == concern.Empty {
+		if newCtype.Empty() {
 			_, err = tx.Delete(groupStateKey)
 		} else {
 			_, _, err = tx.Set(groupStateKey, newCtype.String(), nil)
@@ -190,7 +190,7 @@ func (c *StateManager) RemoveAllById(_id interface{}) (err error) {
 	})
 }
 
-// GetGroupConcern return the concern.Type in specific group for a id
+// GetGroupConcern return the concern.Type in specific group for an id
 func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result concern.Type, err error) {
 	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
@@ -203,7 +203,7 @@ func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result 
 	return result, err
 }
 
-// GetConcern return the concern.Type combined from all group for a id
+// GetConcern return the concern.Type combined from all group for an id
 func (c *StateManager) GetConcern(id interface{}) (result concern.Type, err error) {
 	_, _, _, err = c.List(func(groupCode int64, _id interface{}, p concern.Type) bool {
 		if id == _id {
@@ -225,7 +225,7 @@ func (c *StateManager) List(filter func(groupCode int64, id interface{}, p conce
 				return false
 			}
 			ctype := concern.FromString(value)
-			if ctype == concern.Empty {
+			if ctype.Empty() {
 				return true
 			}
 			if filter(groupCode, id, ctype) == true {
@@ -277,17 +277,6 @@ func (c *StateManager) ListByGroup(groupCode int64, filter func(id interface{}, 
 		return nil, nil, err
 	}
 	return
-}
-
-// ListById 查询一个id在所有group内的ctype
-func (c *StateManager) ListById(id int64) (result concern.Type, err error) {
-	_, _, _, err = c.List(func(groupCode int64, _id interface{}, p concern.Type) bool {
-		if id == _id.(int64) {
-			result = result.Add(p)
-		}
-		return true
-	})
-	return result, err
 }
 
 func (c *StateManager) ListIds() (ids []interface{}, err error) {

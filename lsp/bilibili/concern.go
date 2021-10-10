@@ -189,10 +189,7 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 		if err != nil {
 			return err
 		}
-		if !ctype.ContainAll(concern.BibiliLive) {
-			return nil
-		}
-		allCtype, err = c.StateManager.ListById(mid)
+		allCtype, err = c.StateManager.GetConcern(mid)
 		if err != nil {
 			return err
 		}
@@ -743,7 +740,7 @@ func (c *Concern) RemoveAllByGroupCode(groupCode int64) ([]string, error) {
 		}
 		go func() {
 			for id := range changedIdSet {
-				ctype, err := c.ListById(id)
+				ctype, err := c.GetConcern(id)
 				if err != nil {
 					continue
 				}
