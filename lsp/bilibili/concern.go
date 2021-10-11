@@ -140,6 +140,9 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 	if err != nil {
 		log.Errorf("get UserStat error %v\n", err)
 	} else if userStat != nil {
+		if userStat.Follower == 0 {
+			return nil, fmt.Errorf("该用户粉丝数为0，请确认您的订阅目标是否正确，注意使用UID而非直播间ID")
+		}
 		userInfo.UserStat = userStat
 	}
 
