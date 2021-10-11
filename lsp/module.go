@@ -359,10 +359,6 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if err := l.LspStateManager.SaveMessageImageUrl(msg.GroupCode, msg.Id, msg.Elements); err != nil {
 			logger.Errorf("SaveMessageImageUrl failed %v", err)
 		}
-		if !l.atCheck(msg.Elements[0]) {
-			logger.Debug("at check failed, skip")
-			return
-		}
 		cmd := NewLspGroupCommand(bot, l, msg)
 		if Debug {
 			cmd.Debug()
@@ -653,26 +649,6 @@ func (l *Lsp) getConcernConfigNotifyManager(ctype concern.Type, concernConfig *c
 		return concernConfig
 	}
 }
-
-func (l *Lsp) atCheck(e message.IMessageElement) bool {
-	if at, ok := e.(*message.AtElement); ok {
-		return at.Target == bot.Instance.Uin
-	}
-	return true
-}
-
-//
-//func (l *Lsp) IsPublicMode() bool {
-//	return l.LspStateManager.IsPublicMode()
-//}
-//
-//func (l *Lsp) IsProtectMode() bool {
-//	return l.LspStateManager.IsProtectMode()
-//}
-//
-//func (l *Lsp) IsPrivateMode() bool {
-//	return l.LspStateManager.IsPrivateMode()
-//}
 
 var Instance *Lsp
 
