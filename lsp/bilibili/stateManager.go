@@ -33,7 +33,6 @@ func (c *StateManager) GetUserInfo(mid int64) (*UserInfo, error) {
 	var userInfo = &UserInfo{}
 	err := c.JsonGet(c.UserInfoKey(mid), userInfo)
 	if err != nil {
-		logger.Errorf("JsonGet user info failed")
 		return nil, err
 	}
 	return userInfo, nil
@@ -53,7 +52,6 @@ func (c *StateManager) GetUserStat(mid int64) (*UserStat, error) {
 	var userStat = &UserStat{}
 	err := c.JsonGet(c.UserStatKey(mid), userStat)
 	if err != nil {
-		logger.Errorf("JsonGet user stat failed")
 		return nil, err
 	}
 	return userStat, nil
@@ -78,7 +76,6 @@ func (c *StateManager) GetLiveInfo(mid int64) (*LiveInfo, error) {
 	var liveInfo = &LiveInfo{}
 	err := c.JsonGet(c.CurrentLiveKey(mid), liveInfo)
 	if err != nil {
-		logger.Errorf("JsonGet live info failed")
 		return nil, err
 	}
 	return liveInfo, nil
@@ -149,7 +146,6 @@ func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 	var newsInfo = &NewsInfo{}
 	err := c.JsonGet(c.CurrentNewsKey(mid), newsInfo)
 	if err != nil {
-		logger.Errorf("JsonGet news info failed")
 		return nil, err
 	}
 	return newsInfo, nil

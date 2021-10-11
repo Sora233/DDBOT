@@ -173,7 +173,7 @@ func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype
 		}
 		oldState := concern_type.FromString(val)
 		newCtype = oldState.Remove(ctype)
-		if newCtype == concern_type.Empty {
+		if newCtype.Empty() {
 			_, err = tx.Delete(groupStateKey)
 		} else {
 			_, _, err = tx.Set(groupStateKey, newCtype.String(), nil)

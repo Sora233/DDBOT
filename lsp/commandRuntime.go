@@ -3,8 +3,8 @@ package lsp
 import (
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
-	"github.com/Sora233/DDBOT/lsp/command"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/parser"
 	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/alecthomas/kong"
 	"io"
@@ -14,7 +14,7 @@ import (
 type Runtime struct {
 	bot *miraiBot.Bot
 	l   *Lsp
-	*command.Parser
+	*parser.Parser
 
 	debug   bool
 	exit    bool
@@ -73,7 +73,7 @@ func NewRuntime(bot *miraiBot.Bot, l *Lsp, silence ...bool) *Runtime {
 	r := &Runtime{
 		bot:    bot,
 		l:      l,
-		Parser: command.NewParser(),
+		Parser: parser.NewParser(),
 	}
 	if len(silence) > 0 {
 		r.silence = silence[0]

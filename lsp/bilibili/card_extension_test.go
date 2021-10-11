@@ -33,4 +33,6 @@ func TestCard_GetCard(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = getCard(DynamicDescType_WithLiveV2).GetCardWithLiveV2()
 	assert.Nil(t, err)
+	_, err = getCard(DynamicDescType_WithCourse).GetCardWithCourse()
+	assert.Nil(t, err)
 }

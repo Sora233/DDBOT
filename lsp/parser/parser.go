@@ -1,6 +1,7 @@
-package command
+package parser
 
 import (
+	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/utils"
 	"strings"
@@ -9,9 +10,16 @@ import (
 type Parser struct {
 	Command string
 	Args    []string
+	// AtTarget 记录消息开头的@
+	AtTarget int64
 }
 
 func (p *Parser) Parse(e []message.IMessageElement) {
+	if len(e) > 0 {
+		if at, ok := e[0].(*message.AtElement); ok {
+			p.AtTarget = at.Target
+		}
+	}
 	for _, element := range e {
 		if te, ok := element.(*message.TextElement); ok {
 			text := strings.TrimSpace(strings.Replace(te.Content, " ", " ", -1))
@@ -42,6 +50,13 @@ func (p *Parser) GetCmdArgs() []string {
 	result := []string{p.Command}
 	result = append(result, p.Args...)
 	return result
+}
+
+func (p *Parser) AtCheck() bool {
+	if bot.Instance == nil || p.AtTarget == 0 {
+		return true
+	}
+	return p.AtTarget == bot.Instance.Uin
 }
 
 func NewParser() *Parser {

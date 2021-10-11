@@ -154,6 +154,9 @@ func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype c
 	if err != nil {
 		log.Errorf("get UserStat error %v\n", err)
 	} else if userStat != nil {
+		if userStat.Follower == 0 {
+			return nil, fmt.Errorf("该用户粉丝数为0，请确认您的订阅目标是否正确，注意使用UID而非直播间ID")
+		}
 		userInfo.UserStat = userStat
 	}
 
@@ -221,9 +224,6 @@ func (c *Concern) Remove(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctyp
 		if err != nil {
 			return err
 		}
-		if !ctype.ContainAll(Live) {
-			return nil
-		}
 		allCtype, err = c.StateManager.GetConcern(mid)
 		if err != nil {
 			return err
@@ -241,7 +241,7 @@ func (c *Concern) Remove(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctyp
 		}
 		return nil
 	})
-	if config.GlobalConfig != nil {
+	if err == nil && config.GlobalConfig != nil {
 		if config.GlobalConfig.GetBool("bilibili.unsub") && allCtype.Empty() {
 			c.unsubUser(mid)
 		}
@@ -784,23 +784,24 @@ func (c *Concern) RemoveAllByGroupCode(groupCode int64) ([]string, error) {
 				}
 				changedIdSet[id.(int64)] = true
 			}
+			c.RWCover(func() error {
+				for mid := range changedIdSet {
+					ctype, err := c.GetConcern(mid)
+					if err != nil {
+						continue
+					}
+					if !ctype.ContainAll(Live) {
+						c.StateManager.DeleteLiveInfo(mid)
+					}
+				}
+				return nil
+			})
 		}
 		go func() {
-			for id := range changedIdSet {
-				var ctype concern_type.Type
-				_, _, _, err := c.StateManager.List(func(groupCode int64, _id interface{}, p concern_type.Type) bool {
-					if _id == id {
-						ctype = ctype.Add(p)
-					}
-					return true
-				})
-				if err != nil {
-					continue
-				}
-
-				if ctype.Empty() {
-					c.unsubUser(id)
-					time.Sleep(time.Second * 3)
+			// 考虑到unsub是个网络操作，还是不要占用事务了
+			for mid := range changedIdSet {
+				if ctype, err := c.GetConcern(mid); err == nil && ctype.Empty() {
+					c.unsubUser(mid)
 				}
 			}
 		}()

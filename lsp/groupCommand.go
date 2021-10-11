@@ -86,6 +86,11 @@ func (lgc *LspGroupCommand) Execute() {
 		return
 	}
 
+	if !lgc.AtCheck() {
+		log.Debugf("at check fail, skip execute")
+		return
+	}
+
 	log.Debug("execute command")
 
 	switch strings.TrimPrefix(lgc.GetCmd(), lgc.prefix) {

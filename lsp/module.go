@@ -389,12 +389,8 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 func (l *Lsp) PostStart(bot *bot.Bot) {
 	l.FreshIndex()
 	go func() {
-		ticker := time.NewTicker(time.Second * 30)
-		for {
-			select {
-			case <-ticker.C:
-				l.FreshIndex()
-			}
+		for range time.Tick(time.Second * 30) {
+			l.FreshIndex()
 		}
 	}()
 	registry.StartAll()
