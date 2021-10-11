@@ -26,4 +26,5 @@ func TestParser_Parse(t *testing.T) {
 	assert.EqualValues(t, "/a", p.GetCmd())
 	assert.EqualValues(t, []string{"-b", "1", "-c", "2"}, p.GetArgs())
 	assert.EqualValues(t, []string{"/a", "-b", "1", "-c", "2"}, p.GetCmdArgs())
+	assert.True(t, p.AtCheck())
 }
