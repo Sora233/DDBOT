@@ -3,6 +3,7 @@ package local_proxy_pool
 import (
 	"errors"
 	"github.com/Sora233/DDBOT/proxy_pool"
+	"net/url"
 	"sync/atomic"
 )
 
@@ -12,6 +13,14 @@ type Proxy struct {
 }
 
 func (p *Proxy) ProxyString() string {
+	uri, err := url.Parse(p.Proxy)
+	if err == nil {
+		if len(uri.Scheme) == 0 {
+			return "http://" + p.Proxy
+		} else {
+			return p.Proxy
+		}
+	}
 	return "http://" + p.Proxy
 }
 func (p *Proxy) Prefer() proxy_pool.Prefer {
