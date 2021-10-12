@@ -50,7 +50,6 @@ func (c *Concern) Stop() {
 }
 
 func (c *Concern) Start() {
-
 	err := c.StateManager.Start()
 	if err != nil {
 		logger.Errorf("state manager start err %v", err)

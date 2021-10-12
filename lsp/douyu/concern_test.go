@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+const _testRoom = "9617408"
+
 func TestConcern(t *testing.T) {
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
@@ -16,10 +18,10 @@ func TestConcern(t *testing.T) {
 
 	c := NewConcern(testChan)
 	c.StateManager = initStateManager(t)
+	defer c.Stop()
 
 	go c.notifyLoop()
 
-	const _testRoom = "9617408"
 	testRoom, err := ParseUid(_testRoom)
 	assert.Nil(t, err)
 
