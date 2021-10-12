@@ -46,4 +46,5 @@ func TestParseUid(t *testing.T) {
 func TestCookieInfo(t *testing.T) {
 	SetAccount("a", "b")
 	assert.True(t, IsVerifyGiven())
+	SetAccount("", "")
 }
