@@ -101,7 +101,10 @@ func (lgc *LspGroupCommand) Execute() {
 		}
 	case "/黄图":
 		if lgc.requireEnable(HuangtuCommand) {
-			if lgc.l.PermissionStateManager.RequireAny(permission.AdminRoleRequireOption(lgc.uin())) {
+			if lgc.l.PermissionStateManager.RequireAny(
+				permission.AdminRoleRequireOption(lgc.uin()),
+				permission.GroupCommandRequireOption(lgc.groupCode(), lgc.uin(), HuangtuCommand),
+			) {
 				lgc.SetuCommand(true)
 			}
 		}
