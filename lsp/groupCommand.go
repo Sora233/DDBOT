@@ -9,7 +9,6 @@ import (
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/image_pool"
 	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
-	"github.com/Sora233/DDBOT/lsp/aliyun"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/permission"
@@ -68,7 +67,7 @@ func (lgc *LspGroupCommand) Execute() {
 		}
 	}()
 
-	if lgc.GetCmd() != "" && !strings.HasPrefix(lgc.GetCmd(), "/") {
+	if !strings.HasPrefix(lgc.GetCmd(), "/") {
 		return
 	}
 
@@ -81,17 +80,6 @@ func (lgc *LspGroupCommand) Execute() {
 
 	if !lgc.DebugCheck() {
 		log.Debugf("debug mode, skip execute.")
-		return
-	}
-
-	if lgc.GetCmd() == "" && len(lgc.GetArgs()) == 0 {
-		if !lgc.groupEnabled(ImageContentCommand) {
-			//log.WithField("command", ImageContentCommand).Trace("not enabled")
-			return
-		}
-		if lgc.uin() != lgc.bot.Uin {
-			lgc.ImageContent()
-		}
 		return
 	}
 
@@ -921,33 +909,6 @@ func (lgc *LspGroupCommand) HelpCommand() {
 		sb.WriteString("当前BOT处于审核状态，添加BOT好友并由管理员审核后即可让BOT为阁下的群服务\n详细介绍请添加好友后私聊发送/help")
 	}
 	lgc.textReply(sb.String())
-}
-
-func (lgc *LspGroupCommand) ImageContent() {
-	log := lgc.DefaultLoggerWithCommand(ImageContentCommand)
-
-	if !lgc.l.status.AliyunEnable {
-		logger.Debug("aliyun not setup")
-		return
-	}
-
-	for _, e := range lgc.msg.Elements {
-		if e.Type() == message.Image {
-			switch ie := e.(type) {
-			case *message.GroupImageElement:
-				rating := lgc.l.checkImage(ie)
-				if rating == aliyun.SceneSexy {
-					lgc.textReply("就这")
-					return
-				} else if rating == aliyun.ScenePorn {
-					lgc.textReply("多发点")
-					return
-				}
-			default:
-				log.Error("can not cast element to ImageElement")
-			}
-		}
-	}
 }
 
 func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {

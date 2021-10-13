@@ -11,7 +11,6 @@ import (
 	"github.com/Sora233/DDBOT/image_pool"
 	"github.com/Sora233/DDBOT/image_pool/local_pool"
 	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
-	"github.com/Sora233/DDBOT/lsp/aliyun"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
@@ -26,8 +25,6 @@ import (
 	localutils "github.com/Sora233/DDBOT/utils"
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	"github.com/sirupsen/logrus"
-	"github.com/tidwall/buntdb"
-	"math/rand"
 	"runtime"
 	"runtime/debug"
 	"strings"
@@ -81,15 +78,6 @@ func (l *Lsp) Init() {
 	}
 
 	bilibili.Init()
-
-	keyId := config.GlobalConfig.GetString("aliyun.accessKeyID")
-	keySecret := config.GlobalConfig.GetString("aliyun.accessKeySecret")
-	if keyId != "" && keySecret != "" {
-		aliyun.InitAliyun(keyId, keySecret)
-		l.status.AliyunEnable = true
-	} else {
-		log.Debug("未配置阿里云，一些次要功能将无法使用")
-	}
 
 	l.PermissionStateManager = permission.NewStateManager()
 	l.LspStateManager = NewStateManager()
@@ -453,48 +441,6 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 	if err := localdb.Close(); err != nil {
 		logger.Errorf("close db err %v", err)
 	}
-}
-
-func (l *Lsp) checkImage(img *message.GroupImageElement) string {
-	var cacheLabel string
-	localdb.RCoverTx(func(tx *buntdb.Tx) error {
-		key := localdb.ImageCacheKey(string(img.Md5))
-		val, err := tx.Get(key)
-		if err == nil {
-			cacheLabel = val
-		}
-		return nil
-	})
-	if len(cacheLabel) != 0 {
-		logger.WithField("label", cacheLabel).Debug("detect cache")
-		return cacheLabel
-	}
-	if rand.Int()%2 == 0 {
-		logger.Tracef("random skip")
-		return ""
-	}
-	resp, err := aliyun.Audit(img.Url)
-	if err != nil {
-		logger.Errorf("aliyun request error %v", err)
-		return ""
-	} else if resp.Data.Results[0].Code != 0 {
-		logger.Errorf("aliyun response code %v, msg %v", resp.Data.Results[0].Code, resp.Data.Results[0].Message)
-		return ""
-	}
-	if len(resp.Data.Results[0].SubResults) == 0 {
-		logger.Errorf("aliyun response empty subResults")
-		return ""
-	}
-	logger.WithField("label", resp.Data.Results[0].SubResults[0].Label).
-		WithField("rate", resp.Data.Results[0].SubResults[0].Rate).
-		Debug("detect done")
-	label := resp.Data.Results[0].SubResults[0].Label
-	localdb.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := localdb.ImageCacheKey(string(img.Md5))
-		_, _, err := tx.Set(key, label, localdb.ExpireOption(time.Hour*72))
-		return err
-	})
-	return label
 }
 
 func (l *Lsp) FreshIndex() {

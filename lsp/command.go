@@ -5,23 +5,22 @@ import "github.com/Sora233/sliceutil"
 // TODO command需要重构成注册模式，然后把这个文件废弃
 
 const (
-	RollCommand         = "roll"
-	CheckinCommand      = "签到"
-	ScoreCommand        = "查询积分"
-	GrantCommand        = "grant"
-	LspCommand          = "lsp"
-	WatchCommand        = "watch"
-	UnwatchCommand      = "unwatch"
-	ListCommand         = "list"
-	SetuCommand         = "色图"
-	HuangtuCommand      = "黄图"
-	EnableCommand       = "enable"
-	DisableCommand      = "disable"
-	FaceCommand         = "face"
-	ReverseCommand      = "倒放"
-	ImageContentCommand = "ic"
-	HelpCommand         = "help"
-	ConfigCommand       = "config"
+	RollCommand    = "roll"
+	CheckinCommand = "签到"
+	ScoreCommand   = "查询积分"
+	GrantCommand   = "grant"
+	LspCommand     = "lsp"
+	WatchCommand   = "watch"
+	UnwatchCommand = "unwatch"
+	ListCommand    = "list"
+	SetuCommand    = "色图"
+	HuangtuCommand = "黄图"
+	EnableCommand  = "enable"
+	DisableCommand = "disable"
+	FaceCommand    = "face"
+	ReverseCommand = "倒放"
+	HelpCommand    = "help"
+	ConfigCommand  = "config"
 )
 
 // private command
@@ -43,7 +42,7 @@ var allGroupCommand = [...]string{
 	RollCommand, CheckinCommand, GrantCommand,
 	LspCommand, WatchCommand, UnwatchCommand,
 	ListCommand, SetuCommand, HuangtuCommand,
-	EnableCommand, DisableCommand, ImageContentCommand,
+	EnableCommand, DisableCommand,
 	FaceCommand, ReverseCommand, ConfigCommand,
 	HelpCommand, ScoreCommand, AdminCommand,
 	SilenceCommand,

@@ -17,7 +17,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"strings"
-	"time"
 )
 
 var errNilParam = errors.New("内部参数错误")
@@ -361,12 +360,7 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 	if disable {
 		err = c.Lsp.PermissionStateManager.DisableGroupCommand(groupCode, command)
 	} else {
-		if command == ImageContentCommand {
-			// 要收钱了，不能白嫖了
-			err = c.Lsp.PermissionStateManager.EnableGroupCommand(groupCode, command, permission.ExpireOption(time.Hour*24))
-		} else {
-			err = c.Lsp.PermissionStateManager.EnableGroupCommand(groupCode, command)
-		}
+		err = c.Lsp.PermissionStateManager.EnableGroupCommand(groupCode, command)
 	}
 	if err != nil {
 		log.Errorf("enable failed %v", err)

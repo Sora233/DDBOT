@@ -189,13 +189,6 @@ bilibili:
   unsub: false      # 是否自动取消关注，默认不取消
                     # 如果您的b站账号有多个bot同时使用，取消可能导致推送丢失
 
-
-# 用于涩图鉴定功能
-# https://api.aliyun.com/#/?product=imageaudit
-aliyun: # 阿里云鉴权，用于图片识别，如果为空则图片识别功能无法工作
-  accessKeyID: # 鉴权的账号应该开通内容审核功能（该服务2021年3月25日开始收费）
-  accessKeySecret:
-
 localPool: # 图片功能，使用本地图库
   imageDir: # 本地路径
 

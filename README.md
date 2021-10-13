@@ -50,9 +50,6 @@ DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送�
 
 - **随机图片**
     - 由 [api.olicon.app](https://api.lolicon.app/#/) 提供
-- **色图判定**
-    - 由阿里云提供
-    - **注意：阿里云该服务2021年3月25日开始收费**
 
 </details>
 
