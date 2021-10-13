@@ -1121,7 +1121,8 @@ func (c *LspPrivateCommand) HelpCommand() {
 		"/config offline_notify 97505 on\n" +
 		"BOT还支持更多功能，详细命令介绍请查看命令文档：\n" +
 		"https://hub.fastgit.org/Sora233/DDBOT/blob/master/EXAMPLE.md\n" +
-		"使用时请把作者UID换成你需要的UID"
+		"使用时请把作者UID换成你需要的UID\n" +
+		"当您完成所有配置后，可以使用/silence命令，让bot专注于推送，在群内发言更少"
 	help2 := "B站专栏介绍：https://www.bilibili.com/read/cv10602230\n" +
 		"如果您有任何疑问或者建议，请反馈到唯一指定交流群：755612788"
 	c.textSend(help)
