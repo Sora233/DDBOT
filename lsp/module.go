@@ -17,6 +17,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/douyu"
 	"github.com/Sora233/DDBOT/lsp/huya"
 	"github.com/Sora233/DDBOT/lsp/permission"
+	"github.com/Sora233/DDBOT/lsp/version"
 	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/local_proxy_pool"
@@ -75,6 +76,14 @@ func (l *Lsp) Init() {
 	}
 	if err := localdb.InitBuntDB(""); err != nil {
 		log.Fatalf("无法正常初始化数据库！请检查.lsp.db文件权限是否正确，如无问题则为数据库文件损坏，请阅读文档获得帮助。")
+	}
+
+	curVersion := version.GetCurrentVersion(LspVersionName)
+
+	if curVersion == -1 {
+		log.Errorf("警告：无法检查数据库兼容性，程序可能无法正常工作")
+	} else if curVersion > LspSupportVersion {
+		log.Fatalf("警告：检查数据库兼容性失败！最高支持版本：%v，当前版本：%v", LspSupportVersion, curVersion)
 	}
 
 	bilibili.Init()

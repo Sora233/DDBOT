@@ -182,6 +182,10 @@ func GroupInvitedKey(keys ...interface{}) string {
 	return NamedKey("GroupInvited", keys)
 }
 
+func VersionKey(keys ...interface{}) string {
+	return NamedKey("Version", keys)
+}
+
 func ParseConcernStateKeyWithInt64(key string) (groupCode int64, id int64, err error) {
 	keys := strings.Split(key, ":")
 	if len(keys) != 3 {

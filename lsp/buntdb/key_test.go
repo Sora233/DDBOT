@@ -126,6 +126,7 @@ func TestKeys(t *testing.T) {
 	ModeKey()
 	NewFriendRequestKey()
 	GroupInvitedKey()
+	VersionKey()
 	assert.Panics(t, func() {
 		BilibiliGroupConcernStateKey(&struct{}{})
 	})
