@@ -4,7 +4,9 @@ import (
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/buntdb"
 	"testing"
+	"time"
 )
 
 func initConcern(t *testing.T) *Concern {
@@ -91,6 +93,20 @@ func TestConcern_FindUserLiving(t *testing.T) {
 	liveInfo, err = c.FindUserLiving(test.UID2, false)
 	assert.NotNil(t, err)
 	assert.Nil(t, liveInfo)
+
+	const testMid int64 = 2
+
+	userInfo, err := c.FindOrLoadUser(testMid)
+	assert.Nil(t, err)
+	assert.Equal(t, testMid, userInfo.Mid)
+	assert.Equal(t, "碧诗", userInfo.Name)
+
+	_, err = c.FindUserLiving(testMid, false)
+	assert.Equal(t, buntdb.ErrNotFound, err)
+
+	liveInfo, err = c.FindUserLiving(testMid, true)
+	assert.Nil(t, err)
+	assert.NotNil(t, liveInfo)
 }
 
 func TestConcern_FindUserNews(t *testing.T) {
@@ -112,4 +128,48 @@ func TestConcern_FindUserNews(t *testing.T) {
 	newsInfo, err = c.FindUserNews(test.UID2, false)
 	assert.NotNil(t, err)
 	assert.Nil(t, newsInfo)
+
+	const testMid int64 = 2
+
+	userInfo, err := c.FindOrLoadUser(testMid)
+	assert.Nil(t, err)
+	assert.Equal(t, testMid, userInfo.Mid)
+	assert.Equal(t, "碧诗", userInfo.Name)
+
+	userInfo2, err := c.FindOrLoadUser(testMid)
+	assert.Nil(t, err)
+	assert.NotNil(t, userInfo2)
+	assert.EqualValues(t, userInfo, userInfo2)
+
+	newsInfo, err = c.FindUserNews(testMid, false)
+	assert.Equal(t, buntdb.ErrNotFound, err)
+
+	newsInfo, err = c.FindUserNews(testMid, true)
+	assert.Nil(t, err)
+	assert.NotNil(t, newsInfo)
+}
+
+func TestConcern_StatUserWithCache(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	c := initConcern(t)
+
+	const testMid int64 = 2
+
+	userInfo, err := c.FindOrLoadUser(testMid)
+	assert.Nil(t, err)
+	assert.Equal(t, testMid, userInfo.Mid)
+	assert.Equal(t, "碧诗", userInfo.Name)
+
+	stat, err := c.StatUserWithCache(testMid, time.Hour)
+	assert.Nil(t, err)
+	assert.NotNil(t, stat)
+	assert.Equal(t, testMid, stat.Mid)
+	assert.True(t, stat.Follower > 0)
+
+	stat2, err := c.StatUserWithCache(testMid, time.Hour)
+	assert.Nil(t, err)
+	assert.NotNil(t, stat2)
+	assert.EqualValues(t, stat, stat2)
 }

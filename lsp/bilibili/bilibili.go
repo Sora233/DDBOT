@@ -260,8 +260,12 @@ func freshAccountCookieInfo() (*LoginResponse_Data_CookieInfo, error) {
 		return nil, err
 	}
 	if resp.GetCode() != 0 {
-		logger.Errorf("Login code %v", resp.GetCode())
-		return nil, fmt.Errorf("login code %v", resp.GetCode())
+		logger.Errorf("Login error %v - %v", resp.GetCode(), resp.GetMessage())
+		return nil, fmt.Errorf("login error %v - %v", resp.GetCode(), resp.GetMessage())
+	}
+	if resp.GetData().GetStatus() != 0 {
+		logger.Errorf("Login status error %v - %v", resp.GetData().GetStatus(), resp.GetData().GetMessage())
+		return nil, fmt.Errorf("login status error %v - %v", resp.GetData().GetStatus(), resp.GetData().GetMessage())
 	}
 	logger.Debug("login success")
 	if err = SetCookieInfo(username, resp.GetData().GetCookieInfo()); err != nil {

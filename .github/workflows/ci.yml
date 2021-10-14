@@ -14,7 +14,9 @@ jobs:
           go-version: ${{ matrix.go }}
       - uses: actions/checkout@v2
       - run: go test -tags=nocv -v -coverprofile=profile.cov ./...
-
+      - name: go vet
+        run: |
+          go vet -tags nocv ./...
       - name: Send coverage
         uses: shogo82148/actions-goveralls@v1
         with:

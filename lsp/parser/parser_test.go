@@ -21,9 +21,10 @@ func TestParser_Parse(t *testing.T) {
 	p := NewParser()
 	assert.NotNil(t, p)
 
-	p.Parse([]message.IMessageElement{message.NewText(" "), message.NewText("/a -b 1 -c 2")})
+	p.Parse([]message.IMessageElement{message.NewAt(0), message.NewText(" "), message.NewText("/a -b 1 -c 2")})
 
 	assert.EqualValues(t, "/a", p.GetCmd())
 	assert.EqualValues(t, []string{"-b", "1", "-c", "2"}, p.GetArgs())
 	assert.EqualValues(t, []string{"/a", "-b", "1", "-c", "2"}, p.GetCmdArgs())
+	assert.True(t, p.AtCheck())
 }

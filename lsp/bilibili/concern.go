@@ -583,11 +583,23 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 			break
 		}
 		if zeroCount >= 3 {
-			logger.Errorf("freshLive end unexpectedly due to zero count")
+			// 认为是真的无人在直播，可能是关注比较少
+			if maxPage > 1 {
+				logger.WithFields(logrus.Fields{
+					"Page":          page,
+					"MaxPage":       maxPage,
+					"LiveInfo Size": len(liveInfo),
+				}).Errorf("直播信息刷新异常结束，如果该信息没有频繁出现，可以忽略。")
+			}
 			break
 		}
 	}
-	logger.WithField("cost", time.Now().Sub(start)).WithField("Page", page).WithField("LiveInfo Size", len(liveInfo)).Tracef("freshLive done")
+	logger.WithFields(logrus.Fields{
+		"cost":          time.Since(start),
+		"Page":          page,
+		"MaxPage":       maxPage,
+		"LiveInfo Size": len(liveInfo),
+	}).Tracef("freshLive done")
 	return liveInfo, nil
 }
 

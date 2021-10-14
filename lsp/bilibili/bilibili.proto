@@ -205,8 +205,11 @@ message LoginResponse {
     TokenInfo token_info = 2;
     CookieInfo cookie_info = 3;
     repeated string sso = 4;
+    string message = 5;
+    string url = 6;
   }
   Data data = 3;
+  string message = 4;
 }
 
 message XRelationStatResponse {
