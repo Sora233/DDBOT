@@ -333,3 +333,22 @@ func TestStateManager_SetGroupOriginMarkIfNotExist(t *testing.T) {
 	assert.Nil(t, c.SetGroupOriginMarkIfNotExist(test.G1, test.BVID1))
 	assert.NotNil(t, c.SetGroupOriginMarkIfNotExist(test.G1, test.BVID1))
 }
+
+func TestStateManager_GetLastFreshTime(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	c := initStateManager(t)
+
+	result, _ := c.GetLastFreshTime()
+	assert.Zero(t, result)
+
+	var ts = time.Now().Unix()
+
+	err := c.SetLastFreshTime(ts)
+	assert.Nil(t, err)
+
+	result, err = c.GetLastFreshTime()
+	assert.Nil(t, err)
+	assert.Equal(t, ts, result)
+}

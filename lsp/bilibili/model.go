@@ -314,9 +314,10 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 		case DynamicDescType_WithVideo:
 			videoCard, _ := notify.Card.GetCardWithVideo()
 			result = append(result,
-				localutils.MessageTextf("%v%v：\n%v\n%v",
+				localutils.MessageTextf("%v%v：\n%v\n%v\n%v",
 					notify.Name,
 					notify.Card.GetDisplay().GetUsrActionTxt(),
+					date,
 					videoCard.GetTitle(),
 					dynamicUrl),
 			)
@@ -324,9 +325,10 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 		case DynamicDescType_WithOrigin:
 			origCard, _ := notify.Card.GetCardWithOrig()
 			result = append(result,
-				localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v",
+				localutils.MessageTextf("%v转发了%v的动态：\n%v\n%v\n%v",
 					notify.Name,
 					origCard.GetOriginUser().GetInfo().GetUname(),
+					date,
 					origCard.GetItem().GetContent(),
 					dynamicUrl,
 				),

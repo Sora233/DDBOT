@@ -593,7 +593,7 @@ func (l *Lsp) getConcernConfigNotifyManager(ctype concern.Type, concernConfig *c
 	}
 	switch ctype {
 	case concern.BibiliLive, concern.BilibiliNews:
-		return bilibili.NewGroupConcernConfig(concernConfig, l.bilibiliConcern.StateManager)
+		return bilibili.NewGroupConcernConfig(concernConfig, l.bilibiliConcern)
 	case concern.DouyuLive:
 		return douyu.NewGroupConcernConfig(concernConfig)
 	case concern.YoutubeLive, concern.YoutubeVideo:

@@ -241,6 +241,15 @@ func (c *StateManager) SetGroupOriginMarkIfNotExist(groupCode int64, dynamicIdSt
 	)
 }
 
+func (c *StateManager) SetLastFreshTime(ts int64) error {
+	_, err := localdb.SetInt64(c.LastFreshKey(), ts, nil)
+	return err
+}
+
+func (c *StateManager) GetLastFreshTime() (int64, error) {
+	return localdb.GetInt64(c.LastFreshKey())
+}
+
 func SetCookieInfo(username string, cookieInfo *LoginResponse_Data_CookieInfo) error {
 	if cookieInfo == nil {
 		return errors.New("<nil> cookieInfo")

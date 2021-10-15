@@ -58,6 +58,10 @@ func (k *extraKey) NotLiveKey(keys ...interface{}) string {
 	return buntdb.BilibiliNotLiveCountKey(keys...)
 }
 
+func (k *extraKey) LastFreshKey(keys ...interface{}) string {
+	return buntdb.BilibiliLastFreshKey(keys...)
+}
+
 func NewKeySet() *keySet {
 	return &keySet{}
 }

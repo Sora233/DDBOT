@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -33,8 +34,9 @@ type ConcernEvent interface {
 }
 
 type Concern struct {
-	*StateManager
+	unsafeStart int32
 
+	*StateManager
 	eventChan chan ConcernEvent
 	notify    chan<- concern.Notify
 	stop      chan interface{}
@@ -47,6 +49,13 @@ func NewConcern(notify chan<- concern.Notify) *Concern {
 		eventChan:    make(chan ConcernEvent, 500),
 		notify:       notify,
 		stop:         make(chan interface{}),
+	}
+	lastFresh, _ := c.GetLastFreshTime()
+	if lastFresh > 0 && time.Now().Sub(time.Unix(lastFresh, 0)) > time.Minute*30 {
+		c.unsafeStart = 1
+		time.AfterFunc(time.Minute*3, func() {
+			atomic.StoreInt32(&c.unsafeStart, 0)
+		})
 	}
 	return c
 }
@@ -409,6 +418,7 @@ func (c *Concern) watchCore() {
 		end := time.Now()
 		if err == nil {
 			logger.WithField("cost", end.Sub(start)).Tracef("watchCore loop done")
+			c.SetLastFreshTime(time.Now().Unix())
 		} else {
 			logger.WithField("cost", end.Sub(start)).Errorf("watchCore error %v", err)
 		}

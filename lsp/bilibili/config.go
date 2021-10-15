@@ -7,11 +7,12 @@ import (
 	"github.com/Sora233/DDBOT/utils"
 	"strconv"
 	"strings"
+	"sync/atomic"
 )
 
 type GroupConcernConfig struct {
 	concern_manager.GroupConcernConfig
-	StateManager *StateManager
+	Concern *Concern
 }
 
 func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
@@ -31,20 +32,20 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 		}
 
 		// 解决联合投稿的时候刷屏
-		err = g.StateManager.SetGroupVideoOriginMarkIfNotExist(notify.GetGroupCode(), videoOrigin.GetBvid())
+		err = g.Concern.SetGroupVideoOriginMarkIfNotExist(notify.GetGroupCode(), videoOrigin.GetBvid())
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	case DynamicDescType_WithOrigin:
 		// 解决一起转发的时候刷屏
 		origDyId := notify.Card.GetDesc().GetOrigDyIdStr()
-		err := g.StateManager.SetGroupOriginMarkIfNotExist(notify.GetGroupCode(), origDyId)
+		err := g.Concern.SetGroupOriginMarkIfNotExist(notify.GetGroupCode(), origDyId)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	default:
 		// 其他动态也设置一下
-		err := g.StateManager.SetGroupOriginMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
+		err := g.Concern.SetGroupOriginMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
 		if err != nil && !localdb.IsRollback(err) {
 			logger.Errorf("SetGroupOriginMarkIfNotExist error %v", err)
 		}
@@ -53,6 +54,10 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 
 func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern_manager.HookResult) {
 	hook = new(concern_manager.HookResult)
+	if g.Concern != nil && atomic.LoadInt32(&g.Concern.unsafeStart) != 0 {
+		hook.Reason = "unsafe start status"
+		return
+	}
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
 		if !e.Living() {
@@ -198,8 +203,8 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 	}
 }
 
-func NewGroupConcernConfig(g *concern_manager.GroupConcernConfig, sm *StateManager) *GroupConcernConfig {
-	return &GroupConcernConfig{*g, sm}
+func NewGroupConcernConfig(g *concern_manager.GroupConcernConfig, c *Concern) *GroupConcernConfig {
+	return &GroupConcernConfig{*g, c}
 }
 
 const (

@@ -82,6 +82,9 @@ func BilibiliVideoOriginMarkKey(keys ...interface{}) string {
 func BilibiliOriginMarkKey(keys ...interface{}) string {
 	return NamedKey("OriginMark", keys)
 }
+func BilibiliLastFreshKey(keys ...interface{}) string {
+	return NamedKey("BilibiliLastFresh", keys)
+}
 func DouyuGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("DouyuConcernState", keys)
 }
