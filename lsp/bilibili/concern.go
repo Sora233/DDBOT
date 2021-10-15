@@ -492,7 +492,7 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 			return nil, err
 		} else if resp.GetCode() != 0 {
 			if resp.GetCode() == -101 && strings.Contains(resp.GetMessage(), "未登录") {
-				logger.Errorf("刷新直播列表失败，可能是cookie失效，将尝试刷新cookie")
+				logger.Errorf("刷新直播列表失败，可能是cookie失效，将尝试重新获取cookie")
 				ClearCookieInfo(username)
 				atomicVerifyInfo.Store(new(VerifyInfo))
 			} else if resp.GetCode() == -400 {
@@ -500,7 +500,7 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 			} else {
 				logger.Errorf("freshLive FeedList code %v msg %v", resp.GetCode(), resp.GetMessage())
 			}
-			return nil, err
+			return nil, fmt.Errorf("freshLive FeedList error code %v msg %v", resp.GetCode(), resp.GetMessage())
 		}
 		var (
 			dataSize    = len(resp.GetData().GetList())
