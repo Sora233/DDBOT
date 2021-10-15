@@ -280,6 +280,12 @@ func TestGetCookieInfo(t *testing.T) {
 
 	err = SetCookieInfo(test.NAME2, nil)
 	assert.NotNil(t, err)
+
+	err = ClearCookieInfo(test.NAME2)
+	assert.Nil(t, err)
+
+	_, err = GetCookieInfo(test.NAME2)
+	assert.EqualValues(t, buntdb.ErrNotFound, err)
 }
 
 func TestStateManager_GetUserStat(t *testing.T) {

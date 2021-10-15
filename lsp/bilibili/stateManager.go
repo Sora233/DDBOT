@@ -280,6 +280,17 @@ func GetCookieInfo(username string) (cookieInfo *LoginResponse_Data_CookieInfo, 
 	return
 }
 
+func ClearCookieInfo(username string) error {
+	return localdb.RWCoverTx(func(tx *buntdb.Tx) error {
+		key := localdb.BilibiliUserCookieInfoKey(username)
+		_, err := tx.Delete(key)
+		if err == buntdb.ErrNotFound {
+			err = nil
+		}
+		return err
+	})
+}
+
 func (c *StateManager) Start() error {
 	for _, pattern := range []localdb.KeyPatternFunc{
 		c.GroupConcernStateKey, c.CurrentLiveKey, c.FreshKey,
