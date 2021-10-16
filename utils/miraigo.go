@@ -42,5 +42,66 @@ func UploadGroupImage(groupCode int64, img []byte, isNorm bool) (image *message.
 		return nil, err
 	}
 	return image, nil
+}
 
+type internalMsg struct {
+	Type    string `json:"type"`
+	Content string `json:"content"`
+}
+
+const (
+	internalTypeText       = "text"
+	internalTypeGroupImage = "group_image"
+)
+
+// ToStringMsg 序列化消息，只支持图片，文字
+func ToStringMsg(e []message.IMessageElement) string {
+	var tmp []*internalMsg
+
+	for _, elem := range e {
+		switch o := elem.(type) {
+		case *message.TextElement:
+			b, _ := json.Marshal(o)
+			tmp = append(tmp, &internalMsg{
+				Type:    internalTypeText,
+				Content: string(b),
+			})
+		case *message.GroupImageElement:
+			b, _ := json.Marshal(o)
+			tmp = append(tmp, &internalMsg{
+				Type:    internalTypeGroupImage,
+				Content: string(b),
+			})
+		default:
+			panic("unsupported element type")
+		}
+	}
+	s, _ := json.MarshalToString(tmp)
+	return s
+}
+
+// FromStringMsg 反序列化消息，只支持图片，文字
+func FromStringMsg(r string) []message.IMessageElement {
+	var tmp []*internalMsg
+	json.Unmarshal([]byte(r), &tmp)
+	var result []message.IMessageElement
+	for _, e := range tmp {
+		switch e.Type {
+		case internalTypeGroupImage:
+			var elem *message.GroupImageElement
+			json.UnmarshalFromString(e.Content, &elem)
+			if elem != nil {
+				result = append(result, elem)
+			}
+		case internalTypeText:
+			var elem *message.TextElement
+			json.UnmarshalFromString(e.Content, &elem)
+			if elem != nil {
+				result = append(result, elem)
+			}
+		default:
+			panic("unsupported element type")
+		}
+	}
+	return result
 }
