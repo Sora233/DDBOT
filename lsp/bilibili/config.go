@@ -56,7 +56,7 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 }
 
 func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, msg *message.GroupMessage) {
-	if inotify.Type() != concern.BilibiliNews {
+	if inotify.Type() != concern.BilibiliNews || msg == nil || msg.Id == -1 {
 		return
 	}
 	notify := inotify.(*ConcernNewsNotify)
@@ -64,7 +64,7 @@ func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, msg *me
 		return
 	}
 	err := g.Concern.SetNotifyMsg(notify.compactKey, msg)
-	if err != nil {
+	if err != nil && !localdb.IsRollback(err) {
 		notify.Logger().Errorf("set notify msg error %v", err)
 	}
 }

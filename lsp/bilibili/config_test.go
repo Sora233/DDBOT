@@ -1,6 +1,7 @@
 package bilibili
 
 import (
+	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
 	"github.com/Sora233/DDBOT/lsp/test"
@@ -249,4 +250,29 @@ func TestCheckTypeDefine(t *testing.T) {
 	result := CheckTypeDefine([]string{"invalid", Zhuanlan, "1024", "0", "9"})
 	assert.Len(t, result, 3)
 	assert.EqualValues(t, []string{"invalid", "0", "9"}, result)
+}
+
+func TestGroupConcernConfig_NotifyAfterCallback(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	c := initConcern(t)
+
+	var notify = newNewsInfo(test.UID1, DynamicDescType_WithOrigin)[0]
+	notify.compactKey = test.BVID1
+	var msg = &message.GroupMessage{
+		Id:        1,
+		GroupCode: test.G1,
+		Elements: []message.IMessageElement{
+			message.NewText("asd"),
+		},
+	}
+	var g = new(GroupConcernConfig)
+	g.Concern = c
+
+	g.NotifyAfterCallback(notify, msg)
+
+	msg2, err := c.GetNotifyMsg(test.G1, test.BVID1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, msg, msg2)
 }
