@@ -2,6 +2,7 @@ package bilibili
 
 import (
 	"fmt"
+	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/test"
 	"github.com/stretchr/testify/assert"
@@ -314,24 +315,40 @@ func TestStateManager_GetUserStat(t *testing.T) {
 	assert.EqualValues(t, test.UID1, userStat.Mid)
 }
 
-func TestStateManager_SetGroupVideoOriginMarkIfNotExist(t *testing.T) {
+func TestStateManager_GetNotifyMsgReplyInfo(t *testing.T) {
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 
 	c := initStateManager(t)
 
-	assert.Nil(t, c.SetGroupVideoOriginMarkIfNotExist(test.G1, test.BVID1))
-	assert.NotNil(t, c.SetGroupVideoOriginMarkIfNotExist(test.G1, test.BVID1))
+	msg := &message.GroupMessage{
+		Id:        1,
+		GroupCode: test.G1,
+		Sender: &message.Sender{
+			Uin: test.ID1,
+		},
+		Time: 30,
+		Elements: []message.IMessageElement{
+			message.NewText("qwe"),
+			message.NewText("asd"),
+		},
+	}
+
+	err := c.SetNotifyMsg(test.BVID1, msg)
+	assert.Nil(t, err)
+	actual, err := c.GetNotifyMsg(test.G1, test.BVID1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, actual, msg)
 }
 
-func TestStateManager_SetGroupOriginMarkIfNotExist(t *testing.T) {
+func TestStateManager_SetGroupCompactMarkIfNotExist(t *testing.T) {
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 
 	c := initStateManager(t)
 
-	assert.Nil(t, c.SetGroupOriginMarkIfNotExist(test.G1, test.BVID1))
-	assert.NotNil(t, c.SetGroupOriginMarkIfNotExist(test.G1, test.BVID1))
+	assert.Nil(t, c.SetGroupCompactMarkIfNotExist(test.G1, test.BVID1))
+	assert.NotNil(t, c.SetGroupCompactMarkIfNotExist(test.G1, test.BVID1))
 }
 
 func TestStateManager_GetLastFreshTime(t *testing.T) {

@@ -50,16 +50,20 @@ func (k *extraKey) UidFirstTimestamp(keys ...interface{}) string {
 	return buntdb.BilibiliUidFirstTimestampKey(keys...)
 }
 
-func (k *extraKey) UserCookieInfo(keys ...interface{}) string {
-	return buntdb.BilibiliUserCookieInfoKey(keys...)
-}
-
 func (k *extraKey) NotLiveKey(keys ...interface{}) string {
 	return buntdb.BilibiliNotLiveCountKey(keys...)
 }
 
 func (k *extraKey) LastFreshKey(keys ...interface{}) string {
 	return buntdb.BilibiliLastFreshKey(keys...)
+}
+
+func (k *extraKey) CompactMarkKey(keys ...interface{}) string {
+	return buntdb.BilibiliCompactMarkKey(keys...)
+}
+
+func (k *extraKey) NotifyMsgKey(keys ...interface{}) string {
+	return buntdb.BilibiliNotifyMsgKey(keys...)
 }
 
 func NewKeySet() *keySet {

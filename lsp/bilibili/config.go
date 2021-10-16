@@ -1,6 +1,7 @@
 package bilibili
 
 import (
+	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/concern"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_manager"
@@ -30,25 +31,41 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 		if videoOrigin == nil {
 			return
 		}
-
+		notify.compactKey = videoOrigin.GetBvid()
 		// 解决联合投稿的时候刷屏
-		err = g.Concern.SetGroupVideoOriginMarkIfNotExist(notify.GetGroupCode(), videoOrigin.GetBvid())
+		err = g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), videoOrigin.GetBvid())
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	case DynamicDescType_WithOrigin:
 		// 解决一起转发的时候刷屏
 		origDyId := notify.Card.GetDesc().GetOrigDyIdStr()
-		err := g.Concern.SetGroupOriginMarkIfNotExist(notify.GetGroupCode(), origDyId)
+		notify.compactKey = origDyId
+		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), origDyId)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	default:
 		// 其他动态也设置一下
-		err := g.Concern.SetGroupOriginMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
+		notify.compactKey = notify.Card.GetDesc().GetDynamicIdStr()
+		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
 		if err != nil && !localdb.IsRollback(err) {
 			logger.Errorf("SetGroupOriginMarkIfNotExist error %v", err)
 		}
+	}
+}
+
+func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, msg *message.GroupMessage) {
+	if inotify.Type() != concern.BilibiliNews {
+		return
+	}
+	notify := inotify.(*ConcernNewsNotify)
+	if notify.shouldCompact || len(notify.compactKey) == 0 {
+		return
+	}
+	err := g.Concern.SetNotifyMsg(notify.compactKey, msg)
+	if err != nil {
+		notify.Logger().Errorf("set notify msg error %v", err)
 	}
 }
 

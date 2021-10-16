@@ -122,8 +122,10 @@ type ConcernNewsNotify struct {
 
 	// messageCache 导致ConcernNewsNotify的ToMessage()变得线程不安全
 	messageCache []message.IMessageElement
-	// 用于联合投稿防止多人同时推送
+	// 用于联合投稿和转发的时候防止多人同时推送
 	shouldCompact bool
+	compactKey    string
+	concern       *Concern
 }
 
 func (notify *ConcernNewsNotify) Type() concern.Type {
@@ -275,7 +277,7 @@ func NewNewsInfoWithDetail(userInfo *UserInfo, cards []*Card) *NewsInfo {
 	}
 }
 
-func NewConcernNewsNotify(groupCode int64, newsInfo *NewsInfo) []*ConcernNewsNotify {
+func NewConcernNewsNotify(groupCode int64, newsInfo *NewsInfo, c *Concern) []*ConcernNewsNotify {
 	if newsInfo == nil {
 		return nil
 	}
@@ -285,6 +287,7 @@ func NewConcernNewsNotify(groupCode int64, newsInfo *NewsInfo) []*ConcernNewsNot
 			GroupCode: groupCode,
 			UserInfo:  &newsInfo.UserInfo,
 			Card:      card,
+			concern:   c,
 		})
 	}
 	return result
@@ -309,6 +312,11 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 	)
 	// 推送一条简化动态防止刷屏，主要是联合投稿和转发的时候
 	if notify.shouldCompact {
+		// 通过回复之前消息的方式简化推送
+		msg, _ := notify.concern.GetNotifyMsg(notify.GroupCode, notify.compactKey)
+		if msg != nil {
+			result = append(result, message.NewReply(msg))
+		}
 		log.Debug("compact notify")
 		switch notify.Card.GetDesc().GetType() {
 		case DynamicDescType_WithVideo:

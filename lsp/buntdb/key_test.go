@@ -92,8 +92,8 @@ func TestKeys(t *testing.T) {
 	BilibiliUserInfoKey()
 	BilibiliUserStatKey()
 	BilibiliGroupAtAllMarkKey()
-	BilibiliVideoOriginMarkKey()
-	BilibiliOriginMarkKey()
+	BilibiliNotifyMsgKey()
+	BilibiliCompactMarkKey()
 	DouyuGroupConcernStateKey()
 	DouyuGroupConcernConfigKey()
 	DouyuFreshKey()
@@ -127,6 +127,7 @@ func TestKeys(t *testing.T) {
 	NewFriendRequestKey()
 	GroupInvitedKey()
 	VersionKey()
+	BilibiliLastFreshKey()
 	assert.Panics(t, func() {
 		BilibiliGroupConcernStateKey(&struct{}{})
 	})

@@ -76,11 +76,11 @@ func BilibiliUserStatKey(keys ...interface{}) string {
 func BilibiliGroupAtAllMarkKey(keys ...interface{}) string {
 	return NamedKey("GroupAtAll", keys)
 }
-func BilibiliVideoOriginMarkKey(keys ...interface{}) string {
-	return NamedKey("VideoOriginMark", keys)
+func BilibiliCompactMarkKey(keys ...interface{}) string {
+	return NamedKey("CompactMark", keys)
 }
-func BilibiliOriginMarkKey(keys ...interface{}) string {
-	return NamedKey("OriginMark", keys)
+func BilibiliNotifyMsgKey(keys ...interface{}) string {
+	return NamedKey("NotifyMsg", keys)
 }
 func BilibiliLastFreshKey(keys ...interface{}) string {
 	return NamedKey("BilibiliLastFresh", keys)

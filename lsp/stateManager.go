@@ -302,7 +302,7 @@ func (s *StateManager) GetGroupInvitedRequest(requestId int64) (result *client.G
 }
 
 func (s *StateManager) saveRequest(requestId int64, request interface{}, keyFunc localdb.KeyPatternFunc) error {
-	return s.JsonSave(keyFunc(requestId), request)
+	return s.JsonSave(keyFunc(requestId), request, true)
 }
 
 func (s *StateManager) getRequest(requestId int64, request interface{}, keyFunc localdb.KeyPatternFunc) error {

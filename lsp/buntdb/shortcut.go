@@ -1,7 +1,6 @@
 package buntdb
 
 import (
-	"encoding/json"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/modern-go/gls"
 	"github.com/tidwall/buntdb"
@@ -94,16 +93,20 @@ func (*ShortCut) RCover(f func() error) error {
 	})
 }
 
-func (s *ShortCut) JsonSave(key string, obj interface{}, opt ...*buntdb.SetOptions) error {
+func (s *ShortCut) JsonSave(key string, obj interface{}, overwrite bool, opts ...*buntdb.SetOptions) error {
 	return s.RWCoverTx(func(tx *buntdb.Tx) error {
 		b, err := json.Marshal(obj)
 		if err != nil {
 			return err
 		}
-		if len(opt) == 0 {
-			_, _, err = tx.Set(key, string(b), nil)
-		} else {
-			_, _, err = tx.Set(key, string(b), opt[0])
+		var opt *buntdb.SetOptions
+		var replaced bool
+		if len(opts) > 0 {
+			opt = opts[0]
+		}
+		_, replaced, err = tx.Set(key, string(b), opt)
+		if replaced && !overwrite {
+			return ErrRollback
 		}
 		return err
 	})
@@ -250,8 +253,8 @@ func JsonGet(key string, obj interface{}) error {
 	return shortCut.JsonGet(key, obj)
 }
 
-func JsonSave(key string, obj interface{}, opt ...*buntdb.SetOptions) error {
-	return shortCut.JsonSave(key, obj, opt...)
+func JsonSave(key string, obj interface{}, overwrite bool, opt ...*buntdb.SetOptions) error {
+	return shortCut.JsonSave(key, obj, overwrite, opt...)
 }
 
 func SeqNext(key string) (int64, error) {

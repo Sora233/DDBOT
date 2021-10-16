@@ -395,7 +395,7 @@ func TestJsonGet(t *testing.T) {
 	err = RWCover(func() error {
 		for index, exp := range expected {
 			var tmp = new(testJson)
-			assert.Nil(t, JsonSave(keys[index], exp))
+			assert.Nil(t, JsonSave(keys[index], exp, true))
 			assert.Nil(t, JsonGet(keys[index], tmp))
 			assert.EqualValues(t, exp, tmp)
 		}
@@ -404,7 +404,7 @@ func TestJsonGet(t *testing.T) {
 	assert.Nil(t, err)
 
 	err = RCover(func() error {
-		return JsonSave(keys[0], expected[0])
+		return JsonSave(keys[0], expected[0], true)
 	})
 	assert.NotNil(t, err)
 }

@@ -44,7 +44,64 @@ func UploadGroupImage(groupCode int64, img []byte, isNorm bool) (image *message.
 	return image, nil
 }
 
+const (
+	internalMsgTypeGroup = "group"
+)
+
 type internalMsg struct {
+	Type          string `json:"type"`
+	MsgInfo       string `json:"msg_info"`
+	ElementString string `json:"element_string"`
+}
+
+func SerializationGroupMsg(m *message.GroupMessage) (string, error) {
+	elems := m.Elements
+	m.Elements = nil
+
+	defer func() {
+		m.Elements = elems
+	}()
+
+	mString, err := json.MarshalToString(m)
+	if err != nil {
+		return "", err
+	}
+
+	elemString, err := SerializationElement(elems)
+	if err != nil {
+		return "", err
+	}
+
+	imsg := &internalMsg{
+		Type:          internalMsgTypeGroup,
+		MsgInfo:       mString,
+		ElementString: elemString,
+	}
+
+	return json.MarshalToString(imsg)
+}
+
+func DeserializationGroupMsg(r string) (*message.GroupMessage, error) {
+	var imsg *internalMsg
+	err := json.UnmarshalFromString(r, &imsg)
+	if err != nil {
+		return nil, err
+	}
+
+	var m *message.GroupMessage
+	err = json.UnmarshalFromString(imsg.MsgInfo, &m)
+	if err != nil {
+		return nil, err
+	}
+	elems, err := DeserializationElement(imsg.ElementString)
+	if err != nil {
+		return nil, err
+	}
+	m.Elements = elems
+	return m, nil
+}
+
+type internalElem struct {
 	Type    string `json:"type"`
 	Content string `json:"content"`
 }
@@ -54,21 +111,21 @@ const (
 	internalTypeGroupImage = "group_image"
 )
 
-// ToStringMsg 序列化消息，只支持图片，文字
-func ToStringMsg(e []message.IMessageElement) string {
-	var tmp []*internalMsg
+// SerializationElement 序列化消息，只支持图片，文字
+func SerializationElement(e []message.IMessageElement) (string, error) {
+	var tmp []*internalElem
 
 	for _, elem := range e {
 		switch o := elem.(type) {
 		case *message.TextElement:
 			b, _ := json.Marshal(o)
-			tmp = append(tmp, &internalMsg{
+			tmp = append(tmp, &internalElem{
 				Type:    internalTypeText,
 				Content: string(b),
 			})
 		case *message.GroupImageElement:
 			b, _ := json.Marshal(o)
-			tmp = append(tmp, &internalMsg{
+			tmp = append(tmp, &internalElem{
 				Type:    internalTypeGroupImage,
 				Content: string(b),
 			})
@@ -76,14 +133,17 @@ func ToStringMsg(e []message.IMessageElement) string {
 			panic("unsupported element type")
 		}
 	}
-	s, _ := json.MarshalToString(tmp)
-	return s
+	s, err := json.MarshalToString(tmp)
+	return s, err
 }
 
-// FromStringMsg 反序列化消息，只支持图片，文字
-func FromStringMsg(r string) []message.IMessageElement {
-	var tmp []*internalMsg
-	json.Unmarshal([]byte(r), &tmp)
+// DeserializationElement 反序列化消息，只支持图片，文字
+func DeserializationElement(r string) ([]message.IMessageElement, error) {
+	var tmp []*internalElem
+	err := json.Unmarshal([]byte(r), &tmp)
+	if err != nil {
+		return nil, err
+	}
 	var result []message.IMessageElement
 	for _, e := range tmp {
 		switch e.Type {
@@ -103,5 +163,5 @@ func FromStringMsg(r string) []message.IMessageElement {
 			panic("unsupported element type")
 		}
 	}
-	return result
+	return result, nil
 }
