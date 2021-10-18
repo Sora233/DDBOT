@@ -317,7 +317,7 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 		if msg != nil {
 			result = append(result, message.NewReply(msg))
 		}
-		log.Debug("compact notify")
+		log.WithField("compact_key", notify.compactKey).Debug("compact notify")
 		switch notify.Card.GetDesc().GetType() {
 		case DynamicDescType_WithVideo:
 			videoCard, _ := notify.Card.GetCardWithVideo()

@@ -23,25 +23,16 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 	notify := inotify.(*ConcernNewsNotify)
 	switch notify.Card.GetDesc().GetType() {
 	case DynamicDescType_WithVideo:
-		videoCard, err := notify.Card.GetCardWithVideo()
-		if err != nil {
-			return
-		}
-		videoOrigin := videoCard.GetOrigin()
-		if videoOrigin == nil {
-			return
-		}
-		notify.compactKey = videoOrigin.GetBvid()
 		// 解决联合投稿的时候刷屏
-		err = g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), videoOrigin.GetBvid())
+		notify.compactKey = notify.Card.GetDesc().GetBvid()
+		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	case DynamicDescType_WithOrigin:
 		// 解决一起转发的时候刷屏
-		origDyId := notify.Card.GetDesc().GetOrigDyIdStr()
-		notify.compactKey = origDyId
-		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), origDyId)
+		notify.compactKey = notify.Card.GetDesc().GetOrigDyIdStr()
+		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
