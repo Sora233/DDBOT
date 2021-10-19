@@ -699,13 +699,18 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 			return
 		}
 		result = append(result, localutils.MessageTextf(
-			"%v发表了新动态：\n%v\n%v\n内容：%v - %v",
+			"%v发表了新动态：\n%v\n%v\n",
 			notify.Name,
 			date,
 			cardSketch.GetVest().GetContent(),
-			cardSketch.GetSketch().GetTitle(),
-			cardSketch.GetSketch().GetDescText(),
 		))
+		if cardSketch.GetSketch().GetTitle() == cardSketch.GetSketch().GetDescText() {
+			result = append(result, localutils.MessageTextf(
+				"内容：%v", cardSketch.GetSketch().GetTitle()))
+		} else {
+			result = append(result, localutils.MessageTextf(
+				"内容：%v - %v", cardSketch.GetSketch().GetTitle(), cardSketch.GetSketch().GetDescText()))
+		}
 		if len(cardSketch.GetSketch().GetCoverUrl()) != 0 {
 			cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, cardSketch.GetSketch().GetCoverUrl(), true, proxy_pool.PreferNone)
 			if err != nil {
