@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -32,8 +33,9 @@ type concernEvent interface {
 }
 
 type Concern struct {
-	*StateManager
+	unsafeStart int32
 
+	*StateManager
 	eventChan chan concernEvent
 	notify    chan<- concern.Notify
 	stop      chan interface{}
@@ -58,6 +60,13 @@ func NewConcern(notify chan<- concern.Notify) *Concern {
 		eventChan:    make(chan concernEvent, 500),
 		notify:       notify,
 		stop:         make(chan interface{}),
+	}
+	lastFresh, _ := c.GetLastFreshTime()
+	if lastFresh > 0 && time.Now().Sub(time.Unix(lastFresh, 0)) > time.Minute*30 {
+		c.unsafeStart = 1
+		time.AfterFunc(time.Minute*3, func() {
+			atomic.StoreInt32(&c.unsafeStart, 0)
+		})
 	}
 	return c
 }
@@ -327,7 +336,7 @@ func (c *Concern) notifyLoop() {
 			}
 			for _, groupCode := range groups {
 				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("news notify")
-				notifies := NewConcernNewsNotify(groupCode, event)
+				notifies := NewConcernNewsNotify(groupCode, event, c)
 				for _, notify := range notifies {
 					c.notify <- notify
 				}
@@ -335,6 +344,10 @@ func (c *Concern) notifyLoop() {
 		}
 
 	}
+}
+
+func (c *Concern) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id), c)
 }
 
 func (c *Concern) watchCore() {
@@ -453,6 +466,7 @@ func (c *Concern) watchCore() {
 		end := time.Now()
 		if err == nil {
 			logger.WithField("cost", end.Sub(start)).Tracef("watchCore loop done")
+			c.SetLastFreshTime(time.Now().Unix())
 		} else {
 			logger.WithField("cost", end.Sub(start)).Errorf("watchCore error %v", err)
 		}
@@ -535,8 +549,16 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 			logger.Errorf("freshLive FeedList error %v", err)
 			return nil, err
 		} else if resp.GetCode() != 0 {
-			logger.Errorf("freshLive FeedList code %v msg %v", resp.GetCode(), resp.GetMessage())
-			return nil, err
+			if resp.GetCode() == -101 && strings.Contains(resp.GetMessage(), "未登录") {
+				logger.Errorf("刷新直播列表失败，可能是cookie失效，将尝试重新获取cookie")
+				ClearCookieInfo(username)
+				atomicVerifyInfo.Store(new(VerifyInfo))
+			} else if resp.GetCode() == -400 {
+				logger.Errorf("刷新直播列表失败，可能是自动登陆失败，请查看文档尝试手动设置b站cookie")
+			} else {
+				logger.Errorf("freshLive FeedList code %v msg %v", resp.GetCode(), resp.GetMessage())
+			}
+			return nil, fmt.Errorf("freshLive FeedList error code %v msg %v", resp.GetCode(), resp.GetMessage())
 		}
 		var (
 			dataSize    = len(resp.GetData().GetList())

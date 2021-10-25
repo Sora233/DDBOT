@@ -377,6 +377,7 @@ func (c *StateManager) Stop() {
 
 func (c *StateManager) Start() error {
 	if c.useEmit {
+		c.emitQueue.Start()
 		_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 			return true
 		})

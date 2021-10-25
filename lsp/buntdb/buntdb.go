@@ -1,6 +1,7 @@
 package buntdb
 
 import (
+	jsoniter "github.com/json-iterator/go"
 	"github.com/modern-go/gls"
 	"github.com/tidwall/buntdb"
 )
@@ -8,6 +9,8 @@ import (
 var db *buntdb.DB
 
 const MEMORYDB = ":memory:"
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func InitBuntDB(dbpath string) error {
 	if dbpath == "" {

@@ -1,8 +1,8 @@
 package huya
 
 import (
-	"github.com/Sora233/DDBOT/concern"
-	"github.com/Sora233/DDBOT/lsp/test"
+	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -22,23 +22,24 @@ func TestConcern(t *testing.T) {
 
 	go c.notifyLoop()
 
-	_, err := c.Add(test.G1, testRoom, concern.HuyaLive)
+	_, err := c.Add(nil, test.G1, testRoom, Live)
 	assert.Nil(t, err)
 
-	liveInfoes, _, err := c.ListWatching(test.G1, concern.HuyaLive)
+	identityInfos, _, err := c.List(test.G1, Live)
 	assert.Nil(t, err)
-	assert.Len(t, liveInfoes, 1)
-	liveInfo := liveInfoes[0]
+	assert.Len(t, identityInfos, 1)
+	info := identityInfos[0]
 
 	liveInfo2, err := c.FindOrLoadRoom(testRoom)
 	assert.Nil(t, err)
 	assert.NotNil(t, liveInfo2)
-	assert.EqualValues(t, liveInfo, liveInfo2)
+	assert.EqualValues(t, info.GetUid(), liveInfo2.RoomId)
+	assert.EqualValues(t, info.GetName(), liveInfo2.GetName())
 
-	liveInfo.LiveStatusChanged = true
-	liveInfo.Living = true
+	liveInfo2.LiveStatusChanged = true
+	liveInfo2.Living = true
 
-	c.eventChan <- liveInfo
+	c.eventChan <- liveInfo2
 
 	select {
 	case notify := <-testChan:

@@ -163,7 +163,7 @@ func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.Iden
 			log.WithField("id", id).Errorf("get LiveInfo err %v", err)
 			continue
 		}
-		result = append(result, concern.NewIdentity(liveInfo.RoomName, liveInfo.GetName()))
+		result = append(result, concern.NewIdentity(liveInfo.RoomId, liveInfo.GetName()))
 		resultTypes = append(resultTypes, ctypes[index])
 	}
 

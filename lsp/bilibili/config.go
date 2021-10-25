@@ -1,16 +1,18 @@
 package bilibili
 
 import (
+	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/utils"
 	"strconv"
 	"strings"
+	"sync/atomic"
 )
 
 type GroupConcernConfig struct {
 	concern.IConfig
-	StateManager *StateManager
+	Concern *Concern
 }
 
 func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
@@ -20,38 +22,49 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 	notify := inotify.(*ConcernNewsNotify)
 	switch notify.Card.GetDesc().GetType() {
 	case DynamicDescType_WithVideo:
-		videoCard, err := notify.Card.GetCardWithVideo()
-		if err != nil {
-			return
-		}
-		videoOrigin := videoCard.GetOrigin()
-		if videoOrigin == nil {
-			return
-		}
-
 		// 解决联合投稿的时候刷屏
-		err = g.StateManager.SetGroupVideoOriginMarkIfNotExist(notify.GetGroupCode(), videoOrigin.GetBvid())
+		notify.compactKey = notify.Card.GetDesc().GetBvid()
+		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	case DynamicDescType_WithOrigin:
 		// 解决一起转发的时候刷屏
-		origDyId := notify.Card.GetDesc().GetOrigDyIdStr()
-		err := g.StateManager.SetGroupOriginMarkIfNotExist(notify.GetGroupCode(), origDyId)
+		notify.compactKey = notify.Card.GetDesc().GetOrigDyIdStr()
+		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	default:
 		// 其他动态也设置一下
-		err := g.StateManager.SetGroupOriginMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
+		notify.compactKey = notify.Card.GetDesc().GetDynamicIdStr()
+		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
 		if err != nil && !localdb.IsRollback(err) {
 			logger.Errorf("SetGroupOriginMarkIfNotExist error %v", err)
 		}
 	}
 }
 
+func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, msg *message.GroupMessage) {
+	if inotify.Type() != News || msg == nil || msg.Id == -1 {
+		return
+	}
+	notify := inotify.(*ConcernNewsNotify)
+	if notify.shouldCompact || len(notify.compactKey) == 0 {
+		return
+	}
+	err := g.Concern.SetNotifyMsg(notify.compactKey, msg)
+	if err != nil && !localdb.IsRollback(err) {
+		notify.Logger().Errorf("set notify msg error %v", err)
+	}
+}
+
 func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.HookResult) {
 	hook = new(concern.HookResult)
+	if g.Concern != nil && atomic.LoadInt32(&g.Concern.unsafeStart) != 0 {
+		hook.Reason = "unsafe start status"
+		return
+	}
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
 		if !e.Living() {
@@ -197,8 +210,8 @@ func (g *GroupConcernConfig) FilterHook(notify concern.Notify) (hook *concern.Ho
 	}
 }
 
-func NewGroupConcernConfig(g concern.IConfig, sm *StateManager) *GroupConcernConfig {
-	return &GroupConcernConfig{g, sm}
+func NewGroupConcernConfig(g concern.IConfig, c *Concern) *GroupConcernConfig {
+	return &GroupConcernConfig{g, c}
 }
 
 const (

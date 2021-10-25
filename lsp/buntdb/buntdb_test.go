@@ -76,6 +76,16 @@ func TestRTxCover(t *testing.T) {
 	})
 	assert.Equal(t, ErrNotInitialized, err)
 
+	err = RCover(func() error {
+		return nil
+	})
+	assert.Equal(t, ErrNotInitialized, err)
+
+	err = RWCover(func() error {
+		return nil
+	})
+	assert.Equal(t, ErrNotInitialized, err)
+
 	err = InitBuntDB(MEMORYDB)
 	assert.Nil(t, err)
 	defer Close()
@@ -385,7 +395,7 @@ func TestJsonGet(t *testing.T) {
 	err = RWCover(func() error {
 		for index, exp := range expected {
 			var tmp = new(testJson)
-			assert.Nil(t, JsonSave(keys[index], exp))
+			assert.Nil(t, JsonSave(keys[index], exp, true))
 			assert.Nil(t, JsonGet(keys[index], tmp))
 			assert.EqualValues(t, exp, tmp)
 		}
@@ -394,7 +404,7 @@ func TestJsonGet(t *testing.T) {
 	assert.Nil(t, err)
 
 	err = RCover(func() error {
-		return JsonSave(keys[0], expected[0])
+		return JsonSave(keys[0], expected[0], true)
 	})
 	assert.NotNil(t, err)
 }
@@ -489,4 +499,29 @@ func TestCreatePatternIndex(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.EqualValues(t, []interface{}{"a", "1"}, suffix)
+}
+
+func TestGetInt64(t *testing.T) {
+	var err error
+	err = InitBuntDB(MEMORYDB)
+	assert.Nil(t, err)
+	defer Close()
+
+	const key = "test1"
+
+	result, err := GetInt64(key)
+	assert.EqualValues(t, buntdb.ErrNotFound, err)
+
+	result, err = SetInt64(key, 1)
+	assert.Nil(t, err)
+	assert.Zero(t, result)
+
+	result, err = SetInt64(key, 10, ExpireOption(time.Hour))
+	assert.Nil(t, err)
+	assert.EqualValues(t, 1, result)
+
+	result, err = GetInt64(key)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 10, result)
+
 }

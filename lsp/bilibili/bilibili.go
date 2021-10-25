@@ -22,6 +22,8 @@ const (
 	VideoView    = "https://www.bilibili.com/video"
 	DynamicView  = "https://t.bilibili.com"
 	PassportHost = "https://passport.bilibili.com"
+
+	CompactExpireTime = time.Minute * 15
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -79,7 +81,6 @@ func Init() {
 		SetVerify(SESSDATA, biliJct)
 	}
 	SetAccount(config.GlobalConfig.GetString("bilibili.account"), config.GlobalConfig.GetString("bilibili.password"))
-
 }
 
 func BPath(path string) string {

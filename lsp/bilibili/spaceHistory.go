@@ -39,7 +39,7 @@ func DynamicSrvSpaceHistory(hostUid int64) (*DynamicSvrSpaceHistoryResponse, err
 		delete412ProxyOption,
 	}
 	spaceHistoryResp := new(DynamicSvrSpaceHistoryResponse)
-	err = requests.Get(url, params, 1, opts...)
+	err = requests.Get(url, params, spaceHistoryResp, opts...)
 	if err != nil {
 		return nil, err
 	}

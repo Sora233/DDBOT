@@ -14,6 +14,7 @@ func initConcern(t *testing.T) *Concern {
 	assert.NotNil(t, c)
 	c.StateManager.FreshIndex(test.G1, test.G2)
 	assert.Nil(t, c.StateManager.Start())
+	go c.notifyLoop()
 	return c
 }
 

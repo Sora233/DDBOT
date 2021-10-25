@@ -2,8 +2,10 @@ package bilibili
 
 import (
 	"errors"
+	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
 	"strconv"
 	"time"
@@ -12,10 +14,6 @@ import (
 type StateManager struct {
 	*concern.StateManager
 	*extraKey
-}
-
-func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
-	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id), c)
 }
 
 func (c *StateManager) AddUserInfo(userInfo *UserInfo) error {
@@ -229,20 +227,50 @@ func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err err
 	return
 }
 
-func (c *StateManager) SetGroupVideoOriginMarkIfNotExist(groupCode int64, bvid string) error {
+func (c *StateManager) SetGroupCompactMarkIfNotExist(groupCode int64, compactKey string) error {
 	return localdb.SetIfNotExist(
-		localdb.BilibiliVideoOriginMarkKey(groupCode, bvid),
+		c.CompactMarkKey(groupCode, compactKey),
 		"",
-		localdb.ExpireOption(time.Minute*15),
+		localdb.ExpireOption(CompactExpireTime),
 	)
 }
+func (c *StateManager) SetLastFreshTime(ts int64) error {
+	_, err := localdb.SetInt64(c.LastFreshKey(), ts, nil)
+	return err
+}
 
-func (c *StateManager) SetGroupOriginMarkIfNotExist(groupCode int64, dynamicIdStr string) error {
-	return localdb.SetIfNotExist(
-		localdb.BilibiliOriginMarkKey(groupCode, dynamicIdStr),
-		"",
-		localdb.ExpireOption(time.Minute*15),
-	)
+func (c *StateManager) GetLastFreshTime() (int64, error) {
+	return localdb.GetInt64(c.LastFreshKey())
+}
+
+func (c *StateManager) SetNotifyMsg(notifyKey string, msg *message.GroupMessage) error {
+	tmp := &message.GroupMessage{
+		Id:        msg.Id,
+		GroupCode: msg.GroupCode,
+		Sender:    msg.Sender,
+		Time:      msg.Time,
+		Elements: localutils.MessageFilter(msg.Elements, func(e message.IMessageElement) bool {
+			return e.Type() == message.Text || e.Type() == message.Image
+		}),
+	}
+	value, err := localutils.SerializationGroupMsg(tmp)
+	if err != nil {
+		return err
+	}
+	return c.SetIfNotExist(c.NotifyMsgKey(tmp.GroupCode, notifyKey), value, localdb.ExpireOption(CompactExpireTime))
+}
+
+func (c *StateManager) GetNotifyMsg(groupCode int64, notifyKey string) (*message.GroupMessage, error) {
+	var value string
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
+		var err error
+		value, err = tx.Get(c.NotifyMsgKey(groupCode, notifyKey))
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return localutils.DeserializationGroupMsg(value)
 }
 
 func SetCookieInfo(username string, cookieInfo *LoginResponse_Data_CookieInfo) error {
@@ -282,6 +310,17 @@ func GetCookieInfo(username string) (cookieInfo *LoginResponse_Data_CookieInfo, 
 		return err
 	})
 	return
+}
+
+func ClearCookieInfo(username string) error {
+	return localdb.RWCoverTx(func(tx *buntdb.Tx) error {
+		key := localdb.BilibiliUserCookieInfoKey(username)
+		_, err := tx.Delete(key)
+		if err == buntdb.ErrNotFound {
+			err = nil
+		}
+		return err
+	})
 }
 
 func (c *StateManager) Start() error {

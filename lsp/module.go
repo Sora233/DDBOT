@@ -15,6 +15,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/registry"
+	"github.com/Sora233/DDBOT/lsp/version"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/local_proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/py"
@@ -73,6 +74,14 @@ func (l *Lsp) Init() {
 	l.commandPrefix = strings.TrimSpace(config.GlobalConfig.GetString("bot.commandPrefix"))
 	if len(l.commandPrefix) == 0 {
 		l.commandPrefix = "/"
+	}
+
+	curVersion := version.GetCurrentVersion(LspVersionName)
+
+	if curVersion == -1 {
+		log.Errorf("警告：无法检查数据库兼容性，程序可能无法正常工作")
+	} else if curVersion > LspSupportVersion {
+		log.Fatalf("警告：检查数据库兼容性失败！最高支持版本：%v，当前版本：%v", LspSupportVersion, curVersion)
 	}
 
 	l.PermissionStateManager = permission.NewStateManager()

@@ -1,7 +1,6 @@
 package buntdb
 
 import (
-	"encoding/json"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/modern-go/gls"
 	"github.com/tidwall/buntdb"
@@ -94,16 +93,20 @@ func (*ShortCut) RCover(f func() error) error {
 	})
 }
 
-func (s *ShortCut) JsonSave(key string, obj interface{}, opt ...*buntdb.SetOptions) error {
+func (s *ShortCut) JsonSave(key string, obj interface{}, overwrite bool, opts ...*buntdb.SetOptions) error {
 	return s.RWCoverTx(func(tx *buntdb.Tx) error {
 		b, err := json.Marshal(obj)
 		if err != nil {
 			return err
 		}
-		if len(opt) == 0 {
-			_, _, err = tx.Set(key, string(b), nil)
-		} else {
-			_, _, err = tx.Set(key, string(b), opt[0])
+		var opt *buntdb.SetOptions
+		var replaced bool
+		if len(opts) > 0 {
+			opt = opts[0]
+		}
+		_, replaced, err = tx.Set(key, string(b), opt)
+		if replaced && !overwrite {
+			return ErrRollback
 		}
 		return err
 	})
@@ -187,6 +190,49 @@ func (s *ShortCut) CreatePatternIndex(patternFunc KeyPatternFunc, suffix []inter
 	})
 }
 
+func (s *ShortCut) GetInt64(key string) (int64, error) {
+	var result int64
+	err := s.RCoverTx(func(tx *buntdb.Tx) error {
+		val, err := tx.Get(key)
+		if err != nil {
+			return err
+		}
+		r, err := strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			return err
+		}
+		result = r
+		return nil
+	})
+	return result, err
+}
+
+func (s *ShortCut) SetInt64(key string, value int64, opt ...*buntdb.SetOptions) (int64, error) {
+	var prev int64
+	err := s.RWCoverTx(func(tx *buntdb.Tx) error {
+		var err error
+		var s string
+		if len(opt) == 0 {
+			s, _, err = tx.Set(key, strconv.FormatInt(value, 10), nil)
+		} else {
+			s, _, err = tx.Set(key, strconv.FormatInt(value, 10), opt[0])
+		}
+		if err != nil {
+			return err
+		}
+		if len(s) == 0 {
+			return nil
+		}
+		r, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return err
+		}
+		prev = r
+		return nil
+	})
+	return prev, err
+}
+
 func RWCoverTx(f func(tx *buntdb.Tx) error) error {
 	return shortCut.RWCoverTx(f)
 }
@@ -207,8 +253,8 @@ func JsonGet(key string, obj interface{}) error {
 	return shortCut.JsonGet(key, obj)
 }
 
-func JsonSave(key string, obj interface{}, opt ...*buntdb.SetOptions) error {
-	return shortCut.JsonSave(key, obj, opt...)
+func JsonSave(key string, obj interface{}, overwrite bool, opt ...*buntdb.SetOptions) error {
+	return shortCut.JsonSave(key, obj, overwrite, opt...)
 }
 
 func SeqNext(key string) (int64, error) {
@@ -221,6 +267,14 @@ func SeqClear(key string) error {
 
 func SetIfNotExist(key, value string, opt ...*buntdb.SetOptions) error {
 	return shortCut.SetIfNotExist(key, value, opt...)
+}
+
+func SetInt64(key string, value int64, opt ...*buntdb.SetOptions) (int64, error) {
+	return shortCut.SetInt64(key, value, opt...)
+}
+
+func GetInt64(key string) (int64, error) {
+	return shortCut.GetInt64(key)
 }
 
 // ExpireOption 是一个创建expire的函数糖

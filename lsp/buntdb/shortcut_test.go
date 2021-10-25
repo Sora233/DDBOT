@@ -42,7 +42,7 @@ func TestShortCut_JsonGet(t *testing.T) {
 
 	for i := 0; i < len(expected); i++ {
 		err = RWCover(func() error {
-			return JsonSave(keys[i], expected[i])
+			return JsonSave(keys[i], expected[i], true)
 		})
 		assert.Nil(t, err)
 		var a = reflect.New(reflect.TypeOf(expected[i]).Elem()).Interface()

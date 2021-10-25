@@ -76,11 +76,14 @@ func BilibiliUserStatKey(keys ...interface{}) string {
 func BilibiliGroupAtAllMarkKey(keys ...interface{}) string {
 	return NamedKey("GroupAtAll", keys)
 }
-func BilibiliVideoOriginMarkKey(keys ...interface{}) string {
-	return NamedKey("VideoOriginMark", keys)
+func BilibiliCompactMarkKey(keys ...interface{}) string {
+	return NamedKey("CompactMark", keys)
 }
-func BilibiliOriginMarkKey(keys ...interface{}) string {
-	return NamedKey("OriginMark", keys)
+func BilibiliNotifyMsgKey(keys ...interface{}) string {
+	return NamedKey("NotifyMsg", keys)
+}
+func BilibiliLastFreshKey(keys ...interface{}) string {
+	return NamedKey("BilibiliLastFresh", keys)
 }
 func DouyuGroupConcernStateKey(keys ...interface{}) string {
 	return NamedKey("DouyuConcernState", keys)
@@ -180,6 +183,10 @@ func NewFriendRequestKey(keys ...interface{}) string {
 }
 func GroupInvitedKey(keys ...interface{}) string {
 	return NamedKey("GroupInvited", keys)
+}
+
+func VersionKey(keys ...interface{}) string {
+	return NamedKey("Version", keys)
 }
 
 func ParseConcernStateKeyWithInt64(key string) (groupCode int64, id int64, err error) {
