@@ -1,15 +1,13 @@
 package bilibili
 
 import (
-	"crypto/md5"
-	"encoding/hex"
 	"errors"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
-	lru "github.com/hashicorp/golang-lru"
+	"github.com/Sora233/DDBOT/utils/blockCache"
 	"github.com/sirupsen/logrus"
 	"strings"
 	"sync"
@@ -901,23 +899,8 @@ func (notify *ConcernLiveNotify) GetUid() interface{} {
 	return notify.Mid
 }
 
-const blockSize = 8
-
-var mergeImageMutex = func() [blockSize]*sync.Mutex {
-	var m = [blockSize]*sync.Mutex{}
-	for i := 0; i < blockSize; i++ {
-		m[int32(i)] = new(sync.Mutex)
-	}
-	return m
-}()
-
-var mergeImageCache = func() *lru.ARCCache {
-	c, err := lru.NewARC(5)
-	if err != nil {
-		panic(err)
-	}
-	return c
-}()
+// combineImageCache 是给combineImage用的cache，其他地方禁止使用
+var combineImageCache = blockCache.NewBlockCache(8, 5)
 
 var mode = "auto"
 var modeSync sync.Once
@@ -981,54 +964,18 @@ func shouldCombineImage(pic []*CardWithImage_Item_Picture) bool {
 }
 
 func urlsMergeImage(urls []string) (result []byte, err error) {
-	hashFn := func(s []string) string {
-		hash := md5.New()
-		for _, i := range s {
-			hash.Write([]byte(i))
+	cacheR := combineImageCache.WithCacheDo(strings.Join(urls, "+"), func() blockCache.ActionResult {
+		var imgBytes = make([][]byte, len(urls))
+		for index, url := range urls {
+			imgBytes[index], err = localutils.ImageGet(url, proxy_pool.PreferNone)
+			if err != nil {
+				return blockCache.NewResultWrapper(nil, err)
+			}
 		}
-		return hex.EncodeToString(hash.Sum(nil))
+		return blockCache.NewResultWrapper(localutils.MergeImages(imgBytes))
+	})
+	if cacheR.Err() != nil {
+		return nil, cacheR.Err()
 	}
-	cacheKey := hashFn(urls)
-	if v, ok := mergeImageCache.Get(cacheKey); ok {
-		switch v.(type) {
-		case error:
-			return nil, v.(error)
-		case []byte:
-			return v.([]byte), nil
-		default:
-			return nil, errors.New("unknown mergeImage cache")
-		}
-	}
-	cacheIndex := int32(cacheKey[0]) % blockSize
-	mergeImageMutex[cacheIndex].Lock()
-	defer mergeImageMutex[cacheIndex].Unlock()
-
-	if v, ok := mergeImageCache.Get(cacheKey); ok {
-		switch v.(type) {
-		case error:
-			return nil, v.(error)
-		case []byte:
-			return v.([]byte), nil
-		default:
-			return nil, errors.New("unknown mergeImage cache")
-		}
-	}
-
-	defer func() {
-		if err != nil {
-			mergeImageCache.Add(cacheKey, err)
-		} else {
-			mergeImageCache.Add(cacheKey, result)
-		}
-	}()
-
-	var imgBytes = make([][]byte, len(urls))
-	for index, url := range urls {
-		imgBytes[index], err = localutils.ImageGet(url, proxy_pool.PreferNone)
-		if err != nil {
-			return
-		}
-	}
-	result, err = localutils.MergeImages(imgBytes)
-	return
+	return cacheR.Result().([]byte), nil
 }

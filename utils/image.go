@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
+	"github.com/Sora233/DDBOT/utils/blockCache"
 	"github.com/ericpauley/go-quantize/quantize"
 	"github.com/nfnt/resize"
 	"image"
@@ -19,21 +20,28 @@ import (
 	"time"
 )
 
+var imageGetCache = blockCache.NewBlockCache(16, 25)
+
 func ImageGet(url string, prefer proxy_pool.Prefer, opt ...requests.Option) ([]byte, error) {
 	if url == "" {
 		return nil, errors.New("empty url")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
-	defer cancel()
+	result := imageGetCache.WithCacheDo(url, func() blockCache.ActionResult {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+		defer cancel()
+		opts := []requests.Option{requests.ProxyOption(prefer), requests.TimeoutOption(time.Second * 5)}
+		opts = append(opts, opt...)
 
-	opts := []requests.Option{requests.ProxyOption(prefer), requests.TimeoutOption(time.Second * 5)}
-	opts = append(opts, opt...)
-
-	resp, err := requests.Get(ctx, url, nil, 3, opts...)
-	if err != nil {
-		return nil, err
+		resp, err := requests.Get(ctx, url, nil, 3, opts...)
+		if err != nil {
+			return blockCache.NewResultWrapper(nil, err)
+		}
+		return blockCache.NewResultWrapper(resp.Content())
+	})
+	if result.Err() != nil {
+		return nil, result.Err()
 	}
-	return resp.Content()
+	return result.Result().([]byte), nil
 }
 
 func ImageNormSize(origImage []byte) ([]byte, error) {
