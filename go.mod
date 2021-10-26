@@ -28,6 +28,8 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
 
-replace github.com/Logiase/MiraiGo-Template => github.com/Sora233/MiraiGo-Template v0.0.0-20210815095536-29373b391593
-
-replace github.com/willf/bitset v1.2.0 => github.com/bits-and-blooms/bitset v1.2.0
+replace (
+	github.com/Logiase/MiraiGo-Template => github.com/Sora233/MiraiGo-Template v0.0.0-20210815095536-29373b391593
+	github.com/tidwall/gjson => github.com/tidwall/gjson v1.9.3
+	github.com/willf/bitset v1.2.0 => github.com/bits-and-blooms/bitset v1.2.0
+)
