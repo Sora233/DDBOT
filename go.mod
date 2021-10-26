@@ -23,7 +23,7 @@ require (
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
-	github.com/tidwall/buntdb v1.2.6
+	github.com/tidwall/buntdb v1.2.7
 	gocv.io/x/gocv v0.28.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
