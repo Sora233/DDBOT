@@ -13,7 +13,7 @@ import (
 type BlockCache struct {
 	blockSize uint32
 	blockLock []sync.Mutex
-	blockHash hashFunc
+	blockHash HashFunc
 	lru       *lru.ARCCache
 }
 
@@ -42,7 +42,7 @@ func NewResultWrapper(result interface{}, err error) *resultWrapper {
 	}
 }
 
-type hashFunc func(b []byte) uint32
+type HashFunc func(b []byte) uint32
 type Action func() ActionResult
 
 func (b *BlockCache) WithCacheDo(key string, f Action) ActionResult {
@@ -50,14 +50,18 @@ func (b *BlockCache) WithCacheDo(key string, f Action) ActionResult {
 	if result := b.tryGetInCache(hashKey); result != nil {
 		return result
 	}
-	blockKey := hashKey % b.blockSize
-	b.blockLock[blockKey].Lock()
-	defer b.blockLock[blockKey].Unlock()
-	if result := b.tryGetInCache(hashKey); result != nil {
-		return result
+	if b.blockSize > 0 {
+		blockKey := hashKey % b.blockSize
+		b.blockLock[blockKey].Lock()
+		defer b.blockLock[blockKey].Unlock()
+		if result := b.tryGetInCache(hashKey); result != nil {
+			return result
+		}
 	}
 	result := f()
-	b.lru.Add(hashKey, result)
+	if result != nil {
+		b.lru.Add(hashKey, result)
+	}
 	return result
 }
 
@@ -71,18 +75,20 @@ func (b *BlockCache) tryGetInCache(hashKey uint32) ActionResult {
 	return nil
 }
 
-func NewBlockCache(blockSize uint32, lruSize uint32, hashInBlocks ...hashFunc) *BlockCache {
-	if blockSize == 0 || lruSize == 0 {
+// NewBlockCache blockSize 为0表示不使用block，退化为单纯的lru，同一请求有可能执行多次，并覆盖lru缓存
+func NewBlockCache(blockSize uint32, lruSize uint32, hashFuncs ...HashFunc) *BlockCache {
+	if lruSize == 0 {
 		panic("size must greater than 0")
 	}
 	b := new(BlockCache)
-	b.blockSize = blockSize
 	b.blockHash = fnvHasher
 	b.lru, _ = lru.NewARC(int(lruSize))
-	b.blockLock = make([]sync.Mutex, b.blockSize)
-
-	if len(hashInBlocks) > 0 && hashInBlocks[0] != nil {
-		b.blockHash = hashInBlocks[0]
+	if blockSize > 0 {
+		b.blockSize = blockSize
+		b.blockLock = make([]sync.Mutex, b.blockSize)
+	}
+	if len(hashFuncs) > 0 && hashFuncs[0] != nil {
+		b.blockHash = hashFuncs[0]
 	}
 	return b
 }

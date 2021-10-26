@@ -9,12 +9,6 @@ func TestBlockCache(t *testing.T) {
 	assert.Panics(t, func() {
 		NewBlockCache(0, 0)
 	})
-	assert.Panics(t, func() {
-		NewBlockCache(0, 1)
-	})
-	assert.Panics(t, func() {
-		NewBlockCache(1, 0)
-	})
 	b := NewBlockCache(10, 10)
 	const (
 		key1 = "a"
@@ -42,5 +36,15 @@ func TestBlockCache(t *testing.T) {
 		b.WithCacheDo(key2, func() ActionResult {
 			panic("should panic here")
 		})
+	})
+
+	b2 := NewBlockCache(0, 10)
+	b2.WithCacheDo("a", func() ActionResult {
+		return NewResultWrapper("a", nil)
+	})
+
+	b2.WithCacheDo("a", func() ActionResult {
+		assert.Fail(t, "should not run")
+		return nil
 	})
 }
