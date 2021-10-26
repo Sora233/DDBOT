@@ -12,7 +12,7 @@ import (
 
 type BlockCache struct {
 	blockSize uint32
-	blockLock []*sync.Mutex
+	blockLock []sync.Mutex
 	blockHash hashFunc
 	lru       *lru.ARCCache
 }
@@ -72,17 +72,17 @@ func (b *BlockCache) tryGetInCache(hashKey uint32) ActionResult {
 }
 
 func NewBlockCache(blockSize uint32, lruSize uint32, hashInBlocks ...hashFunc) *BlockCache {
+	if blockSize == 0 || lruSize == 0 {
+		panic("size must greater than 0")
+	}
 	b := new(BlockCache)
 	b.blockSize = blockSize
 	b.blockHash = fnvHasher
 	b.lru, _ = lru.NewARC(int(lruSize))
+	b.blockLock = make([]sync.Mutex, b.blockSize)
 
 	if len(hashInBlocks) > 0 && hashInBlocks[0] != nil {
 		b.blockHash = hashInBlocks[0]
-	}
-	var i uint32
-	for i = 0; i < b.blockSize; i++ {
-		b.blockLock[i] = new(sync.Mutex)
 	}
 	return b
 }
