@@ -6,7 +6,7 @@ require (
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486
 	github.com/Mrs4s/MiraiGo v0.0.0-20211005153339-2cdb7407f907
-	github.com/PuerkitoBio/goquery v1.7.1
+	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/Sora233/requests v0.0.0-20210509184157-15dc0c68eb92
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/Sora233/zhima-proxy-pool v0.0.0-20210124065344-04d96243cadd
@@ -23,7 +23,7 @@ require (
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
-	github.com/tidwall/buntdb v1.2.6
+	github.com/tidwall/buntdb v1.2.7
 	gocv.io/x/gocv v0.28.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
