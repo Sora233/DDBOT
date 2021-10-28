@@ -6,6 +6,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/version"
+	"strconv"
 	"strings"
 )
 
@@ -87,12 +88,26 @@ func (v *V1) configMigrate(key, value string) string {
 	return ng.ToString()
 }
 
+func (v *V1) concernMigrate(key, value string) string {
+	i, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return value
+	}
+	return oldType(i).ToNewType().String()
+
+}
+
 func (v *V1) Func() version.MigrationFunc {
 	return version.ChainMigration(
 		version.MigrationByKey(localdb.BilibiliGroupConcernConfigKey, v.configMigrate),
 		version.MigrationByKey(localdb.DouyuGroupConcernConfigKey, v.configMigrate),
 		version.MigrationByKey(localdb.HuyaGroupConcernConfigKey, v.configMigrate),
 		version.MigrationByKey(localdb.YoutubeGroupConcernConfigKey, v.configMigrate),
+
+		version.MigrationByKey(localdb.BilibiliGroupConcernStateKey, v.concernMigrate),
+		version.MigrationByKey(localdb.DouyuGroupConcernStateKey, v.concernMigrate),
+		version.MigrationByKey(localdb.HuyaGroupConcernStateKey, v.concernMigrate),
+		version.MigrationByKey(localdb.YoutubeGroupConcernStateKey, v.concernMigrate),
 	)
 }
 func (v *V1) TargetVersion() int64 {
