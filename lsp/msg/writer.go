@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
+	"github.com/Sora233/DDBOT/utils"
 	"strings"
 )
 
@@ -66,12 +68,11 @@ func (m *MSG) Image(buf *bytes.Reader) *MSG {
 	return m
 }
 
-func (m *MSG) ImageByUrl(url string, opts ...requests.Option) *MSG {
+func (m *MSG) ImageByUrl(url string, prefer proxy_pool.Prefer, opts ...requests.Option) *MSG {
 	var img = NewImage(nil)
-	var body = new(bytes.Buffer)
-	err := requests.Get(url, nil, body, opts...)
+	b, err := utils.ImageGet(url, prefer, opts...)
 	if err == nil {
-		img.Buf = bytes.NewReader(body.Bytes())
+		img.Buf = bytes.NewReader(b)
 	}
 	m.Append(img)
 	return m
