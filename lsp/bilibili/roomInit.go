@@ -1,7 +1,6 @@
 package bilibili
 
 import (
-	"context"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
@@ -17,8 +16,6 @@ type RoomInitRequest struct {
 }
 
 func RoomInit(roomId int64) (*RoomInitResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
@@ -31,17 +28,16 @@ func RoomInit(roomId int64) (*RoomInitResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := requests.Get(ctx, url, params, 1, requests.ProxyOption(proxy_pool.PreferNone), AddUAOption())
-	if err != nil {
-		return nil, err
+	var opts = []requests.Option{
+		requests.ProxyOption(proxy_pool.PreferNone),
+		AddUAOption(),
+		requests.TimeoutOption(time.Second * 10),
+		delete412ProxyOption,
 	}
 	rir := new(RoomInitResponse)
-	err = resp.Json(rir)
+	err = requests.Get(url, params, rir, opts...)
 	if err != nil {
 		return nil, err
-	}
-	if rir.Code == -412 && resp.Proxy != "" {
-		proxy_pool.Delete(resp.Proxy)
 	}
 	return rir, nil
 }

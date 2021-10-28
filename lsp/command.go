@@ -33,7 +33,7 @@ const (
 	QuitCommand          = "quit"
 	ModeCommand          = "mode"
 	GroupRequestCommand  = "群邀请"
-	FriendRequestCommand = "好友请求"
+	FriendRequestCommand = "好友申请"
 	AdminCommand         = "admin"
 	SilenceCommand       = "silence"
 )

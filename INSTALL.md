@@ -159,6 +159,7 @@ logLevel: info
 bot:
   account: # bot账号
   password: # bot密码
+  commandPrefix: # bot命令前缀，默认为单斜杠 /
   onDisconnected: "exit" # 设置掉线时处理方式，exit为退出，不填或者其他值为尝试重连
   onJoinGroup:
     rename: "【bot】"     # BOT进群后自动改名，默认改名为“【bot】”，如果留空则不自动改名

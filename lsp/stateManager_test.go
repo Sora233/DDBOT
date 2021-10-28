@@ -3,8 +3,8 @@ package lsp
 import (
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/DDBOT/internal/test"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
 	"sort"

@@ -1,44 +1,85 @@
 package youtube
 
 import (
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
-	g := NewGroupConcernConfig(new(concern_manager.GroupConcernConfig))
-	notify := &ConcernNotify{
+func newLiveInfo(channelId string, live bool, liveStatusChanged bool, liveTitleChanged bool) *ConcernNotify {
+	li := &ConcernNotify{
 		VideoInfo: VideoInfo{
-			VideoStatus:       VideoStatus_Living,
-			LiveStatusChanged: false,
+			UserInfo: UserInfo{
+				ChannelId: channelId,
+			},
+			LiveStatusChanged: liveStatusChanged,
+			LiveTitleChanged:  liveTitleChanged,
+			VideoType:         VideoType_Live,
 		},
 	}
-	hook := g.AtBeforeHook(notify)
-	assert.False(t, hook.Pass)
+	if live {
+		li.VideoStatus = VideoStatus_Living
+	} else {
+		li.VideoStatus = VideoStatus_Waiting
+	}
+	return li
+}
 
-	notify.LiveStatusChanged = true
-	hook = g.AtBeforeHook(notify)
-	assert.True(t, hook.Pass)
-
-	notify.VideoStatus = VideoStatus_Waiting
-	hook = g.AtBeforeHook(notify)
-	assert.False(t, hook.Pass)
-
-	notify.VideoType = VideoType_Video
-	notify.VideoStatus = VideoStatus_Upload
-	hook = g.AtBeforeHook(notify)
-	assert.True(t, hook.Pass)
+func TestNewGroupConcernConfig(t *testing.T) {
+	g := NewGroupConcernConfig(new(concern.GroupConcernConfig))
+	assert.NotNil(t, g)
 }
 
 func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
-	g := NewGroupConcernConfig(new(concern_manager.GroupConcernConfig))
-	notify := &ConcernNotify{
-		VideoInfo: VideoInfo{
-			VideoStatus:       VideoStatus_Living,
-			LiveStatusChanged: false,
+	var notify = []concern.Notify{
+		// 下播状态 什么也没变 不推
+		newLiveInfo(test.NAME1, false, false, false),
+		// 下播状态 标题变了 不推
+		newLiveInfo(test.NAME1, false, false, true),
+		// 下播了 检查配置
+		newLiveInfo(test.NAME1, false, true, false),
+		// 下播了 检查配置
+		newLiveInfo(test.NAME1, false, true, true),
+		// 直播状态 什么也没变 不推
+		newLiveInfo(test.NAME1, true, false, false),
+		// 直播状态 改了标题 检查配置
+		newLiveInfo(test.NAME1, true, false, true),
+		// 开播了 推
+		newLiveInfo(test.NAME1, true, true, false),
+		// 开播了改了标题 推
+		newLiveInfo(test.NAME1, true, true, true),
+	}
+
+	var testCase = []*GroupConcernConfig{
+		{
+			IConfig: &concern.GroupConcernConfig{},
+		},
+		{
+			IConfig: &concern.GroupConcernConfig{
+				GroupConcernNotify: concern.GroupConcernNotifyConfig{
+					TitleChangeNotify: Live,
+				},
+			},
 		},
 	}
-	hook := g.ShouldSendHook(notify)
-	assert.True(t, hook.Pass)
+	var expected = [][]bool{
+		{
+			false, false, false, false,
+			false, false, true, true,
+		},
+		{
+			false, false, false, false,
+			false, true, true, true,
+		},
+	}
+	assert.Equal(t, len(expected), len(testCase))
+	for index1, g := range testCase {
+		assert.Equal(t, len(expected[index1]), len(notify))
+		for index2, liveInfo := range notify {
+			result := g.ShouldSendHook(liveInfo)
+			assert.NotNil(t, result)
+			assert.Equal(t, expected[index1][index2], result.Pass)
+		}
+	}
 }

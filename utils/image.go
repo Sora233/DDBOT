@@ -2,7 +2,6 @@ package utils
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"github.com/Sora233/DDBOT/proxy_pool"
@@ -27,16 +26,20 @@ func ImageGet(url string, prefer proxy_pool.Prefer, opt ...requests.Option) ([]b
 		return nil, errors.New("empty url")
 	}
 	result := imageGetCache.WithCacheDo(url, func() blockCache.ActionResult {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
-		defer cancel()
-		opts := []requests.Option{requests.ProxyOption(prefer), requests.TimeoutOption(time.Second * 5)}
+		opts := []requests.Option{
+			requests.ProxyOption(prefer),
+			requests.TimeoutOption(time.Second * 15),
+			requests.RetryOption(3),
+		}
 		opts = append(opts, opt...)
 
-		resp, err := requests.Get(ctx, url, nil, 3, opts...)
+		var body = new(bytes.Buffer)
+
+		err := requests.Get(url, nil, body, opts...)
 		if err != nil {
 			return blockCache.NewResultWrapper(nil, err)
 		}
-		return blockCache.NewResultWrapper(resp.Content())
+		return blockCache.NewResultWrapper(body.Bytes(), nil)
 	})
 	if result.Err() != nil {
 		return nil, result.Err()

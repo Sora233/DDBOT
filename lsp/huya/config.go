@@ -1,16 +1,15 @@
 package huya
 
 import (
-	"github.com/Sora233/DDBOT/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/lsp/concern"
 )
 
 type GroupConcernConfig struct {
-	concern_manager.GroupConcernConfig
+	concern.IConfig
 }
 
-func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern_manager.HookResult) {
-	hook = new(concern_manager.HookResult)
+func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.HookResult) {
+	hook = new(concern.HookResult)
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
 		if !e.Living {
@@ -26,8 +25,8 @@ func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern_
 	return
 }
 
-func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concern_manager.HookResult) {
-	hook = new(concern_manager.HookResult)
+func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concern.HookResult) {
+	hook = new(concern.HookResult)
 	switch e := notify.(type) {
 	case *ConcernLiveNotify:
 		if e.Living {
@@ -38,20 +37,21 @@ func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concer
 			}
 			if e.LiveTitleChanged {
 				// 直播间标题改了，检查改标题推送配置
-				hook.PassOrReason(g.GroupConcernNotify.CheckTitleChangeNotify(notify.Type()), "CheckTitleChangeNotify is false")
+				hook.PassOrReason(g.GetGroupConcernNotify().CheckTitleChangeNotify(notify.Type()), "CheckTitleChangeNotify is false")
 				return
 			}
 		} else {
 			if e.LiveStatusChanged {
 				// 下播了，检查下播推送配置
-				hook.PassOrReason(g.GroupConcernNotify.CheckOfflineNotify(notify.Type()), "CheckOfflineNotify is false")
+				hook.PassOrReason(g.GetGroupConcernNotify().CheckOfflineNotify(notify.Type()), "CheckOfflineNotify is false")
 				return
 			}
 		}
 	}
-	return g.GroupConcernConfig.ShouldSendHook(notify)
+	hook.Reason = "nothing changed"
+	return
 }
 
-func NewGroupConcernConfig(g *concern_manager.GroupConcernConfig) *GroupConcernConfig {
-	return &GroupConcernConfig{*g}
+func NewGroupConcernConfig(g concern.IConfig) *GroupConcernConfig {
+	return &GroupConcernConfig{g}
 }

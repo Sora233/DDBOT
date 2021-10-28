@@ -4,8 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/DDBOT/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/msg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"reflect"
 	"runtime"
@@ -14,23 +15,29 @@ import (
 
 var logger = utils.GetModuleLogger("douyu-concern")
 
-type EventType int64
-
 const (
-	Live EventType = iota
+	Live concern_type.Type = "live"
 )
-
-type ConcernEvent interface {
-	Type() EventType
-}
 
 type Concern struct {
 	*StateManager
 
-	eventChan chan ConcernEvent
+	eventChan chan concernEvent
 	notify    chan<- concern.Notify
 	stop      chan interface{}
 	wg        sync.WaitGroup
+}
+
+func (c *Concern) Site() string {
+	return "douyu"
+}
+
+func (c *Concern) ParseId(s string) (interface{}, error) {
+	return ParseUid(s)
+}
+
+func (c *Concern) GetStateManager() concern.IStateManager {
+	return c.StateManager
 }
 
 func (c *Concern) Stop() {
@@ -46,8 +53,7 @@ func (c *Concern) Stop() {
 	logger.Trace("douyu concern已停止")
 }
 
-func (c *Concern) Start() {
-
+func (c *Concern) Start() error {
 	err := c.StateManager.Start()
 	if err != nil {
 		logger.Errorf("state manager start err %v", err)
@@ -61,12 +67,12 @@ func (c *Concern) Start() {
 		go c.notifyLoop()
 	}
 
-	go c.EmitFreshCore("douyu", func(ctype concern.Type, id interface{}) error {
+	go c.EmitFreshCore(Site, func(ctype concern_type.Type, id interface{}) error {
 		roomid, ok := id.(int64)
 		if !ok {
 			return fmt.Errorf("cast fresh id type<%v> to int64 failed", reflect.ValueOf(id).Type().String())
 		}
-		if ctype.ContainAll(concern.DouyuLive) {
+		if ctype.ContainAll(Live) {
 			oldInfo, _ := c.FindRoom(roomid, false)
 			liveInfo, err := c.FindRoom(roomid, true)
 			if err != nil {
@@ -87,21 +93,22 @@ func (c *Concern) Start() {
 		}
 		return nil
 	})
+	return nil
 }
 
-func (c *Concern) Add(groupCode int64, id int64, ctype concern.Type) (*LiveInfo, error) {
+func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	id := _id.(int64)
 	var err error
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
 
 	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
 	if err != nil {
-		if err == concern_manager.ErrAlreadyExists {
+		if err == concern.ErrAlreadyExists {
 			return nil, errors.New("已经watch过了")
 		}
 		return nil, err
 	}
-
-	betardResp, err := Betard(id)
+	liveInfo, err := c.FindOrLoadRoom(id)
 	if err != nil {
 		log.Error(err)
 		return nil, fmt.Errorf("查询房间信息失败 %v - %v", id, err)
@@ -110,38 +117,48 @@ func (c *Concern) Add(groupCode int64, id int64, ctype concern.Type) (*LiveInfo,
 	if err != nil {
 		return nil, err
 	}
-	liveInfo := &LiveInfo{
-		Nickname:   betardResp.GetRoom().GetNickname(),
-		RoomId:     betardResp.GetRoom().GetRoomId(),
-		RoomName:   betardResp.GetRoom().GetRoomName(),
-		RoomUrl:    betardResp.GetRoom().GetRoomUrl(),
-		ShowStatus: betardResp.GetRoom().GetShowStatus(),
-		Avatar:     betardResp.GetRoom().GetAvatar(),
-	}
-	return liveInfo, nil
+	return concern.NewIdentity(id, liveInfo.Nickname), nil
 }
 
-func (c *Concern) ListWatching(groupCode int64, p concern.Type) ([]*LiveInfo, []concern.Type, error) {
+func (c *Concern) Remove(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	id := _id.(int64)
+	identity, _ := c.Get(id)
+	_, err := c.StateManager.RemoveGroupConcern(groupCode, id, ctype)
+	return identity, err
+}
+
+func (c *Concern) List(groupCode int64, p concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
 	log := logger.WithFields(localutils.GroupLogFields(groupCode))
-	ids, ctypes, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
-		return p.ContainAny(p)
+	_, ids, ctypes, err := c.StateManager.List(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
+		return _groupCode == groupCode && p.ContainAny(p)
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-	var resultTypes = make([]concern.Type, 0, len(ids))
-	var result = make([]*LiveInfo, 0, len(ids))
+	ids, ctypes, err = c.StateManager.GroupTypeById(ids, ctypes)
+	if err != nil {
+		return nil, nil, err
+	}
+	var result = make([]concern.IdentityInfo, 0, len(ids))
+	var resultTypes = make([]concern_type.Type, 0, len(ids))
 	for index, id := range ids {
 		liveInfo, err := c.FindOrLoadRoom(id.(int64))
 		if err != nil {
 			log.WithField("id", id).Errorf("get LiveInfo err %v", err)
 			continue
 		}
-		result = append(result, liveInfo)
+		result = append(result, concern.NewIdentity(liveInfo.GetRoomId(), liveInfo.GetNickname()))
 		resultTypes = append(resultTypes, ctypes[index])
 	}
-
 	return result, resultTypes, nil
+}
+
+func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
+	liveInfo, err := c.FindOrLoadRoom(id.(int64))
+	if err != nil {
+		return nil, err
+	}
+	return concern.NewIdentity(liveInfo.GetRoomId(), liveInfo.GetNickname()), nil
 }
 
 func (c *Concern) notifyLoop() {
@@ -152,10 +169,10 @@ func (c *Concern) notifyLoop() {
 		case Live:
 			event := ievent.(*LiveInfo)
 			log := event.Logger()
-			log.Debugf("debug event")
+			log.Debugf("new event - live notify")
 
-			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-				return id.(int64) == event.RoomId && p.ContainAny(concern.DouyuLive)
+			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+				return id.(int64) == event.RoomId && p.ContainAny(Live)
 			})
 			if err != nil {
 				log.Errorf("list id failed %v", err)
@@ -209,7 +226,7 @@ func (c *Concern) FindOrLoadRoom(roomId int64) (*LiveInfo, error) {
 func NewConcern(notify chan<- concern.Notify) *Concern {
 	c := &Concern{
 		StateManager: NewStateManager(),
-		eventChan:    make(chan ConcernEvent, 500),
+		eventChan:    make(chan concernEvent, 500),
 		notify:       notify,
 		stop:         make(chan interface{}),
 	}

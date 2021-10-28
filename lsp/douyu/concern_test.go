@@ -1,8 +1,8 @@
 package douyu
 
 import (
-	"github.com/Sora233/DDBOT/concern"
-	"github.com/Sora233/DDBOT/lsp/test"
+	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -25,7 +25,7 @@ func TestConcern(t *testing.T) {
 	testRoom, err := ParseUid(_testRoom)
 	assert.Nil(t, err)
 
-	_, err = c.Add(test.G1, testRoom, concern.DouyuLive)
+	_, err = c.Add(nil, test.G1, testRoom, Live)
 	assert.Nil(t, err)
 
 	liveInfo, err := c.FindOrLoadRoom(testRoom)
@@ -34,15 +34,15 @@ func TestConcern(t *testing.T) {
 	assert.Equal(t, testRoom, liveInfo.RoomId)
 	assert.Equal(t, "斗鱼官方视频号", liveInfo.RoomName)
 
-	liveInfoes, ctypes, err := c.ListWatching(test.G1, concern.DouyuLive)
+	identityInfos, ctypes, err := c.List(test.G1, Live)
 	assert.Nil(t, err)
-	assert.Len(t, liveInfoes, 1)
+	assert.Len(t, identityInfos, 1)
 	assert.Len(t, ctypes, 1)
-	assert.Equal(t, concern.DouyuLive, ctypes[0])
+	assert.Equal(t, Live, ctypes[0])
 
-	liveInfo = liveInfoes[0]
-	assert.Equal(t, testRoom, liveInfo.RoomId)
-	assert.Equal(t, "斗鱼官方视频号", liveInfo.RoomName)
+	info := identityInfos[0]
+	assert.Equal(t, testRoom, info.GetUid())
+	assert.Equal(t, "斗鱼官方视频号", info.GetName())
 
 	liveInfo.ShowStatus = ShowStatus_Living
 	liveInfo.VideoLoop = VideoLoopStatus_Off

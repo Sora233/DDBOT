@@ -8,11 +8,12 @@ import (
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/msg"
 	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/DDBOT/lsp/youtube"
+	"github.com/Sora233/DDBOT/lsp/registry"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
@@ -26,7 +27,8 @@ import (
 )
 
 type LspPrivateCommand struct {
-	msg *message.PrivateMessage
+	msg    *message.PrivateMessage
+	prefix string
 
 	*Runtime
 }
@@ -35,6 +37,7 @@ func NewLspPrivateCommand(bot *miraiBot.Bot, l *Lsp, msg *message.PrivateMessage
 	c := &LspPrivateCommand{
 		msg:     msg,
 		Runtime: NewRuntime(bot, l),
+		prefix:  l.commandPrefix,
 	}
 	c.Parse(c.msg.Elements)
 	return c
@@ -48,7 +51,7 @@ func (c *LspPrivateCommand) Execute() {
 			c.textSend("エラー発生：看到该信息表示BOT出了一些问题，该问题已记录")
 		}
 	}()
-	if !strings.HasPrefix(c.GetCmd(), "/") {
+	if !strings.HasPrefix(c.GetCmd(), c.prefix) {
 		return
 	}
 
@@ -67,44 +70,44 @@ func (c *LspPrivateCommand) Execute() {
 	log.Debug("execute command")
 
 	// all permission will be checked later
-	switch c.GetCmd() {
-	case "/ping":
+	switch strings.TrimPrefix(c.GetCmd(), c.prefix) {
+	case PingCommand:
 		c.PingCommand()
-	case "/help":
+	case HelpCommand:
 		c.HelpCommand()
-	case "/block":
+	case BlockCommand:
 		c.BlockCommand()
-	case "/watch":
+	case WatchCommand:
 		c.WatchCommand(false)
-	case "/unwatch":
+	case UnwatchCommand:
 		c.WatchCommand(true)
-	case "/enable":
+	case EnableCommand:
 		c.EnableCommand(false)
-	case "/disable":
+	case DisableCommand:
 		c.EnableCommand(true)
-	case "/grant":
+	case GrantCommand:
 		c.GrantCommand()
-	case "/log":
+	case LogCommand:
 		c.LogCommand()
-	case "/list":
+	case ListCommand:
 		c.ListCommand()
-	case "/sysinfo":
+	case SysinfoCommand:
 		c.SysinfoCommand()
-	case "/config":
+	case ConfigCommand:
 		c.ConfigCommand()
-	case "/whosyourdaddy":
+	case WhosyourdaddyCommand:
 		c.WhosyourdaddyCommand()
-	case "/quit":
+	case QuitCommand:
 		c.QuitCommand()
-	case "/mode":
+	case ModeCommand:
 		c.ModeCommand()
-	case "/群邀请":
+	case GroupRequestCommand:
 		c.GroupRequestCommand()
-	case "/好友申请":
+	case FriendRequestCommand:
 		c.FriendRequestCommand()
-	case "/admin":
+	case AdminCommand:
 		c.AdminCommand()
-	case "/silence":
+	case SilenceCommand:
 		c.SilenceCommand()
 	default:
 		c.textReply("阁下似乎输入了一个无法识别的命令，请使用/help命令查看帮助。")
@@ -151,20 +154,13 @@ func (c *LspPrivateCommand) ListCommand() {
 	defer func() { log.Info("list command end") }()
 
 	var listCmd struct {
-		Site  string `optional:"" short:"s" help:"已弃用"`
-		Type  string `optional:"" short:"t" help:"已弃用"`
-		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Group int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
 	}
 	_, output := c.parseCommandSyntax(&listCmd, ListCommand)
 	if output != "" {
 		c.textReply(output)
 	}
 	if c.exit {
-		return
-	}
-
-	if listCmd.Site != "" || listCmd.Type != "" {
-		c.textReply("命令已更新，请直接输入/list即可")
 		return
 	}
 
@@ -284,11 +280,6 @@ func (c *LspPrivateCommand) ConfigCommand() {
 			c.textSend(fmt.Sprintf("失败 - %v", err.Error()))
 			return
 		}
-		if site == youtube.Site {
-			log.WithField("site", configCmd.OfflineNotify.Site).Errorf("not supported")
-			c.textSend(fmt.Sprintf("失败 - %v", "暂不支持YTB"))
-			return
-		}
 		var on = localutils.Switch2Bool(configCmd.OfflineNotify.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.OfflineNotify.Id).WithField("on", on)
 		IConfigOfflineNotifyCmd(c.NewMessageContext(log), groupCode, configCmd.OfflineNotify.Id, site, ctype, on)
@@ -298,6 +289,11 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		if err != nil {
 			log.WithField("site", configCmd.Filter.Site).Errorf("ParseRawSiteAndType failed %v", err)
 			c.textSend(fmt.Sprintf("失败 - %v", err.Error()))
+			return
+		}
+		if site != bilibili.Site || ctype != bilibili.News {
+			log.WithField("site", site).WithField("ctype", ctype.String()).Errorf("not supported")
+			c.textSend("失败 - 暂不支持")
 			return
 		}
 		switch filterCmd {
@@ -327,8 +323,8 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 	defer func() { log.Info("watch command end") }()
 
 	var (
-		site      = bilibili.Site
-		watchType = concern.BibiliLive
+		site      string
+		watchType concern_type.Type
 		err       error
 	)
 
@@ -340,8 +336,8 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 	}
 
 	var watchCmd struct {
-		Site  string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
-		Type  string `optional:"" short:"t" default:"live" help:"news / live"`
+		Site  string `optional:"" short:"s" default:"bilibili" help:"订阅网站"`
+		Type  string `optional:"" short:"t" default:"live" help:"订阅类型"`
 		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
 		Id    string `arg:""`
 	}
@@ -792,13 +788,13 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 		return
 	}
 
-	msg := strings.Join(groupRequestCmd.Message, " ")
+	rmsg := strings.Join(groupRequestCmd.Message, " ")
 
 	log = log.WithFields(logrus.Fields{
 		"Requestid": groupRequestCmd.RequestId,
 		"Reject":    groupRequestCmd.Reject,
 		"All":       groupRequestCmd.All,
-		"Message":   msg,
+		"Message":   rmsg,
 	})
 
 	if groupRequestCmd.RequestId == 0 {
@@ -826,7 +822,7 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 			log.Info("确认拒绝全部加群邀请")
 			for _, req := range requests {
 				log.Debugf("正在拒绝%v(%v)的加群%v(%v)邀请", req.InvitorNick, req.InvitorUin, req.GroupName, req.GroupCode)
-				c.bot.SolveGroupJoinRequest(req, false, false, msg)
+				c.bot.SolveGroupJoinRequest(req, false, false, rmsg)
 				if err := c.l.LspStateManager.DeleteGroupInvitedRequest(req.RequestId); err != nil {
 					log.Errorf("DeleteGroupInvitedRequest error %v", err)
 				}
@@ -878,7 +874,7 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 			"InvitorNick": request.InvitorNick,
 		})
 		if groupRequestCmd.Reject {
-			c.bot.SolveGroupJoinRequest(request, false, false, msg)
+			c.bot.SolveGroupJoinRequest(request, false, false, rmsg)
 			log.Info("拒绝加群邀请成功")
 			c.textReply(fmt.Sprintf("成功- 已拒绝 %v(%v) 邀请加群 %v(%v)", request.InvitorNick, request.InvitorUin, request.GroupName, request.GroupCode))
 		} else {
@@ -1154,34 +1150,24 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 		return
 	}
 
-	msg := message.NewSendingMessage()
-	msg.Append(localutils.MessageTextf("当前好友数：%v\n", len(c.bot.FriendList)))
-	msg.Append(localutils.MessageTextf("当前群组数：%v\n", len(c.bot.GroupList)))
-	ids, err := c.l.bilibiliConcern.ListIds()
-	if err != nil {
-		msg.Append(localutils.MessageTextf("当前Bilibili订阅数：获取失败\n"))
-	} else {
-		msg.Append(localutils.MessageTextf("当前Bilibili订阅数：%v\n", len(ids)))
+	m := msg.NewMSG()
+	m.Textf("当前好友数：%v\n", len(c.bot.FriendList))
+	m.Textf("当前群组数：%v\n", len(c.bot.GroupList))
+	for index, cm := range registry.ListConcernManager() {
+		_, ids, ctypes, err := cm.GetStateManager().List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+			return true
+		})
+		if index > 0 {
+			m.Text("\n")
+		}
+		ids, ctypes, err = cm.GetStateManager().GroupTypeById(ids, ctypes)
+		if err != nil {
+			m.Textf("当前%v订阅数：获取失败", cm.Site())
+		} else {
+			m.Textf("当前%v订阅数：%v", cm.Site(), len(ids))
+		}
 	}
-	ids, err = c.l.douyuConcern.ListIds()
-	if err != nil {
-		msg.Append(localutils.MessageTextf("当前Douyu订阅数：获取失败\n"))
-	} else {
-		msg.Append(localutils.MessageTextf("当前Douyu订阅数：%v\n", len(ids)))
-	}
-	ids, err = c.l.youtubeConcern.ListIds()
-	if err != nil {
-		msg.Append(localutils.MessageTextf("当前YTB订阅数：获取失败\n"))
-	} else {
-		msg.Append(localutils.MessageTextf("当前YTB订阅数：%v\n", len(ids)))
-	}
-	ids, err = c.l.huyaConcern.ListIds()
-	if err != nil {
-		msg.Append(localutils.MessageTextf("当前Huya订阅数：获取失败\n"))
-	} else {
-		msg.Append(localutils.MessageTextf("当前Huya订阅数：%v\n", len(ids)))
-	}
-	c.send(msg)
+	c.send(m.ToMessage(c.bot.QQClient, msg.NewPrivateTarget(c.uin())))
 }
 
 func (c *LspPrivateCommand) DebugCheck() bool {
@@ -1250,17 +1236,14 @@ func (c *LspPrivateCommand) name() string {
 
 func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
 	ctx := NewMessageContext()
-	ctx.Source = SourceTypePrivate
+	ctx.Target = msg.NewPrivateTarget(c.uin())
 	ctx.Lsp = c.l
 	ctx.Log = log
-	ctx.TextReply = func(text string) interface{} {
-		return c.textReply(text)
+	ctx.SendFunc = func(m *msg.MSG) interface{} {
+		return c.send(m.ToMessage(c.bot.QQClient, ctx.Target))
 	}
-	ctx.Send = func(msg *message.SendingMessage) interface{} {
-		return c.send(msg)
-	}
-	ctx.Reply = ctx.Send
-	ctx.NoPermissionReply = func() interface{} {
+	ctx.ReplyFunc = ctx.SendFunc
+	ctx.NoPermissionReplyFunc = func() interface{} {
 		return c.noPermission()
 	}
 	ctx.DisabledReply = func() interface{} {

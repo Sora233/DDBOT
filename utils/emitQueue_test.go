@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -14,11 +14,11 @@ func TestEmitQueue(t *testing.T) {
 	eq.Start()
 	defer eq.Stop()
 
-	eq.Add(NewEmitE(1, concern.BilibiliNews), time.Unix(10, 0))
+	eq.Add(NewEmitE(1, test.DouyuLive), time.Unix(10, 0))
 
-	eq.Add(NewEmitE(2, concern.BilibiliNews), time.Unix(15, 0))
+	eq.Add(NewEmitE(2, test.DouyuLive), time.Unix(15, 0))
 
-	eq.Add(NewEmitE(3, concern.BilibiliNews), time.Unix(20, 0))
+	eq.Add(NewEmitE(3, test.DouyuLive), time.Unix(20, 0))
 
 	for count := 0; count < 3; count++ {
 		select {

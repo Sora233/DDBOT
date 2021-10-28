@@ -1,41 +1,73 @@
 package requests
 
 import (
-	"context"
-	"crypto/tls"
-	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/requests"
-	"github.com/sirupsen/logrus"
-	"net"
+	"github.com/guonaihong/gout"
+	"github.com/guonaihong/gout/dataflow"
+	"io"
 	"net/http"
 	"time"
 )
 
 var logger = utils.GetModuleLogger("request")
 
-type Option func(*requests.Request)
+type option struct {
+	Timeout            time.Duration
+	InsecureSkipVerify bool
+
+	Debug               bool
+	Cookies             []*http.Cookie
+	Header              gout.H
+	Proxy               string
+	HttpCode            *int
+	Retry               int
+	ProxyCallbackOption func(out interface{}, proxy string)
+}
+
+func (o *option) getGout() *gout.Client {
+	var timeoutOpt = gout.WithTimeout(time.Second * 5)
+	if o.Timeout != 0 {
+		timeoutOpt = gout.WithTimeout(o.Timeout)
+	}
+	if o.InsecureSkipVerify {
+		return gout.NewWithOpt(timeoutOpt, gout.WithInsecureSkipVerify())
+	}
+	return gout.NewWithOpt(timeoutOpt)
+}
+
+type Option func(o *option)
+
+func empty(*option) {}
 
 func HttpCookieOption(cookie *http.Cookie) Option {
-	return func(request *requests.Request) {
-		request.SetCookie(cookie)
+	return func(o *option) {
+		o.Cookies = append(o.Cookies, cookie)
 	}
 }
 
-func CookieOption(name string, value string) Option {
+func CookieOption(name, value string) Option {
 	return HttpCookieOption(&http.Cookie{Name: name, Value: value})
 }
 
 func TimeoutOption(d time.Duration) Option {
-	return func(request *requests.Request) {
-		request.SetTimeout(d)
+	return func(o *option) {
+		o.Timeout = d
+	}
+}
+
+func HttpCodeOption(code *int) Option {
+	return func(o *option) {
+		o.HttpCode = code
 	}
 }
 
 func HeaderOption(key, value string) Option {
-	return func(request *requests.Request) {
-		request.Header.Set(key, value)
+	return func(o *option) {
+		if o.Header == nil {
+			o.Header = make(gout.H)
+		}
+		o.Header[key] = value
 	}
 }
 
@@ -44,127 +76,98 @@ func AddUAOption() Option {
 }
 
 func ProxyOption(prefer proxy_pool.Prefer) Option {
-	return func(request *requests.Request) {
-		if prefer == proxy_pool.PreferNone {
-			return
+	if prefer == proxy_pool.PreferNone {
+		return empty
+	}
+	proxy, err := proxy_pool.Get(prefer)
+	if err != nil {
+		if err != proxy_pool.ErrNil {
+			logger.Errorf("get proxy failed")
 		}
-		proxy, err := proxy_pool.Get(prefer)
-		if err != nil {
-			if err != proxy_pool.ErrNil {
-				logger.Errorf("get proxy failed")
-			}
-		} else {
-			request.Proxy(proxy.ProxyString())
+		return empty
+	} else {
+		return func(o *option) {
+			o.Proxy = proxy.ProxyString()
 		}
+	}
+}
+
+func RetryOption(retry int) Option {
+	return func(o *option) {
+		o.Retry = retry
+	}
+}
+
+func ProxyCallbackOption(f func(out interface{}, proxy string)) Option {
+	return func(o *option) {
+		o.ProxyCallbackOption = f
 	}
 }
 
 func DisableTlsOption() Option {
-	return func(request *requests.Request) {
-		if request.Client.Transport == nil {
-			request.Client.Transport = &http.Transport{
-				DialContext: (&net.Dialer{
-					Timeout:   30 * time.Second,
-					KeepAlive: 30 * time.Second,
-					DualStack: true,
-				}).DialContext,
-				ForceAttemptHTTP2:     true,
-				MaxIdleConns:          100,
-				IdleConnTimeout:       90 * time.Second,
-				TLSHandshakeTimeout:   10 * time.Second,
-				ExpectContinueTimeout: 1 * time.Second,
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-			}
-		} else {
-			if tp, ok := request.Client.Transport.(*http.Transport); ok {
-				if tp.TLSClientConfig != nil {
-					tp.TLSClientConfig.InsecureSkipVerify = true
-				} else {
-					tp.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-				}
-			}
-		}
+	return func(o *option) {
+		o.InsecureSkipVerify = true
 	}
 }
 
 func DebugOption() Option {
-	return func(request *requests.Request) {
-		request.Debug = 1
+	return func(o *option) {
+		o.Debug = true
 	}
 }
 
-var DefaultTimeoutOption = TimeoutOption(time.Second * 5)
-
-type ResponseWithProxy struct {
-	*requests.Response
-	Proxy string
-}
-
-func Get(ctx context.Context, url string, params requests.Params, maxRetry int, options ...Option) (*ResponseWithProxy, error) {
-	return anyHttp(ctx, maxRetry, func(request *requests.Request) (*requests.Response, error) {
-		return request.Get(url, params)
-	}, options...)
-}
-
-func PostJson(ctx context.Context, url string, params interface{}, maxRetry int, options ...Option) (*ResponseWithProxy, error) {
-	return anyHttp(ctx, maxRetry, func(request *requests.Request) (*requests.Response, error) {
-		return request.PostJson(url, params)
-	}, options...)
-}
-
-func Post(ctx context.Context, url string, form requests.Datas, maxRetry int, options ...Option) (*ResponseWithProxy, error) {
-	return anyHttp(ctx, maxRetry, func(request *requests.Request) (*requests.Response, error) {
-		return request.Post(url, form)
-	}, options...)
-}
-
-func anyHttp(ctx context.Context, maxRetry int, do func(request *requests.Request) (*requests.Response, error), options ...Option) (*ResponseWithProxy, error) {
-	var err error
-	req := requests.RequestsWithContext(ctx)
-	DefaultTimeoutOption(req)
-	for _, opt := range options {
-		opt(req)
+func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Option) error {
+	var opt = new(option)
+	for _, o := range options {
+		o(opt)
 	}
+	if opt.ProxyCallbackOption != nil && len(opt.Proxy) > 0 {
+		defer func() {
+			opt.ProxyCallbackOption(out, opt.Proxy)
+		}()
+	}
+	var df = f(opt.getGout())
+	if opt.Debug {
+		df.Debug(true)
+	}
+	if len(opt.Cookies) > 0 {
+		df.SetCookies(opt.Cookies...)
+	}
+	if len(opt.Header) > 0 {
+		df.SetHeader(opt.Header)
+	}
+	if len(opt.Proxy) > 0 {
+		df.SetProxy(opt.Proxy)
+	}
+	if opt.HttpCode != nil {
+		df.Code(opt.HttpCode)
+	}
+	switch out.(type) {
+	case io.Writer, []byte, *string:
+		df.BindBody(out)
+	default:
+		df.BindJSON(out)
+	}
+	if opt.Retry > 0 {
+		return df.F().Retry().Attempt(opt.Retry).Do()
+	}
+	return df.Do()
+}
 
-	var (
-		resp  *requests.Response
-		retry = 0
-	)
-LOOP:
-	for {
-		select {
-		case <-ctx.Done():
-			err = ctx.Err()
-			break LOOP
-		default:
-		}
-		resp, err = do(req)
-		if err != nil {
-			retry += 1
-		} else if resp.R.StatusCode != http.StatusOK {
-			err = fmt.Errorf("status code %v", resp.R.StatusCode)
-			retry += 1
-		} else {
-			break
-		}
-		logger.WithFields(logrus.Fields{
-			"Proxy":    req.GetProxy(),
-			"Retry":    retry,
-			"MaxRetry": maxRetry,
-		}).Tracef("request failed %v, retry", err)
-		if retry == maxRetry {
-			break
-		}
-		time.Sleep(time.Second)
-	}
-	proxy := req.GetProxy()
-	if err != nil && proxy != "" {
-		proxy_pool.Delete(proxy)
-	}
-	return &ResponseWithProxy{
-		Response: resp,
-		Proxy:    proxy,
-	}, err
+func Get(url string, params gout.H, out interface{}, options ...Option) error {
+	return Do(func(gcli *gout.Client) *dataflow.DataFlow {
+		return gcli.GET(url).SetQuery(params)
+	}, out, options...)
+}
+
+func Post(url string, params gout.H, out interface{}, options ...Option) error {
+	return Do(func(gcli *gout.Client) *dataflow.DataFlow {
+		return gcli.POST(url).SetForm(params)
+	}, out, options...)
+}
+
+func PostJson(url string, params gout.H, out interface{}, options ...Option) error {
+	return Do(func(gcli *gout.Client) *dataflow.DataFlow {
+		return gcli.POST(url).SetJSON(params)
+	}, out, options...)
 }

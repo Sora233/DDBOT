@@ -1,7 +1,6 @@
 package bilibili
 
 import (
-	"context"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
@@ -17,8 +16,6 @@ type XRelationStatRequest struct {
 }
 
 func XRelationStat(mid int64) (*XRelationStatResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
-	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
@@ -33,21 +30,15 @@ func XRelationStat(mid int64) (*XRelationStatResponse, error) {
 	}
 	var opts = []requests.Option{
 		requests.ProxyOption(proxy_pool.PreferNone),
-		requests.TimeoutOption(time.Second * 5),
+		requests.TimeoutOption(time.Second * 15),
 		AddUAOption(),
+		delete412ProxyOption,
 	}
 	opts = append(opts, GetVerifyOption()...)
-	resp, err := requests.Get(ctx, url, params, 1, opts...)
-	if err != nil {
-		return nil, err
-	}
 	xrsr := new(XRelationStatResponse)
-	err = resp.Json(xrsr)
+	err = requests.Get(url, params, xrsr, opts...)
 	if err != nil {
 		return nil, err
-	}
-	if xrsr.Code == -412 && resp.Proxy != "" {
-		proxy_pool.Delete(resp.Proxy)
 	}
 	return xrsr, nil
 }

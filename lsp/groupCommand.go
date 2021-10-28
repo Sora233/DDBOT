@@ -6,13 +6,14 @@ import (
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/image_pool"
 	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/msg"
 	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/DDBOT/lsp/youtube"
+	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/sliceutil"
@@ -29,7 +30,8 @@ import (
 )
 
 type LspGroupCommand struct {
-	msg *message.GroupMessage
+	msg    *message.GroupMessage
+	prefix string
 
 	*Runtime
 }
@@ -38,6 +40,7 @@ func NewLspGroupCommand(bot *miraiBot.Bot, l *Lsp, msg *message.GroupMessage) *L
 	c := &LspGroupCommand{
 		Runtime: NewRuntime(bot, l, l.PermissionStateManager.CheckGroupSilence(msg.GroupCode)),
 		msg:     msg,
+		prefix:  l.commandPrefix,
 	}
 	c.Parse(msg.Elements)
 	return c
@@ -67,7 +70,7 @@ func (lgc *LspGroupCommand) Execute() {
 		}
 	}()
 
-	if !strings.HasPrefix(lgc.GetCmd(), "/") {
+	if !strings.HasPrefix(lgc.GetCmd(), lgc.prefix) {
 		return
 	}
 
@@ -90,16 +93,16 @@ func (lgc *LspGroupCommand) Execute() {
 
 	log.Debug("execute command")
 
-	switch lgc.GetCmd() {
-	case "/lsp":
+	switch strings.TrimPrefix(lgc.GetCmd(), lgc.prefix) {
+	case LspCommand:
 		if lgc.requireNotDisable(LspCommand) {
 			lgc.LspCommand()
 		}
-	case "/色图":
+	case SetuCommand:
 		if lgc.requireEnable(SetuCommand) {
 			lgc.SetuCommand(false)
 		}
-	case "/黄图":
+	case HuangtuCommand:
 		if lgc.requireEnable(HuangtuCommand) {
 			if lgc.l.PermissionStateManager.RequireAny(
 				permission.AdminRoleRequireOption(lgc.uin()),
@@ -108,51 +111,51 @@ func (lgc *LspGroupCommand) Execute() {
 				lgc.SetuCommand(true)
 			}
 		}
-	case "/watch":
+	case WatchCommand:
 		if lgc.requireNotDisable(WatchCommand) {
 			lgc.WatchCommand(false)
 		}
-	case "/unwatch":
+	case UnwatchCommand:
 		if lgc.requireNotDisable(WatchCommand) {
 			lgc.WatchCommand(true)
 		}
-	case "/list":
+	case ListCommand:
 		if lgc.requireNotDisable(ListCommand) {
 			lgc.ListCommand()
 		}
-	case "/config":
+	case ConfigCommand:
 		if lgc.requireNotDisable(ConfigCommand) {
 			lgc.ConfigCommand()
 		}
-	case "/签到":
+	case CheckinCommand:
 		if lgc.requireNotDisable(CheckinCommand) {
 			lgc.CheckinCommand()
 		}
-	case "/查询积分":
-		if lgc.requireNotDisable(ScoreCommand) {
-			lgc.ScoreCommand()
-		}
-	case "/roll":
+	case RollCommand:
 		if lgc.requireNotDisable(RollCommand) {
 			lgc.RollCommand()
 		}
-	case "/grant":
+	case ScoreCommand:
+		if lgc.requireNotDisable(ScoreCommand) {
+			lgc.ScoreCommand()
+		}
+	case GrantCommand:
 		lgc.GrantCommand()
-	case "/enable":
+	case EnableCommand:
 		lgc.EnableCommand(false)
-	case "/disable":
+	case DisableCommand:
 		lgc.EnableCommand(true)
-	case "/silence":
+	case SilenceCommand:
 		lgc.SilenceCommand()
-	case "/face":
+	case FaceCommand:
 		if lgc.requireNotDisable(FaceCommand) {
 			lgc.FaceCommand()
 		}
-	case "/倒放":
+	case ReverseCommand:
 		if lgc.requireNotDisable(ReverseCommand) {
 			lgc.ReverseCommand()
 		}
-	case "/help":
+	case HelpCommand:
 		if lgc.requireNotDisable(HelpCommand) {
 			lgc.HelpCommand()
 		}
@@ -361,7 +364,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	var (
 		groupCode = lgc.groupCode()
 		site      = bilibili.Site
-		watchType = concern.BibiliLive
+		watchType = concern_type.Type("live")
 		err       error
 	)
 
@@ -370,8 +373,8 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	defer func() { log.Info("watch command end") }()
 
 	var watchCmd struct {
-		Site string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
-		Type string `optional:"" short:"t" default:"live" help:"news / live"`
+		Site string `optional:"" short:"s" default:"bilibili" help:"订阅网站"`
+		Type string `optional:"" short:"t" default:"live" help:"订阅类型"`
 		Id   string `arg:""`
 	}
 	var name string
@@ -380,7 +383,8 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	} else {
 		name = "watch"
 	}
-	_, output := lgc.parseCommandSyntax(&watchCmd, name)
+
+	_, output := lgc.parseCommandSyntax(&watchCmd, name, kong.Description(fmt.Sprintf("当前支持的网站：%v", strings.Join(registry.ListSite(), "/"))))
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -391,7 +395,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	site, watchType, err = lgc.ParseRawSiteAndType(watchCmd.Site, watchCmd.Type)
 	if err != nil {
 		log = log.WithField("args", lgc.GetArgs())
-		log.Errorf("parse raw concern failed %v", err)
+		log.Errorf("ParseRawSiteAndType failed %v", err)
 		lgc.textReply(fmt.Sprintf("参数错误 - %v", err))
 		return
 	}
@@ -409,20 +413,12 @@ func (lgc *LspGroupCommand) ListCommand() {
 	log.Info("run list command")
 	defer func() { log.Info("list command end") }()
 
-	var listCmd struct {
-		Site string `optional:"" short:"s" help:"已弃用"`
-		Type string `optional:"" short:"t" help:"已弃用"`
-	}
+	var listCmd struct{}
 	_, output := lgc.parseCommandSyntax(&listCmd, ListCommand)
 	if output != "" {
 		lgc.textReply(output)
 	}
 	if lgc.exit {
-		return
-	}
-
-	if listCmd.Site != "" || listCmd.Type != "" {
-		lgc.textReply("命令已更新，请直接输入/list即可")
 		return
 	}
 
@@ -766,11 +762,6 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 			lgc.textSend(fmt.Sprintf("失败 - %v", err.Error()))
 			return
 		}
-		if site == youtube.Site {
-			log.WithField("site", configCmd.OfflineNotify.Site).Errorf("not supported")
-			lgc.textSend(fmt.Sprintf("失败 - %v", "暂不支持YTB"))
-			return
-		}
 		var on = utils.Switch2Bool(configCmd.OfflineNotify.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.OfflineNotify.Id).WithField("on", on)
 		IConfigOfflineNotifyCmd(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.OfflineNotify.Id, site, ctype, on)
@@ -780,6 +771,11 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		if err != nil {
 			log.WithField("site", configCmd.Filter.Site).Errorf("ParseRawSiteAndType failed %v", err)
 			lgc.textSend(fmt.Sprintf("失败 - %v", err.Error()))
+			return
+		}
+		if site != bilibili.Site || ctype != bilibili.News {
+			log.WithField("site", site).WithField("ctype", ctype.String()).Errorf("not supported")
+			lgc.textSend("失败 - 暂不支持")
 			return
 		}
 		switch filterCmd {
@@ -1105,19 +1101,16 @@ func (lgc *LspGroupCommand) globalDisabledReply() *message.GroupMessage {
 
 func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
 	ctx := NewMessageContext()
-	ctx.Source = SourceTypeGroup
+	ctx.Target = msg.NewGroupTarget(lgc.groupCode())
 	ctx.Lsp = lgc.l
 	ctx.Log = log
-	ctx.TextReply = func(text string) interface{} {
-		return lgc.textReply(text)
+	ctx.SendFunc = func(m *msg.MSG) interface{} {
+		return lgc.send(m.ToMessage(lgc.bot.QQClient, ctx.Target))
 	}
-	ctx.Send = func(msg *message.SendingMessage) interface{} {
-		return lgc.send(msg)
+	ctx.ReplyFunc = func(m *msg.MSG) interface{} {
+		return lgc.reply(m.ToMessage(lgc.bot.QQClient, ctx.Target))
 	}
-	ctx.Reply = func(sendingMessage *message.SendingMessage) interface{} {
-		return lgc.reply(sendingMessage)
-	}
-	ctx.NoPermissionReply = func() interface{} {
+	ctx.NoPermissionReplyFunc = func() interface{} {
 		ctx.Log.Debugf("no permission")
 		if !lgc.l.PermissionStateManager.CheckGroupSilence(lgc.groupCode()) {
 			return lgc.noPermissionReply()

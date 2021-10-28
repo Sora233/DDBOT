@@ -1,8 +1,8 @@
 package youtube
 
 import (
-	"github.com/Sora233/DDBOT/concern"
-	"github.com/Sora233/DDBOT/lsp/test"
+	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -20,7 +20,7 @@ func TestConcern(t *testing.T) {
 
 	go c.notifyLoop()
 
-	_, err := c.StateManager.AddGroupConcern(test.G1, test.NAME1, concern.YoutubeLive)
+	_, err := c.StateManager.AddGroupConcern(test.G1, test.NAME1, Live)
 	assert.Nil(t, err)
 
 	c.eventChan <- &VideoInfo{

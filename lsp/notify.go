@@ -3,7 +3,8 @@ package lsp
 import (
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"runtime/debug"
@@ -35,31 +36,30 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				continue
 			}
 
-			innertState := l.getInnerState(inotify.Type())
-			cfg := l.getConcernConfig(inotify.GetGroupCode(), inotify.GetUid(), inotify.Type())
-			notifyManager := l.getConcernConfigNotifyManager(inotify.Type(), cfg)
+			c := registry.GetConcernManager(inotify.Site(), inotify.Type())
+			cfg := c.GetStateManager().GetGroupConcernConfig(inotify.GetGroupCode(), inotify.GetUid())
 
-			sendHookResult := notifyManager.ShouldSendHook(inotify)
+			sendHookResult := cfg.ShouldSendHook(inotify)
 			if !sendHookResult.Pass {
 				nLogger.WithField("Reason", sendHookResult.Reason).Info("notify filtered by hook ShouldSendHook")
 				continue
 			}
 
-			newsFilterHook := notifyManager.NewsFilterHook(inotify)
+			newsFilterHook := cfg.FilterHook(inotify)
 			if !newsFilterHook.Pass {
-				nLogger.WithField("Reason", newsFilterHook.Reason).Info("notify filtered by hook NewsFilterHook")
+				nLogger.WithField("Reason", newsFilterHook.Reason).Info("notify filtered by hook FilterHook")
 				continue
 			}
 
 			// atConfig
-			var atBeforeHook = notifyManager.AtBeforeHook(inotify)
+			var atBeforeHook = cfg.AtBeforeHook(inotify)
 			if !atBeforeHook.Pass {
 				nLogger.WithField("Reason", atBeforeHook.Reason).Debug("notify @at filtered by hook AtBeforeHook")
 			} else {
 				// 有@全体成员 或者 @Someone
 				var qqadmin = atBeforeHook.Pass && l.PermissionStateManager.CheckGroupAdministrator(inotify.GetGroupCode(), bot.Uin)
-				var checkAtAll = qqadmin && cfg.GroupConcernAt.CheckAtAll(inotify.Type())
-				var atAllMark = checkAtAll && innertState.CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
+				var checkAtAll = qqadmin && cfg.GetGroupConcernAt().CheckAtAll(inotify.Type())
+				var atAllMark = checkAtAll && c.GetStateManager().CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
 				nLogger.WithFields(logrus.Fields{
 					"atBeforeHook": atBeforeHook,
 					"qqAdmin":      qqadmin,
@@ -70,7 +70,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 					nLogger = nLogger.WithField("at_all", true)
 					chainMsg = append(chainMsg, newAtAllMsg())
 				} else {
-					ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
+					ids := cfg.GetGroupConcernAt().GetAtSomeoneList(inotify.Type())
 					nLogger = nLogger.WithField("at_QQ", ids)
 					if len(ids) != 0 {
 						chainMsg = append(chainMsg, newAtIdsMsg(ids))
@@ -78,7 +78,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				}
 			}
 
-			notifyManager.NotifyBeforeCallback(inotify)
+			cfg.NotifyBeforeCallback(inotify)
 
 			chainMsg = append([]*message.SendingMessage{l.NotifyMessage(inotify)}, chainMsg...)
 
@@ -95,9 +95,9 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				}()
 				msgs := l.sendChainGroupMessage(inotify.GetGroupCode(), chainMsg)
 				if len(msgs) > 0 {
-					notifyManager.NotifyAfterCallback(inotify, msgs[0])
+					cfg.NotifyAfterCallback(inotify, msgs[0])
 				} else {
-					notifyManager.NotifyAfterCallback(inotify, nil)
+					cfg.NotifyAfterCallback(inotify, nil)
 				}
 				if atBeforeHook.Pass {
 					for _, msg := range msgs {
@@ -110,7 +110,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 								continue
 							}
 							// @全体成员失败了，可能是次数到了，尝试@列表
-							ids := cfg.GroupConcernAt.GetAtSomeoneList(inotify.Type())
+							ids := cfg.GetGroupConcernAt().GetAtSomeoneList(inotify.Type())
 							if len(ids) != 0 {
 								nLogger = nLogger.WithField("at_QQ", ids)
 								nLogger.Debug("notify atAll failed, try at someone")

@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/DDBOT/concern"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/msg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
@@ -22,31 +23,41 @@ import (
 
 var logger = utils.GetModuleLogger("bilibili-concern")
 
-type EventType int64
-
 const (
-	Live EventType = iota
-	News
+	Live concern_type.Type = "live"
+	News concern_type.Type = "news"
 )
 
-type ConcernEvent interface {
-	Type() EventType
+type concernEvent interface {
+	Type() concern_type.Type
 }
 
 type Concern struct {
 	unsafeStart int32
 
 	*StateManager
-	eventChan chan ConcernEvent
+	eventChan chan concernEvent
 	notify    chan<- concern.Notify
 	stop      chan interface{}
 	wg        sync.WaitGroup
 }
 
+func (c *Concern) Site() string {
+	return "bilibili"
+}
+
+func (c *Concern) ParseId(s string) (interface{}, error) {
+	return ParseUid(s)
+}
+
+func (c *Concern) GetStateManager() concern.IStateManager {
+	return c.StateManager
+}
+
 func NewConcern(notify chan<- concern.Notify) *Concern {
 	c := &Concern{
 		StateManager: NewStateManager(),
-		eventChan:    make(chan ConcernEvent, 500),
+		eventChan:    make(chan concernEvent, 500),
 		notify:       notify,
 		stop:         make(chan interface{}),
 	}
@@ -72,7 +83,8 @@ func (c *Concern) Stop() {
 	logger.Trace("bilibili concern已停止")
 }
 
-func (c *Concern) Start() {
+func (c *Concern) Start() error {
+	Init()
 	err := c.StateManager.Start()
 	if err != nil {
 		logger.Errorf("state manager start err %v", err)
@@ -80,7 +92,7 @@ func (c *Concern) Start() {
 
 	if !IsVerifyGiven() {
 		logger.Errorf("注意：B站配置不完整，B站相关功能无法使用！")
-		return
+		return nil
 	}
 
 	if runtime.NumCPU() >= 3 {
@@ -105,15 +117,17 @@ func (c *Concern) Start() {
 			}
 		}
 	}()
+	return nil
 }
 
-func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo, error) {
+func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	mid := _id.(int64)
 	var err error
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("mid", mid)
 
 	err = c.StateManager.CheckGroupConcern(groupCode, mid, ctype)
 	if err != nil {
-		if err == concern_manager.ErrAlreadyExists {
+		if err == concern.ErrAlreadyExists {
 			return nil, errors.New("已经watch过了")
 		}
 		log.Errorf("CheckGroupConcern error %v", err)
@@ -187,17 +201,35 @@ func (c *Concern) Add(groupCode int64, mid int64, ctype concern.Type) (*UserInfo
 	if err != nil && !localdb.IsRollback(err) {
 		log.Errorf("SetUidFirstTimestampIfNotExist failed %v", err)
 	}
-
 	_ = c.StateManager.AddUserInfo(userInfo)
-	return userInfo, nil
+	if ctype.ContainAny(Live) {
+		// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
+		liveInfo, _ := c.GetLiveInfo(mid)
+		if liveInfo != nil && liveInfo.Living() {
+			if ctx.GetTarget().TargetType().IsGroup() {
+				defer c.GroupWatchNotify(groupCode, mid)
+			}
+			if ctx.GetTarget().TargetType().IsPrivate() {
+				defer ctx.Send(msg.NewText("检测到该用户正在直播，但由于您目前处于私聊模式，因此不会在群内推送本次直播，将在该用户下次直播时推送"))
+			}
+		}
+	}
+	const followerCap = 50
+	if userInfo != nil && userInfo.UserStat != nil && ctype.ContainAny(Live) && userInfo.UserStat.Follower < followerCap {
+		ctx.Send(msg.NewTextf("注意：检测到用户【%v】粉丝数少于%v，请确认您的订阅目标是否正确，注意使用UID而非直播间ID", userInfo.Name, followerCap))
+	}
+
+	return concern.NewIdentity(mid, userInfo.GetName()), nil
 }
 
-func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concern.Type, error) {
-	var newCtype concern.Type
-	var allCtype concern.Type
+func (c *Concern) Remove(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	mid := _id.(int64)
+	var identityInfo concern.IdentityInfo
+	var allCtype concern_type.Type
 	err := c.StateManager.RWCoverTx(func(tx *buntdb.Tx) error {
 		var err error
-		newCtype, err = c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
+		identityInfo, _ = c.Get(mid)
+		_, err = c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
 		if err != nil {
 			return err
 		}
@@ -207,7 +239,7 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 		}
 		// 如果已经没有watch live的了，此时应该把liveinfo删掉，否则会无法刷新到livelinfo
 		// 如果此时liveinfo是living状态，则此状态会一直保留，下次watch时会以为在living错误推送
-		if !allCtype.ContainAll(concern.BibiliLive) {
+		if !allCtype.ContainAll(Live) {
 			err = c.StateManager.DeleteLiveInfo(mid)
 			if err == buntdb.ErrNotFound {
 				err = nil
@@ -223,27 +255,39 @@ func (c *Concern) Remove(groupCode int64, mid int64, ctype concern.Type) (concer
 			c.unsubUser(mid)
 		}
 	}
-	return newCtype, err
+	return identityInfo, err
 }
 
-func (c *Concern) ListWatching(groupCode int64, ctype concern.Type) ([]*UserInfo, []concern.Type, error) {
+func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
+	userInfo, err := c.FindUser(id.(int64), false)
+	if err != nil {
+		return nil, err
+	}
+	return concern.NewIdentity(id, userInfo.GetName()), nil
+}
+
+func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
 	log := logger.WithFields(localutils.GroupLogFields(groupCode))
 
-	mids, ctypes, err := c.StateManager.ListByGroup(groupCode, func(id interface{}, p concern.Type) bool {
-		return p.ContainAny(ctype)
+	_, mids, ctypes, err := c.StateManager.List(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
+		return groupCode == _groupCode && p.ContainAny(ctype)
 	})
 	if err != nil {
 		return nil, nil, err
 	}
-	var result = make([]*UserInfo, 0, len(mids))
-	var resultTypes = make([]concern.Type, 0, len(mids))
+	mids, ctypes, err = c.StateManager.GroupTypeById(mids, ctypes)
+	if err != nil {
+		return nil, nil, err
+	}
+	var result = make([]concern.IdentityInfo, 0, len(mids))
+	var resultTypes = make([]concern_type.Type, 0, len(mids))
 	for index, mid := range mids {
 		userInfo, err := c.StateManager.GetUserInfo(mid.(int64))
 		if err != nil {
 			log.WithField("mid", mid).Errorf("GetUserInfo error %v", err)
 			continue
 		}
-		result = append(result, userInfo)
+		result = append(result, concern.NewIdentity(userInfo.Mid, userInfo.GetName()))
 		resultTypes = append(resultTypes, ctypes[index])
 	}
 	return result, resultTypes, nil
@@ -259,8 +303,8 @@ func (c *Concern) notifyLoop() {
 			log := event.Logger()
 			log.Debugf("new event - live notify")
 
-			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-				return id.(int64) == event.Mid && p.ContainAny(concern.BibiliLive)
+			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+				return id.(int64) == event.Mid && p.ContainAny(Live)
 			})
 			if err != nil {
 				log.Errorf("list id failed %v", err)
@@ -283,8 +327,8 @@ func (c *Concern) notifyLoop() {
 			log := event.Logger()
 			log.Debugf("new event - news notify")
 
-			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-				return id.(int64) == event.Mid && p.ContainAny(concern.BilibiliNews)
+			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+				return id.(int64) == event.Mid && p.ContainAny(News)
 			})
 			if err != nil {
 				log.Errorf("list id failed %v", err)
@@ -300,6 +344,10 @@ func (c *Concern) notifyLoop() {
 		}
 
 	}
+}
+
+func (c *Concern) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id), c)
 }
 
 func (c *Concern) watchCore() {
@@ -342,8 +390,8 @@ func (c *Concern) watchCore() {
 				liveInfoMap[info.Mid] = info
 			}
 
-			_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
-				return p.ContainAny(concern.BibiliLive)
+			_, ids, types, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+				return p.ContainAny(Live)
 			})
 			if err != nil {
 				logger.Errorf("List error %v", err)
@@ -651,7 +699,7 @@ func (c *Concern) SyncSub() {
 	}
 	var midSet = make(map[int64]bool)
 	var attentionMidSet = make(map[int64]bool)
-	_, _, _, err = c.List(func(groupCode int64, id interface{}, p concern.Type) bool {
+	_, _, _, err = c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 		midSet[id.(int64)] = true
 		return true
 	})
@@ -776,7 +824,7 @@ func (c *Concern) RemoveAllByGroupCode(groupCode int64) ([]string, error) {
 					if err != nil {
 						continue
 					}
-					if !ctype.ContainAll(concern.BibiliLive) {
+					if !ctype.ContainAll(Live) {
 						c.StateManager.DeleteLiveInfo(mid)
 					}
 				}

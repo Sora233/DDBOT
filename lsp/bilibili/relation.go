@@ -1,7 +1,6 @@
 package bilibili
 
 import (
-	"context"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
@@ -32,8 +31,6 @@ func RelationModify(fid int64, act int) (*RelationModifyResponse, error) {
 	if !IsVerifyGiven() {
 		return nil, ErrVerifyRequired
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
@@ -47,31 +44,22 @@ func RelationModify(fid int64, act int) (*RelationModifyResponse, error) {
 		ReSrc: 11,
 		Csrf:  GetVerifyBiliJct(),
 	}
-	form, err := utils.ToDatas(formRequest)
+	form, err := utils.ToParams(formRequest)
 	if err != nil {
 		return nil, err
 	}
 	var opts []requests.Option
 	opts = append(opts,
 		requests.ProxyOption(proxy_pool.PreferNone),
-		requests.TimeoutOption(time.Second*5),
+		requests.TimeoutOption(time.Second*10),
 		AddUAOption(),
+		delete412ProxyOption,
 	)
 	opts = append(opts, GetVerifyOption()...)
-	resp, err := requests.Post(ctx, url, form, 1,
-		opts...,
-	)
-	if err != nil {
-		return nil, err
-	}
 	rmr := new(RelationModifyResponse)
-	err = resp.Json(rmr)
+	err = requests.Post(url, form, rmr, opts...)
 	if err != nil {
 		return nil, err
-	}
-	if rmr.Code == -412 && resp.Proxy != "" {
-		proxy_pool.Delete(resp.Proxy)
 	}
 	return rmr, nil
-
 }

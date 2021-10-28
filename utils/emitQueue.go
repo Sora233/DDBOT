@@ -1,21 +1,18 @@
 package utils
 
 import (
-	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	pq "github.com/jupp0r/go-priority-queue"
 	"sync"
 	"time"
 )
 
-var logger = utils.GetModuleLogger("utils")
-
 type EmitE struct {
 	Id   interface{}
-	Type concern.Type
+	Type concern_type.Type
 }
 
-func NewEmitE(id interface{}, t concern.Type) *EmitE {
+func NewEmitE(id interface{}, t concern_type.Type) *EmitE {
 	return &EmitE{
 		Id:   id,
 		Type: t,

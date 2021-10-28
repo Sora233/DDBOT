@@ -3,13 +3,13 @@ package douyu
 import (
 	"errors"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/tidwall/buntdb"
 	"time"
 )
 
 type StateManager struct {
-	*concern_manager.StateManager
+	*concern.StateManager
 	*extraKey
 }
 
@@ -33,6 +33,10 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	})
 }
 
+func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id))
+}
+
 func (c *StateManager) Start() error {
 	for _, pattern := range []localdb.KeyPatternFunc{c.GroupConcernStateKey, c.CurrentLiveKey, c.FreshKey} {
 		c.CreatePatternIndex(pattern, nil)
@@ -43,6 +47,6 @@ func (c *StateManager) Start() error {
 func NewStateManager() *StateManager {
 	sm := &StateManager{}
 	sm.extraKey = NewExtraKey()
-	sm.StateManager = concern_manager.NewStateManager(NewKeySet(), true)
+	sm.StateManager = concern.NewStateManagerWithCustomKey(NewKeySet(), true)
 	return sm
 }

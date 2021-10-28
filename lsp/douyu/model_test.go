@@ -1,8 +1,7 @@
 package douyu
 
 import (
-	"github.com/Sora233/DDBOT/concern"
-	"github.com/Sora233/DDBOT/lsp/test"
+	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -51,7 +50,7 @@ func TestLiveInfo(t *testing.T) {
 
 	notify := NewConcernLiveNotify(test.G1, l)
 	assert.NotNil(t, notify)
-	assert.Equal(t, concern.DouyuLive, notify.Type())
+	assert.Equal(t, Live, notify.Type())
 	assert.NotNil(t, notify.Logger())
 	assert.Equal(t, test.G1, notify.GetGroupCode())
 	assert.Equal(t, test.UID1, notify.GetUid())

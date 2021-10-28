@@ -7,18 +7,15 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
 	"github.com/Sora233/DDBOT/image_pool"
 	"github.com/Sora233/DDBOT/image_pool/local_pool"
 	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
-	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
-	"github.com/Sora233/DDBOT/lsp/douyu"
-	"github.com/Sora233/DDBOT/lsp/huya"
+	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/permission"
+	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/lsp/version"
-	"github.com/Sora233/DDBOT/lsp/youtube"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/local_proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/py"
@@ -40,17 +37,13 @@ var logger = utils.GetModuleLogger(ModuleName)
 var Debug = false
 
 type Lsp struct {
-	bilibiliConcern *bilibili.Concern
-	// 辣鸡语言毁我青春
-	douyuConcern   *douyu.Concern
-	youtubeConcern *youtube.Concern
-	huyaConcern    *huya.Concern
-	pool           image_pool.Pool
-	concernNotify  chan concern.Notify
-	stop           chan interface{}
-	wg             sync.WaitGroup
-	status         *Status
-	notifyWg       sync.WaitGroup
+	pool          image_pool.Pool
+	concernNotify <-chan concern.Notify
+	stop          chan interface{}
+	wg            sync.WaitGroup
+	status        *Status
+	notifyWg      sync.WaitGroup
+	commandPrefix string
 
 	PermissionStateManager *permission.StateManager
 	LspStateManager        *StateManager
@@ -78,6 +71,11 @@ func (l *Lsp) Init() {
 		log.Fatalf("无法正常初始化数据库！请检查.lsp.db文件权限是否正确，如无问题则为数据库文件损坏，请阅读文档获得帮助。")
 	}
 
+	l.commandPrefix = strings.TrimSpace(config.GlobalConfig.GetString("bot.commandPrefix"))
+	if len(l.commandPrefix) == 0 {
+		l.commandPrefix = "/"
+	}
+
 	curVersion := version.GetCurrentVersion(LspVersionName)
 
 	if curVersion == -1 {
@@ -86,15 +84,8 @@ func (l *Lsp) Init() {
 		log.Fatalf("警告：检查数据库兼容性失败！最高支持版本：%v，当前版本：%v", LspSupportVersion, curVersion)
 	}
 
-	bilibili.Init()
-
 	l.PermissionStateManager = permission.NewStateManager()
 	l.LspStateManager = NewStateManager()
-
-	l.bilibiliConcern = bilibili.NewConcern(l.concernNotify)
-	l.douyuConcern = douyu.NewConcern(l.concernNotify)
-	l.youtubeConcern = youtube.NewConcern(l.concernNotify)
-	l.huyaConcern = huya.NewConcern(l.concernNotify)
 
 	imagePoolType := config.GlobalConfig.GetString("imagePool.type")
 	log = logger.WithField("image_pool_type", imagePoolType)
@@ -330,17 +321,19 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
-		bilibiliIds, _, _ := l.bilibiliConcern.ListByGroup(event.Group.Code, nil)
-		douyuIds, _, _ := l.douyuConcern.ListByGroup(event.Group.Code, nil)
-		huyaIds, _, _ := l.huyaConcern.ListByGroup(event.Group.Code, nil)
-		ytbIds, _, _ := l.youtubeConcern.ListByGroup(event.Group.Code, nil)
 		log := logger.WithField("GroupCode", event.Group.Code).
 			WithField("GroupName", event.Group.Name).
-			WithField("MemberCount", event.Group.MemberCount).
-			WithField("bilibili订阅数", len(bilibiliIds)).
-			WithField("douyu订阅数", len(douyuIds)).
-			WithField("huya订阅数", len(huyaIds)).
-			WithField("ytb订阅数", len(ytbIds))
+			WithField("MemberCount", event.Group.MemberCount)
+		for _, c := range registry.ListConcernManager() {
+			_, ids, _, err := c.GetStateManager().List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+				return groupCode == event.Group.Code
+			})
+			if err != nil {
+				log = log.WithField(fmt.Sprintf("%v订阅", c.Site()), "查询失败")
+			} else {
+				log = log.WithField(fmt.Sprintf("%v订阅", c.Site()), len(ids))
+			}
+		}
 		if event.Operator == nil {
 			log.Info("退出群聊")
 		} else {
@@ -409,10 +402,7 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 			l.FreshIndex()
 		}
 	}()
-	l.bilibiliConcern.Start()
-	l.douyuConcern.Start()
-	l.youtubeConcern.Start()
-	l.huyaConcern.Start()
+	registry.StartAll()
 	l.started = true
 	logger.Infof("DDBOT启动完成")
 	logger.Infof("D宝，一款真正人性化的单推BOT")
@@ -435,11 +425,7 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 		close(l.stop)
 	}
 
-	l.bilibiliConcern.Stop()
-	l.douyuConcern.Stop()
-	l.huyaConcern.Stop()
-	l.youtubeConcern.Stop()
-	close(l.concernNotify)
+	registry.StopAll()
 
 	l.wg.Wait()
 	logger.Debug("等待所有推送发送完毕")
@@ -453,19 +439,17 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 }
 
 func (l *Lsp) FreshIndex() {
-	l.bilibiliConcern.FreshIndex()
-	l.douyuConcern.FreshIndex()
-	l.youtubeConcern.FreshIndex()
-	l.huyaConcern.FreshIndex()
+	for _, c := range registry.ListConcernManager() {
+		c.GetStateManager().FreshIndex()
+	}
 	l.PermissionStateManager.FreshIndex()
 	l.LspStateManager.FreshIndex()
 }
 
 func (l *Lsp) RemoveAllByGroup(groupCode int64) {
-	l.bilibiliConcern.RemoveAllByGroupCode(groupCode)
-	l.douyuConcern.RemoveAllByGroupCode(groupCode)
-	l.youtubeConcern.RemoveAllByGroupCode(groupCode)
-	l.huyaConcern.RemoveAllByGroupCode(groupCode)
+	for _, c := range registry.ListConcernManager() {
+		c.GetStateManager().RemoveAllByGroupCode(groupCode)
+	}
 	l.PermissionStateManager.RemoveAllByGroupCode(groupCode)
 }
 
@@ -482,11 +466,14 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 	defer func() {
 		if e := recover(); e != nil {
 			if len(recovered) == 0 {
+				logger.WithField("content", localutils.MsgToString(msg.Elements)).
+					WithField("stack", string(debug.Stack())).
+					Errorf("sendGroupMessage panic recovered")
 				res = l.sendGroupMessage(groupCode, msg, true)
 			} else {
 				logger.WithField("content", localutils.MsgToString(msg.Elements)).
 					WithField("stack", string(debug.Stack())).
-					Errorf("sendGroupMessage panic recovered %v", e)
+					Errorf("sendGroupMessage panic recovered but panic again %v", e)
 				res = &message.GroupMessage{Id: -1, Elements: msg.Elements}
 			}
 		}
@@ -544,72 +531,11 @@ func (l *Lsp) sendChainGroupMessage(groupCode int64, msgs []*message.SendingMess
 	return res
 }
 
-func (l *Lsp) compactTextElements(elements []message.IMessageElement) []message.IMessageElement {
-	var compactMsg []message.IMessageElement
-	sb := strings.Builder{}
-	for _, e := range elements {
-		if e.Type() == message.Text {
-			sb.WriteString(e.(*message.TextElement).Content)
-		} else {
-			if sb.Len() != 0 {
-				compactMsg = append(compactMsg, message.NewText(sb.String()))
-				sb = strings.Builder{}
-			}
-			compactMsg = append(compactMsg, e)
-		}
-	}
-	if sb.Len() != 0 {
-		compactMsg = append(compactMsg, message.NewText(sb.String()))
-	}
-	return compactMsg
-}
-
-func (l *Lsp) getInnerState(ctype concern.Type) *concern_manager.StateManager {
-	switch ctype {
-	case concern.BilibiliNews, concern.BibiliLive:
-		return l.bilibiliConcern.StateManager.StateManager
-	case concern.DouyuLive:
-		return l.douyuConcern.StateManager.StateManager
-	case concern.YoutubeVideo, concern.YoutubeLive:
-		return l.youtubeConcern.StateManager.StateManager
-	case concern.HuyaLive:
-		return l.huyaConcern.StateManager.StateManager
-	default:
-		return nil
-	}
-}
-
-func (l *Lsp) getConcernConfig(groupCode int64, id interface{}, ctype concern.Type) *concern_manager.GroupConcernConfig {
-	state := l.getInnerState(ctype)
-	if state == nil {
-		return nil
-	}
-	return state.GetGroupConcernConfig(groupCode, id)
-}
-
-func (l *Lsp) getConcernConfigNotifyManager(ctype concern.Type, concernConfig *concern_manager.GroupConcernConfig) concern_manager.NotifyManager {
-	if concernConfig == nil {
-		return nil
-	}
-	switch ctype {
-	case concern.BibiliLive, concern.BilibiliNews:
-		return bilibili.NewGroupConcernConfig(concernConfig, l.bilibiliConcern)
-	case concern.DouyuLive:
-		return douyu.NewGroupConcernConfig(concernConfig)
-	case concern.YoutubeLive, concern.YoutubeVideo:
-		return youtube.NewGroupConcernConfig(concernConfig)
-	case concern.HuyaLive:
-		return huya.NewGroupConcernConfig(concernConfig)
-	default:
-		return concernConfig
-	}
-}
-
 var Instance *Lsp
 
 func init() {
 	Instance = &Lsp{
-		concernNotify: make(chan concern.Notify, 500),
+		concernNotify: registry.ReadNotifyChan(),
 		stop:          make(chan interface{}),
 		status:        NewStatus(),
 	}

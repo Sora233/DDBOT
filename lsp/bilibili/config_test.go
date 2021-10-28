@@ -2,9 +2,8 @@ package bilibili
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
-	"github.com/Sora233/DDBOT/lsp/test"
+	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -47,7 +46,7 @@ func newNewsInfo(uid int64, cardTypes ...DynamicDescType) []*ConcernNewsNotify {
 }
 
 func TestNewGroupConcernConfig(t *testing.T) {
-	g := NewGroupConcernConfig(new(concern_manager.GroupConcernConfig), nil)
+	g := NewGroupConcernConfig(new(concern.GroupConcernConfig), nil)
 	assert.NotNil(t, g)
 }
 
@@ -75,26 +74,28 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 		notify = append(notify, card)
 	}
 	var testCase = []*GroupConcernConfig{
-		{},
 		{
-			GroupConcernConfig: concern_manager.GroupConcernConfig{
-				GroupConcernNotify: concern_manager.GroupConcernNotifyConfig{
-					TitleChangeNotify: concern.BibiliLive,
+			IConfig: &concern.GroupConcernConfig{},
+		},
+		{
+			IConfig: &concern.GroupConcernConfig{
+				GroupConcernNotify: concern.GroupConcernNotifyConfig{
+					TitleChangeNotify: Live,
 				},
 			},
 		},
 		{
-			GroupConcernConfig: concern_manager.GroupConcernConfig{
-				GroupConcernNotify: concern_manager.GroupConcernNotifyConfig{
-					OfflineNotify: concern.BibiliLive,
+			IConfig: &concern.GroupConcernConfig{
+				GroupConcernNotify: concern.GroupConcernNotifyConfig{
+					OfflineNotify: Live,
 				},
 			},
 		},
 		{
-			GroupConcernConfig: concern_manager.GroupConcernConfig{
-				GroupConcernNotify: concern_manager.GroupConcernNotifyConfig{
-					OfflineNotify:     concern.BibiliLive,
-					TitleChangeNotify: concern.BibiliLive,
+			IConfig: &concern.GroupConcernConfig{
+				GroupConcernNotify: concern.GroupConcernNotifyConfig{
+					OfflineNotify:     Live,
+					TitleChangeNotify: Live,
 				},
 			},
 		},
@@ -127,7 +128,7 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 		for index2, liveInfo := range notify {
 			result := g.ShouldSendHook(liveInfo)
 			assert.NotNil(t, result)
-			assert.Equal(t, expected[index1][index2], result.Pass)
+			assert.Equalf(t, expected[index1][index2], result.Pass, "%v and %v check fail", index1, index2)
 		}
 	}
 }
@@ -151,7 +152,7 @@ func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 		// 开播了改了标题 推
 		newLiveInfo(test.UID1, true, true, true),
 	}
-	var g = new(GroupConcernConfig)
+	var g = NewGroupConcernConfig(new(concern.GroupConcernConfig), nil)
 	var expected = []bool{
 		false, false, false, false,
 		false, false, true, true,
@@ -159,20 +160,20 @@ func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 	assert.Equal(t, len(expected), len(liveInfos))
 	for index, liveInfo := range liveInfos {
 		result := g.AtBeforeHook(liveInfo)
-		assert.Equal(t, expected[index], result.Pass)
+		assert.Equalf(t, expected[index], result.Pass, "%v check fail", index)
 	}
 }
 
 func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 	var notifies = newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
-	var g = new(GroupConcernConfig)
+	var g = NewGroupConcernConfig(new(concern.GroupConcernConfig), nil)
 
 	// 默认应该不过滤
 	for _, notify := range notifies {
-		assert.True(t, g.NewsFilterHook(notify).Pass)
+		assert.True(t, g.FilterHook(notify).Pass)
 	}
 
-	var typeFilter = []*concern_manager.GroupConcernFilterConfigByType{
+	var typeFilter = []*concern.GroupConcernFilterConfigByType{
 		{
 			Type: []string{
 				Zhuanfa,
@@ -225,14 +226,16 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 
 	testFn := func(index int, tp string, expected []DynamicDescType) {
 		notifies := newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
-		var g = new(GroupConcernConfig)
-		g.GroupConcernFilter = concern_manager.GroupConcernFilterConfig{
-			Type:   tp,
-			Config: typeFilter[index].ToString(),
-		}
+		var g = NewGroupConcernConfig(&concern.GroupConcernConfig{
+			GroupConcernFilter: concern.GroupConcernFilterConfig{
+				Type:   tp,
+				Config: typeFilter[index].ToString(),
+			},
+		}, nil)
+
 		var resultType []DynamicDescType
 		for _, notify := range notifies {
-			hookResult := g.NewsFilterHook(notify)
+			hookResult := g.FilterHook(notify)
 			if hookResult.Pass {
 				resultType = append(resultType, notify.Card.GetDesc().GetType())
 			}
@@ -241,8 +244,8 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 	}
 
 	for index := range typeFilter {
-		testFn(index, concern_manager.FilterTypeType, expectedType[index])
-		testFn(index, concern_manager.FilterTypeNotType, expectedNotType[index])
+		testFn(index, concern.FilterTypeType, expectedType[index])
+		testFn(index, concern.FilterTypeNotType, expectedNotType[index])
 	}
 }
 

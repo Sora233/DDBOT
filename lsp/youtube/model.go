@@ -2,7 +2,7 @@ package youtube
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
@@ -20,15 +20,13 @@ func (ui *UserInfo) GetChannelName() string {
 	return ui.ChannelName
 }
 
-type EventType int64
-
 const (
-	Video EventType = iota
-	Live
+	Video concern_type.Type = "news"
+	Live  concern_type.Type = "live"
 )
 
-type ConcernEvent interface {
-	Type() EventType
+type concernEvent interface {
+	Type() concern_type.Type
 }
 
 // VideoInfo may be a video or a live, depend on the VideoType
@@ -42,12 +40,14 @@ type VideoInfo struct {
 	VideoTimestamp int64       `json:"video_timestamp"`
 
 	LiveStatusChanged bool `json:"-"`
+	LiveTitleChanged  bool `json:"-"`
 }
 
 func (v *VideoInfo) Logger() *logrus.Entry {
 	return logger.WithFields(logrus.Fields{
 		"Site":        Site,
 		"ChannelId":   v.ChannelId,
+		"ChannelName": v.ChannelName,
 		"VideoId":     v.VideoId,
 		"VideoType":   v.VideoType.String(),
 		"VideoTitle":  v.VideoTitle,
@@ -55,7 +55,7 @@ func (v *VideoInfo) Logger() *logrus.Entry {
 	})
 }
 
-func (v *VideoInfo) Type() EventType {
+func (v *VideoInfo) Type() concern_type.Type {
 	if v.IsLive() {
 		return Live
 	} else {
@@ -155,12 +155,16 @@ func (notify *ConcernNotify) Logger() *logrus.Entry {
 	return notify.VideoInfo.Logger().WithFields(localutils.GroupLogFields(notify.GroupCode))
 }
 
-func (notify *ConcernNotify) Type() concern.Type {
+func (notify *ConcernNotify) Type() concern_type.Type {
 	if notify.IsLive() {
-		return concern.YoutubeLive
+		return Live
 	} else {
-		return concern.YoutubeVideo
+		return Video
 	}
+}
+
+func (notify *ConcernNotify) Site() string {
+	return Site
 }
 
 func NewConcernNotify(groupCode int64, info *VideoInfo) *ConcernNotify {

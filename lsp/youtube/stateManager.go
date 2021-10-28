@@ -2,13 +2,13 @@ package youtube
 
 import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/tidwall/buntdb"
 	"time"
 )
 
 type StateManager struct {
-	*concern_manager.StateManager
+	*concern.StateManager
 	*extraKey
 }
 
@@ -50,6 +50,10 @@ func (s *StateManager) AddVideo(v *VideoInfo) error {
 	})
 }
 
+func (s *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(s.StateManager.GetGroupConcernConfig(groupCode, id))
+}
+
 func (s *StateManager) Start() error {
 	for _, pattern := range []localdb.KeyPatternFunc{s.GroupConcernStateKey, s.UserInfoKey, s.FreshKey} {
 		s.CreatePatternIndex(pattern, nil)
@@ -60,6 +64,6 @@ func (s *StateManager) Start() error {
 func NewStateManager() *StateManager {
 	sm := new(StateManager)
 	sm.extraKey = NewExtraKey()
-	sm.StateManager = concern_manager.NewStateManager(NewKeySet(), true)
+	sm.StateManager = concern.NewStateManagerWithCustomKey(NewKeySet(), true)
 	return sm
 }

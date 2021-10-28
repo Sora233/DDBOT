@@ -1,10 +1,9 @@
 package bilibili
 
 import (
-	"errors"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/DDBOT/utils/blockCache"
@@ -20,78 +19,8 @@ type NewsInfo struct {
 	Cards         []*Card `json:"-"`
 }
 
-func (n *NewsInfo) Type() EventType {
+func (n *NewsInfo) Type() concern_type.Type {
 	return News
-}
-
-func (n *NewsInfo) checkIndex(index int) error {
-	if len(n.Cards) <= index || n.Cards[index].GetCard() == "" {
-		return errors.New("card not found or empty")
-	}
-	return nil
-}
-
-func (n *NewsInfo) GetCardWithImage(index int) (*CardWithImage, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithImage()
-}
-
-func (n *NewsInfo) GetCardWithOrig(index int) (*CardWithOrig, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithOrig()
-}
-
-func (n *NewsInfo) GetCardWithVideo(index int) (*CardWithVideo, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithVideo()
-}
-
-func (n *NewsInfo) GetCardTextOnly(index int) (*CardTextOnly, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardTextOnly()
-}
-
-func (n *NewsInfo) GetCardWithPost(index int) (*CardWithPost, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithPost()
-}
-
-func (n *NewsInfo) GetCardWithMusic(index int) (*CardWithMusic, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithMusic()
-}
-
-func (n *NewsInfo) GetCardWithSketch(index int) (*CardWithSketch, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithSketch()
-}
-
-func (n *NewsInfo) GetCardWithLive(index int) (*CardWithLive, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithLive()
-}
-
-func (n *NewsInfo) GetCardWithLiveV2(index int) (*CardWithLiveV2, error) {
-	if err := n.checkIndex(index); err != nil {
-		return nil, err
-	}
-	return n.Cards[index].GetCardWithLiveV2()
 }
 
 func (n *NewsInfo) ToString() string {
@@ -108,13 +37,12 @@ func (n *NewsInfo) Logger() *logrus.Entry {
 		"Mid":      n.Mid,
 		"Name":     n.Name,
 		"CardSize": len(n.Cards),
-		"Type":     "News",
+		"Type":     n.Type().String(),
 	})
 }
 
 type ConcernNewsNotify struct {
 	GroupCode int64 `json:"group_code"`
-	// NewsInfo len(Cards)必须为1
 	*UserInfo
 	Card *Card
 
@@ -126,17 +54,9 @@ type ConcernNewsNotify struct {
 	concern       *Concern
 }
 
-func (notify *ConcernNewsNotify) Type() concern.Type {
-	return concern.BilibiliNews
-}
-
 type ConcernLiveNotify struct {
 	GroupCode int64 `json:"group_code"`
 	LiveInfo
-}
-
-func (notify *ConcernLiveNotify) Type() concern.Type {
-	return concern.BibiliLive
 }
 
 type UserStat struct {
@@ -196,7 +116,7 @@ func (l *LiveInfo) Living() bool {
 	return l.Status == LiveStatus_Living
 }
 
-func (l *LiveInfo) Type() EventType {
+func (l *LiveInfo) Type() concern_type.Type {
 	return Live
 }
 
@@ -216,7 +136,7 @@ func (l *LiveInfo) Logger() *logrus.Entry {
 		"RoomId": l.RoomId,
 		"Title":  l.LiveTitle,
 		"Status": l.Status.String(),
-		"Type":   "Live",
+		"Type":   l.Type().String(),
 	})
 }
 
@@ -846,6 +766,15 @@ func (notify *ConcernNewsNotify) ToMessage() (result []message.IMessageElement) 
 	notify.messageCache = result
 	return result
 }
+
+func (notify *ConcernNewsNotify) Type() concern_type.Type {
+	return News
+}
+
+func (notify *ConcernNewsNotify) Site() string {
+	return Site
+}
+
 func (notify *ConcernNewsNotify) GetGroupCode() int64 {
 	return notify.GroupCode
 }
@@ -864,6 +793,7 @@ func (notify *ConcernNewsNotify) Logger() *logrus.Entry {
 			"Name":      notify.Name,
 			"DynamicId": notify.Card.GetDesc().GetDynamicIdStr(),
 			"DescType":  notify.Card.GetDesc().GetType().String(),
+			"Type":      notify.Type().String(),
 		})
 }
 
@@ -889,7 +819,12 @@ func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
 	if notify == nil {
 		return logger
 	}
-	return notify.LiveInfo.Logger().WithFields(localutils.GroupLogFields(notify.GroupCode))
+	return notify.LiveInfo.Logger().
+		WithFields(localutils.GroupLogFields(notify.GroupCode))
+}
+
+func (notify *ConcernLiveNotify) Site() string {
+	return Site
 }
 
 func (notify *ConcernLiveNotify) GetGroupCode() int64 {

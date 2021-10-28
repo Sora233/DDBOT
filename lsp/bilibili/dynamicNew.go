@@ -1,7 +1,6 @@
 package bilibili
 
 import (
-	"context"
 	"fmt"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
@@ -23,8 +22,6 @@ func DynamicSrvDynamicNew() (*DynamicSvrDynamicNewResponse, error) {
 	if !IsVerifyGiven() {
 		return nil, ErrVerifyRequired
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
@@ -45,25 +42,14 @@ func DynamicSrvDynamicNew() (*DynamicSvrDynamicNewResponse, error) {
 		requests.HeaderOption("origin", fmt.Sprintf("https://t.bilibili.com")),
 		requests.HeaderOption("referer", fmt.Sprintf("https://t.bilibili.com")),
 		AddUAOption(),
-		requests.TimeoutOption(time.Second*3),
+		requests.TimeoutOption(time.Second*10),
+		delete412ProxyOption,
 	)
 	opts = append(opts, GetVerifyOption()...)
-	resp, err := requests.Get(ctx, url, params, 1, opts...)
-	if err != nil {
-		return nil, err
-	}
 	dynamicNewResp := new(DynamicSvrDynamicNewResponse)
-	err = resp.Json(dynamicNewResp)
+	err = requests.Get(url, params, dynamicNewResp, opts...)
 	if err != nil {
-		content, _ := resp.Content()
-		if len(content) > 100 {
-			content = content[len(content)-100:]
-		}
-		logger.WithField("content", string(content)).Errorf("DynamicSrvDynamicNew response json failed")
 		return nil, err
-	}
-	if dynamicNewResp.Code == -412 && resp.Proxy != "" {
-		proxy_pool.Delete(resp.Proxy)
 	}
 	return dynamicNewResp, nil
 }
