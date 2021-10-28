@@ -9,12 +9,13 @@ import (
 var db *buntdb.DB
 
 const MEMORYDB = ":memory:"
+const LSPDB = ".lsp.db"
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func InitBuntDB(dbpath string) error {
 	if dbpath == "" {
-		dbpath = ".lsp.db"
+		dbpath = LSPDB
 	}
 	buntDB, err := buntdb.Open(dbpath)
 	if err != nil {

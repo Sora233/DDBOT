@@ -183,10 +183,15 @@ func (s *ShortCut) SetIfNotExist(key, value string, opt ...*buntdb.SetOptions) e
 
 func (s *ShortCut) CreatePatternIndex(patternFunc KeyPatternFunc, suffix []interface{}, less ...func(a, b string) bool) error {
 	return s.RWCoverTx(func(tx *buntdb.Tx) error {
+		var err error
 		if len(less) == 0 {
-			return tx.CreateIndex(patternFunc(suffix...), patternFunc(append(suffix[:], "*")...), buntdb.IndexString)
+			err = tx.CreateIndex(patternFunc(suffix...), patternFunc(append(suffix[:], "*")...), buntdb.IndexString)
 		}
-		return tx.CreateIndex(patternFunc(suffix...), patternFunc(append(suffix[:], "*")...), less...)
+		err = tx.CreateIndex(patternFunc(suffix...), patternFunc(append(suffix[:], "*")...), less...)
+		if err == buntdb.ErrIndexExists {
+			err = nil
+		}
+		return err
 	})
 }
 

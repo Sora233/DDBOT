@@ -23,6 +23,7 @@ import (
 	localutils "github.com/Sora233/DDBOT/utils"
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	"github.com/sirupsen/logrus"
+	"os"
 	"runtime"
 	"runtime/debug"
 	"strings"
@@ -78,10 +79,34 @@ func (l *Lsp) Init() {
 
 	curVersion := version.GetCurrentVersion(LspVersionName)
 
-	if curVersion == -1 {
+	if curVersion < 0 {
 		log.Errorf("警告：无法检查数据库兼容性，程序可能无法正常工作")
 	} else if curVersion > LspSupportVersion {
 		log.Fatalf("警告：检查数据库兼容性失败！最高支持版本：%v，当前版本：%v", LspSupportVersion, curVersion)
+	} else if curVersion < LspSupportVersion {
+		// 应该更新下
+		backupFileName := fmt.Sprintf("%v-%v", localdb.LSPDB, time.Now().Unix())
+		log.Warnf(
+			`警告：数据库兼容性检查完毕，当前需要从<%v>更新至<%v>，将备份当前数据库文件到"%v"`,
+			curVersion, LspSupportVersion, backupFileName)
+		f, err := os.Create(backupFileName)
+		if err != nil {
+			log.Fatalf(`无法创建备份文件"%v"：%v`, backupFileName, err)
+		}
+		db := localdb.MustGetClient()
+		err = db.Save(f)
+		if err != nil {
+			log.Fatalf(`无法备份数据库到"%v"：%v`, backupFileName, err)
+		}
+		log.Infof(`备份完成，已备份数据库到"%v""`, backupFileName)
+		log.Info("五秒后将开始更新数据库，如需取消请按Ctrl+C")
+		time.Sleep(time.Second * 5)
+		err = version.DoMigration(LspVersionName, lspMigrationMap)
+		if err != nil {
+			log.Fatalf("更新数据库失败：%v", err)
+		}
+	} else {
+		log.Debugf("数据库兼容性检查完毕，当前已为最新模式：%v", curVersion)
 	}
 
 	l.PermissionStateManager = permission.NewStateManager()
