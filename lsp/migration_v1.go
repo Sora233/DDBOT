@@ -24,10 +24,10 @@ const (
 func (o oldType) ToNewType() concern_type.Type {
 	var nt concern_type.Type
 	if o&bibiliLive != 0 || o&douyuLive != 0 || o&youtubeLive != 0 || o&huyaLive != 0 {
-		nt.Add("live")
+		nt = nt.Add("live")
 	}
 	if o&bilibiliNews != 0 || o&youtubeVideo != 0 {
-		nt.Add("news")
+		nt = nt.Add("news")
 	}
 	return nt
 }
@@ -72,6 +72,7 @@ type V1 struct {
 func (v *V1) configMigrate(key, value string) string {
 	g, err := newGroupConcernConfigFromString(value)
 	if err != nil {
+		logger.WithField("key", key).Errorf("configMigrate newGroupConcernConfigFromString <%v> error %v", value, err)
 		return value
 	}
 	var ng concern.GroupConcernConfig
@@ -91,6 +92,7 @@ func (v *V1) configMigrate(key, value string) string {
 func (v *V1) concernMigrate(key, value string) string {
 	i, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
+		logger.WithField("key", key).Errorf("concernMigrate parse <%v> error %v", value, err)
 		return value
 	}
 	return oldType(i).ToNewType().String()
