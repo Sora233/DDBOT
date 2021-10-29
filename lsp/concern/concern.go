@@ -1,7 +1,6 @@
 package concern
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/sirupsen/logrus"
@@ -12,7 +11,7 @@ type Notify interface {
 	Type() concern_type.Type
 	GetGroupCode() int64
 	GetUid() interface{}
-	ToMessage() []message.IMessageElement
+	ToMessage() *mmsg.MSG
 	Logger() *logrus.Entry
 }
 

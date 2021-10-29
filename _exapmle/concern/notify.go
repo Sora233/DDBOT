@@ -1,7 +1,6 @@
 package example_concern
 
 import (
-	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
@@ -33,7 +32,7 @@ func (n *notify) GetUid() interface{} {
 func (n *notify) ToMessage() []message.IMessageElement {
 	m := mmsg.NewMSG()
 	m.Textf("EXAMPLE推送：%v", n.id)
-	sending := m.ToMessage(bot.Instance.QQClient, mmsg.NewGroupTarget(n.groupCode))
+	sending := m.ToMessage(mmsg.NewGroupTarget(n.groupCode))
 	return sending.Elements
 }
 

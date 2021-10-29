@@ -1167,7 +1167,7 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 			m.Textf("当前%v订阅数：%v", cm.Site(), len(ids))
 		}
 	}
-	c.send(m.ToMessage(c.bot.QQClient, mmsg.NewPrivateTarget(c.uin())))
+	c.send(m.ToMessage(mmsg.NewPrivateTarget(c.uin())))
 }
 
 func (c *LspPrivateCommand) DebugCheck() bool {
@@ -1240,7 +1240,7 @@ func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	ctx.Lsp = c.l
 	ctx.Log = log
 	ctx.SendFunc = func(m *mmsg.MSG) interface{} {
-		return c.send(m.ToMessage(c.bot.QQClient, ctx.Target))
+		return c.send(m.ToMessage(ctx.Target))
 	}
 	ctx.ReplyFunc = ctx.SendFunc
 	ctx.NoPermissionReplyFunc = func() interface{} {

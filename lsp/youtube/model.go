@@ -1,8 +1,8 @@
 package youtube
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
@@ -126,26 +126,20 @@ func (notify *ConcernNotify) GetUid() interface{} {
 	return notify.ChannelId
 }
 
-func (notify *ConcernNotify) ToMessage() []message.IMessageElement {
-	var result []message.IMessageElement
-	log := notify.Logger()
+func (notify *ConcernNotify) ToMessage() (m *mmsg.MSG) {
 	if notify.IsLive() {
 		if notify.IsLiving() {
-			result = append(result, localutils.MessageTextf("YTB-%v正在直播：\n%v\n", notify.ChannelName, notify.VideoTitle))
+			m.Textf("YTB-%v正在直播：\n%v\n", notify.ChannelName, notify.VideoTitle)
 		} else {
-			result = append(result, localutils.MessageTextf("YTB-%v发布了直播预约：\n%v\n时间：%v\n", notify.ChannelName, notify.VideoTitle, localutils.TimestampFormat(notify.VideoTimestamp)))
+			m.Textf("YTB-%v发布了直播预约：\n%v\n时间：%v\n",
+				notify.ChannelName, notify.VideoTitle, localutils.TimestampFormat(notify.VideoTimestamp))
 		}
 	} else if notify.IsVideo() {
-		result = append(result, localutils.MessageTextf("YTB-%s发布了新视频：\n%v\n", notify.ChannelName, notify.VideoTitle))
+		m.Textf("YTB-%s发布了新视频：\n%v\n", notify.ChannelName, notify.VideoTitle)
 	}
-	groupImg, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Cover, false, proxy_pool.PreferOversea)
-	if err != nil {
-		log.WithField("Cover", notify.Cover).Errorf("upload cover failed %v", err)
-	} else {
-		result = append(result, groupImg)
-	}
-	result = append(result, message.NewText(VideoViewUrl(notify.VideoId)+"\n"))
-	return result
+	m.ImageByUrl(notify.Cover, "[封面]", proxy_pool.PreferOversea)
+	m.Text(VideoViewUrl(notify.VideoId) + "\n")
+	return
 }
 
 func (notify *ConcernNotify) Logger() *logrus.Entry {

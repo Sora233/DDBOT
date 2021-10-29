@@ -1028,10 +1028,10 @@ func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	ctx.Lsp = lgc.l
 	ctx.Log = log
 	ctx.SendFunc = func(m *mmsg.MSG) interface{} {
-		return lgc.send(m.ToMessage(lgc.bot.QQClient, ctx.Target))
+		return lgc.send(m.ToMessage(ctx.Target))
 	}
 	ctx.ReplyFunc = func(m *mmsg.MSG) interface{} {
-		return lgc.reply(m.ToMessage(lgc.bot.QQClient, ctx.Target))
+		return lgc.reply(m.ToMessage(ctx.Target))
 	}
 	ctx.NoPermissionReplyFunc = func() interface{} {
 		ctx.Log.Debugf("no permission")

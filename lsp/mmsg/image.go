@@ -1,18 +1,34 @@
 package mmsg
 
 import (
+	"bytes"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
-	"io"
+	"github.com/Sora233/DDBOT/proxy_pool"
+	"github.com/Sora233/DDBOT/requests"
+	"github.com/Sora233/DDBOT/utils"
 )
 
 type ImageBytesElement struct {
-	Buf         io.ReadSeeker
+	Buf         []byte
 	alternative string
 }
 
-func NewImage(buf io.ReadSeeker) *ImageBytesElement {
+func NewImage(buf []byte) *ImageBytesElement {
 	return &ImageBytesElement{Buf: buf, alternative: "[图片]"}
+}
+
+func NewImageByUrl(url string, prefer proxy_pool.Prefer, opts ...requests.Option) *ImageBytesElement {
+	var img = NewImage(nil)
+	var b []byte
+	var err error
+	b, err = utils.ImageGet(url, prefer, opts...)
+	if err == nil {
+		img.Buf = b
+	} else {
+		logger.WithField("url", url).Errorf("ImageGet error %v", err)
+	}
+	return img
 }
 
 func (i *ImageBytesElement) Alternative(s string) *ImageBytesElement {
@@ -26,12 +42,12 @@ func (i *ImageBytesElement) Type() message.ElementType {
 
 func (i *ImageBytesElement) PackToElement(client *client.QQClient, target Target) message.IMessageElement {
 	if i == nil {
-		return message.NewText("[nil image]")
+		return message.NewText("[nil image]\n")
 	}
 	switch target.TargetType() {
 	case TargetPrivate:
 		if i.Buf != nil {
-			img, err := client.UploadPrivateImage(target.TargetCode(), i.Buf)
+			img, err := client.UploadPrivateImage(target.TargetCode(), bytes.NewReader(i.Buf))
 			if err == nil {
 				return img
 			}
@@ -41,7 +57,7 @@ func (i *ImageBytesElement) PackToElement(client *client.QQClient, target Target
 		}
 	case TargetGroup:
 		if i.Buf != nil {
-			img, err := client.UploadGroupImage(target.TargetCode(), i.Buf)
+			img, err := client.UploadGroupImage(target.TargetCode(), bytes.NewReader(i.Buf))
 			if err == nil {
 				return img
 			}
@@ -52,5 +68,5 @@ func (i *ImageBytesElement) PackToElement(client *client.QQClient, target Target
 	default:
 		panic("ImageBytesElement PackToElement: unknown TargetType")
 	}
-	return message.NewText(i.alternative)
+	return message.NewText(i.alternative + "\n")
 }

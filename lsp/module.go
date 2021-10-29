@@ -21,6 +21,7 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool/py"
 	"github.com/Sora233/DDBOT/proxy_pool/zhima"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/Sora233/DDBOT/utils/msgstringer"
 	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -491,12 +492,12 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 	defer func() {
 		if e := recover(); e != nil {
 			if len(recovered) == 0 {
-				logger.WithField("content", localutils.MsgToString(msg.Elements)).
+				logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
 					WithField("stack", string(debug.Stack())).
 					Errorf("sendGroupMessage panic recovered")
 				res = l.sendGroupMessage(groupCode, msg, true)
 			} else {
-				logger.WithField("content", localutils.MsgToString(msg.Elements)).
+				logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
 					WithField("stack", string(debug.Stack())).
 					Errorf("sendGroupMessage panic recovered but panic again %v", e)
 				res = &message.GroupMessage{Id: -1, Elements: msg.Elements}
@@ -504,7 +505,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 		}
 	}()
 	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
-		logger.WithField("content", localutils.MsgToString(msg.Elements)).
+		logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
 			WithFields(localutils.GroupLogFields(groupCode)).
 			Debug("BOT被禁言无法发送群消息")
 		return &message.GroupMessage{Id: -1, Elements: msg.Elements}
@@ -528,11 +529,11 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 		if msg.Count(func(e message.IMessageElement) bool {
 			return e.Type() == message.At && e.(*message.AtElement).Target == 0
 		}) > 0 {
-			logger.WithField("content", localutils.MsgToString(msg.Elements)).
+			logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
 				WithFields(localutils.GroupLogFields(groupCode)).
 				Errorf("发送群消息失败，可能是@全员次数用尽")
 		} else {
-			logger.WithField("content", localutils.MsgToString(msg.Elements)).
+			logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
 				WithFields(localutils.GroupLogFields(groupCode)).
 				Errorf("发送群消息失败，可能是被禁言或者账号被风控")
 		}

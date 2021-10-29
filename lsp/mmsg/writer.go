@@ -1,13 +1,11 @@
 package mmsg
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/client"
+	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
-	"github.com/Sora233/DDBOT/utils"
 	"strings"
 )
 
@@ -35,11 +33,12 @@ func NewTextf(format string, args ...interface{}) *MSG {
 }
 
 func (m *MSG) Append(e message.IMessageElement) *MSG {
-	if e.Type() == message.Text {
-		if textE, ok := e.(*message.TextElement); ok {
-			m.textBuf.WriteString(textE.Content)
-			return m
-		}
+	if e == nil {
+		return m
+	}
+	if textE, ok := e.(*message.TextElement); ok {
+		m.textBuf.WriteString(textE.Content)
+		return m
 	}
 	m.flushText()
 	m.elements = append(m.elements, e)
@@ -63,27 +62,31 @@ func (m *MSG) Textf(format string, args ...interface{}) *MSG {
 	return m
 }
 
-func (m *MSG) Image(buf *bytes.Reader) *MSG {
-	m.Append(NewImage(buf))
-	return m
-}
-
-func (m *MSG) ImageByUrl(url string, prefer proxy_pool.Prefer, opts ...requests.Option) *MSG {
-	var img = NewImage(nil)
-	b, err := utils.ImageGet(url, prefer, opts...)
-	if err == nil {
-		img.Buf = bytes.NewReader(b)
+func (m *MSG) Image(buf []byte, alternative string) *MSG {
+	img := NewImage(buf)
+	if len(alternative) > 0 {
+		img.Alternative(alternative)
 	}
 	m.Append(img)
 	return m
 }
 
-func (m *MSG) ToMessage(client *client.QQClient, target Target) *message.SendingMessage {
+func (m *MSG) ImageByUrl(url string, alternative string, prefer proxy_pool.Prefer, opts ...requests.Option) *MSG {
+	img := NewImageByUrl(url, prefer, opts...)
+	if len(alternative) > 0 {
+		img.Alternative(alternative)
+	}
+	m.Append(img)
+	return m
+}
+
+// ToMessage 总是返回 non-nil
+func (m *MSG) ToMessage(target Target) *message.SendingMessage {
 	var sending = message.NewSendingMessage()
 	m.flushText()
 	for _, e := range m.elements {
 		if custom, ok := e.(CustomElement); ok {
-			packed := custom.PackToElement(client, target)
+			packed := custom.PackToElement(bot.Instance.QQClient, target)
 			if packed != nil {
 				sending.Append(packed)
 			}
@@ -92,4 +95,9 @@ func (m *MSG) ToMessage(client *client.QQClient, target Target) *message.Sending
 		sending.Append(e)
 	}
 	return sending
+}
+
+func (m *MSG) Elements() []message.IMessageElement {
+	m.flushText()
+	return m.elements
 }

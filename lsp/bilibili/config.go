@@ -4,7 +4,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/utils"
+	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -141,7 +141,7 @@ func (g *GroupConcernConfig) FilterHook(notify concern.Notify) (hook *concern.Ho
 				hook.Pass = true
 			} else {
 				for _, text := range textFilter.Text {
-					if strings.Contains(utils.MsgToString(notify.ToMessage()), text) {
+					if strings.Contains(msgstringer.MsgToString(notify.ToMessage().Elements()), text) {
 						hook.Pass = true
 						break
 					}

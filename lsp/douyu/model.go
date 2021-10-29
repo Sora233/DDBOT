@@ -1,8 +1,8 @@
 package douyu
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
@@ -129,22 +129,15 @@ func (notify *ConcernLiveNotify) Site() string {
 	return Site
 }
 
-func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
-	log := notify.Logger()
-	var result []message.IMessageElement
+func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
 	switch notify.ShowStatus {
 	case ShowStatus_Living:
-		result = append(result, localutils.MessageTextf("斗鱼-%s正在直播【%v】\n%v", notify.Nickname, notify.RoomName, notify.RoomUrl))
+		m.Textf("斗鱼-%s正在直播【%v】\n%v", notify.Nickname, notify.RoomName, notify.RoomUrl)
 	case ShowStatus_NoLiving:
-		result = append(result, localutils.MessageTextf("斗鱼-%s直播结束了", notify.Nickname))
+		m.Textf("斗鱼-%s直播结束了", notify.Nickname)
 	}
-	cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.GetAvatar().GetBig(), false, proxy_pool.PreferNone)
-	if err != nil {
-		log.WithField("Avatar", notify.GetAvatar().GetBig()).Errorf("upload avatar failed %v", err)
-	} else {
-		result = append(result, cover)
-	}
-	return result
+	m.ImageByUrl(notify.GetAvatar().GetBig(), "[封面]", proxy_pool.PreferNone)
+	return m
 }
 
 func (notify *ConcernLiveNotify) Logger() *logrus.Entry {

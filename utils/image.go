@@ -66,16 +66,22 @@ func ImageNormSize(origImage []byte) ([]byte, error) {
 	default:
 		err = fmt.Errorf("unknown format %v", format)
 	}
-	return resizedImageBuffer.Bytes(), err
+	if err != nil {
+		return nil, err
+	}
+	return resizedImageBuffer.Bytes(), nil
 }
 
 func ImageGetAndNorm(url string, prefer proxy_pool.Prefer, opt ...requests.Option) ([]byte, error) {
 	img, err := ImageGet(url, prefer, opt...)
 	if err != nil {
-		return img, err
+		return nil, err
 	}
 	img, err = ImageNormSize(img)
-	return img, err
+	if err != nil {
+		return nil, err
+	}
+	return img, nil
 }
 
 func ImageFormat(origImage []byte) (string, error) {

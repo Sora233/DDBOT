@@ -4,6 +4,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
@@ -127,9 +128,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 }
 
 func (l *Lsp) NotifyMessage(inotify concern.Notify) *message.SendingMessage {
-	var sendingMsgs = new(message.SendingMessage)
-	sendingMsgs.Elements = inotify.ToMessage()
-	return sendingMsgs
+	return inotify.ToMessage().ToMessage(mmsg.NewGroupTarget(inotify.GetGroupCode()))
 }
 
 func newAtAllMsg() *message.SendingMessage {

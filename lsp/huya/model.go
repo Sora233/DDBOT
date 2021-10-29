@@ -1,8 +1,8 @@
 package huya
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
@@ -72,21 +72,14 @@ func (notify *ConcernLiveNotify) GetUid() interface{} {
 	return notify.RoomId
 }
 
-func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
-	log := notify.Logger()
-	var result []message.IMessageElement
+func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
 	if notify.Living {
-		result = append(result, localutils.MessageTextf("虎牙-%s正在直播【%v】\n%v", notify.Name, notify.RoomName, notify.RoomUrl))
+		m.Textf("虎牙-%s正在直播【%v】\n%v", notify.Name, notify.RoomName, notify.RoomUrl)
 	} else {
-		result = append(result, localutils.MessageTextf("虎牙-%s直播结束了", notify.Name))
+		m.Textf("虎牙-%s直播结束了", notify.Name)
 	}
-	cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.Avatar, false, proxy_pool.PreferNone)
-	if err != nil {
-		log.WithField("Avatar", notify.Avatar).Errorf("upload avatar failed %v", err)
-	} else {
-		result = append(result, cover)
-	}
-	return result
+	m.ImageByUrl(notify.Avatar, "[封面]", proxy_pool.PreferNone)
+	return
 }
 
 func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
