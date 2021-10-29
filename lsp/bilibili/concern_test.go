@@ -102,9 +102,6 @@ func TestConcern_FindUserLiving(t *testing.T) {
 	assert.Equal(t, testMid, userInfo.Mid)
 	assert.Equal(t, "碧诗", userInfo.Name)
 
-	_, err = c.FindUserLiving(testMid, false)
-	assert.Equal(t, buntdb.ErrNotFound, err)
-
 	liveInfo, err = c.FindUserLiving(testMid, true)
 	assert.Nil(t, err)
 	assert.NotNil(t, liveInfo)

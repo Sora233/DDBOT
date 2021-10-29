@@ -635,7 +635,13 @@ func (c *Concern) FindUser(mid int64, load bool) (*UserInfo, error) {
 			resp.GetData().GetName(),
 			resp.GetData().GetLiveRoom().GetUrl(),
 		)
-		err = c.StateManager.AddUserInfo(newUserInfo)
+		newLiveInfo := NewLiveInfo(newUserInfo,
+			resp.GetData().GetLiveRoom().GetTitle(),
+			resp.GetData().GetLiveRoom().GetCover(),
+			resp.GetData().GetLiveRoom().GetLiveStatus(),
+		)
+		// AddLiveInfo 会顺便添加UserInfo
+		err = c.StateManager.AddLiveInfo(newLiveInfo)
 		if err != nil {
 			return nil, err
 		}
@@ -737,32 +743,11 @@ func (c *Concern) FindOrLoadUser(mid int64) (*UserInfo, error) {
 }
 
 func (c *Concern) FindUserLiving(mid int64, load bool) (*LiveInfo, error) {
-	userInfo, err := c.FindUser(mid, load)
+	_, err := c.FindUser(mid, load)
 	if err != nil {
 		return nil, err
 	}
-
-	var liveInfo *LiveInfo
-
-	if load {
-		roomInfo, err := GetRoomInfoOld(userInfo.Mid)
-		if err != nil {
-			return nil, err
-		}
-		if roomInfo.Code != 0 {
-			return nil, fmt.Errorf("code:%v %v", roomInfo.Code, roomInfo.Message)
-		}
-		liveInfo = NewLiveInfo(userInfo,
-			roomInfo.GetData().GetTitle(),
-			roomInfo.GetData().GetCover(),
-			roomInfo.GetData().GetLiveStatus(),
-		)
-		_ = c.StateManager.AddLiveInfo(liveInfo)
-	}
-
-	if liveInfo != nil {
-		return liveInfo, nil
-	}
+	// FindUser会顺便刷新LiveInfo，所以这里不用再刷新了
 	return c.StateManager.GetLiveInfo(mid)
 }
 
