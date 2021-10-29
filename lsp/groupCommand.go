@@ -147,10 +147,6 @@ func (lgc *LspGroupCommand) Execute() {
 		lgc.EnableCommand(true)
 	case SilenceCommand:
 		lgc.SilenceCommand()
-	case FaceCommand:
-		if lgc.requireNotDisable(FaceCommand) {
-			lgc.FaceCommand()
-		}
 	case ReverseCommand:
 		if lgc.requireNotDisable(ReverseCommand) {
 			lgc.ReverseCommand()
@@ -798,49 +794,6 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 	}
 }
 
-func (lgc *LspGroupCommand) FaceCommand() {
-	log := lgc.DefaultLoggerWithCommand(FaceCommand)
-	log.Infof("run face command")
-	defer func() { log.Info("face command end") }()
-
-	_, output := lgc.parseCommandSyntax(&struct{}{}, FaceCommand, kong.Description("电脑使用/face [图片] 或者 回复图片消息+/face触发"))
-	if output != "" {
-		lgc.textReply(output)
-	}
-	if lgc.exit {
-		return
-	}
-
-	for _, e := range lgc.msg.Elements {
-		if e.Type() == message.Image {
-			switch ie := e.(type) {
-			case *message.GroupImageElement:
-				lgc.faceDetect(ie.Url)
-			case *message.FriendImageElement:
-				lgc.faceDetect(ie.Url)
-			default:
-				log.Errorf("cast to ImageElement failed")
-				lgc.textReply("失败")
-				return
-			}
-		} else if e.Type() == message.Reply {
-			if re, ok := e.(*message.ReplyElement); ok {
-				urls := lgc.l.LspStateManager.GetMessageImageUrl(lgc.groupCode(), re.ReplySeq)
-				if len(urls) >= 1 {
-					lgc.faceDetect(urls[0])
-					return
-				}
-			} else {
-				log.Errorf("cast to ReplyElement failed")
-				lgc.textReply("失败")
-				return
-			}
-		}
-	}
-	log.Debug("no image found")
-	lgc.textReply("参数错误 - 未找到图片")
-}
-
 func (lgc *LspGroupCommand) ReverseCommand() {
 	log := lgc.DefaultLoggerWithCommand(ReverseCommand)
 	log.Info("run reverse command")
@@ -918,36 +871,6 @@ func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {
 
 func (lgc *LspGroupCommand) DefaultLoggerWithCommand(command string) *logrus.Entry {
 	return lgc.DefaultLogger().WithField("Command", command)
-}
-
-func (lgc *LspGroupCommand) faceDetect(url string) {
-	log := lgc.DefaultLoggerWithCommand(FaceCommand)
-	log.WithField("detect_url", url).Debug("face detect")
-	img, err := utils.ImageGet(url, proxy_pool.PreferMainland)
-	if err != nil {
-		log.Errorf("get image err %v", err)
-		lgc.textReply("获取图片失败")
-		return
-	}
-	img, err = utils.OpenCvAnimeFaceDetect(img)
-	if err == utils.ErrGoCvNotSetUp {
-		log.Debug("gocv not setup")
-		return
-	}
-	if err != nil {
-		log.Errorf("detect image err %v", err)
-		lgc.textReply(fmt.Sprintf("检测失败 - %v", err))
-		return
-	}
-	sendingMsg := message.NewSendingMessage()
-	groupImg, err := lgc.bot.UploadGroupImage(lgc.groupCode(), bytes.NewReader(img))
-	if err != nil {
-		log.Errorf("upload group image failed %v", err)
-		lgc.textReply("上传失败")
-		return
-	}
-	sendingMsg.Append(groupImg)
-	lgc.reply(sendingMsg)
 }
 
 func (lgc *LspGroupCommand) reserveGif(url string) {
