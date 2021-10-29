@@ -6,42 +6,27 @@
 
 ## 预编译版本
 
-*预编译版本均为nocv版本，即无法正常使用face命令（本来也没啥人用这个命令）。*
-
 从 [Release](https://github.com/Sora233/DDBOT/releases) 中下载适合您的版本，版本规则：
 
 - 根据系统选择windows / linux / darwin
 - 根据架构选择 32位->386 / 64位->amd64 / arm->arm
 
+例如对于windows 7/8/10/11/server，64位系统，推荐选择-windows-amd64.zip
+
 <details>
-<summary>从源码编译（不推荐）</summary>
+<summary>从源码编译（不推荐，需要编程能力）</summary>
 
 ## 从源码编译
 
-go >= 1.16
+首先安装go，go >= 1.16
 
-编译可选择是否启动gocv，如果不需要使用face命令，推荐禁用gocv。（因为安装opencv容易出现问题）
-
-- ### 启用gocv
-
-请先安装 [gocv](https://github.com/hybridgroup/gocv)
+然后执行下面的命令
 
 ```
 make build
 
 # 如果没有安装make程序，则用下面的命令编译
 go build
-```
-
-- ### 禁用gocv
-
-禁用gocv将导致face命令无法正常工作
-
-```
-NOCV=1 make build
-
-# 如果没有安装make程序，则用下面的命令编译
-go build -tags nocv
 ```
 
 </details>
