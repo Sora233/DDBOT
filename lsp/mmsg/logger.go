@@ -1,4 +1,4 @@
-package msg
+package mmsg
 
 import "github.com/Logiase/MiraiGo-Template/utils"
 

@@ -4,7 +4,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/msg"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 )
@@ -31,9 +31,9 @@ func (n *notify) GetUid() interface{} {
 }
 
 func (n *notify) ToMessage() []message.IMessageElement {
-	m := msg.NewMSG()
+	m := mmsg.NewMSG()
 	m.Textf("EXAMPLE推送：%v", n.id)
-	sending := m.ToMessage(bot.Instance.QQClient, msg.NewGroupTarget(n.groupCode))
+	sending := m.ToMessage(bot.Instance.QQClient, mmsg.NewGroupTarget(n.groupCode))
 	return sending.Elements
 }
 

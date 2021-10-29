@@ -8,7 +8,7 @@ import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/msg"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
@@ -120,7 +120,7 @@ func (c *Concern) Start() error {
 	return nil
 }
 
-func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := _id.(int64)
 	var err error
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("mid", mid)
@@ -210,19 +210,19 @@ func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype c
 				defer c.GroupWatchNotify(groupCode, mid)
 			}
 			if ctx.GetTarget().TargetType().IsPrivate() {
-				defer ctx.Send(msg.NewText("检测到该用户正在直播，但由于您目前处于私聊模式，因此不会在群内推送本次直播，将在该用户下次直播时推送"))
+				defer ctx.Send(mmsg.NewText("检测到该用户正在直播，但由于您目前处于私聊模式，因此不会在群内推送本次直播，将在该用户下次直播时推送"))
 			}
 		}
 	}
 	const followerCap = 50
 	if userInfo != nil && userInfo.UserStat != nil && ctype.ContainAny(Live) && userInfo.UserStat.Follower < followerCap {
-		ctx.Send(msg.NewTextf("注意：检测到用户【%v】粉丝数少于%v，请确认您的订阅目标是否正确，注意使用UID而非直播间ID", userInfo.Name, followerCap))
+		ctx.Send(mmsg.NewTextf("注意：检测到用户【%v】粉丝数少于%v，请确认您的订阅目标是否正确，注意使用UID而非直播间ID", userInfo.Name, followerCap))
 	}
 
 	return concern.NewIdentity(mid, userInfo.GetName()), nil
 }
 
-func (c *Concern) Remove(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := _id.(int64)
 	var identityInfo concern.IdentityInfo
 	var allCtype concern_type.Type

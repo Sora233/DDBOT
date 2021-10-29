@@ -2,35 +2,35 @@ package lsp
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/lsp/msg"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/sirupsen/logrus"
 )
 
 type MessageContext struct {
-	ReplyFunc             func(m *msg.MSG) interface{}
-	SendFunc              func(m *msg.MSG) interface{}
+	ReplyFunc             func(m *mmsg.MSG) interface{}
+	SendFunc              func(m *mmsg.MSG) interface{}
 	NoPermissionReplyFunc func() interface{}
 	DisabledReply         func() interface{}
 	GlobalDisabledReply   func() interface{}
 	Lsp                   *Lsp
 	Log                   *logrus.Entry
-	Target                msg.Target
+	Target                mmsg.Target
 	Sender                *message.Sender
 }
 
 func (c *MessageContext) TextSend(text string) interface{} {
-	return c.SendFunc(msg.NewText(text))
+	return c.SendFunc(mmsg.NewText(text))
 }
 
 func (c *MessageContext) TextReply(text string) interface{} {
-	return c.ReplyFunc(msg.NewText(text))
+	return c.ReplyFunc(mmsg.NewText(text))
 }
 
-func (c *MessageContext) Reply(m *msg.MSG) interface{} {
+func (c *MessageContext) Reply(m *mmsg.MSG) interface{} {
 	return c.ReplyFunc(m)
 }
 
-func (c *MessageContext) Send(m *msg.MSG) interface{} {
+func (c *MessageContext) Send(m *mmsg.MSG) interface{} {
 	return c.SendFunc(m)
 }
 
@@ -42,7 +42,7 @@ func (c *MessageContext) GetLog() *logrus.Entry {
 	return c.Log
 }
 
-func (c *MessageContext) GetTarget() msg.Target {
+func (c *MessageContext) GetTarget() mmsg.Target {
 	return c.Target
 }
 
@@ -51,11 +51,11 @@ func (c *MessageContext) GetSender() *message.Sender {
 }
 
 func (c *MessageContext) IsFromPrivate() bool {
-	return c.Target.TargetType() == msg.TargetPrivate
+	return c.Target.TargetType() == mmsg.TargetPrivate
 }
 
 func (c *MessageContext) IsFromGroup() bool {
-	return c.Target.TargetType() == msg.TargetGroup
+	return c.Target.TargetType() == mmsg.TargetGroup
 }
 
 func NewMessageContext() *MessageContext {

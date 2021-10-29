@@ -6,7 +6,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/msg"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"runtime"
 	"sync"
@@ -35,7 +35,7 @@ func (c *Concern) GetStateManager() concern.IStateManager {
 	return c.StateManager
 }
 
-func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	id := _id.(string)
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
 
@@ -58,7 +58,7 @@ func (c *Concern) Add(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype c
 	return concern.NewIdentity(info.ChannelId, info.ChannelName), nil
 }
 
-func (c *Concern) Remove(ctx msg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	id := _id.(string)
 	identity, _ := c.Get(id)
 	_, err := c.StateManager.RemoveGroupConcern(groupCode, id, ctype)

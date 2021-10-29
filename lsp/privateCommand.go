@@ -11,7 +11,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/msg"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/registry"
 	localutils "github.com/Sora233/DDBOT/utils"
@@ -1150,7 +1150,7 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 		return
 	}
 
-	m := msg.NewMSG()
+	m := mmsg.NewMSG()
 	m.Textf("当前好友数：%v\n", len(c.bot.FriendList))
 	m.Textf("当前群组数：%v\n", len(c.bot.GroupList))
 	for index, cm := range registry.ListConcernManager() {
@@ -1167,7 +1167,7 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 			m.Textf("当前%v订阅数：%v", cm.Site(), len(ids))
 		}
 	}
-	c.send(m.ToMessage(c.bot.QQClient, msg.NewPrivateTarget(c.uin())))
+	c.send(m.ToMessage(c.bot.QQClient, mmsg.NewPrivateTarget(c.uin())))
 }
 
 func (c *LspPrivateCommand) DebugCheck() bool {
@@ -1236,10 +1236,10 @@ func (c *LspPrivateCommand) name() string {
 
 func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
 	ctx := NewMessageContext()
-	ctx.Target = msg.NewPrivateTarget(c.uin())
+	ctx.Target = mmsg.NewPrivateTarget(c.uin())
 	ctx.Lsp = c.l
 	ctx.Log = log
-	ctx.SendFunc = func(m *msg.MSG) interface{} {
+	ctx.SendFunc = func(m *mmsg.MSG) interface{} {
 		return c.send(m.ToMessage(c.bot.QQClient, ctx.Target))
 	}
 	ctx.ReplyFunc = ctx.SendFunc

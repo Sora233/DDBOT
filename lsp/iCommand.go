@@ -9,7 +9,7 @@ import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/msg"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/utils"
@@ -28,7 +28,7 @@ func IList(c *MessageContext, groupCode int64) {
 	var empty = true
 	var first = true
 
-	listMsg := msg.NewMSG()
+	listMsg := mmsg.NewMSG()
 
 	for _, c := range registry.ListConcernManager() {
 		infos, ctypes, err := c.List(groupCode, concern_type.Empty)

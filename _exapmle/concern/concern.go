@@ -4,7 +4,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/msg"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/registry"
 )
 
@@ -55,7 +55,7 @@ func (c *exampleConcern) ParseId(s string) (interface{}, error) {
 	return s, nil
 }
 
-func (c *exampleConcern) Add(ctx msg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *exampleConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	_, err := c.GetStateManager().AddGroupConcern(groupCode, id.(string), ctype)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func (c *exampleConcern) Add(ctx msg.IMsgCtx, groupCode int64, id interface{}, c
 	return c.Get(id)
 }
 
-func (c *exampleConcern) Remove(ctx msg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *exampleConcern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	_, err := c.GetStateManager().RemoveGroupConcern(groupCode, id.(string), ctype)
 	if err != nil {
 		return nil, err

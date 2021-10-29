@@ -1,4 +1,4 @@
-package msg
+package mmsg
 
 type TargetType int32
 

@@ -11,7 +11,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/msg"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/proxy_pool"
@@ -1024,13 +1024,13 @@ func (lgc *LspGroupCommand) globalDisabledReply() *message.GroupMessage {
 
 func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
 	ctx := NewMessageContext()
-	ctx.Target = msg.NewGroupTarget(lgc.groupCode())
+	ctx.Target = mmsg.NewGroupTarget(lgc.groupCode())
 	ctx.Lsp = lgc.l
 	ctx.Log = log
-	ctx.SendFunc = func(m *msg.MSG) interface{} {
+	ctx.SendFunc = func(m *mmsg.MSG) interface{} {
 		return lgc.send(m.ToMessage(lgc.bot.QQClient, ctx.Target))
 	}
-	ctx.ReplyFunc = func(m *msg.MSG) interface{} {
+	ctx.ReplyFunc = func(m *mmsg.MSG) interface{} {
 		return lgc.reply(m.ToMessage(lgc.bot.QQClient, ctx.Target))
 	}
 	ctx.NoPermissionReplyFunc = func() interface{} {

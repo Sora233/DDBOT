@@ -3,7 +3,7 @@ package concern
 import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/msg"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,8 +22,8 @@ type Concern interface {
 	Stop()
 	ParseId(string) (interface{}, error)
 
-	Add(ctx msg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error)
-	Remove(ctx msg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error)
+	Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error)
+	Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error)
 	List(groupCode int64, ctype concern_type.Type) ([]IdentityInfo, []concern_type.Type, error)
 	Get(id interface{}) (IdentityInfo, error)
 
