@@ -69,8 +69,8 @@ func ImageNormSize(origImage []byte) ([]byte, error) {
 	return resizedImageBuffer.Bytes(), err
 }
 
-func ImageGetAndNorm(url string, prefer proxy_pool.Prefer) ([]byte, error) {
-	img, err := ImageGet(url, prefer)
+func ImageGetAndNorm(url string, prefer proxy_pool.Prefer, opt ...requests.Option) ([]byte, error) {
+	img, err := ImageGet(url, prefer, opt...)
 	if err != nil {
 		return img, err
 	}

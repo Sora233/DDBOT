@@ -44,101 +44,90 @@ func FilePathWalkDir(root string) ([]string, error) {
 	return files, err
 }
 
-func toMap(data interface{}) (map[string]string, error) {
-	params := make(map[string]string)
-
-	rg := reflect.ValueOf(data)
-	if rg.Type().Kind() == reflect.Ptr {
-		rg = rg.Elem()
+func reflectToString(v reflect.Value) (string, error) {
+	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+		v = v.Elem()
 	}
-	if rg.Type().Kind() != reflect.Struct {
-		return nil, errors.New("can only convert struct type")
+	switch v.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(v.Int(), 10), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return strconv.FormatUint(v.Uint(), 10), nil
+	case reflect.String:
+		return v.String(), nil
+	case reflect.Bool:
+		return strconv.FormatBool(v.Bool()), nil
+	default:
+		return "", fmt.Errorf("not support type %v", v.Type().Kind().String())
 	}
-	for i := 0; ; i++ {
-		if i >= rg.Type().NumField() {
-			break
-		}
-		field := rg.Type().Field(i)
-		fillname, found := field.Tag.Lookup("json")
-		if !found {
-			fillname = toCamel(field.Name)
-		} else {
-			if pos := strings.Index(fillname, ","); pos != -1 {
-				fillname = fillname[:pos]
-			}
-		}
-		if fillname == "-" {
-			continue
-		}
-		switch field.Type.Kind() {
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			params[fillname] = strconv.FormatInt(rg.Field(i).Int(), 10)
-		case reflect.String:
-			params[fillname] = rg.Field(i).String()
-		case reflect.Bool:
-			params[fillname] = strconv.FormatBool(rg.Field(i).Bool())
-		default:
-			return nil, fmt.Errorf("not support type %v", field.Type.Kind().String())
-		}
-
-	}
-	return params, nil
 }
 
-func toGoutHMap(data interface{}) (gout.H, error) {
-	params := make(gout.H)
+func ToDatas(data interface{}) (map[string]string, error) {
+	params := make(map[string]string)
+
+	if m, ok := data.(map[string]string); ok {
+		return m, nil
+	}
 
 	rg := reflect.ValueOf(data)
-	if rg.Type().Kind() == reflect.Ptr {
+	for rg.Kind() == reflect.Ptr || rg.Kind() == reflect.Interface {
 		rg = rg.Elem()
 	}
-	if rg.Type().Kind() != reflect.Struct {
-		return nil, errors.New("can only convert struct type")
-	}
-	for i := 0; ; i++ {
-		if i >= rg.Type().NumField() {
-			break
-		}
-		field := rg.Type().Field(i)
-		fillname, found := field.Tag.Lookup("json")
-		if !found {
-			fillname = toCamel(field.Name)
-		} else {
-			if pos := strings.Index(fillname, ","); pos != -1 {
-				fillname = fillname[:pos]
+	if rg.Kind() == reflect.Map {
+		iter := rg.MapRange()
+		for iter.Next() {
+			key := iter.Key()
+			value := iter.Value()
+			k1, err := reflectToString(key)
+			if err != nil {
+				return nil, err
 			}
+			v1, err := reflectToString(value)
+			if err != nil {
+				return nil, err
+			}
+			params[k1] = v1
 		}
-		if fillname == "-" {
-			continue
+	} else if rg.Kind() == reflect.Struct {
+		for i := 0; ; i++ {
+			if i >= rg.Type().NumField() {
+				break
+			}
+			field := rg.Type().Field(i)
+			fillname, found := field.Tag.Lookup("json")
+			if !found {
+				fillname = toCamel(field.Name)
+			} else {
+				if pos := strings.Index(fillname, ","); pos != -1 {
+					fillname = fillname[:pos]
+				}
+			}
+			if fillname == "-" {
+				continue
+			}
+			s, err := reflectToString(rg.Field(i))
+			if err != nil {
+				return nil, err
+			}
+			params[fillname] = s
 		}
-		switch field.Type.Kind() {
-		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			params[fillname] = strconv.FormatInt(rg.Field(i).Int(), 10)
-		case reflect.String:
-			params[fillname] = rg.Field(i).String()
-		case reflect.Bool:
-			params[fillname] = strconv.FormatBool(rg.Field(i).Bool())
-		default:
-			return nil, fmt.Errorf("not support type %v", field.Type.Kind().String())
-		}
-
 	}
 	return params, nil
 }
 
 func ToParams(data interface{}) (gout.H, error) {
-	if d, ok := data.(map[string]string); ok {
-		g := make(gout.H)
-		for k, v := range d {
-			g[k] = v
-		}
-		return g, nil
+	if p, ok := data.(gout.H); ok {
+		return p, nil
 	}
-	return toGoutHMap(data)
-}
-
-func ToDatas(data interface{}) (map[string]string, error) {
-	return toMap(data)
+	params := make(gout.H)
+	m, err := ToDatas(data)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range m {
+		params[k] = v
+	}
+	return params, nil
 }
 
 func UrlEncode(data map[string]string) string {
@@ -174,7 +163,8 @@ func FuncName() string {
 	return frame.Function
 }
 
-func PrefixMatch(opts []string, target string) (string, bool) {
+// PrefixMatch 从 opts 中选择一个前缀是 prefix 的字符串，如果有多个选项，则返回 false
+func PrefixMatch(opts []string, prefix string) (string, bool) {
 	if len(opts) == 0 {
 		return "", false
 	}
@@ -183,7 +173,7 @@ func PrefixMatch(opts []string, target string) (string, bool) {
 		result = ""
 	)
 	for _, opt := range opts {
-		if strings.HasPrefix(opt, target) {
+		if strings.HasPrefix(opt, prefix) {
 			if found == true {
 				return "", false
 			}
@@ -283,8 +273,8 @@ func MsgToString(elements []message.IMessageElement) (res string) {
 	return
 }
 
-func Switch2Bool(_s string) bool {
-	return _s == "on"
+func Switch2Bool(s string) bool {
+	return s == "on"
 }
 
 func JoinInt64(ele []int64, sep string) string {
