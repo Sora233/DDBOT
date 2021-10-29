@@ -35,6 +35,9 @@ func FilePathWalkDir(root string) ([]string, error) {
 }
 
 func reflectToString(v reflect.Value) (string, error) {
+	if !v.IsValid() || v.IsZero() {
+		return "", nil
+	}
 	for v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
 		v = v.Elem()
 	}

@@ -1,11 +1,13 @@
 package utils
 
 import (
+	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/guonaihong/gout"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -198,4 +200,38 @@ func TestUrlEncode(t *testing.T) {
 	}
 	result := UrlEncode(m1)
 	assert.EqualValues(t, "a=b&c=d", result)
+}
+
+func TestReflectToString(t *testing.T) {
+	var a interface{}
+	reflectToString(reflect.ValueOf(a))
+}
+
+func TestToCamel(t *testing.T) {
+	assert.EqualValues(t, "", toCamel(""))
+	assert.EqualValues(t, "boy_loves_girl", toCamel("BoyLovesGirl"))
+	assert.EqualValues(t, "dog_god", toCamel("DogGod"))
+}
+
+func TestMsgToString(t *testing.T) {
+	var m = []message.IMessageElement{
+		message.NewFace(1),
+		message.NewText("q"),
+		&message.GroupImageElement{},
+		&message.GroupImageElement{Flash: true},
+		&message.FriendImageElement{},
+		&message.FriendImageElement{Flash: true},
+		message.AtAll(),
+		&message.RedBagElement{},
+		&message.GroupFileElement{},
+		&message.ShortVideoElement{},
+		&message.ForwardElement{},
+		&message.MusicShareElement{},
+		&message.LightAppElement{},
+		&message.ServiceElement{},
+		&message.VoiceElement{},
+		&message.ReplyElement{ReplySeq: 199},
+		nil,
+	}
+	MsgToString(m)
 }
