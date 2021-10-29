@@ -6,6 +6,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"golang.org/x/sync/errgroup"
+	"sort"
 )
 
 var logger = utils.GetModuleLogger("registry")
@@ -80,6 +81,9 @@ func ListConcernManager() []concern.Concern {
 	for k := range resultMap {
 		result = append(result, k)
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Site() < result[j].Site()
+	})
 	return result
 }
 
