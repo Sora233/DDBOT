@@ -14,6 +14,11 @@ import (
 type StateManager struct {
 	*concern.StateManager
 	*extraKey
+	concern *Concern
+}
+
+func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id), c.concern)
 }
 
 func (c *StateManager) AddUserInfo(userInfo *UserInfo) error {
@@ -332,8 +337,10 @@ func (c *StateManager) Start() error {
 	return c.StateManager.Start()
 }
 
-func NewStateManager() *StateManager {
-	sm := &StateManager{}
+func NewStateManager(c *Concern) *StateManager {
+	sm := &StateManager{
+		concern: c,
+	}
 	sm.extraKey = NewExtraKey()
 	sm.StateManager = concern.NewStateManagerWithCustomKey(NewKeySet(), false)
 	return sm

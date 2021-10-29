@@ -56,11 +56,11 @@ func (c *Concern) GetStateManager() concern.IStateManager {
 
 func NewConcern(notify chan<- concern.Notify) *Concern {
 	c := &Concern{
-		StateManager: NewStateManager(),
-		eventChan:    make(chan concernEvent, 500),
-		notify:       notify,
-		stop:         make(chan interface{}),
+		eventChan: make(chan concernEvent, 500),
+		notify:    notify,
+		stop:      make(chan interface{}),
 	}
+	c.StateManager = NewStateManager(c)
 	lastFresh, _ := c.GetLastFreshTime()
 	if lastFresh > 0 && time.Now().Sub(time.Unix(lastFresh, 0)) > time.Minute*30 {
 		c.unsafeStart = 1
@@ -344,10 +344,6 @@ func (c *Concern) notifyLoop() {
 		}
 
 	}
-}
-
-func (c *Concern) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
-	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id), c)
 }
 
 func (c *Concern) watchCore() {
