@@ -35,7 +35,7 @@ func DoMigration(name string, m MigrationMap) error {
 			if mig == nil {
 				return nil
 			}
-			log.Infof(`即将更新"%v"从 %v 迁移到 %v`, name, curV, mig.TargetVersion())
+			log.Infof(`即将更新<%v>从 %v 迁移到 %v`, name, curV, mig.TargetVersion())
 			err := mig.Func()()
 			if err != nil {
 				return err
@@ -44,7 +44,7 @@ func DoMigration(name string, m MigrationMap) error {
 			if err != nil {
 				return err
 			}
-			log.Infof(`已将"%v"从 %v 迁移到 %v`, name, curV, mig.TargetVersion())
+			log.Infof(`已将<%v>从 %v 迁移到 %v`, name, curV, mig.TargetVersion())
 		}
 	})
 	return err

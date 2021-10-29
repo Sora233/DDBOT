@@ -91,14 +91,14 @@ func (l *Lsp) Init() {
 			curVersion, LspSupportVersion, backupFileName)
 		f, err := os.Create(backupFileName)
 		if err != nil {
-			log.Fatalf(`无法创建备份文件"%v"：%v`, backupFileName, err)
+			log.Fatalf(`无法创建备份文件<%v>：%v`, backupFileName, err)
 		}
 		db := localdb.MustGetClient()
 		err = db.Save(f)
 		if err != nil {
-			log.Fatalf(`无法备份数据库到"%v"：%v`, backupFileName, err)
+			log.Fatalf(`无法备份数据库到<%v>：%v`, backupFileName, err)
 		}
-		log.Infof(`备份完成，已备份数据库到"%v""`, backupFileName)
+		log.Infof(`备份完成，已备份数据库到<%v>"`, backupFileName)
 		log.Info("五秒后将开始更新数据库，如需取消请按Ctrl+C")
 		time.Sleep(time.Second * 5)
 		err = version.DoMigration(LspVersionName, lspMigrationMap)
