@@ -3,9 +3,40 @@ package utils
 import (
 	"github.com/guonaihong/gout"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
+
+func TestFilePathWalkDir(t *testing.T) {
+	tempDir, err := ioutil.TempDir("", "ddbot-test")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+	err = os.MkdirAll(filepath.Join(tempDir, "a", "b"), 0755)
+	assert.Nil(t, err)
+
+	touch := func(name string) {
+		f, err := os.Create(name)
+		assert.Nil(t, err)
+		f.Close()
+	}
+
+	touch(filepath.Join(tempDir, "1.jpg"))
+	touch(filepath.Join(tempDir, "2.jpg"))
+	touch(filepath.Join(tempDir, "a", "3.jpg"))
+	touch(filepath.Join(tempDir, "a", "b", "4.jpg"))
+
+	result, err := FilePathWalkDir(tempDir)
+	assert.Nil(t, err)
+	assert.Len(t, result, 4)
+
+	assert.Contains(t, result, filepath.Join(tempDir, "1.jpg"))
+	assert.Contains(t, result, filepath.Join(tempDir, "2.jpg"))
+	assert.Contains(t, result, filepath.Join(tempDir, "a", "3.jpg"))
+	assert.Contains(t, result, filepath.Join(tempDir, "a", "b", "4.jpg"))
+}
 
 func TestArgSplit(t *testing.T) {
 	result := ArgSplit(`-a "q w e" -b c`)

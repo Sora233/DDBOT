@@ -9,8 +9,8 @@ import (
 	"github.com/guonaihong/gout"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
+	"io/fs"
 	"net/url"
-	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -25,19 +25,9 @@ var ErrGoCvNotSetUp = errors.New("gocv not setup")
 
 func FilePathWalkDir(root string) ([]string, error) {
 	var files []string
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			if ImageSuffix(info.Name()) {
-				files = append(files, path)
-			}
-		} else if path != root {
-			subfiles, err := FilePathWalkDir(path)
-			if err != nil {
-				return err
-			}
-			for _, f := range subfiles {
-				files = append(files, f)
-			}
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if !d.IsDir() {
+			files = append(files, path)
 		}
 		return nil
 	})
