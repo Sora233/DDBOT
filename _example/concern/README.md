@@ -16,7 +16,7 @@
 
 使用时需要在main中引入：
 
-```_ "github.com/Sora233/DDBOT/_exapmle/concern"```
+```_ "github.com/Sora233/DDBOT/_example/concern"```
 
 ## 目录结构
 

@@ -1,7 +1,6 @@
 package example_concern
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
@@ -29,11 +28,8 @@ func (n *notify) GetUid() interface{} {
 	return n.id
 }
 
-func (n *notify) ToMessage() []message.IMessageElement {
-	m := mmsg.NewMSG()
-	m.Textf("EXAMPLE推送：%v", n.id)
-	sending := m.ToMessage(mmsg.NewGroupTarget(n.groupCode))
-	return sending.Elements
+func (n *notify) ToMessage() *mmsg.MSG {
+	return mmsg.NewTextf("EXAMPLE推送：%v", n.id)
 }
 
 func (n *notify) Logger() *logrus.Entry {
