@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestConcernLiveNotify(t *testing.T) {
+func TestModelNotify(t *testing.T) {
 	liveNotify := newLiveInfo(test.UID1, true, false, false)
 	liveNotify.GroupCode = test.G1
 	m := liveNotify.ToMessage()
@@ -44,4 +44,19 @@ func TestConcernLiveNotify(t *testing.T) {
 		m = notify.ToMessage()
 		assert.NotNil(t, m)
 	}
+}
+
+func TestNewConcernLiveNotify(t *testing.T) {
+	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
+	origLiveInfo := NewLiveInfo(origUserInfo, "", "", LiveStatus_Living)
+	notify := NewConcernLiveNotify(test.G1, origLiveInfo)
+	assert.NotNil(t, notify)
+}
+
+func TestNewConcernNewsNotify(t *testing.T) {
+	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
+	origNewsInfo := NewNewsInfo(origUserInfo, test.DynamicID1, test.TIMESTAMP1)
+	origNewsInfo.Cards = []*Card{{}}
+	notify := NewConcernNewsNotify(test.G1, origNewsInfo, nil)
+	assert.NotNil(t, notify)
 }

@@ -171,3 +171,90 @@ func TestConcern_StatUserWithCache(t *testing.T) {
 	assert.NotNil(t, stat2)
 	assert.EqualValues(t, stat, stat2)
 }
+
+func TestConcernNotify(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	testChan := make(chan concern.Notify)
+
+	c := NewConcern(testChan)
+	c.StateManager = initStateManager(t)
+	defer c.Stop()
+	defer close(c.eventChan)
+
+	go c.notifyLoop()
+
+	_, err := c.StateManager.AddGroupConcern(test.G1, test.UID1, Live.Add(News))
+	assert.Nil(t, err)
+	_, err = c.StateManager.AddGroupConcern(test.G2, test.UID1, News)
+	assert.Nil(t, err)
+
+	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
+	origLiveInfo := NewLiveInfo(origUserInfo, "", "", LiveStatus_Living)
+
+	select {
+	case c.eventChan <- origLiveInfo:
+	default:
+		assert.Fail(t, "insert chan failed")
+	}
+	select {
+	case notify := <-testChan:
+		assert.NotNil(t, notify)
+		assert.EqualValues(t, test.UID1, notify.GetUid())
+		assert.EqualValues(t, test.G1, notify.GetGroupCode())
+	case <-time.After(time.Second):
+		assert.Fail(t, "no item received")
+	}
+
+	origNewsInfo := NewNewsInfo(origUserInfo, test.DynamicID1, test.TIMESTAMP1)
+	origNewsInfo.Cards = []*Card{{}}
+	select {
+	case c.eventChan <- origNewsInfo:
+	default:
+		assert.Fail(t, "insert chan failed")
+	}
+	for i := 0; i < 2; i++ {
+		select {
+		case notify := <-testChan:
+			assert.NotNil(t, notify)
+			assert.EqualValues(t, test.UID1, notify.GetUid())
+			assert.True(t, notify.GetGroupCode() == test.G1 || notify.GetGroupCode() == test.G2)
+		case <-time.After(time.Second):
+			assert.Fail(t, "no item received")
+		}
+	}
+}
+
+func TestConcern_GroupWatchNotify(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	testChan := make(chan concern.Notify)
+
+	c := NewConcern(testChan)
+	c.StateManager = initStateManager(t)
+	defer c.Stop()
+	defer close(c.eventChan)
+
+	go c.notifyLoop()
+
+	_, err := c.StateManager.AddGroupConcern(test.G1, test.UID1, Live.Add(News))
+	assert.Nil(t, err)
+
+	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
+	origLiveInfo := NewLiveInfo(origUserInfo, "", "", LiveStatus_Living)
+	assert.NotNil(t, origLiveInfo)
+
+	assert.Nil(t, c.AddLiveInfo(origLiveInfo))
+
+	go c.GroupWatchNotify(test.G2, test.UID1)
+	select {
+	case notify := <-testChan:
+		assert.NotNil(t, notify)
+		assert.EqualValues(t, test.UID1, notify.GetUid())
+		assert.EqualValues(t, test.G2, notify.GetGroupCode())
+	case <-time.After(time.Second):
+		assert.Fail(t, "no item received")
+	}
+}
