@@ -25,4 +25,16 @@ func TestVideoInfo(t *testing.T) {
 	assert.Equal(t, test.NAME1, notify.GetUid())
 	assert.NotNil(t, notify.Logger())
 	assert.Equal(t, Video, notify.Type())
+
+	m := notify.ToMessage()
+	assert.NotNil(t, m)
+
+	notify.VideoType = VideoType_Live
+	m = notify.ToMessage()
+	assert.NotNil(t, m)
+
+	notify.VideoStatus = VideoStatus_Living
+	m = notify.ToMessage()
+	assert.NotNil(t, m)
+
 }

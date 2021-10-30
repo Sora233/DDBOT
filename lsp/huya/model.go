@@ -73,6 +73,7 @@ func (notify *ConcernLiveNotify) GetUid() interface{} {
 }
 
 func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
+	m = mmsg.NewMSG()
 	if notify.Living {
 		m.Textf("虎牙-%s正在直播【%v】\n%v", notify.Name, notify.RoomName, notify.RoomUrl)
 	} else {

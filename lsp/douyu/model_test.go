@@ -55,4 +55,12 @@ func TestLiveInfo(t *testing.T) {
 	assert.Equal(t, test.G1, notify.GetGroupCode())
 	assert.Equal(t, test.UID1, notify.GetUid())
 
+	m := notify.ToMessage()
+	assert.NotNil(t, m)
+
+	notify.ShowStatus = ShowStatus_NoLiving
+	notify.VideoLoop = VideoLoopStatus_Off
+	m = notify.ToMessage()
+	assert.NotNil(t, m)
+
 }

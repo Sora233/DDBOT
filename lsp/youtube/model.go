@@ -127,6 +127,7 @@ func (notify *ConcernNotify) GetUid() interface{} {
 }
 
 func (notify *ConcernNotify) ToMessage() (m *mmsg.MSG) {
+	m = mmsg.NewMSG()
 	if notify.IsLive() {
 		if notify.IsLiving() {
 			m.Textf("YTB-%v正在直播：\n%v\n", notify.ChannelName, notify.VideoTitle)

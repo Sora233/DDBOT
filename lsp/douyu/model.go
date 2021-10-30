@@ -130,6 +130,7 @@ func (notify *ConcernLiveNotify) Site() string {
 }
 
 func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
+	m = mmsg.NewMSG()
 	switch notify.ShowStatus {
 	case ShowStatus_Living:
 		m.Textf("斗鱼-%s正在直播【%v】\n%v", notify.Nickname, notify.RoomName, notify.RoomUrl)

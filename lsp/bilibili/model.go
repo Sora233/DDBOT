@@ -229,6 +229,7 @@ func (notify *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
 		dynamicUrl = DynamicUrl(card.GetDesc().GetDynamicIdStr())
 		date       = localutils.TimestampFormat(card.GetDesc().GetTimestamp())
 	)
+	m = mmsg.NewMSG()
 	// 推送一条简化动态防止刷屏，主要是联合投稿和转发的时候
 	if notify.shouldCompact {
 		// 通过回复之前消息的方式简化推送
@@ -712,6 +713,7 @@ func (notify *ConcernNewsNotify) Logger() *logrus.Entry {
 }
 
 func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
+	m = mmsg.NewMSG()
 	switch notify.Status {
 	case LiveStatus_Living:
 		m.Textf("%s正在直播【%v】\n%v", notify.Name, notify.LiveTitle, notify.RoomUrl)
