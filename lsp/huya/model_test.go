@@ -12,6 +12,7 @@ func TestLiveInfo(t *testing.T) {
 		Name:     test.NAME2,
 		RoomName: test.NAME2,
 	}
+	assert.Equal(t, Site, l.Site())
 	assert.Equal(t, test.NAME2, l.GetName())
 	assert.Equal(t, Live, l.Type())
 	notify := NewConcernLiveNotify(test.G1, l)

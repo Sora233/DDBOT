@@ -20,10 +20,13 @@ func TestConcern(t *testing.T) {
 	c.StateManager = initStateManager(t)
 	defer c.Stop()
 
+	assert.NotNil(t, c.GetStateManager())
+
 	go c.notifyLoop()
 
-	testRoom, err := ParseUid(_testRoom)
+	_testRoom, err := c.ParseId(_testRoom)
 	assert.Nil(t, err)
+	testRoom := _testRoom.(int64)
 
 	_, err = c.Add(nil, test.G1, testRoom, Live)
 	assert.Nil(t, err)
@@ -33,6 +36,11 @@ func TestConcern(t *testing.T) {
 	assert.NotNil(t, liveInfo)
 	assert.Equal(t, testRoom, liveInfo.RoomId)
 	assert.Equal(t, "斗鱼官方视频号", liveInfo.RoomName)
+
+	identityInfo, err := c.Get(testRoom)
+	assert.Nil(t, err)
+	assert.EqualValues(t, liveInfo.GetRoomId(), identityInfo.GetUid())
+	assert.EqualValues(t, liveInfo.GetNickname(), identityInfo.GetName())
 
 	identityInfos, ctypes, err := c.List(test.G1, Live)
 	assert.Nil(t, err)
@@ -55,4 +63,11 @@ func TestConcern(t *testing.T) {
 	case <-time.After(time.Second):
 		assert.Fail(t, "no notify received")
 	}
+
+	identityInfo, err = c.Remove(nil, test.G1, testRoom, Live)
+	assert.Nil(t, err)
+	assert.EqualValues(t, testRoom, identityInfo.GetUid())
+
+	identityInfo, err = c.Remove(nil, test.G1, testRoom, Live)
+	assert.NotNil(t, err)
 }

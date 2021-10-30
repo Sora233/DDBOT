@@ -8,4 +8,5 @@ import (
 func TestNewKeySet(t *testing.T) {
 	s := NewKeySet()
 	assert.NotNil(t, s)
+	s.GroupAtAllMarkKey()
 }

@@ -29,6 +29,8 @@ func TestStateManager_GetLiveInfo(t *testing.T) {
 	sm := initStateManager(t)
 	assert.NotNil(t, sm)
 
+	assert.NotNil(t, sm.GetGroupConcernConfig(test.G1, test.NAME1))
+
 	expected := &LiveInfo{
 		RoomId:   test.NAME1,
 		Name:     test.NAME2,

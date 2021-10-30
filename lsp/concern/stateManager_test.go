@@ -77,6 +77,7 @@ func TestStateManager_GroupConcernConfig(t *testing.T) {
 
 	c = sm.GetGroupConcernConfig(test.G1, test.UID1)
 	assert.NotNil(t, c)
+	assert.NotNil(t, c.GetGroupConcernFilter())
 	assert.EqualValues(t, c.GetGroupConcernNotify().TitleChangeNotify, test.BibiliLive)
 	assert.EqualValues(t, c.GetGroupConcernAt().AtAll, test.YoutubeLive)
 	assert.EqualValues(t, c.GetGroupConcernAt().AtSomeone, []*AtSomeone{

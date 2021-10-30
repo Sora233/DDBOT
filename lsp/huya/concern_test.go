@@ -20,10 +20,19 @@ func TestConcern(t *testing.T) {
 	c.StateManager = initStateManager(t)
 	defer c.Stop()
 
+	assert.NotNil(t, c.GetStateManager())
+
+	_, err := c.ParseId(testRoom)
+	assert.Nil(t, err)
+
 	go c.notifyLoop()
 
-	_, err := c.Add(nil, test.G1, testRoom, Live)
+	_, err = c.Add(nil, test.G1, testRoom, Live)
 	assert.Nil(t, err)
+
+	identityInfo, err := c.Get(testRoom)
+	assert.Nil(t, err)
+	assert.EqualValues(t, testRoom, identityInfo.GetUid())
 
 	identityInfos, _, err := c.List(test.G1, Live)
 	assert.Nil(t, err)
@@ -48,4 +57,7 @@ func TestConcern(t *testing.T) {
 	case <-time.After(time.Second):
 		assert.Fail(t, "no notify received")
 	}
+
+	_, err = c.Remove(nil, test.G1, testRoom, Live)
+	assert.Nil(t, err)
 }

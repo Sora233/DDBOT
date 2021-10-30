@@ -25,6 +25,7 @@ func TestNewStateManager(t *testing.T) {
 
 	sm := initStateManager(t)
 	assert.NotNil(t, sm)
+	assert.NotNil(t, sm.GetGroupConcernConfig(test.G1, test.UID1))
 }
 
 func TestStateManager_GetUserInfo(t *testing.T) {

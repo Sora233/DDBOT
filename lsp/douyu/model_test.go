@@ -54,6 +54,7 @@ func TestLiveInfo(t *testing.T) {
 	assert.NotNil(t, notify.Logger())
 	assert.Equal(t, test.G1, notify.GetGroupCode())
 	assert.Equal(t, test.UID1, notify.GetUid())
+	assert.EqualValues(t, Site, notify.Site())
 
 	m := notify.ToMessage()
 	assert.NotNil(t, m)
