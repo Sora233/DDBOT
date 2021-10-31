@@ -39,10 +39,10 @@ func RegisterConcernManager(c concern.Concern, concernType []concern_type.Type, 
 		globalCenter.M[site] = make(map[concern_type.Type]concern.Concern)
 	}
 	for _, ctype := range concernType {
-		if lastC, found := globalCenter.M[site][ctype]; !found {
+		if _, found := globalCenter.M[site][ctype]; !found {
 			globalCenter.M[site][ctype] = c
 		} else {
-			logger.Errorf("Concern %v: Type %v is already registered by Concern %v, skip.", site, ctype, lastC.Site())
+			panic(fmt.Sprintf("Concern %v: Type %v is already registered", site, ctype))
 		}
 	}
 }
@@ -120,5 +120,8 @@ func ListType(site string) []concern_type.Type {
 	for k := range globalCenter.M[site] {
 		result = append(result, k)
 	}
+	sort.SliceStable(result, func(i, j int) bool {
+		return result[i] < result[j]
+	})
 	return result
 }
