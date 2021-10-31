@@ -1,9 +1,5 @@
 on:
-  push:
-    branches:
-      - master
-  schedule:
-    - cron: '0 * * * *'
+  - push
 name: Mirror GitHub Auto Queried Repos to Gitee
 jobs:
   run:
