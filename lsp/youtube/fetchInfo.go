@@ -2,6 +2,7 @@ package youtube
 
 import (
 	"bytes"
+	"container/list"
 	"errors"
 	"fmt"
 	"github.com/Jeffail/gabs/v2"
@@ -18,28 +19,37 @@ const VideoPath = "https://www.youtube.com/channel/%s/videos?view=57&flow=grid"
 
 type Searcher struct {
 	Sub []*gabs.Container
+	l   *list.List
 }
 
 func (r *Searcher) search(key string, j *gabs.Container) {
-	// TODO gabs: bad performance
-	if len(j.ChildrenMap()) != 0 {
-		for k, v := range j.ChildrenMap() {
-			if k == key {
-				r.Sub = append(r.Sub, v)
-				continue
+	if r.l == nil {
+		r.l = list.New()
+	}
+	r.l.PushBack(j)
+	for r.l.Len() != 0 {
+		head := r.l.Front()
+		r.l.Remove(head)
+		j := head.Value.(*gabs.Container)
+		if len(j.ChildrenMap()) != 0 {
+			for k, v := range j.ChildrenMap() {
+				if k == key {
+					r.Sub = append(r.Sub, v)
+					continue
+				}
+				r.l.PushBack(v)
 			}
-			r.search(key, v)
-		}
-	} else {
-		for _, c := range j.Children() {
-			if len(c.ChildrenMap()) != 0 {
-				r.search(key, c)
+		} else {
+			for _, c := range j.Children() {
+				if len(c.ChildrenMap()) != 0 {
+					r.l.PushBack(c)
+				}
 			}
 		}
 	}
 }
 
-// very sb
+// XFetchInfo very sb
 func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 	log := logger.WithField("channel_id", channelID)
 	st := time.Now()
