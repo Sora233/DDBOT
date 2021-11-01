@@ -136,6 +136,19 @@ func HuyaCurrentLiveKey(keys ...interface{}) string {
 func HuyaGroupAtAllMarkKey(keys ...interface{}) string {
 	return NamedKey("HuyaGroupAtAll", keys)
 }
+func AcfunUserInfoKey(keys ...interface{}) string {
+	return NamedKey("AcfunUserInfo", keys)
+}
+func AcfunLiveInfoKey(keys ...interface{}) string {
+	return NamedKey("AcfunLiveInfo", keys)
+}
+func AcfunNotLiveKey(keys ...interface{}) string {
+	return NamedKey("AcfunNotLiveCount", keys)
+}
+func AcfunUidFirstTimestampKey(keys ...interface{}) string {
+	return NamedKey("AcfunUidFirstTimestamp", keys)
+}
+
 func PermissionKey(keys ...interface{}) string {
 	return NamedKey("Permission", keys)
 }

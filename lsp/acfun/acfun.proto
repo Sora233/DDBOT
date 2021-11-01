@@ -17,6 +17,7 @@ message ApiChannelListResponse {
         string name = 3;
         int64 fanCountValue = 4;
         string fanCount = 5;
+        string headUrl = 6;
       }
       User user = 6;
       repeated string coverUrls = 7;
@@ -34,4 +35,16 @@ message ApiChannelListResponse {
   }
 
   ChannelListData channelListData = 1;
+}
+
+message V2UserContentProfileResponse {
+  message Vdata {
+    int64 userId = 1;
+    string userImg = 2;
+    int64 Followed = 3;
+    string username = 4;
+  }
+  int32 errorid = 1;
+  string requestid = 2;
+  Vdata vdata = 3;
 }
