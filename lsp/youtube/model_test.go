@@ -12,6 +12,7 @@ func TestVideoInfo(t *testing.T) {
 		VideoId:   test.BVID1,
 		VideoType: VideoType_Video,
 	}
+	assert.EqualValues(t, test.NAME2, vi.GetChannelName())
 	assert.Equal(t, VideoType_Video, vi.VideoType)
 	assert.Equal(t, Video, vi.Type())
 	assert.True(t, vi.IsVideo())
@@ -25,6 +26,8 @@ func TestVideoInfo(t *testing.T) {
 	assert.Equal(t, test.NAME1, notify.GetUid())
 	assert.NotNil(t, notify.Logger())
 	assert.Equal(t, Video, notify.Type())
+
+	assert.Equal(t, Site, notify.Site())
 
 	m := notify.ToMessage()
 	assert.NotNil(t, m)
