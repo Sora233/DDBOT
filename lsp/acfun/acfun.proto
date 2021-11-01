@@ -1,0 +1,37 @@
+syntax = "proto3";
+package acfun;
+
+option go_package = "acfun";
+
+message ApiChannelListResponse {
+  message ChannelListData {
+    message LiveListItem {
+      //      bool disableDanmakuShow = 1;
+      //      string requestId = 2;
+      //      string groupId = 3;
+      //      int32 action = 4;
+      //      int32 href = 5;
+      message User {
+        int32 action = 1;
+        string id = 2;
+        string name = 3;
+        int64 fanCountValue = 4;
+        string fanCount = 5;
+      }
+      User user = 6;
+      repeated string coverUrls = 7;
+      string title = 8;
+      int64 createTime = 9;
+      int64 authorId = 10;
+      string liveId = 11;
+    }
+    int64 result = 1;
+    string requestId = 2;
+    repeated LiveListItem liveList = 3;
+    int32 count = 4;
+    string pcursor = 5;
+    int32 totalCount = 6;
+  }
+
+  ChannelListData channelListData = 1;
+}
