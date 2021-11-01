@@ -336,9 +336,10 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			WithField("GroupName", event.Group.Name).
 			WithField("MemberCount", event.Group.MemberCount)
 		for _, c := range registry.ListConcernManager() {
-			_, ids, _, err := c.GetStateManager().List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
-				return groupCode == event.Group.Code
-			})
+			_, ids, _, err := c.GetStateManager().ListConcernState(
+				func(groupCode int64, id interface{}, p concern_type.Type) bool {
+					return groupCode == event.Group.Code
+				})
 			if err != nil {
 				log = log.WithField(fmt.Sprintf("%v订阅", c.Site()), "查询失败")
 			} else {

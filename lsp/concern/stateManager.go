@@ -15,7 +15,7 @@ import (
 )
 
 var logger = utils.GetModuleLogger("concern")
-var ErrEmitQNotInit = errors.New("emit queue not enabled")
+var ErrEmitQueueNotInit = errors.New("emit queue not enabled")
 
 type IStateManager interface {
 	Start() error
@@ -37,7 +37,8 @@ type IStateManager interface {
 	RemoveAllByGroupCode(groupCode int64) (keys []string, err error)
 	RemoveAllById(_id interface{}) (err error)
 
-	List(filter func(groupCode int64, id interface{}, p concern_type.Type) bool) (idGroups []int64, ids []interface{}, idTypes []concern_type.Type, err error)
+	ListConcernState(filter func(groupCode int64, id interface{}, p concern_type.Type) bool) (idGroups []int64,
+		ids []interface{}, idTypes []concern_type.Type, err error)
 	GroupTypeById(ids []interface{}, types []concern_type.Type) ([]interface{}, []concern_type.Type, error)
 
 	FreshIndex(groups ...int64)
@@ -232,7 +233,7 @@ func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result 
 
 // GetConcern 查询一个id在所有group内的 concern_type.Type
 func (c *StateManager) GetConcern(id interface{}) (result concern_type.Type, err error) {
-	_, _, _, err = c.List(func(groupCode int64, _id interface{}, p concern_type.Type) bool {
+	_, _, _, err = c.ListConcernState(func(groupCode int64, _id interface{}, p concern_type.Type) bool {
 		if id == _id {
 			result = result.Add(p)
 		}
@@ -241,7 +242,7 @@ func (c *StateManager) GetConcern(id interface{}) (result concern_type.Type, err
 	return
 }
 
-func (c *StateManager) List(filter func(groupCode int64, id interface{}, p concern_type.Type) bool) (idGroups []int64, ids []interface{}, idTypes []concern_type.Type, err error) {
+func (c *StateManager) ListConcernState(filter func(groupCode int64, id interface{}, p concern_type.Type) bool) (idGroups []int64, ids []interface{}, idTypes []concern_type.Type, err error) {
 	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		var iterErr error
 		err := tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
@@ -338,7 +339,7 @@ func (c *StateManager) FreshIndex(groups ...int64) {
 			groupSet[g] = struct{}{}
 		}
 	}
-	c.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+	c.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 		groupSet[groupCode] = struct{}{}
 		return true
 	})
@@ -378,7 +379,7 @@ func (c *StateManager) Stop() {
 func (c *StateManager) Start() error {
 	if c.useEmit {
 		c.emitQueue.Start()
-		_, ids, types, err := c.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+		_, ids, types, err := c.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 			return true
 		})
 		if err != nil {

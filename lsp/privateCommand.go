@@ -1154,9 +1154,10 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 	m.Textf("当前好友数：%v\n", len(c.bot.FriendList))
 	m.Textf("当前群组数：%v\n", len(c.bot.GroupList))
 	for index, cm := range registry.ListConcernManager() {
-		_, ids, ctypes, err := cm.GetStateManager().List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
-			return true
-		})
+		_, ids, ctypes, err := cm.GetStateManager().ListConcernState(
+			func(groupCode int64, id interface{}, p concern_type.Type) bool {
+				return true
+			})
 		if index > 0 {
 			m.Text("\n")
 		}

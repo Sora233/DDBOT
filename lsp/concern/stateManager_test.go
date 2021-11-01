@@ -197,7 +197,7 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G2, test.UID1, test.HuyaLive))
 
 	// 列出所有有hlive的记录，应该只有UID G2
-	groups, ids, ctypes, err := sm.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+	groups, ids, ctypes, err := sm.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 		return p.ContainAny(test.HuyaLive)
 	})
 	assert.Nil(t, err)
@@ -213,7 +213,7 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.EqualValues(t, test.DouyuLive, ctype)
 
 	// G1中有 UID1:blive UID2:dlive
-	_, ids, ctypes, err = sm.List(func(g int64, id interface{}, p concern_type.Type) bool {
+	_, ids, ctypes, err = sm.ListConcernState(func(g int64, id interface{}, p concern_type.Type) bool {
 		return g == test.G1
 	})
 	assert.Nil(t, err)
@@ -256,7 +256,7 @@ func TestStateManager_GroupConcern(t *testing.T) {
 
 func listIds(sm *StateManager) ([]interface{}, error) {
 	var m = make(map[interface{}]interface{})
-	_, _, _, err := sm.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+	_, _, _, err := sm.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 		m[id] = struct{}{}
 		return true
 	})

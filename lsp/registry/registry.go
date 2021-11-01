@@ -104,6 +104,7 @@ func ListSite() []string {
 	for k := range resultMap {
 		result = append(result, k)
 	}
+	sort.Strings(result)
 	return result
 }
 

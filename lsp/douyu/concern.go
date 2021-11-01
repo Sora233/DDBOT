@@ -129,9 +129,10 @@ func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, cty
 
 func (c *Concern) List(groupCode int64, p concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
 	log := logger.WithFields(localutils.GroupLogFields(groupCode))
-	_, ids, ctypes, err := c.StateManager.List(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
-		return _groupCode == groupCode && p.ContainAny(p)
-	})
+	_, ids, ctypes, err := c.StateManager.ListConcernState(
+		func(_groupCode int64, id interface{}, p concern_type.Type) bool {
+			return _groupCode == groupCode && p.ContainAny(p)
+		})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -171,7 +172,7 @@ func (c *Concern) notifyLoop() {
 			log := event.Logger()
 			log.Debugf("new event - live notify")
 
-			groups, _, _, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+			groups, _, _, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 				return id.(int64) == event.RoomId && p.ContainAny(Live)
 			})
 			if err != nil {

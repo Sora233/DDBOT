@@ -76,9 +76,10 @@ func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
 func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
 	log := logger.WithFields(localutils.GroupLogFields(groupCode))
 
-	_, ids, ctypes, err := c.StateManager.List(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
-		return groupCode == _groupCode && p.ContainAny(ctype)
-	})
+	_, ids, ctypes, err := c.StateManager.ListConcernState(
+		func(_groupCode int64, id interface{}, p concern_type.Type) bool {
+			return groupCode == _groupCode && p.ContainAny(ctype)
+		})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -152,7 +153,7 @@ func (c *Concern) notifyLoop() {
 		if err := c.StateManager.AddVideo(event); err != nil {
 			log.Errorf("add video err %v", err)
 		}
-		groups, _, idTypes, err := c.StateManager.List(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+		groups, _, idTypes, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 			return id.(string) == event.ChannelId && p.ContainAny(Live.Add(Video))
 		})
 		if err != nil {

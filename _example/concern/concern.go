@@ -42,9 +42,10 @@ func (c *exampleConcern) Start() error {
 		return err
 	}
 	go c.EmitFreshCore(c.Site(), func(ctype concern_type.Type, id interface{}) error {
-		groups, _, _, err := c.GetStateManager().List(func(groupCode int64, _id interface{}, p concern_type.Type) bool {
-			return _id == id && p.ContainAny(ctype)
-		})
+		groups, _, _, err := c.GetStateManager().
+			ListConcernState(func(groupCode int64, _id interface{}, p concern_type.Type) bool {
+				return _id == id && p.ContainAny(ctype)
+			})
 		if err != nil {
 			return err
 		}
@@ -84,7 +85,7 @@ func (c *exampleConcern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{
 }
 
 func (c *exampleConcern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
-	_, ids, ctypes, err := c.GetStateManager().List(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
+	_, ids, ctypes, err := c.GetStateManager().ListConcernState(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
 		return groupCode == _groupCode && p.ContainAny(ctype)
 	})
 	if err != nil {
