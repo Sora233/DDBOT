@@ -8,7 +8,6 @@ require (
 	github.com/Mrs4s/MiraiGo v0.0.0-20211005153339-2cdb7407f907
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
-	github.com/Sora233/zhima-proxy-pool v0.0.0-20210124065344-04d96243cadd
 	github.com/alecthomas/kong v0.2.17
 	github.com/davecgh/go-spew v1.1.1
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4

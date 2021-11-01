@@ -19,10 +19,8 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/local_proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/py"
-	"github.com/Sora233/DDBOT/proxy_pool/zhima"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
-	zhimaproxypool "github.com/Sora233/zhima-proxy-pool"
 	"github.com/sirupsen/logrus"
 	"os"
 	"runtime"
@@ -158,19 +156,6 @@ func (l *Lsp) Init() {
 			proxy_pool.Init(pyPool)
 			l.status.ProxyPoolEnable = true
 		}
-	case "zhimaProxyPool":
-		api := config.GlobalConfig.GetString("zhimaProxyPool.api")
-		log.WithField("api", api).Debug("debug")
-		cfg := &zhimaproxypool.Config{
-			ApiAddr:   api,
-			BackUpCap: config.GlobalConfig.GetInt("zhimaProxyPool.BackUpCap"),
-			ActiveCap: config.GlobalConfig.GetInt("zhimaProxyPool.ActiveCap"),
-			ClearTime: time.Second * time.Duration(config.GlobalConfig.GetInt("zhimaProxyPool.ClearTime")),
-			TimeLimit: time.Minute * time.Duration(config.GlobalConfig.GetInt("zhimaProxyPool.TimeLimit")),
-		}
-		zhimaPool := zhimaproxypool.NewZhimaProxyPool(cfg, zhima.NewBuntdbPersister())
-		proxy_pool.Init(zhima.NewZhimaWrapper(zhimaPool, 15))
-		l.status.ProxyPoolEnable = true
 	case "localProxyPool":
 		overseaProxies := config.GlobalConfig.GetStringSlice("localProxyPool.oversea")
 		mainlandProxies := config.GlobalConfig.GetStringSlice("localProxyPool.mainland")

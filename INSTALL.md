@@ -196,19 +196,11 @@ localProxyPool: # 代理池配置，固定代理
 concern:
   emitInterval: 5s # 订阅的刷新频率，5s表示每5秒刷新一个ID，过快可能导致ip被暂时封禁
 
-zhimaProxyPool: # 代理池配置，芝麻http代理 http://h.zhimaruanjian.com/
-  api:
-  type: socks
-  BackUpCap: 50
-  ActiveCap: 4
-  ClearTime: 600
-  TimeLimit: 175
-
 imagePool:
   type: "off" # localPool / loliconPool
 
 proxy:
-  type: "off" # pyProxyPool / zhimaProxyPool
+  type: "off" # localProxyPool/ pyProxyPool
 
 debug: # debug模式，只有以下群或qq号可以触发命令
   group:
