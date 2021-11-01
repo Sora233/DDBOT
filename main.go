@@ -23,7 +23,6 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/Sora233/DDBOT/_example/concern"
 	_ "github.com/Sora233/DDBOT/logging"
 	_ "github.com/Sora233/DDBOT/lsp"
 	_ "github.com/Sora233/DDBOT/lsp/douyu"

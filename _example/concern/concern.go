@@ -15,8 +15,20 @@ const (
 	Example concern_type.Type = "example"
 )
 
-type exampleConcern struct {
+type exampleStateManager struct {
 	*concern.StateManager
+}
+
+func (c *exampleStateManager) GetGroupConcernConfig(groupCode int64, id interface{}) concern.IConfig {
+	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id))
+}
+
+func newExampleStateManager() *exampleStateManager {
+	return &exampleStateManager{concern.NewStateManagerWithStringID("example", true)}
+}
+
+type exampleConcern struct {
+	*exampleStateManager
 	notifyChan chan<- concern.Notify
 }
 
@@ -103,18 +115,10 @@ func (c *exampleConcern) GetStateManager() concern.IStateManager {
 	return c.StateManager
 }
 
-func (c *exampleConcern) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
-	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id))
-}
-
-func (c *exampleConcern) FreshIndex(groupCode ...int64) {
-	c.GetStateManager().FreshIndex(groupCode...)
-}
-
 func NewConcern() *exampleConcern {
 	return &exampleConcern{
-		StateManager: concern.NewStateManagerWithStringID("example", true),
-		notifyChan:   registry.GetNotifyChan(),
+		exampleStateManager: newExampleStateManager(),
+		notifyChan:          registry.GetNotifyChan(),
 	}
 }
 
