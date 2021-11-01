@@ -38,20 +38,20 @@ func (g *GroupConcernFilterConfig) Empty() bool {
 	return g.Type == "" || g.Config == ""
 }
 
-func (c *GroupConcernFilterConfig) GetFilterByType() (*GroupConcernFilterConfigByType, error) {
-	if c.Type != FilterTypeType && c.Type != FilterTypeNotType {
+func (g *GroupConcernFilterConfig) GetFilterByType() (*GroupConcernFilterConfigByType, error) {
+	if g.Type != FilterTypeType && g.Type != FilterTypeNotType {
 		return nil, errors.New("filter type mismatched")
 	}
 	var result = new(GroupConcernFilterConfigByType)
-	err := json.Unmarshal([]byte(c.Config), result)
+	err := json.Unmarshal([]byte(g.Config), result)
 	return result, err
 }
 
-func (c *GroupConcernFilterConfig) GetFilterByText() (*GroupConcernFilterConfigByText, error) {
-	if c.Type != FilterTypeText {
+func (g *GroupConcernFilterConfig) GetFilterByText() (*GroupConcernFilterConfigByText, error) {
+	if g.Type != FilterTypeText {
 		return nil, errors.New("filter type mismatched")
 	}
 	var result = new(GroupConcernFilterConfigByText)
-	err := json.Unmarshal([]byte(c.Config), result)
+	err := json.Unmarshal([]byte(g.Config), result)
 	return result, err
 }
