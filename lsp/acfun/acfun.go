@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Sora233/DDBOT/requests"
 	jsoniter "github.com/json-iterator/go"
+	"strings"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -14,13 +15,17 @@ const (
 	AppAcfunHost = "https://apipc.app.acfun.cn"
 )
 
-var pathMap = map[string]string{
+var BasePath = map[string]string{
 	PathApiChannelList:       BaseHost,
 	PathV2UserContentProfile: AppAcfunHost,
 }
 
 func APath(path string) string {
-	return pathMap[path] + path
+	if strings.HasPrefix(path, "/") {
+		return BasePath[path] + path
+	} else {
+		return BasePath[path] + "/" + path
+	}
 }
 
 func LiveUrl(uid int64) string {

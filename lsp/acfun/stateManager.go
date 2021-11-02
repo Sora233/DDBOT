@@ -57,7 +57,7 @@ func (s *StateManager) GetLiveInfo(uid int64) (*LiveInfo, error) {
 
 func (s *StateManager) DeleteLiveInfo(uid int64) error {
 	return s.RWCoverTx(func(tx *buntdb.Tx) error {
-		_, err := tx.Delete(s.LiveInfoKey(s.LiveInfoKey(uid)))
+		_, err := tx.Delete(s.LiveInfoKey(uid))
 		return err
 	})
 }
