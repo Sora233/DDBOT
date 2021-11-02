@@ -19,8 +19,7 @@ func ChainMigration(fn ...MigrationFunc) MigrationFunc {
 
 func MigrationByKey(patternFunc localdb.KeyPatternFunc, operator func(key, value string) string) MigrationFunc {
 	return func() error {
-		err := localdb.CreatePatternIndex(patternFunc, nil)
-		if err != nil {
+		if err := localdb.CreatePatternIndex(patternFunc, nil); err != nil {
 			return err
 		}
 		return localdb.RWCoverTx(func(tx *buntdb.Tx) error {

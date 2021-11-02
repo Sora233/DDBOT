@@ -452,7 +452,7 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 
 func (l *Lsp) FreshIndex() {
 	for _, c := range registry.ListConcernManager() {
-		c.GetStateManager().FreshIndex()
+		c.FreshIndex()
 	}
 	l.PermissionStateManager.FreshIndex()
 	l.LspStateManager.FreshIndex()

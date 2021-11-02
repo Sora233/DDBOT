@@ -152,7 +152,6 @@ func (s *StateManager) PopGroupInvitor(groupCode int64) (target int64, err error
 
 func (s *StateManager) FreshIndex() {
 	for _, pattern := range []localdb.KeyPatternFunc{
-		s.GroupMessageImageKey, s.GroupMuteKey,
 		s.NewFriendRequestKey, s.GroupInvitedKey,
 	} {
 		s.CreatePatternIndex(pattern, nil)

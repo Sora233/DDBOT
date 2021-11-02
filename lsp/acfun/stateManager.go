@@ -3,6 +3,7 @@ package acfun
 import (
 	"errors"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/tidwall/buntdb"
 	"strconv"
 )
 
@@ -13,7 +14,7 @@ type StateManager struct {
 
 func NewStateManager() *StateManager {
 	return &StateManager{
-		StateManager: concern.NewStateManagerWithInt64ID("acfun", false),
+		StateManager: concern.NewStateManagerWithInt64ID("Acfun", false),
 	}
 
 }
@@ -52,6 +53,13 @@ func (s *StateManager) GetLiveInfo(uid int64) (*LiveInfo, error) {
 		return nil, err
 	}
 	return liveInfo, nil
+}
+
+func (s *StateManager) DeleteLiveInfo(uid int64) error {
+	return s.RWCoverTx(func(tx *buntdb.Tx) error {
+		_, err := tx.Delete(s.LiveInfoKey(s.LiveInfoKey(uid)))
+		return err
+	})
 }
 
 func (s *StateManager) IncNotLiveCount(uid int64) int64 {

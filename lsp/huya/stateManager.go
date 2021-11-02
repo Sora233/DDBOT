@@ -38,13 +38,6 @@ func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (c
 	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id))
 }
 
-func (c *StateManager) Start() error {
-	for _, pattern := range []localdb.KeyPatternFunc{c.GroupConcernStateKey, c.CurrentLiveKey, c.FreshKey} {
-		c.CreatePatternIndex(pattern, nil)
-	}
-	return c.StateManager.Start()
-}
-
 func NewStateManager() *StateManager {
 	sm := &StateManager{}
 	sm.extraKey = NewExtraKey()

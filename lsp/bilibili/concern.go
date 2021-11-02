@@ -222,8 +222,8 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype 
 	return concern.NewIdentity(mid, userInfo.GetName()), nil
 }
 
-func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
-	mid := _id.(int64)
+func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	mid := id.(int64)
 	var identityInfo concern.IdentityInfo
 	var allCtype concern_type.Type
 	err := c.StateManager.RWCoverTx(func(tx *buntdb.Tx) error {
@@ -254,6 +254,9 @@ func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, cty
 		if config.GlobalConfig.GetBool("bilibili.unsub") && allCtype.Empty() {
 			c.unsubUser(mid)
 		}
+	}
+	if identityInfo == nil {
+		identityInfo = concern.NewIdentity(id, "unknown")
 	}
 	return identityInfo, err
 }

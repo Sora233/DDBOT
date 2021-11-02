@@ -10,6 +10,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/tidwall/buntdb"
 	"runtime"
 	"strconv"
 	"strings"
@@ -226,13 +227,37 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype c
 }
 
 func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
-	var info concern.IdentityInfo
-	info, _ = c.Get(id)
-	_, err := c.StateManager.RemoveGroupConcern(groupCode, id, ctype)
-	if info == nil {
-		info = concern.NewIdentity(id, "unknown")
+	mid := id.(int64)
+	var identityInfo concern.IdentityInfo
+	var allCtype concern_type.Type
+	err := c.StateManager.RWCoverTx(func(tx *buntdb.Tx) error {
+		var err error
+		identityInfo, _ = c.Get(mid)
+		_, err = c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
+		if err != nil {
+			return err
+		}
+		allCtype, err = c.StateManager.GetConcern(mid)
+		if err != nil {
+			return err
+		}
+		// 如果已经没有watch live的了，此时应该把liveinfo删掉，否则会无法刷新到livelinfo
+		// 如果此时liveinfo是living状态，则此状态会一直保留，下次watch时会以为在living错误推送
+		if !allCtype.ContainAll(Live) {
+			err = c.StateManager.DeleteLiveInfo(mid)
+			if err == buntdb.ErrNotFound {
+				err = nil
+			}
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if identityInfo == nil {
+		identityInfo = concern.NewIdentity(id, "unknown")
 	}
-	return info, err
+	return identityInfo, err
 }
 
 func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
@@ -322,7 +347,7 @@ func (c *Concern) freshLiveInfo() ([]*LiveInfo, error) {
 			}
 			if len(cover) == 0 {
 				cover = liveItem.GetUser().GetHeadUrl()
-				if pos := strings.Index(cover, "?"); pos != -1 {
+				if pos := strings.Index(cover, "?"); pos > 0 {
 					cover = cover[:pos]
 				}
 			}
@@ -344,12 +369,6 @@ func (c *Concern) freshLiveInfo() ([]*LiveInfo, error) {
 		}
 	}
 	return liveInfos, nil
-}
-
-func (c *Concern) FreshIndex(groupCode ...int64) {
-	c.StateManager.FreshIndex(groupCode...)
-	localdb.CreatePatternIndex(c.UserInfoKey, nil)
-	localdb.CreatePatternIndex(c.LiveInfoKey, nil)
 }
 
 func NewConcern(notifyChan chan<- concern.Notify) *Concern {

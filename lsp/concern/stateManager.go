@@ -41,7 +41,6 @@ type IStateManager interface {
 		ids []interface{}, idTypes []concern_type.Type, err error)
 	GroupTypeById(ids []interface{}, types []concern_type.Type) ([]interface{}, []concern_type.Type, error)
 
-	FreshIndex(groups ...int64)
 	EmitFreshCore(name string, fresher func(ctype concern_type.Type, id interface{}) error)
 }
 
@@ -326,11 +325,11 @@ func (c *StateManager) CheckFresh(id interface{}, setTTL bool) (result bool, err
 func (c *StateManager) FreshIndex(groups ...int64) {
 	for _, pattern := range []localdb.KeyPatternFunc{
 		c.GroupConcernStateKey, c.GroupConcernConfigKey,
-		c.GroupAtAllMarkKey, c.FreshKey} {
+	} {
 		c.CreatePatternIndex(pattern, nil)
 	}
 	var groupSet = make(map[int64]interface{})
-	if len(groups) == 0 {
+	if len(groups) == 0 && miraiBot.Instance != nil {
 		for _, groupInfo := range miraiBot.Instance.GroupList {
 			groupSet[groupInfo.Code] = struct{}{}
 		}
@@ -346,7 +345,7 @@ func (c *StateManager) FreshIndex(groups ...int64) {
 	for g := range groupSet {
 		for _, pattern := range []localdb.KeyPatternFunc{
 			c.GroupConcernStateKey, c.GroupConcernConfigKey,
-			c.GroupAtAllMarkKey, c.FreshKey} {
+		} {
 			c.CreatePatternIndex(pattern, []interface{}{g})
 		}
 	}
@@ -377,6 +376,7 @@ func (c *StateManager) Stop() {
 }
 
 func (c *StateManager) Start() error {
+	c.FreshIndex()
 	if c.useEmit {
 		c.emitQueue.Start()
 		_, ids, types, err := c.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
