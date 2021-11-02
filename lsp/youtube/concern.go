@@ -91,10 +91,10 @@ func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.Iden
 }
 
 func (c *Concern) Stop() {
+	logger.Trace("正在停止youtube concern")
 	logger.Trace("正在停止youtube StateManager")
 	c.StateManager.Stop()
 	logger.Trace("youtube StateManager已停止")
-	logger.Trace("正在停止youtube concern")
 	logger.Trace("youtube concern已停止")
 }
 

@@ -1,6 +1,7 @@
 package bilibili
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/config"
@@ -26,10 +27,6 @@ const (
 	Live concern_type.Type = "live"
 	News concern_type.Type = "news"
 )
-
-type concernEvent interface {
-	Type() concern_type.Type
-}
 
 type Concern struct {
 	*StateManager
@@ -68,13 +65,13 @@ func NewConcern(notify chan<- concern.Notify) *Concern {
 }
 
 func (c *Concern) Stop() {
-	logger.Trace("正在停止bilibili StateManager")
-	c.StateManager.Stop()
-	logger.Trace("bilibili StateManager已停止")
+	logger.Trace("正在停止bilibili concern")
 	if c.stop != nil {
 		close(c.stop)
 	}
-	logger.Trace("正在停止bilibili concern")
+	logger.Trace("正在停止bilibili StateManager")
+	c.StateManager.Stop()
+	logger.Trace("bilibili StateManager已停止")
 	c.wg.Wait()
 	logger.Trace("bilibili concern已停止")
 }
@@ -107,7 +104,8 @@ func (c *Concern) Start() error {
 	return c.StateManager.Start()
 }
 
-func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Add(ctx mmsg.IMsgCtx,
+	groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := _id.(int64)
 	var err error
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("mid", mid)
@@ -121,6 +119,9 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype 
 		return nil, err
 	}
 	var userInfo *UserInfo
+	var liveInfo *LiveInfo
+
+	liveInfo, _ = c.GetLiveInfo(mid)
 
 	userInfo, _ = c.GetUserInfo(mid)
 	if userInfo == nil {
@@ -191,25 +192,30 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype 
 	_ = c.StateManager.AddUserInfo(userInfo)
 	if ctype.ContainAny(Live) {
 		// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
-		liveInfo, _ := c.GetLiveInfo(mid)
 		if liveInfo != nil && liveInfo.Living() {
 			if ctx.GetTarget().TargetType().IsGroup() {
 				defer c.GroupWatchNotify(groupCode, mid)
 			}
 			if ctx.GetTarget().TargetType().IsPrivate() {
-				defer ctx.Send(mmsg.NewText("检测到该用户正在直播，但由于您目前处于私聊模式，因此不会在群内推送本次直播，将在该用户下次直播时推送"))
+				defer ctx.Send(mmsg.NewText("检测到该用户正在直播，但由于您目前处于私聊模式，" +
+					"因此不会在群内推送本次直播，将在该用户下次直播时推送"))
 			}
 		}
 	}
 	const followerCap = 50
-	if userInfo != nil && userInfo.UserStat != nil && ctype.ContainAny(Live) && userInfo.UserStat.Follower < followerCap {
-		ctx.Send(mmsg.NewTextf("注意：检测到用户【%v】粉丝数少于%v，请确认您的订阅目标是否正确，注意使用UID而非直播间ID", userInfo.Name, followerCap))
+	if userInfo != nil &&
+		userInfo.UserStat != nil &&
+		ctype.ContainAny(Live) &&
+		userInfo.UserStat.Follower < followerCap {
+		ctx.Send(mmsg.NewTextf("注意：检测到用户【%v】粉丝数少于%v，"+
+			"请确认您的订阅目标是否正确，注意使用UID而非直播间ID", userInfo.Name, followerCap))
 	}
 
 	return concern.NewIdentity(mid, userInfo.GetName()), nil
 }
 
-func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Remove(ctx mmsg.IMsgCtx,
+	groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := id.(int64)
 	var identityInfo concern.IdentityInfo
 	var allCtype concern_type.Type
@@ -311,7 +317,7 @@ func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 
 // fresh 这个fresh不能启动多个
 func (c *Concern) fresh() concern.FreshFunc {
-	return func(eventChan chan<- concern.Event) {
+	return func(ctx context.Context, eventChan chan<- concern.Event) {
 		t := time.NewTimer(time.Second * 3)
 		var interval time.Duration
 		if config.GlobalConfig == nil {
@@ -322,14 +328,17 @@ func (c *Concern) fresh() concern.FreshFunc {
 		for {
 			select {
 			case <-t.C:
-			case <-c.stop:
+			case <-ctx.Done():
 				return
 			}
 			start := time.Now()
 			var errGroup errgroup.Group
 
 			errGroup.Go(func() error {
-				defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore dynamic fresh done") }()
+				defer func() {
+					logger.WithField("cost", time.Now().Sub(start)).
+						Tracef("watchCore dynamic fresh done")
+				}()
 				newsList, err := c.freshDynamicNew()
 				if err != nil {
 					logger.Errorf("freshDynamicNew failed %v", err)
@@ -343,7 +352,10 @@ func (c *Concern) fresh() concern.FreshFunc {
 			})
 
 			errGroup.Go(func() error {
-				defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore live fresh done") }()
+				defer func() {
+					logger.WithField("cost", time.Now().Sub(start)).
+						Tracef("watchCore live fresh done")
+				}()
 				liveInfo, err := c.freshLive()
 				if err != nil {
 					logger.Errorf("freshLive error %v", err)
@@ -354,9 +366,10 @@ func (c *Concern) fresh() concern.FreshFunc {
 					liveInfoMap[info.Mid] = info
 				}
 
-				_, ids, types, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
-					return p.ContainAny(Live)
-				})
+				_, ids, types, err := c.StateManager.ListConcernState(
+					func(groupCode int64, id interface{}, p concern_type.Type) bool {
+						return p.ContainAny(Live)
+					})
 				if err != nil {
 					logger.Errorf("ListConcernState error %v", err)
 					return err
@@ -408,7 +421,8 @@ func (c *Concern) fresh() concern.FreshFunc {
 									Debug("notlive count done, notlive confirmed")
 							}
 							c.ClearNotLiveCount(mid)
-							newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle, oldInfo.Cover, LiveStatus_NoLiving)
+							newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle,
+								oldInfo.Cover, LiveStatus_NoLiving)
 							newInfo.LiveStatusChanged = true
 							sendLiveInfo(newInfo)
 						} else {
@@ -496,7 +510,9 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 		}
 		result = append(result, NewNewsInfoWithDetail(userInfo, cards))
 	}
-	logger.WithField("cost", time.Now().Sub(start)).WithField("NewsInfo Size", len(result)).Trace("freshDynamicNew done")
+	logger.WithField("cost", time.Now().Sub(start)).
+		WithField("NewsInfo Size", len(result)).
+		Trace("freshDynamicNew done")
 	return result, nil
 }
 

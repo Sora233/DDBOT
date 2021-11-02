@@ -1,6 +1,7 @@
 package acfun
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/config"
@@ -22,13 +23,9 @@ const (
 	Live concern_type.Type = "live"
 )
 
-type concernEvent interface {
-	Type() concern_type.Type
-}
-
 type Concern struct {
 	*StateManager
-	stop chan interface{}
+	notify chan<- concern.Notify
 }
 
 func (c *Concern) Site() string {
@@ -43,6 +40,14 @@ func (c *Concern) Start() error {
 	c.UseNotifyGenerator(c.notifyGenerator())
 	c.UseFreshFunc(c.fresh())
 	return c.StateManager.Start()
+}
+
+func (c *Concern) Stop() {
+	logger.Trace("正在停止acfun concern")
+	logger.Trace("正在停止acfun StateManager")
+	c.StateManager.Stop()
+	logger.Trace("acfun StateManager已停止")
+	logger.Trace("acfun concern已停止")
 }
 
 func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
@@ -65,7 +70,7 @@ func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 }
 
 func (c *Concern) fresh() concern.FreshFunc {
-	return func(eventChan chan<- concern.Event) {
+	return func(ctx context.Context, eventChan chan<- concern.Event) {
 		t := time.NewTimer(time.Second * 3)
 		var interval time.Duration
 		if config.GlobalConfig == nil {
@@ -76,8 +81,8 @@ func (c *Concern) fresh() concern.FreshFunc {
 		for {
 			select {
 			case <-t.C:
-			case <-c.stop:
-				break
+			case <-ctx.Done():
+				return
 			}
 			var start = time.Now()
 			err := func() error {
@@ -174,6 +179,7 @@ func (c *Concern) fresh() concern.FreshFunc {
 
 func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	var err error
+	var uid = id.(int64)
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
 
 	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
@@ -183,21 +189,34 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype c
 		}
 		return nil, err
 	}
+	liveInfo, _ := c.GetLiveInfo(uid)
 
-	liveInfo, err := c.FindOrLoadUserInfo(id.(int64))
+	userInfo, err := c.FindOrLoadUserInfo(uid)
 	if err != nil {
 		log.Errorf("FindOrLoadUserInfo error %v", err)
 		return nil, fmt.Errorf("查询用户信息失败 %v - %v", id, err)
-	}
-	err = c.StateManager.SetUidFirstTimestampIfNotExist(id.(int64), time.Now().Add(-time.Second*30).Unix())
-	if err != nil && !localdb.IsRollback(err) {
-		log.Errorf("SetUidFirstTimestampIfNotExist failed %v", err)
 	}
 	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
 	if err != nil {
 		return nil, err
 	}
-	return concern.NewIdentity(liveInfo.Uid, liveInfo.GetName()), nil
+	err = c.StateManager.SetUidFirstTimestampIfNotExist(uid, time.Now().Add(-time.Second*30).Unix())
+	if err != nil && !localdb.IsRollback(err) {
+		log.Errorf("SetUidFirstTimestampIfNotExist failed %v", err)
+	}
+	if ctype.ContainAny(Live) {
+		// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
+		if liveInfo != nil && liveInfo.Living {
+			if ctx.GetTarget().TargetType().IsGroup() {
+				defer c.GroupWatchNotify(groupCode, uid)
+			}
+			if ctx.GetTarget().TargetType().IsPrivate() {
+				defer ctx.Send(mmsg.NewText("检测到该用户正在直播，但由于您目前处于私聊模式，" +
+					"因此不会在群内推送本次直播，将在该用户下次直播时推送"))
+			}
+		}
+	}
+	return concern.NewIdentity(userInfo.Uid, userInfo.GetName()), nil
 }
 
 func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
@@ -299,6 +318,14 @@ func (c *Concern) FindOrLoadUserInfo(uid int64) (*UserInfo, error) {
 	return userInfo, nil
 }
 
+func (c *Concern) GroupWatchNotify(groupCode, mid int64) {
+	liveInfo, _ := c.GetLiveInfo(mid)
+	if liveInfo.Living {
+		liveInfo.LiveStatusChanged = true
+		c.notify <- NewConcernLiveNotify(groupCode, liveInfo)
+	}
+}
+
 func (c *Concern) freshLiveInfo() ([]*LiveInfo, error) {
 	var liveInfos []*LiveInfo
 	var pcursor string
@@ -353,6 +380,6 @@ func (c *Concern) freshLiveInfo() ([]*LiveInfo, error) {
 func NewConcern(notifyChan chan<- concern.Notify) *Concern {
 	return &Concern{
 		StateManager: NewStateManager(notifyChan),
-		stop:         make(chan interface{}),
+		notify:       notifyChan,
 	}
 }

@@ -34,10 +34,10 @@ func (c *Concern) GetStateManager() concern.IStateManager {
 }
 
 func (c *Concern) Stop() {
+	logger.Trace("正在停止douyu concern")
 	logger.Trace("正在停止douyu StateManager")
 	c.StateManager.Stop()
 	logger.Trace("douyu StateManager已停止")
-	logger.Trace("正在停止douyu concern")
 	logger.Trace("douyu concern已停止")
 }
 

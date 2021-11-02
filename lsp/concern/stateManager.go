@@ -1,6 +1,7 @@
 package concern
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
@@ -22,7 +23,7 @@ var ErrEmitQueueNotInit = errors.New("emit queue not enabled")
 
 type NotifyGeneratorFunc func(groupCode int64, event Event) []Notify
 type DispatchFunc func(event <-chan Event, notify chan<- Notify)
-type FreshFunc func(eventChan chan<- Event)
+type FreshFunc func(ctx context.Context, eventChan chan<- Event)
 
 type IStateManager interface {
 	GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig IConfig)
@@ -63,7 +64,8 @@ type StateManager struct {
 	emitChan            chan *localutils.EmitE
 	emitQueue           *localutils.EmitQueue
 	useEmit             bool
-	stop                chan interface{}
+	ctx                 context.Context
+	cancelCtx           context.CancelFunc
 	freshWg             sync.WaitGroup
 	wg                  sync.WaitGroup
 	freshFunc           FreshFunc
@@ -386,9 +388,7 @@ func (c *StateManager) upsertConcernType(key string, ctype concern_type.Type) (n
 }
 
 func (c *StateManager) Stop() {
-	if c.stop != nil {
-		close(c.stop)
-	}
+	c.cancelCtx()
 	c.freshWg.Wait()
 	close(c.eventChan)
 	c.wg.Wait()
@@ -433,7 +433,7 @@ func (c *StateManager) Start() error {
 
 // EmitQueueFresher 如果使用的是EmitQueue，则可以使用这个helper来产生一个Fresher
 func (c *StateManager) EmitQueueFresher(doFresh func(p concern_type.Type, id interface{}) ([]Event, error)) FreshFunc {
-	return func(eventChan chan<- Event) {
+	return func(ctx context.Context, eventChan chan<- Event) {
 		if !c.useEmit {
 			panic(ErrEmitQueueNotInit)
 		}
@@ -461,7 +461,7 @@ func (c *StateManager) EmitQueueFresher(doFresh func(p concern_type.Type, id int
 						"Name": c.name,
 					}).Errorf("doFresh error %v", err)
 				}
-			case <-c.stop:
+			case <-ctx.Done():
 				return
 			}
 		}
@@ -478,7 +478,7 @@ func (c *StateManager) Fresh(wg *sync.WaitGroup, eventChan chan<- Event) {
 	}()
 	wg.Add(1)
 	defer wg.Done()
-	c.freshFunc(eventChan)
+	c.freshFunc(c.ctx, eventChan)
 }
 
 func (c *StateManager) Dispatch(wg *sync.WaitGroup, eventChan <-chan Event, notifyChan chan<- Notify) {
@@ -548,12 +548,14 @@ func (c *StateManager) UseEmitQueue() {
 }
 
 func NewStateManagerWithCustomKey(name string, keySet KeySet, notifyChan chan<- Notify) *StateManager {
+	ctx, cancel := context.WithCancel(context.Background())
 	sm := &StateManager{
 		name:       name,
 		notifyChan: notifyChan,
 		eventChan:  make(chan Event, 64),
 		KeySet:     keySet,
-		stop:       make(chan interface{}),
+		ctx:        ctx,
+		cancelCtx:  cancel,
 	}
 	sm.dispatchFunc = sm.defaultDispatch()
 	return sm
