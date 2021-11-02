@@ -1,6 +1,7 @@
 package concern
 
 import (
+	"context"
 	"errors"
 	"github.com/Sora233/DDBOT/internal/test"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
@@ -158,7 +159,7 @@ func TestNewStateManager2(t *testing.T) {
 
 	sm := newStateManager(t)
 	var testCount atomic.Int32
-	sm.UseFreshFunc(func(eventChan chan<- Event) {
+	sm.UseFreshFunc(func(ctx context.Context, eventChan chan<- Event) {
 		if testCount.CAS(0, 1) {
 			panic("error")
 		}
@@ -191,9 +192,14 @@ func TestStateManagerNotify(t *testing.T) {
 			event.(*testEvent),
 		}
 	})
-	sm.UseFreshFunc(func(eventChan chan<- Event) {
-		for e := range testEventChan {
-			eventChan <- e
+	sm.UseFreshFunc(func(ctx context.Context, eventChan chan<- Event) {
+		for {
+			select {
+			case e := <-testEventChan:
+				eventChan <- e
+			case <-ctx.Done():
+				return
+			}
 		}
 	})
 	sm.Start()

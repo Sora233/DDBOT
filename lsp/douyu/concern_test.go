@@ -1,6 +1,7 @@
 package douyu
 
 import (
+	"context"
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/sirupsen/logrus"
@@ -28,9 +29,14 @@ func TestConcern(t *testing.T) {
 	testRoom := _testRoom.(int64)
 
 	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
-	c.StateManager.UseFreshFunc(func(eventChan chan<- concern.Event) {
-		for e := range testEventChan {
-			eventChan <- e
+	c.StateManager.UseFreshFunc(func(ctx context.Context, eventChan chan<- concern.Event) {
+		for {
+			select {
+			case e := <-testEventChan:
+				eventChan <- e
+			case <-ctx.Done():
+				return
+			}
 		}
 	})
 

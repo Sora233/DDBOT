@@ -1,6 +1,7 @@
 package acfun
 
 import (
+	"context"
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/sirupsen/logrus"
@@ -26,9 +27,14 @@ func TestNewConcern(t *testing.T) {
 
 	c := NewConcern(testNotifyChan)
 	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
-	c.StateManager.UseFreshFunc(func(eventChan chan<- concern.Event) {
-		for e := range testEventChan {
-			eventChan <- e
+	c.StateManager.UseFreshFunc(func(ctx context.Context, eventChan chan<- concern.Event) {
+		for {
+			select {
+			case e := <-testEventChan:
+				eventChan <- e
+			case <-ctx.Done():
+				return
+			}
 		}
 	})
 	assert.Nil(t, c.StateManager.Start())
