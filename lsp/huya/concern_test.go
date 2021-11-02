@@ -32,7 +32,9 @@ func TestConcern(t *testing.T) {
 		for {
 			select {
 			case e := <-testEventChan:
-				eventChan <- e
+				if e != nil {
+					eventChan <- e
+				}
 			case <-ctx.Done():
 				return
 			}

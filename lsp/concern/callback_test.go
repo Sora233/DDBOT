@@ -24,7 +24,7 @@ func (t *testNotify) GetUid() interface{} {
 }
 
 func (t *testNotify) Logger() *logrus.Entry {
-	return logger.WithField("Site", t.Site())
+	return logrus.WithField("Site", t.Site())
 }
 
 func (t *testNotify) GetGroupCode() int64 {

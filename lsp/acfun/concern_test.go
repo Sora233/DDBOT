@@ -31,7 +31,9 @@ func TestNewConcern(t *testing.T) {
 		for {
 			select {
 			case e := <-testEventChan:
-				eventChan <- e
+				if e != nil {
+					eventChan <- e
+				}
 			case <-ctx.Done():
 				return
 			}
@@ -80,16 +82,17 @@ func TestNewConcern(t *testing.T) {
 		assert.Fail(t, "no item received")
 	}
 
+	_, err = c.StateManager.AddGroupConcern(test.G2, test.UID1, Live)
+	assert.Nil(t, err)
+	_, err = c.StateManager.AddGroupConcern(test.G2, test.UID2, Live)
+	assert.Nil(t, err)
+
 	select {
 	case testEventChan <- origLiveInfo:
 	default:
 		assert.Fail(t, "insert chan failed")
 	}
 
-	_, err = c.StateManager.AddGroupConcern(test.G2, test.UID1, Live)
-	assert.Nil(t, err)
-	_, err = c.StateManager.AddGroupConcern(test.G2, test.UID2, Live)
-	assert.Nil(t, err)
 	for i := 0; i < 2; i++ {
 		select {
 		case notify := <-testNotifyChan:

@@ -69,7 +69,7 @@ func (t *testEvent) GetUid() interface{} {
 }
 
 func (t *testEvent) Logger() *logrus.Entry {
-	return logger.WithField("id", t.id)
+	return logrus.WithField("id", t.id)
 }
 
 func newStateManager(t *testing.T) *StateManager {
@@ -196,7 +196,9 @@ func TestStateManagerNotify(t *testing.T) {
 		for {
 			select {
 			case e := <-testEventChan:
-				eventChan <- e
+				if e != nil {
+					eventChan <- e
+				}
 			case <-ctx.Done():
 				return
 			}
