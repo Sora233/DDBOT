@@ -12,12 +12,11 @@ import (
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
+	"go.uber.org/atomic"
 	"golang.org/x/sync/errgroup"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -33,13 +32,11 @@ type concernEvent interface {
 }
 
 type Concern struct {
-	unsafeStart int32
-
 	*StateManager
-	eventChan chan concernEvent
-	notify    chan<- concern.Notify
-	stop      chan interface{}
-	wg        sync.WaitGroup
+	unsafeStart atomic.Bool
+	notify      chan<- concern.Notify
+	stop        chan interface{}
+	wg          sync.WaitGroup
 }
 
 func (c *Concern) Site() string {
@@ -56,16 +53,15 @@ func (c *Concern) GetStateManager() concern.IStateManager {
 
 func NewConcern(notify chan<- concern.Notify) *Concern {
 	c := &Concern{
-		eventChan: make(chan concernEvent, 500),
-		notify:    notify,
-		stop:      make(chan interface{}),
+		notify: notify,
+		stop:   make(chan interface{}),
 	}
 	c.StateManager = NewStateManager(c)
 	lastFresh, _ := c.GetLastFreshTime()
 	if lastFresh > 0 && time.Now().Sub(time.Unix(lastFresh, 0)) > time.Minute*30 {
-		c.unsafeStart = 1
+		c.unsafeStart.Store(true)
 		time.AfterFunc(time.Minute*3, func() {
-			atomic.StoreInt32(&c.unsafeStart, 0)
+			c.unsafeStart.Store(false)
 		})
 	}
 	return c
@@ -85,28 +81,19 @@ func (c *Concern) Stop() {
 
 func (c *Concern) Start() error {
 	Init()
-	err := c.StateManager.Start()
-	if err != nil {
-		logger.Errorf("state manager start err %v", err)
-	}
 
 	if !IsVerifyGiven() {
 		logger.Errorf("注意：B站配置不完整，B站相关功能无法使用！")
 		return nil
 	}
 
-	if runtime.NumCPU() >= 3 {
-		for i := 0; i < 3; i++ {
-			go c.notifyLoop()
-		}
-	} else {
-		go c.notifyLoop()
-	}
+	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
+	c.StateManager.UseFreshFunc(c.fresh())
 
-	go c.watchCore()
 	go func() {
+		c.wg.Add(1)
+		defer c.wg.Done()
 		c.SyncSub()
-
 		tick := time.Tick(time.Hour)
 		for {
 			select {
@@ -117,7 +104,7 @@ func (c *Concern) Start() error {
 			}
 		}
 	}()
-	return nil
+	return c.StateManager.Start()
 }
 
 func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
@@ -297,180 +284,158 @@ func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.Iden
 	return result, resultTypes, nil
 }
 
-func (c *Concern) notifyLoop() {
-	c.wg.Add(1)
-	defer c.wg.Done()
-	for ievent := range c.eventChan {
-		switch ievent.Type() {
-		case Live:
-			event := (ievent).(*LiveInfo)
-			log := event.Logger()
-			log.Debugf("new event - live notify")
-
-			groups, _, _, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
-				return id.(int64) == event.Mid && p.ContainAny(Live)
-			})
-			if err != nil {
-				log.Errorf("list id failed %v", err)
-				continue
+func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
+	return func(groupCode int64, ievent concern.Event) (result []concern.Notify) {
+		log := ievent.Logger()
+		switch event := ievent.(type) {
+		case *LiveInfo:
+			if event.Status == LiveStatus_Living {
+				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
+			} else if event.Status == LiveStatus_NoLiving {
+				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
+			} else {
+				log.WithFields(localutils.GroupLogFields(groupCode)).Error("unknown live status")
 			}
-
-			for _, groupCode := range groups {
-				notify := NewConcernLiveNotify(groupCode, event)
-				c.notify <- notify
-				if event.Status == LiveStatus_Living {
-					log.WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
-				} else if event.Status == LiveStatus_NoLiving {
-					log.WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
-				} else {
-					log.WithFields(localutils.GroupLogFields(groupCode)).Error("unknown live status")
-				}
-			}
-		case News:
-			event := (ievent).(*NewsInfo)
-			log := event.Logger()
-			log.Debugf("new event - news notify")
-
-			groups, _, _, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
-				return id.(int64) == event.Mid && p.ContainAny(News)
-			})
-			if err != nil {
-				log.Errorf("list id failed %v", err)
-				continue
-			}
-			for _, groupCode := range groups {
-				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("news notify")
-				notifies := NewConcernNewsNotify(groupCode, event, c)
-				for _, notify := range notifies {
-					c.notify <- notify
-				}
+			result = append(result, NewConcernLiveNotify(groupCode, event))
+		case *NewsInfo:
+			notifies := NewConcernNewsNotify(groupCode, event, c)
+			log.WithFields(localutils.GroupLogFields(groupCode)).
+				WithField("Size", len(notifies)).Debug("news notify")
+			for _, notify := range notifies {
+				result = append(result, notify)
 			}
 		}
-
+		return
 	}
 }
 
-func (c *Concern) watchCore() {
-	c.wg.Add(1)
-	defer c.wg.Done()
-	t := time.NewTimer(time.Second * 3)
-	for {
-		select {
-		case <-t.C:
-		case <-c.stop:
-			close(c.eventChan)
-			return
+// fresh 这个fresh不能启动多个
+func (c *Concern) fresh() concern.FreshFunc {
+	return func(eventChan chan<- concern.Event) {
+		t := time.NewTimer(time.Second * 3)
+		var interval time.Duration
+		if config.GlobalConfig == nil {
+			interval = time.Second * 20
+		} else {
+			interval = config.GlobalConfig.GetDuration("bilibili.interval")
 		}
-		start := time.Now()
-		var errGroup errgroup.Group
+		for {
+			select {
+			case <-t.C:
+			case <-c.stop:
+				return
+			}
+			start := time.Now()
+			var errGroup errgroup.Group
 
-		errGroup.Go(func() error {
-			defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore dynamic fresh done") }()
-			newsList, err := c.freshDynamicNew()
-			if err != nil {
-				logger.Errorf("freshDynamicNew failed %v", err)
-				return err
-			} else {
-				for _, news := range newsList {
-					c.eventChan <- news
-				}
-			}
-			return nil
-		})
-
-		errGroup.Go(func() error {
-			defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore live fresh done") }()
-			liveInfo, err := c.freshLive()
-			if err != nil {
-				logger.Errorf("freshLive error %v", err)
-				return err
-			}
-			var liveInfoMap = make(map[int64]*LiveInfo)
-			for _, info := range liveInfo {
-				liveInfoMap[info.Mid] = info
-			}
-
-			_, ids, types, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
-				return p.ContainAny(Live)
-			})
-			if err != nil {
-				logger.Errorf("ListConcernState error %v", err)
-				return err
-			}
-			ids, types, err = c.GroupTypeById(ids, types)
-			if err != nil {
-				logger.Errorf("GroupTypeById error %v", err)
-				return err
-			}
-
-			sendLiveInfo := func(info *LiveInfo) {
-				addLiveInfoErr := c.AddLiveInfo(info)
-				if addLiveInfoErr != nil {
-					// 如果因为系统原因add失败，会造成重复推送
-					// 按照ddbot的原则，选择不推送，而非重复推送
-					logger.WithField("mid", info.Mid).Errorf("add live info error %v", err)
+			errGroup.Go(func() error {
+				defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore dynamic fresh done") }()
+				newsList, err := c.freshDynamicNew()
+				if err != nil {
+					logger.Errorf("freshDynamicNew failed %v", err)
+					return err
 				} else {
-					c.eventChan <- info
+					for _, news := range newsList {
+						eventChan <- news
+					}
 				}
-			}
+				return nil
+			})
 
-			for _, id := range ids {
-				mid := id.(int64)
-				oldInfo, _ := c.GetLiveInfo(mid)
-				if oldInfo == nil {
-					// first live info
-					if newInfo, found := liveInfoMap[mid]; found {
-						newInfo.LiveStatusChanged = true
-						sendLiveInfo(newInfo)
-					}
-					continue
+			errGroup.Go(func() error {
+				defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore live fresh done") }()
+				liveInfo, err := c.freshLive()
+				if err != nil {
+					logger.Errorf("freshLive error %v", err)
+					return err
 				}
-				if oldInfo.Status == LiveStatus_NoLiving {
-					if newInfo, found := liveInfoMap[mid]; found {
-						// notliving -> living
-						newInfo.LiveStatusChanged = true
-						sendLiveInfo(newInfo)
-					}
-				} else if oldInfo.Status == LiveStatus_Living {
-					if newInfo, found := liveInfoMap[mid]; !found {
-						// living -> notliving
-						if count := c.IncNotLiveCount(mid); count < 3 {
-							logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
-								WithField("notlive_count", count).
-								Debug("notlive counting")
-							continue
-						} else {
-							logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
-								Debug("notlive count done, notlive confirmed")
-						}
-						c.ClearNotLiveCount(mid)
-						newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle, oldInfo.Cover, LiveStatus_NoLiving)
-						newInfo.LiveStatusChanged = true
-						sendLiveInfo(newInfo)
+				var liveInfoMap = make(map[int64]*LiveInfo)
+				for _, info := range liveInfo {
+					liveInfoMap[info.Mid] = info
+				}
+
+				_, ids, types, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+					return p.ContainAny(Live)
+				})
+				if err != nil {
+					logger.Errorf("ListConcernState error %v", err)
+					return err
+				}
+				ids, types, err = c.GroupTypeById(ids, types)
+				if err != nil {
+					logger.Errorf("GroupTypeById error %v", err)
+					return err
+				}
+
+				sendLiveInfo := func(info *LiveInfo) {
+					addLiveInfoErr := c.AddLiveInfo(info)
+					if addLiveInfoErr != nil {
+						// 如果因为系统原因add失败，会造成重复推送
+						// 按照ddbot的原则，选择不推送，而非重复推送
+						logger.WithField("mid", info.Mid).Errorf("add live info error %v", err)
 					} else {
-						if newInfo.LiveTitle == "bilibili主播的直播间" {
-							newInfo.LiveTitle = oldInfo.LiveTitle
-						}
-						c.ClearNotLiveCount(mid)
-						if newInfo.LiveTitle != oldInfo.LiveTitle {
-							// live title change
-							newInfo.LiveTitleChanged = true
+						eventChan <- info
+					}
+				}
+
+				for _, id := range ids {
+					mid := id.(int64)
+					oldInfo, _ := c.GetLiveInfo(mid)
+					if oldInfo == nil {
+						// first live info
+						if newInfo, found := liveInfoMap[mid]; found {
+							newInfo.LiveStatusChanged = true
 							sendLiveInfo(newInfo)
 						}
+						continue
+					}
+					if oldInfo.Status == LiveStatus_NoLiving {
+						if newInfo, found := liveInfoMap[mid]; found {
+							// notliving -> living
+							newInfo.LiveStatusChanged = true
+							sendLiveInfo(newInfo)
+						}
+					} else if oldInfo.Status == LiveStatus_Living {
+						if newInfo, found := liveInfoMap[mid]; !found {
+							// living -> notliving
+							if count := c.IncNotLiveCount(mid); count < 3 {
+								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
+									WithField("notlive_count", count).
+									Debug("notlive counting")
+								continue
+							} else {
+								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
+									Debug("notlive count done, notlive confirmed")
+							}
+							c.ClearNotLiveCount(mid)
+							newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle, oldInfo.Cover, LiveStatus_NoLiving)
+							newInfo.LiveStatusChanged = true
+							sendLiveInfo(newInfo)
+						} else {
+							if newInfo.LiveTitle == "bilibili主播的直播间" {
+								newInfo.LiveTitle = oldInfo.LiveTitle
+							}
+							c.ClearNotLiveCount(mid)
+							if newInfo.LiveTitle != oldInfo.LiveTitle {
+								// live title change
+								newInfo.LiveTitleChanged = true
+								sendLiveInfo(newInfo)
+							}
+						}
 					}
 				}
+				return nil
+			})
+			err := errGroup.Wait()
+			end := time.Now()
+			if err == nil {
+				logger.WithField("cost", end.Sub(start)).Tracef("watchCore loop done")
+				c.SetLastFreshTime(time.Now().Unix())
+			} else {
+				logger.WithField("cost", end.Sub(start)).Errorf("watchCore error %v", err)
 			}
-			return nil
-		})
-		err := errGroup.Wait()
-		end := time.Now()
-		if err == nil {
-			logger.WithField("cost", end.Sub(start)).Tracef("watchCore loop done")
-			c.SetLastFreshTime(time.Now().Unix())
-		} else {
-			logger.WithField("cost", end.Sub(start)).Errorf("watchCore error %v", err)
+			t.Reset(interval)
 		}
-		t.Reset(config.GlobalConfig.GetDuration("bilibili.interval"))
 	}
 }
 

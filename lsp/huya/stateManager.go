@@ -38,9 +38,10 @@ func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (c
 	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id))
 }
 
-func NewStateManager() *StateManager {
+func NewStateManager(notify chan<- concern.Notify) *StateManager {
 	sm := &StateManager{}
 	sm.extraKey = NewExtraKey()
-	sm.StateManager = concern.NewStateManagerWithCustomKey(NewKeySet(), true)
+	sm.StateManager = concern.NewStateManagerWithCustomKey(Site, NewKeySet(), notify)
+	sm.UseEmitQueue()
 	return sm
 }

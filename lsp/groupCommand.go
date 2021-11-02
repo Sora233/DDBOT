@@ -3,9 +3,22 @@ package lsp
 import (
 	"bytes"
 	"fmt"
+	"go.uber.org/atomic"
+	"math/rand"
+	"runtime/debug"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/sliceutil"
+	"github.com/alecthomas/kong"
+	"github.com/sirupsen/logrus"
+	"github.com/tidwall/buntdb"
+
 	"github.com/Sora233/DDBOT/image_pool"
 	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
@@ -16,17 +29,6 @@ import (
 	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/sliceutil"
-	"github.com/alecthomas/kong"
-	"github.com/sirupsen/logrus"
-	"github.com/tidwall/buntdb"
-	"math/rand"
-	"runtime/debug"
-	"strconv"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 type LspGroupCommand struct {
@@ -296,7 +298,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		imgBatch = 5
 	}
 
-	var missCount int32 = 0
+	var missCount atomic.Int32
 
 	for i := 0; i < len(groupImages); i += imgBatch {
 		last := i + imgBatch
@@ -311,7 +313,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 			for index, groupImage := range groupImages[i:last] {
 				if errs[i+index] != nil {
 					log.Errorf("upload failed %v", errs[i+index])
-					atomic.AddInt32(&missCount, 1)
+					missCount.Add(1)
 					continue
 				}
 				imgSubCount += 1
@@ -341,7 +343,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 				return
 			}
 			if lgc.reply(sendingMsg).Id == -1 {
-				atomic.AddInt32(&missCount, imgSubCount)
+				missCount.Add(imgSubCount)
 			}
 		}(i)
 	}
@@ -349,8 +351,8 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	wg.Wait()
 
 	log = log.WithField("search_num", searchNum).WithField("miss", missCount)
-	if searchNum != num || missCount != 0 {
-		lgc.textReplyF("本次共查询到%v张图片，有%v张图片被吞了哦", searchNum, missCount)
+	if searchNum != num || missCount.Load() != 0 {
+		lgc.textReplyF("本次共查询到%v张图片，有%v张图片被吞了哦", searchNum, missCount.Load())
 	}
 
 	return

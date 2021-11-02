@@ -12,15 +12,23 @@ func TestConcern(t *testing.T) {
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 
-	testChan := make(chan concern.Notify)
+	testEventChan := make(chan concern.Event, 16)
+	testNotifyChan := make(chan concern.Notify)
 
-	c := NewConcern(testChan)
-	c.StateManager = initStateManager(t)
-	defer c.Stop()
+	c := NewConcern(testNotifyChan)
 
 	assert.NotNil(t, c.GetStateManager())
 
-	go c.notifyLoop()
+	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
+	c.StateManager.UseFreshFunc(func(eventChan chan<- concern.Event) {
+		for e := range testEventChan {
+			eventChan <- e
+		}
+	})
+
+	assert.Nil(t, c.StateManager.Start())
+	defer c.Stop()
+	defer close(testEventChan)
 
 	_, err := c.ParseId(test.NAME1)
 	assert.Nil(t, err)
@@ -46,7 +54,17 @@ func TestConcern(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Len(t, identityInfos, 1)
 
-	c.eventChan <- &VideoInfo{
+	testEventChan <- &VideoInfo{
+		UserInfo: UserInfo{
+			ChannelId:   test.NAME1,
+			ChannelName: test.NAME1,
+		},
+		VideoType:         VideoType_Live,
+		VideoStatus:       VideoStatus_Living,
+		LiveStatusChanged: true,
+	}
+
+	testEventChan <- &VideoInfo{
 		UserInfo: UserInfo{
 			ChannelId:   test.NAME1,
 			ChannelName: test.NAME1,
@@ -57,11 +75,18 @@ func TestConcern(t *testing.T) {
 	}
 
 	select {
-	case notify := <-testChan:
+	case notify := <-testNotifyChan:
 		assert.Equal(t, test.G1, notify.GetGroupCode())
 		assert.Equal(t, test.NAME1, notify.GetUid())
 	case <-time.After(time.Second):
 		assert.Fail(t, "no notify received")
+	}
+
+	select {
+	case <-testNotifyChan:
+		assert.Fail(t, "should no notify received")
+	case <-time.After(time.Second):
+
 	}
 
 	_, err = c.Remove(nil, test.G1, test.NAME1, Live)

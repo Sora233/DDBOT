@@ -3,30 +3,40 @@ package douyu
 import (
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
-const _testRoom = "9617408"
+const testRoomStr = "9617408"
 
 func TestConcern(t *testing.T) {
+	logrus.SetLevel(logrus.TraceLevel)
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 
-	testChan := make(chan concern.Notify)
+	testEventChan := make(chan concern.Event, 16)
+	testNotifyChan := make(chan concern.Notify)
 
-	c := NewConcern(testChan)
-	c.StateManager = initStateManager(t)
-	defer c.Stop()
+	c := NewConcern(testNotifyChan)
 
 	assert.NotNil(t, c.GetStateManager())
 
-	go c.notifyLoop()
-
-	_testRoom, err := c.ParseId(_testRoom)
+	_testRoom, err := c.ParseId(testRoomStr)
 	assert.Nil(t, err)
 	testRoom := _testRoom.(int64)
+
+	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
+	c.StateManager.UseFreshFunc(func(eventChan chan<- concern.Event) {
+		for e := range testEventChan {
+			eventChan <- e
+		}
+	})
+
+	assert.Nil(t, c.StateManager.Start())
+	defer c.Stop()
+	defer close(testEventChan)
 
 	_, err = c.Add(nil, test.G1, testRoom, Live)
 	assert.Nil(t, err)
@@ -55,10 +65,10 @@ func TestConcern(t *testing.T) {
 	liveInfo.ShowStatus = ShowStatus_Living
 	liveInfo.VideoLoop = VideoLoopStatus_Off
 
-	c.eventChan <- liveInfo
+	testEventChan <- liveInfo
 
 	select {
-	case notify := <-testChan:
+	case notify := <-testNotifyChan:
 		assert.Equal(t, test.G1, notify.GetGroupCode())
 	case <-time.After(time.Second):
 		assert.Fail(t, "no notify received")

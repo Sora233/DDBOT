@@ -1,12 +1,23 @@
 package concern
 
 import (
+	"errors"
 	"github.com/Sora233/DDBOT/internal/test"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
+	"go.uber.org/atomic"
 	"testing"
+	"time"
+)
+
+const testSite = "test"
+
+const (
+	testType concern_type.Type = "test"
 )
 
 type testKeySet struct{}
@@ -31,23 +42,191 @@ func (t *testKeySet) ParseGroupConcernStateKey(key string) (groupCode int64, id 
 	return localdb.ParseConcernStateKeyWithInt64(key)
 }
 
+type testEvent struct {
+	id        int64
+	groupCode int64
+}
+
+func (t *testEvent) GetGroupCode() int64 {
+	return t.groupCode
+}
+
+func (t *testEvent) ToMessage() *mmsg.MSG {
+	return mmsg.NewTextf("test - id %v", t.id)
+}
+
+func (t *testEvent) Site() string {
+	return testSite
+}
+
+func (t *testEvent) Type() concern_type.Type {
+	return testType
+}
+
+func (t *testEvent) GetUid() interface{} {
+	return t.id
+}
+
+func (t *testEvent) Logger() *logrus.Entry {
+	return logger.WithField("id", t.id)
+}
+
 func newStateManager(t *testing.T) *StateManager {
-	sm := NewStateManagerWithCustomKey(&testKeySet{}, false)
+	sm := NewStateManagerWithCustomKey("test", &testKeySet{}, nil)
 	assert.NotNil(t, sm)
 	sm.FreshIndex(test.G1, test.G2)
 	return sm
 }
 
+func TestNewStateManagerWithStringID(t *testing.T) {
+	assert.NotNil(t, NewStateManagerWithStringID("test-string", nil))
+}
+
+func TestNewStateManagerWithInt64ID(t *testing.T) {
+	assert.NotNil(t, NewStateManagerWithInt64ID("test-string", nil))
+}
+
 func TestNewStateManager(t *testing.T) {
+	_defaultInterval := defaultInterval
+	defaultInterval = time.Second
+	defer func() {
+		defaultInterval = _defaultInterval
+	}()
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 
 	sm := newStateManager(t)
-
-	sm.Start()
-	sm.EmitFreshCore("name", func(ctype concern_type.Type, id interface{}) error {
+	sm.UseDispatchFunc(sm.defaultDispatch())
+	assert.Panics(t, func() {
+		sm.Start()
+	})
+	emitHook := make(chan Event, 16)
+	var freshError atomic.Bool
+	freshError.Store(false)
+	sm.UseFreshFunc(sm.EmitQueueFresher(func(p concern_type.Type, id interface{}) ([]Event, error) {
+		if freshError.Load() {
+			return nil, errors.New("fresh error")
+		}
+		e := &testEvent{id: id.(int64)}
+		emitHook <- e
+		return []Event{e}, nil
+	}))
+	assert.Panics(t, func() {
+		sm.Start()
+	})
+	sm.UseNotifyGenerator(func(groupCode int64, event Event) []Notify {
 		return nil
 	})
+	sm.UseEmitQueue()
+
+	_, err := sm.AddGroupConcern(test.G1, test.UID1, "test")
+	assert.Nil(t, err)
+	sm.Start()
+	defer sm.Stop()
+
+	select {
+	case e := <-emitHook:
+		assert.EqualValues(t, test.UID1, e.GetUid())
+	case <-time.After(time.Second * 2):
+		assert.Fail(t, "no item received")
+	}
+
+	select {
+	case <-emitHook:
+		assert.Fail(t, "should no item received")
+	case <-time.After(time.Second * 2):
+	}
+
+	err = localdb.RWCoverTx(func(tx *buntdb.Tx) error {
+		_, err := tx.Delete(sm.FreshKey(test.UID1))
+		return err
+	})
+	assert.Nil(t, err)
+
+	freshError.Store(true)
+
+	select {
+	case <-emitHook:
+		assert.Fail(t, "should no item received")
+	case <-time.After(time.Second * 2):
+	}
+}
+
+func TestNewStateManager2(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	sm := newStateManager(t)
+	var testCount atomic.Int32
+	sm.UseFreshFunc(func(eventChan chan<- Event) {
+		if testCount.CAS(0, 1) {
+			panic("error")
+		}
+	})
+	sm.UseDispatchFunc(func(event <-chan Event, notify chan<- Notify) {
+		if testCount.CAS(1, 2) {
+			panic("error")
+		}
+	})
+	sm.UseNotifyGenerator(func(groupCode int64, event Event) []Notify {
+		return nil
+	})
+	assert.Nil(t, sm.Start())
+	time.Sleep(time.Second)
+}
+
+func TestStateManagerNotify(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	var err error
+	sm := newStateManager(t)
+
+	testEventChan := make(chan Event, 16)
+	testNotifyChan := make(chan Notify, 16)
+	sm.notifyChan = testNotifyChan
+	sm.UseNotifyGenerator(func(groupCode int64, event Event) []Notify {
+		event.(*testEvent).groupCode = groupCode
+		return []Notify{
+			event.(*testEvent),
+		}
+	})
+	sm.UseFreshFunc(func(eventChan chan<- Event) {
+		for e := range testEventChan {
+			eventChan <- e
+		}
+	})
+	sm.Start()
+
+	_, err = sm.AddGroupConcern(test.G1, test.UID1, testType)
+	assert.Nil(t, err)
+	_, err = sm.AddGroupConcern(test.G2, test.UID1, testType)
+	assert.Nil(t, err)
+	testEventChan <- &testEvent{
+		id: test.UID2,
+	}
+
+	select {
+	case <-testNotifyChan:
+		assert.Fail(t, "should no notify received")
+	case <-time.After(time.Second):
+	}
+
+	testEventChan <- &testEvent{
+		id: test.UID1,
+	}
+
+	for i := 0; i < 2; i++ {
+		select {
+		case notify := <-testNotifyChan:
+			assert.NotNil(t, notify)
+			assert.EqualValues(t, test.UID1, notify.GetUid())
+			assert.True(t, notify.GetGroupCode() == test.G1 || notify.GetGroupCode() == test.G2)
+		case <-time.After(time.Second):
+			assert.Fail(t, "no item received")
+		}
+	}
+
 }
 
 func TestStateManager_GroupConcernConfig(t *testing.T) {
@@ -130,11 +309,17 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 
+	var err error
 	sm := newStateManager(t)
 
 	assert.Nil(t, sm.CheckGroupConcern(test.G1, test.UID1, test.BibiliLive))
 
-	_, err := sm.AddGroupConcern(test.G1, test.UID1, test.BibiliLive.Add(test.YoutubeLive))
+	_, err = sm.AddGroupConcern(test.G1, test.UID2, test.HuyaLive)
+	assert.Nil(t, err)
+	_, err = sm.RemoveGroupConcern(test.G1, test.UID2, test.HuyaLive)
+	assert.Nil(t, err)
+
+	_, err = sm.AddGroupConcern(test.G1, test.UID1, test.BibiliLive.Add(test.YoutubeLive))
 	assert.Nil(t, err)
 	_, err = sm.AddGroupConcern(test.G2, test.UID1, test.HuyaLive)
 	assert.Nil(t, err)

@@ -35,6 +35,10 @@ type LiveInfo struct {
 	LiveStatusChanged bool `json:"-"`
 }
 
+func (l *LiveInfo) Site() string {
+	return Site
+}
+
 func (l *LiveInfo) Type() concern_type.Type {
 	return Live
 }
@@ -54,20 +58,8 @@ type ConcernLiveNotify struct {
 	*LiveInfo
 }
 
-func (notify *ConcernLiveNotify) Site() string {
-	return Site
-}
-
-func (notify *ConcernLiveNotify) Type() concern_type.Type {
-	return Live
-}
-
 func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 	return notify.GroupCode
-}
-
-func (notify *ConcernLiveNotify) GetUid() interface{} {
-	return notify.Uid
 }
 
 func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {

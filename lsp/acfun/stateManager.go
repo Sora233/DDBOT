@@ -12,11 +12,10 @@ type StateManager struct {
 	extraKey
 }
 
-func NewStateManager() *StateManager {
+func NewStateManager(notify chan<- concern.Notify) *StateManager {
 	return &StateManager{
-		StateManager: concern.NewStateManagerWithInt64ID("Acfun", false),
+		StateManager: concern.NewStateManagerWithInt64ID("Acfun", notify),
 	}
-
 }
 
 func (s *StateManager) GetUserInfo(uid int64) (*UserInfo, error) {

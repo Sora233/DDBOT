@@ -342,6 +342,6 @@ func NewStateManager(c *Concern) *StateManager {
 		concern: c,
 	}
 	sm.extraKey = NewExtraKey()
-	sm.StateManager = concern.NewStateManagerWithCustomKey(NewKeySet(), false)
+	sm.StateManager = concern.NewStateManagerWithCustomKey(Site, NewKeySet(), c.notify)
 	return sm
 }

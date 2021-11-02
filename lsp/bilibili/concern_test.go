@@ -13,8 +13,6 @@ func initConcern(t *testing.T) *Concern {
 	c := NewConcern(nil)
 	assert.NotNil(t, c)
 	c.StateManager.FreshIndex(test.G1, test.G2)
-	assert.Nil(t, c.StateManager.Start())
-	go c.notifyLoop()
 	return c
 }
 
@@ -176,14 +174,19 @@ func TestConcernNotify(t *testing.T) {
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 
-	testChan := make(chan concern.Notify)
+	testEventChan := make(chan concern.Event, 16)
+	testNotifyChan := make(chan concern.Notify)
 
-	c := NewConcern(testChan)
-	c.StateManager = initStateManager(t)
+	c := NewConcern(testNotifyChan)
+	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
+	c.StateManager.UseFreshFunc(func(eventChan chan<- concern.Event) {
+		for e := range testEventChan {
+			eventChan <- e
+		}
+	})
+	assert.Nil(t, c.StateManager.Start())
 	defer c.Stop()
-	defer close(c.eventChan)
-
-	go c.notifyLoop()
+	defer close(testEventChan)
 
 	_, err := c.StateManager.AddGroupConcern(test.G1, test.UID1, Live.Add(News))
 	assert.Nil(t, err)
@@ -194,12 +197,13 @@ func TestConcernNotify(t *testing.T) {
 	origLiveInfo := NewLiveInfo(origUserInfo, "", "", LiveStatus_Living)
 
 	select {
-	case c.eventChan <- origLiveInfo:
+	case testEventChan <- origLiveInfo:
 	default:
 		assert.Fail(t, "insert chan failed")
 	}
+
 	select {
-	case notify := <-testChan:
+	case notify := <-testNotifyChan:
 		assert.NotNil(t, notify)
 		assert.EqualValues(t, test.UID1, notify.GetUid())
 		assert.EqualValues(t, test.G1, notify.GetGroupCode())
@@ -210,13 +214,13 @@ func TestConcernNotify(t *testing.T) {
 	origNewsInfo := NewNewsInfo(origUserInfo, test.DynamicID1, test.TIMESTAMP1)
 	origNewsInfo.Cards = []*Card{{}}
 	select {
-	case c.eventChan <- origNewsInfo:
+	case testEventChan <- origNewsInfo:
 	default:
 		assert.Fail(t, "insert chan failed")
 	}
 	for i := 0; i < 2; i++ {
 		select {
-		case notify := <-testChan:
+		case notify := <-testNotifyChan:
 			assert.NotNil(t, notify)
 			assert.EqualValues(t, test.UID1, notify.GetUid())
 			assert.True(t, notify.GetGroupCode() == test.G1 || notify.GetGroupCode() == test.G2)
@@ -230,14 +234,19 @@ func TestConcern_GroupWatchNotify(t *testing.T) {
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 
-	testChan := make(chan concern.Notify)
+	testEventChan := make(chan concern.Event, 16)
+	testNotifyChan := make(chan concern.Notify)
 
-	c := NewConcern(testChan)
+	c := NewConcern(testNotifyChan)
 	c.StateManager = initStateManager(t)
+	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
+	c.StateManager.UseFreshFunc(func(eventChan chan<- concern.Event) {
+		for e := range testEventChan {
+			eventChan <- e
+		}
+	})
 	defer c.Stop()
-	defer close(c.eventChan)
-
-	go c.notifyLoop()
+	defer close(testEventChan)
 
 	_, err := c.StateManager.AddGroupConcern(test.G1, test.UID1, Live.Add(News))
 	assert.Nil(t, err)
@@ -250,7 +259,7 @@ func TestConcern_GroupWatchNotify(t *testing.T) {
 
 	go c.GroupWatchNotify(test.G2, test.UID1)
 	select {
-	case notify := <-testChan:
+	case notify := <-testNotifyChan:
 		assert.NotNil(t, notify)
 		assert.EqualValues(t, test.UID1, notify.GetUid())
 		assert.EqualValues(t, test.G2, notify.GetGroupCode())

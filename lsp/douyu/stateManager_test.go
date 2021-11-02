@@ -7,13 +7,11 @@ import (
 )
 
 func initStateManager(t *testing.T) *StateManager {
-	sm := NewStateManager()
+	sm := NewStateManager(nil)
 	assert.NotNil(t, sm)
 	sm.FreshIndex(test.G1, test.G2)
-	assert.Nil(t, sm.Start())
 	return sm
 }
-
 func TestNewStateManager(t *testing.T) {
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)

@@ -163,7 +163,12 @@ func TestGroupConcernAtConfig_RemoveAtSomeoneList(t *testing.T) {
 }
 
 func TestGroupConcernAtConfig_MergeAtSomeoneList(t *testing.T) {
-	var g = &GroupConcernAtConfig{
+	var g *GroupConcernAtConfig
+	g.MergeAtSomeoneList("", nil)
+	g.SetAtSomeoneList("", nil)
+	g.RemoveAtSomeoneList("", nil)
+	g.ClearAtSomeoneList("")
+	g = &GroupConcernAtConfig{
 		AtAll:     concern_type.Empty,
 		AtSomeone: nil,
 	}

@@ -6,13 +6,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Notify interface {
+type Event interface {
 	Site() string
 	Type() concern_type.Type
-	GetGroupCode() int64
 	GetUid() interface{}
-	ToMessage() *mmsg.MSG
 	Logger() *logrus.Entry
+}
+
+type Notify interface {
+	Event
+	GetGroupCode() int64
+	ToMessage() *mmsg.MSG
 }
 
 type Concern interface {

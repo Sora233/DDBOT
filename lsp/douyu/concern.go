@@ -9,8 +9,6 @@ import (
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"reflect"
-	"runtime"
-	"sync"
 )
 
 var logger = utils.GetModuleLogger("douyu-concern")
@@ -21,11 +19,6 @@ const (
 
 type Concern struct {
 	*StateManager
-
-	eventChan chan concernEvent
-	notify    chan<- concern.Notify
-	stop      chan interface{}
-	wg        sync.WaitGroup
 }
 
 func (c *Concern) Site() string {
@@ -44,56 +37,14 @@ func (c *Concern) Stop() {
 	logger.Trace("正在停止douyu StateManager")
 	c.StateManager.Stop()
 	logger.Trace("douyu StateManager已停止")
-	if c.stop != nil {
-		close(c.stop)
-	}
-	close(c.eventChan)
 	logger.Trace("正在停止douyu concern")
-	c.wg.Wait()
 	logger.Trace("douyu concern已停止")
 }
 
 func (c *Concern) Start() error {
-	err := c.StateManager.Start()
-	if err != nil {
-		logger.Errorf("state manager start err %v", err)
-	}
-
-	if runtime.NumCPU() >= 3 {
-		for i := 0; i < 3; i++ {
-			go c.notifyLoop()
-		}
-	} else {
-		go c.notifyLoop()
-	}
-
-	go c.EmitFreshCore(Site, func(ctype concern_type.Type, id interface{}) error {
-		roomid, ok := id.(int64)
-		if !ok {
-			return fmt.Errorf("cast fresh id type<%v> to int64 failed", reflect.ValueOf(id).Type().String())
-		}
-		if ctype.ContainAll(Live) {
-			oldInfo, _ := c.FindRoom(roomid, false)
-			liveInfo, err := c.FindRoom(roomid, true)
-			if err != nil {
-				return fmt.Errorf("load liveinfo failed %v", err)
-			}
-			if oldInfo == nil {
-				liveInfo.LiveStatusChanged = true
-			}
-			if oldInfo != nil && oldInfo.Living() != liveInfo.Living() {
-				liveInfo.LiveStatusChanged = true
-			}
-			if oldInfo != nil && oldInfo.RoomName != liveInfo.RoomName {
-				liveInfo.LiveTitleChanged = true
-			}
-			if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {
-				c.eventChan <- liveInfo
-			}
-		}
-		return nil
-	})
-	return nil
+	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
+	c.StateManager.UseFreshFunc(c.fresh())
+	return c.StateManager.Start()
 }
 
 func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
@@ -162,34 +113,51 @@ func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
 	return concern.NewIdentity(liveInfo.GetRoomId(), liveInfo.GetNickname()), nil
 }
 
-func (c *Concern) notifyLoop() {
-	c.wg.Add(1)
-	defer c.wg.Done()
-	for ievent := range c.eventChan {
-		switch ievent.Type() {
-		case Live:
-			event := ievent.(*LiveInfo)
-			log := event.Logger()
-			log.Debugf("new event - live notify")
-
-			groups, _, _, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
-				return id.(int64) == event.RoomId && p.ContainAny(Live)
-			})
-			if err != nil {
-				log.Errorf("list id failed %v", err)
-				continue
+func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
+	return func(groupCode int64, event concern.Event) []concern.Notify {
+		switch info := event.(type) {
+		case *LiveInfo:
+			if info.Living() {
+				info.Logger().WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
+			} else {
+				info.Logger().WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
 			}
-			for _, groupCode := range groups {
-				notify := NewConcernLiveNotify(groupCode, event)
-				c.notify <- notify
-				if event.Living() {
-					log.WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
-				} else {
-					log.WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
-				}
-			}
+			return []concern.Notify{NewConcernLiveNotify(groupCode, info)}
+		default:
+			logger.Errorf("unknown EventType %+v", event)
+			return nil
 		}
 	}
+}
+
+func (c *Concern) fresh() concern.FreshFunc {
+	return c.EmitQueueFresher(func(ctype concern_type.Type, id interface{}) ([]concern.Event, error) {
+		var result []concern.Event
+		roomid, ok := id.(int64)
+		if !ok {
+			return nil, fmt.Errorf("cast fresh id type<%v> to int64 failed", reflect.ValueOf(id).Type().String())
+		}
+		if ctype.ContainAll(Live) {
+			oldInfo, _ := c.FindRoom(roomid, false)
+			liveInfo, err := c.FindRoom(roomid, true)
+			if err != nil {
+				return nil, fmt.Errorf("load liveinfo failed %v", err)
+			}
+			if oldInfo == nil {
+				liveInfo.LiveStatusChanged = true
+			}
+			if oldInfo != nil && oldInfo.Living() != liveInfo.Living() {
+				liveInfo.LiveStatusChanged = true
+			}
+			if oldInfo != nil && oldInfo.RoomName != liveInfo.RoomName {
+				liveInfo.LiveTitleChanged = true
+			}
+			if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {
+				result = append(result, liveInfo)
+			}
+		}
+		return result, nil
+	})
 }
 
 func (c *Concern) FindRoom(id int64, load bool) (*LiveInfo, error) {
@@ -226,10 +194,7 @@ func (c *Concern) FindOrLoadRoom(roomId int64) (*LiveInfo, error) {
 
 func NewConcern(notify chan<- concern.Notify) *Concern {
 	c := &Concern{
-		StateManager: NewStateManager(),
-		eventChan:    make(chan concernEvent, 500),
-		notify:       notify,
-		stop:         make(chan interface{}),
+		StateManager: NewStateManager(notify),
 	}
 	return c
 }

@@ -25,10 +25,6 @@ const (
 	Live  concern_type.Type = "live"
 )
 
-type concernEvent interface {
-	Type() concern_type.Type
-}
-
 // VideoInfo may be a video or a live, depend on the VideoType
 type VideoInfo struct {
 	UserInfo
@@ -41,6 +37,14 @@ type VideoInfo struct {
 
 	LiveStatusChanged bool `json:"-"`
 	LiveTitleChanged  bool `json:"-"`
+}
+
+func (v *VideoInfo) Site() string {
+	return Site
+}
+
+func (v *VideoInfo) GetUid() interface{} {
+	return v.ChannelId
 }
 
 func (v *VideoInfo) Logger() *logrus.Entry {
@@ -122,9 +126,6 @@ type ConcernNotify struct {
 func (notify *ConcernNotify) GetGroupCode() int64 {
 	return notify.GroupCode
 }
-func (notify *ConcernNotify) GetUid() interface{} {
-	return notify.ChannelId
-}
 
 func (notify *ConcernNotify) ToMessage() (m *mmsg.MSG) {
 	m = mmsg.NewMSG()
@@ -148,18 +149,6 @@ func (notify *ConcernNotify) Logger() *logrus.Entry {
 		return logger
 	}
 	return notify.VideoInfo.Logger().WithFields(localutils.GroupLogFields(notify.GroupCode))
-}
-
-func (notify *ConcernNotify) Type() concern_type.Type {
-	if notify.IsLive() {
-		return Live
-	} else {
-		return Video
-	}
-}
-
-func (notify *ConcernNotify) Site() string {
-	return Site
 }
 
 func NewConcernNotify(groupCode int64, info *VideoInfo) *ConcernNotify {

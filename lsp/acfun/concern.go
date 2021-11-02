@@ -11,10 +11,8 @@ import (
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
-	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -30,11 +28,7 @@ type concernEvent interface {
 
 type Concern struct {
 	*StateManager
-
-	wg        sync.WaitGroup
-	stop      chan interface{}
-	eventChan chan concernEvent
-	notify    chan<- concern.Notify
+	stop chan interface{}
 }
 
 func (c *Concern) Site() string {
@@ -46,155 +40,135 @@ func (c *Concern) ParseId(s string) (interface{}, error) {
 }
 
 func (c *Concern) Start() error {
-	err := c.StateManager.Start()
-	if err != nil {
-		logger.Errorf("state manager start err %v", err)
-	}
-
-	if runtime.NumCPU() >= 3 {
-		for i := 0; i < 3; i++ {
-			go c.notifyLoop()
-		}
-	} else {
-		go c.notifyLoop()
-	}
-
-	go c.watchCore()
-	return nil
+	c.UseNotifyGenerator(c.notifyGenerator())
+	c.UseFreshFunc(c.fresh())
+	return c.StateManager.Start()
 }
 
-func (c *Concern) notifyLoop() {
-	c.wg.Add(1)
-	defer c.wg.Done()
-	for ievent := range c.eventChan {
-		switch ievent.Type() {
-		case Live:
-			event := ievent.(*LiveInfo)
-			log := event.Logger()
-			log.Debugf("new event - live notify")
-
-			groups, _, _, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
-				return id.(int64) == event.Uid && p.ContainAny(Live)
-			})
-			if err != nil {
-				log.Errorf("list id failed %v", err)
-				continue
+func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
+	return func(groupCode int64, ievent concern.Event) (result []concern.Notify) {
+		log := ievent.Logger()
+		switch event := ievent.(type) {
+		case *LiveInfo:
+			notify := NewConcernLiveNotify(groupCode, event)
+			result = append(result, notify)
+			if event.Living {
+				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
+			} else {
+				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
 			}
-
-			for _, groupCode := range groups {
-				notify := NewConcernLiveNotify(groupCode, event)
-				c.notify <- notify
-				if event.Living {
-					log.WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
-				} else {
-					log.WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
-				}
-			}
+		default:
+			log.Errorf("unknown concern_type %v", ievent.Type().String())
 		}
+		return
 	}
 }
 
-func (c *Concern) watchCore() {
-	c.wg.Add(1)
-	defer c.wg.Done()
-	t := time.NewTimer(time.Second * 3)
-	for {
-		select {
-		case <-t.C:
-		case <-c.stop:
-			close(c.eventChan)
-			break
-		}
-		var start = time.Now()
-		err := func() error {
-			defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore live fresh done") }()
-			liveInfo, err := c.freshLiveInfo()
-			if err != nil {
-				return err
-			}
-			var liveInfoMap = make(map[int64]*LiveInfo)
-			for _, info := range liveInfo {
-				liveInfoMap[info.Uid] = info
-			}
-
-			_, ids, types, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
-				return p.ContainAny(Live)
-			})
-
-			if err != nil {
-				logger.Errorf("ListConcernState error %v", err)
-				return err
-			}
-			ids, types, err = c.GroupTypeById(ids, types)
-			if err != nil {
-				logger.Errorf("GroupTypeById error %v", err)
-				return err
-			}
-
-			sendLiveInfo := func(info *LiveInfo) {
-				addLiveInfoErr := c.AddLiveInfo(info)
-				if addLiveInfoErr != nil {
-					// 如果因为系统原因add失败，会造成重复推送
-					// 按照ddbot的原则，选择不推送，而非重复推送
-					logger.WithField("uid", info.Uid).Errorf("add live info error %v", err)
-				} else {
-					c.eventChan <- info
-				}
-			}
-			for _, id := range ids {
-				uid := id.(int64)
-				oldInfo, _ := c.GetLiveInfo(uid)
-				if oldInfo == nil {
-					// first live info
-					if newInfo, found := liveInfoMap[uid]; found {
-						newInfo.LiveStatusChanged = true
-						sendLiveInfo(newInfo)
-					}
-					continue
-				}
-				if !oldInfo.Living {
-					if newInfo, found := liveInfoMap[uid]; found {
-						// notliving -> living
-						newInfo.LiveStatusChanged = true
-						sendLiveInfo(newInfo)
-					}
-				} else {
-					if newInfo, found := liveInfoMap[uid]; !found {
-						// living -> notliving
-						if count := c.IncNotLiveCount(uid); count < 3 {
-							logger.WithField("uid", uid).WithField("name", oldInfo.UserInfo.Name).
-								WithField("notlive_count", count).
-								Debug("notlive counting")
-							continue
-						} else {
-							logger.WithField("uid", uid).WithField("name", oldInfo.UserInfo.Name).
-								Debug("notlive count done, notlive confirmed")
-						}
-						c.ClearNotLiveCount(uid)
-						newInfo = &LiveInfo{
-							UserInfo:          oldInfo.UserInfo,
-							LiveId:            oldInfo.LiveId,
-							Title:             oldInfo.Title,
-							Cover:             oldInfo.Cover,
-							StartTs:           oldInfo.StartTs,
-							Living:            false,
-							LiveStatusChanged: true,
-						}
-						sendLiveInfo(newInfo)
-					}
-				}
-			}
-			return nil
-		}()
-
-		end := time.Now()
-		if err == nil {
-			logger.WithField("cost", end.Sub(start)).Tracef("watchCore loop done")
+func (c *Concern) fresh() concern.FreshFunc {
+	return func(eventChan chan<- concern.Event) {
+		t := time.NewTimer(time.Second * 3)
+		var interval time.Duration
+		if config.GlobalConfig == nil {
+			interval = time.Second * 20
 		} else {
-			logger.WithField("cost", end.Sub(start)).Errorf("watchCore error %v", err)
+			interval = config.GlobalConfig.GetDuration("bilibili.interval")
 		}
+		for {
+			select {
+			case <-t.C:
+			case <-c.stop:
+				break
+			}
+			var start = time.Now()
+			err := func() error {
+				defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore live fresh done") }()
+				liveInfo, err := c.freshLiveInfo()
+				if err != nil {
+					return err
+				}
+				var liveInfoMap = make(map[int64]*LiveInfo)
+				for _, info := range liveInfo {
+					liveInfoMap[info.Uid] = info
+				}
 
-		t.Reset(config.GlobalConfig.GetDuration("acfun.interval"))
+				_, ids, types, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+					return p.ContainAny(Live)
+				})
+
+				if err != nil {
+					logger.Errorf("ListConcernState error %v", err)
+					return err
+				}
+				ids, types, err = c.GroupTypeById(ids, types)
+				if err != nil {
+					logger.Errorf("GroupTypeById error %v", err)
+					return err
+				}
+
+				sendLiveInfo := func(info *LiveInfo) {
+					addLiveInfoErr := c.AddLiveInfo(info)
+					if addLiveInfoErr != nil {
+						// 如果因为系统原因add失败，会造成重复推送
+						// 按照ddbot的原则，选择不推送，而非重复推送
+						logger.WithField("uid", info.Uid).Errorf("add live info error %v", err)
+					} else {
+						eventChan <- info
+					}
+				}
+				for _, id := range ids {
+					uid := id.(int64)
+					oldInfo, _ := c.GetLiveInfo(uid)
+					if oldInfo == nil {
+						// first live info
+						if newInfo, found := liveInfoMap[uid]; found {
+							newInfo.LiveStatusChanged = true
+							sendLiveInfo(newInfo)
+						}
+						continue
+					}
+					if !oldInfo.Living {
+						if newInfo, found := liveInfoMap[uid]; found {
+							// notliving -> living
+							newInfo.LiveStatusChanged = true
+							sendLiveInfo(newInfo)
+						}
+					} else {
+						if newInfo, found := liveInfoMap[uid]; !found {
+							// living -> notliving
+							if count := c.IncNotLiveCount(uid); count < 3 {
+								logger.WithField("uid", uid).WithField("name", oldInfo.UserInfo.Name).
+									WithField("notlive_count", count).
+									Debug("notlive counting")
+								continue
+							} else {
+								logger.WithField("uid", uid).WithField("name", oldInfo.UserInfo.Name).
+									Debug("notlive count done, notlive confirmed")
+							}
+							c.ClearNotLiveCount(uid)
+							newInfo = &LiveInfo{
+								UserInfo:          oldInfo.UserInfo,
+								LiveId:            oldInfo.LiveId,
+								Title:             oldInfo.Title,
+								Cover:             oldInfo.Cover,
+								StartTs:           oldInfo.StartTs,
+								Living:            false,
+								LiveStatusChanged: true,
+							}
+							sendLiveInfo(newInfo)
+						}
+					}
+				}
+				return nil
+			}()
+
+			end := time.Now()
+			if err == nil {
+				logger.WithField("cost", end.Sub(start)).Tracef("watchCore loop done")
+			} else {
+				logger.WithField("cost", end.Sub(start)).Errorf("watchCore error %v", err)
+			}
+			t.Reset(interval)
+		}
 	}
 }
 
@@ -328,7 +302,9 @@ func (c *Concern) FindOrLoadUserInfo(uid int64) (*UserInfo, error) {
 func (c *Concern) freshLiveInfo() ([]*LiveInfo, error) {
 	var liveInfos []*LiveInfo
 	var pcursor string
-	for pcursor != "no_more" {
+	var count = 0
+	for pcursor != "no_more" && count < 10 {
+		count++
 		resp, err := ApiChannelList(100, pcursor)
 		if err != nil {
 			logger.Errorf("freshLiveInfo error %v", err)
@@ -368,13 +344,15 @@ func (c *Concern) freshLiveInfo() ([]*LiveInfo, error) {
 			})
 		}
 	}
+	if count >= 10 {
+		logger.Errorf("ACFUN刷新直播状态分页溢出，是真的有这么多直播吗？如果是真的有这么多直播，可能acfun已经橄榄blive了")
+	}
 	return liveInfos, nil
 }
 
 func NewConcern(notifyChan chan<- concern.Notify) *Concern {
 	return &Concern{
-		StateManager: NewStateManager(),
-		eventChan:    make(chan concernEvent, 16),
-		notify:       notifyChan,
+		StateManager: NewStateManager(notifyChan),
+		stop:         make(chan interface{}),
 	}
 }

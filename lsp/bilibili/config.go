@@ -7,7 +7,6 @@ import (
 	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"strconv"
 	"strings"
-	"sync/atomic"
 )
 
 type GroupConcernConfig struct {
@@ -61,7 +60,7 @@ func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, msg *me
 
 func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.HookResult) {
 	hook = new(concern.HookResult)
-	if g.Concern != nil && atomic.LoadInt32(&g.Concern.unsafeStart) != 0 {
+	if g.Concern != nil && g.Concern.unsafeStart.Load() {
 		hook.Reason = "unsafe start status"
 		return
 	}

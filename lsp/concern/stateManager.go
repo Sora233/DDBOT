@@ -2,6 +2,7 @@ package concern
 
 import (
 	"errors"
+	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
@@ -10,6 +11,8 @@ import (
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
+	"runtime"
+	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -17,10 +20,11 @@ import (
 var logger = utils.GetModuleLogger("concern")
 var ErrEmitQueueNotInit = errors.New("emit queue not enabled")
 
-type IStateManager interface {
-	Start() error
-	Stop()
+type NotifyGeneratorFunc func(groupCode int64, event Event) []Notify
+type DispatchFunc func(event <-chan Event, notify chan<- Notify)
+type FreshFunc func(eventChan chan<- Event)
 
+type IStateManager interface {
 	GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig IConfig)
 	OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig IConfig) bool) error
 
@@ -41,17 +45,30 @@ type IStateManager interface {
 		ids []interface{}, idTypes []concern_type.Type, err error)
 	GroupTypeById(ids []interface{}, types []concern_type.Type) ([]interface{}, []concern_type.Type, error)
 
-	EmitFreshCore(name string, fresher func(ctype concern_type.Type, id interface{}) error)
+	// NotifyGenerator 从event产生多个Notify
+	NotifyGenerator(groupCode int64, event Event) []Notify
+	// Fresh 是一个长生命周期的函数，它产生Event
+	Fresh(wg *sync.WaitGroup, eventChan chan<- Event)
+	// Dispatch 是一个长生命周期的函数，它从event channel中获取event， 并产生Notify发送到notify channel
+	Dispatch(wg *sync.WaitGroup, event <-chan Event, notify chan<- Notify)
 }
 
 type StateManager struct {
 	*localdb.ShortCut
 	KeySet
-	emitChan  chan *localutils.EmitE
-	emitQueue *localutils.EmitQueue
-	useEmit   bool
-	stop      chan interface{}
-	wg        sync.WaitGroup
+
+	name                string
+	eventChan           chan Event
+	notifyChan          chan<- Notify
+	emitChan            chan *localutils.EmitE
+	emitQueue           *localutils.EmitQueue
+	useEmit             bool
+	stop                chan interface{}
+	freshWg             sync.WaitGroup
+	wg                  sync.WaitGroup
+	freshFunc           FreshFunc
+	dispatchFunc        DispatchFunc
+	notifyGeneratorFunc NotifyGeneratorFunc
 }
 
 func (c *StateManager) getGroupConcernConfig(groupCode int64, id interface{}) (concernConfig *GroupConcernConfig) {
@@ -372,11 +389,26 @@ func (c *StateManager) Stop() {
 	if c.stop != nil {
 		close(c.stop)
 	}
+	c.freshWg.Wait()
+	close(c.eventChan)
 	c.wg.Wait()
 }
 
 func (c *StateManager) Start() error {
+	if c.freshFunc == nil {
+		panic(fmt.Sprintf("StateManager %v: freshFunc not set", c.name))
+	}
+	if c.notifyGeneratorFunc == nil {
+		panic(fmt.Sprintf("StateManager %v: notifyGenerator not set", c.name))
+	}
 	c.FreshIndex()
+	if runtime.NumCPU() >= 3 {
+		for i := 0; i < 3; i++ {
+			go c.Dispatch(&c.wg, c.eventChan, c.notifyChan)
+		}
+	} else {
+		go c.Dispatch(&c.wg, c.eventChan, c.notifyChan)
+	}
 	if c.useEmit {
 		c.emitQueue.Start()
 		_, ids, types, err := c.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
@@ -395,63 +427,142 @@ func (c *StateManager) Start() error {
 			}
 		}
 	}
+	go c.Fresh(&c.freshWg, c.eventChan)
 	return nil
 }
 
-func (c *StateManager) EmitFreshCore(name string, fresher func(ctype concern_type.Type, id interface{}) error) {
-	if !c.useEmit {
-		return
-	}
-	c.wg.Add(1)
-	defer c.wg.Done()
-	for {
-		select {
-		case e := <-c.emitChan:
-			id := e.Id
-			if ok, _ := c.CheckFresh(id, true); !ok {
-				logger.WithFields(logrus.Fields{
-					"Id":     id,
-					"Result": ok,
-				}).Trace("fresh check failed")
-				continue
+// EmitQueueFresher 如果使用的是EmitQueue，则可以使用这个helper来产生一个Fresher
+func (c *StateManager) EmitQueueFresher(doFresh func(p concern_type.Type, id interface{}) ([]Event, error)) FreshFunc {
+	return func(eventChan chan<- Event) {
+		if !c.useEmit {
+			panic(ErrEmitQueueNotInit)
+		}
+		for {
+			select {
+			case emitItem := <-c.emitChan:
+				id := emitItem.Id
+				if ok, _ := c.CheckFresh(id, true); !ok {
+					logger.WithFields(logrus.Fields{
+						"Id":     id,
+						"Type":   emitItem.Type.String(),
+						"Result": ok,
+					}).Trace("fresh check failed")
+					continue
+				}
+				logger.WithField("id", id).Trace("fresh")
+				if events, err := doFresh(emitItem.Type, id); err == nil {
+					for _, event := range events {
+						c.eventChan <- event
+					}
+				} else {
+					logger.WithFields(logrus.Fields{
+						"Id":   id,
+						"Type": emitItem.Type.String(),
+						"Name": c.name,
+					}).Errorf("doFresh error %v", err)
+				}
+			case <-c.stop:
+				return
 			}
-			logger.WithField("id", id).Trace("fresh")
-			if err := fresher(e.Type, id); err != nil {
-				logger.WithFields(logrus.Fields{
-					"Id":   id,
-					"Name": name,
-				}).Errorf("fresher error %v", err)
-			}
-		case <-c.stop:
-			return
 		}
 	}
 }
 
-func NewStateManagerWithCustomKey(keySet KeySet, useEmit bool) *StateManager {
+func (c *StateManager) Fresh(wg *sync.WaitGroup, eventChan chan<- Event) {
+	defer func() {
+		if e := recover(); e != nil {
+			logger.WithField("stack", string(debug.Stack())).
+				Errorf("StateManager %v: Fresh panic recoved", c.name)
+			go c.Fresh(wg, eventChan)
+		}
+	}()
+	wg.Add(1)
+	defer wg.Done()
+	c.freshFunc(eventChan)
+}
+
+func (c *StateManager) Dispatch(wg *sync.WaitGroup, eventChan <-chan Event, notifyChan chan<- Notify) {
+	defer func() {
+		if e := recover(); e != nil {
+			logger.WithField("stack", string(debug.Stack())).
+				Errorf("StateManager %v: Dispatch panic recoved", c.name)
+			go c.Dispatch(wg, eventChan, notifyChan)
+		}
+	}()
+	wg.Add(1)
+	defer wg.Done()
+	c.dispatchFunc(eventChan, notifyChan)
+}
+
+func (c *StateManager) NotifyGenerator(groupCode int64, event Event) []Notify {
+	return c.notifyGeneratorFunc(groupCode, event)
+}
+
+func (c *StateManager) defaultDispatch() DispatchFunc {
+	return func(eventChan <-chan Event, notifyChan chan<- Notify) {
+		for event := range eventChan {
+			log := event.Logger()
+			groups, _, _, err := c.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+				return event.GetUid() == id && p.ContainAll(event.Type())
+			})
+			if err != nil {
+				log.Errorf("StateManager %v: ListConcernState error %v", c.name, err)
+				continue
+			}
+			log.Debugf("new event - %v - %v notify for %v groups", event.Site(), event.Type().String(), len(groups))
+			for _, groupCode := range groups {
+				for _, n := range c.NotifyGenerator(groupCode, event) {
+					notifyChan <- n
+				}
+			}
+		}
+	}
+}
+
+func (c *StateManager) UseFreshFunc(freshFunc FreshFunc) {
+	c.freshFunc = freshFunc
+}
+
+func (c *StateManager) UseNotifyGenerator(notifyGeneratorFunc NotifyGeneratorFunc) {
+	c.notifyGeneratorFunc = notifyGeneratorFunc
+}
+
+func (c *StateManager) UseDispatchFunc(dispatchFunc DispatchFunc) {
+	c.dispatchFunc = dispatchFunc
+}
+
+var defaultInterval = time.Second * 5
+
+// UseEmitQueue 启用EmitQueue
+func (c *StateManager) UseEmitQueue() {
+	c.useEmit = true
+	var interval time.Duration
+	if config.GlobalConfig != nil {
+		interval = config.GlobalConfig.GetDuration("concern.emitInterval")
+	}
+	if interval == 0 {
+		interval = defaultInterval
+	}
+	c.emitChan = make(chan *localutils.EmitE)
+	c.emitQueue = localutils.NewEmitQueue(c.emitChan, interval)
+}
+
+func NewStateManagerWithCustomKey(name string, keySet KeySet, notifyChan chan<- Notify) *StateManager {
 	sm := &StateManager{
-		emitChan: make(chan *localutils.EmitE),
-		KeySet:   keySet,
-		useEmit:  useEmit,
-		stop:     make(chan interface{}),
+		name:       name,
+		notifyChan: notifyChan,
+		eventChan:  make(chan Event, 64),
+		KeySet:     keySet,
+		stop:       make(chan interface{}),
 	}
-	if useEmit {
-		var interval time.Duration
-		if config.GlobalConfig != nil {
-			interval = config.GlobalConfig.GetDuration("concern.emitInterval")
-		}
-		if interval == 0 {
-			interval = time.Second * 5
-		}
-		sm.emitQueue = localutils.NewEmitQueue(sm.emitChan, interval)
-	}
+	sm.dispatchFunc = sm.defaultDispatch()
 	return sm
 }
 
-func NewStateManagerWithStringID(name string, useEmit bool) *StateManager {
-	return NewStateManagerWithCustomKey(NewPrefixKeySetWithStringID(name), useEmit)
+func NewStateManagerWithStringID(name string, notifyChan chan<- Notify) *StateManager {
+	return NewStateManagerWithCustomKey(name, NewPrefixKeySetWithStringID(name), notifyChan)
 }
 
-func NewStateManagerWithInt64ID(name string, useEmit bool) *StateManager {
-	return NewStateManagerWithCustomKey(NewPrefixKeySetWithInt64ID(name), useEmit)
+func NewStateManagerWithInt64ID(name string, notifyChan chan<- Notify) *StateManager {
+	return NewStateManagerWithCustomKey(name, NewPrefixKeySetWithInt64ID(name), notifyChan)
 }

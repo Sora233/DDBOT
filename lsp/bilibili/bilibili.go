@@ -7,10 +7,10 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	jsoniter "github.com/json-iterator/go"
+	"go.uber.org/atomic"
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 

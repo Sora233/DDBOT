@@ -23,13 +23,14 @@ func (c *exampleStateManager) GetGroupConcernConfig(groupCode int64, id interfac
 	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id))
 }
 
-func newExampleStateManager() *exampleStateManager {
-	return &exampleStateManager{concern.NewStateManagerWithStringID("example", true)}
+func newExampleStateManager(notify chan<- concern.Notify) *exampleStateManager {
+	sm := &exampleStateManager{concern.NewStateManagerWithStringID("example", notify)}
+	sm.UseEmitQueue()
+	return sm
 }
 
 type exampleConcern struct {
 	*exampleStateManager
-	notifyChan chan<- concern.Notify
 }
 
 func (c *exampleConcern) Site() string {
@@ -37,31 +38,24 @@ func (c *exampleConcern) Site() string {
 }
 
 func (c *exampleConcern) Start() error {
-	err := c.GetStateManager().Start()
+	err := c.StateManager.Start()
 	if err != nil {
 		return err
 	}
-	go c.EmitFreshCore(c.Site(), func(ctype concern_type.Type, id interface{}) error {
-		groups, _, _, err := c.GetStateManager().
-			ListConcernState(func(groupCode int64, _id interface{}, p concern_type.Type) bool {
-				return _id == id && p.ContainAny(ctype)
-			})
-		if err != nil {
-			return err
-		}
-		for _, group := range groups {
-			c.notifyChan <- &notify{
-				groupCode: group,
-				id:        id.(string),
-			}
-		}
-		return nil
+
+	c.UseFreshFunc(c.EmitQueueFresher(func(p concern_type.Type, id interface{}) ([]concern.Event, error) {
+		return []concern.Event{&notify{id: id.(string)}}, nil
+	}))
+	c.UseNotifyGenerator(func(groupCode int64, ievent concern.Event) []concern.Notify {
+		notify := ievent.(*notify)
+		notify.groupCode = groupCode
+		return []concern.Notify{notify}
 	})
 	return nil
 }
 
 func (c *exampleConcern) Stop() {
-	c.GetStateManager().Stop()
+	c.StateManager.Stop()
 }
 
 func (c *exampleConcern) ParseId(s string) (interface{}, error) {
@@ -118,8 +112,7 @@ func (c *exampleConcern) GetStateManager() concern.IStateManager {
 
 func NewConcern() *exampleConcern {
 	return &exampleConcern{
-		exampleStateManager: newExampleStateManager(),
-		notifyChan:          registry.GetNotifyChan(),
+		exampleStateManager: newExampleStateManager(registry.GetNotifyChan()),
 	}
 }
 

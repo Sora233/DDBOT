@@ -11,8 +11,6 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	"reflect"
-	"runtime"
-	"sync"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -24,11 +22,6 @@ const (
 
 type Concern struct {
 	*StateManager
-
-	eventChan chan concernEvent
-	notify    chan<- concern.Notify
-	stop      chan interface{}
-	wg        sync.WaitGroup
 }
 
 func (c *Concern) Site() string {
@@ -47,64 +40,14 @@ func (c *Concern) Stop() {
 	logger.Trace("正在停止huya StateManager")
 	c.StateManager.Stop()
 	logger.Trace("huya StateManager已停止")
-	if c.stop != nil {
-		close(c.stop)
-	}
-	close(c.eventChan)
 	logger.Trace("正在停止huya concern")
-	c.wg.Wait()
 	logger.Trace("huya concern已停止")
 }
 
 func (c *Concern) Start() error {
-	err := c.StateManager.Start()
-	if err != nil {
-		logger.Errorf("state manager start err %v", err)
-	}
-
-	if runtime.NumCPU() >= 3 {
-		for i := 0; i < 3; i++ {
-			go c.notifyLoop()
-		}
-	} else {
-		go c.notifyLoop()
-	}
-
-	go c.EmitFreshCore(Site, func(ctype concern_type.Type, id interface{}) error {
-		roomid, ok := id.(string)
-		if !ok {
-			return fmt.Errorf("cast fresh id type<%v> to string failed", reflect.ValueOf(id).Type().String())
-		}
-		if ctype.ContainAll(Live) {
-			oldInfo, _ := c.FindRoom(roomid, false)
-			liveInfo, err := c.FindRoom(roomid, true)
-			if err == ErrRoomNotExist || err == ErrRoomBanned {
-				logger.WithFields(logrus.Fields{
-					"RoomId":   roomid,
-					"RoomName": oldInfo.GetName(),
-				}).Debugf("直播间不存在或被封禁")
-				return nil
-			}
-			if err != nil {
-				return fmt.Errorf("load liveinfo failed %v", err)
-			}
-			// first load
-			if oldInfo == nil {
-				liveInfo.LiveStatusChanged = true
-			}
-			if oldInfo != nil && oldInfo.Living != liveInfo.Living {
-				liveInfo.LiveStatusChanged = true
-			}
-			if oldInfo != nil && oldInfo.RoomName != liveInfo.RoomName {
-				liveInfo.LiveTitleChanged = true
-			}
-			if oldInfo == nil || oldInfo.Living != liveInfo.Living || oldInfo.RoomName != liveInfo.RoomName {
-				c.eventChan <- liveInfo
-			}
-		}
-		return nil
-	})
-	return nil
+	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
+	c.StateManager.UseFreshFunc(c.fresh())
+	return c.StateManager.Start()
 }
 
 func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
@@ -171,36 +114,6 @@ func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.Iden
 	return result, resultTypes, nil
 }
 
-func (c *Concern) notifyLoop() {
-	c.wg.Add(1)
-	defer c.wg.Done()
-	for ievent := range c.eventChan {
-		switch ievent.Type() {
-		case Live:
-			event := ievent.(*LiveInfo)
-			log := event.Logger()
-			log.Debugf("new event - live notify")
-
-			groups, _, _, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
-				return id.(string) == event.RoomId && p.ContainAny(Live)
-			})
-			if err != nil {
-				log.Errorf("list id failed %v", err)
-				continue
-			}
-			for _, groupCode := range groups {
-				notify := NewConcernLiveNotify(groupCode, event)
-				c.notify <- notify
-				if event.Living {
-					log.WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
-				} else {
-					log.WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
-				}
-			}
-		}
-	}
-}
-
 func (c *Concern) FindRoom(roomId string, load bool) (*LiveInfo, error) {
 	var liveInfo *LiveInfo
 	if load {
@@ -225,12 +138,64 @@ func (c *Concern) FindOrLoadRoom(roomId string) (*LiveInfo, error) {
 	return info, nil
 }
 
+func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
+	return func(groupCode int64, event concern.Event) []concern.Notify {
+		switch info := event.(type) {
+		case *LiveInfo:
+			if info.Living {
+				info.Logger().WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
+			} else {
+				info.Logger().WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
+			}
+			return []concern.Notify{NewConcernLiveNotify(groupCode, info)}
+		default:
+			logger.Errorf("unknown EventType %+v", event)
+			return nil
+		}
+	}
+}
+
+func (c *Concern) fresh() concern.FreshFunc {
+	return c.EmitQueueFresher(func(ctype concern_type.Type, id interface{}) ([]concern.Event, error) {
+		var result []concern.Event
+		roomid, ok := id.(string)
+		if !ok {
+			return nil, fmt.Errorf("cast fresh id type<%v> to string failed", reflect.ValueOf(id).Type().String())
+		}
+		if ctype.ContainAll(Live) {
+			oldInfo, _ := c.FindRoom(roomid, false)
+			liveInfo, err := c.FindRoom(roomid, true)
+			if err == ErrRoomNotExist || err == ErrRoomBanned {
+				logger.WithFields(logrus.Fields{
+					"RoomId":   roomid,
+					"RoomName": oldInfo.GetName(),
+				}).Debugf("直播间不存在或被封禁")
+				return nil, err
+			}
+			if err != nil {
+				return nil, fmt.Errorf("load liveinfo failed %v", err)
+			}
+			// first load
+			if oldInfo == nil {
+				liveInfo.LiveStatusChanged = true
+			}
+			if oldInfo != nil && oldInfo.Living != liveInfo.Living {
+				liveInfo.LiveStatusChanged = true
+			}
+			if oldInfo != nil && oldInfo.RoomName != liveInfo.RoomName {
+				liveInfo.LiveTitleChanged = true
+			}
+			if oldInfo == nil || oldInfo.Living != liveInfo.Living || oldInfo.RoomName != liveInfo.RoomName {
+				result = append(result, liveInfo)
+			}
+		}
+		return result, nil
+	})
+}
+
 func NewConcern(notify chan<- concern.Notify) *Concern {
 	c := &Concern{
-		StateManager: NewStateManager(),
-		eventChan:    make(chan concernEvent, 500),
-		notify:       notify,
-		stop:         make(chan interface{}),
+		StateManager: NewStateManager(notify),
 	}
 	return c
 }

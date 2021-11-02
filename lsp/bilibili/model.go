@@ -20,6 +20,14 @@ type NewsInfo struct {
 	Cards         []*Card `json:"-"`
 }
 
+func (n *NewsInfo) Site() string {
+	return Site
+}
+
+func (n *NewsInfo) GetUid() interface{} {
+	return n.Mid
+}
+
 func (n *NewsInfo) Type() concern_type.Type {
 	return News
 }
@@ -108,6 +116,14 @@ type LiveInfo struct {
 
 	LiveStatusChanged bool `json:"-"`
 	LiveTitleChanged  bool `json:"-"`
+}
+
+func (l *LiveInfo) Site() string {
+	return Site
+}
+
+func (l *LiveInfo) GetUid() interface{} {
+	return l.Mid
 }
 
 func (l *LiveInfo) Living() bool {
@@ -732,15 +748,8 @@ func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
 		WithFields(localutils.GroupLogFields(notify.GroupCode))
 }
 
-func (notify *ConcernLiveNotify) Site() string {
-	return Site
-}
-
 func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 	return notify.GroupCode
-}
-func (notify *ConcernLiveNotify) GetUid() interface{} {
-	return notify.Mid
 }
 
 // combineImageCache 是给combineImage用的cache，其他地方禁止使用

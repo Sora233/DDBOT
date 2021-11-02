@@ -8,10 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type concernEvent interface {
-	Type() concern_type.Type
-}
-
 type LiveInfo struct {
 	RoomId   string `json:"room_id"`
 	RoomUrl  string `json:"room_url"`
@@ -22,6 +18,10 @@ type LiveInfo struct {
 
 	LiveStatusChanged bool `json:"-"`
 	LiveTitleChanged  bool `json:"-"`
+}
+
+func (m *LiveInfo) GetUid() interface{} {
+	return m.RoomId
 }
 
 func (m *LiveInfo) GetName() string {
@@ -68,9 +68,6 @@ type ConcernLiveNotify struct {
 func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 	return notify.GroupCode
 }
-func (notify *ConcernLiveNotify) GetUid() interface{} {
-	return notify.RoomId
-}
 
 func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
 	m = mmsg.NewMSG()
@@ -88,10 +85,6 @@ func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
 		return logger
 	}
 	return notify.LiveInfo.Logger().WithFields(localutils.GroupLogFields(notify.GroupCode))
-}
-
-func (notify *ConcernLiveNotify) Type() concern_type.Type {
-	return Live
 }
 
 func NewConcernLiveNotify(groupCode int64, l *LiveInfo) *ConcernLiveNotify {

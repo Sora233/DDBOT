@@ -7,9 +7,9 @@ import (
 )
 
 func initStateManager(t *testing.T) *StateManager {
-	sm := NewStateManager()
+	sm := NewStateManager(nil)
 	assert.NotNil(t, sm)
-	assert.Nil(t, sm.Start())
+	sm.FreshIndex(test.G1, test.G2)
 	return sm
 }
 
