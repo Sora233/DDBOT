@@ -26,6 +26,8 @@ func TestStateManager(t *testing.T) {
 	assert.NotNil(t, sm)
 	defer sm.Stop()
 
+	assert.NotNil(t, sm.GetGroupConcernConfig(test.G1, test.UID1))
+
 	userInfo := UserInfo{
 		Uid:  test.UID1,
 		Name: test.NAME1,

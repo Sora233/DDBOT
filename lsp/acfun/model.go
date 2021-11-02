@@ -33,6 +33,7 @@ type LiveInfo struct {
 	Living  bool   `json:"living"`
 
 	LiveStatusChanged bool `json:"-"`
+	LiveTitleChanged  bool `json:"-"`
 }
 
 func (l *LiveInfo) Site() string {

@@ -160,6 +160,13 @@ func (c *Concern) fresh() concern.FreshFunc {
 								LiveStatusChanged: true,
 							}
 							sendLiveInfo(newInfo)
+						} else {
+							c.ClearNotLiveCount(uid)
+							if newInfo.Title != oldInfo.Title {
+								// live title change
+								newInfo.LiveTitleChanged = true
+								sendLiveInfo(newInfo)
+							}
 						}
 					}
 				}

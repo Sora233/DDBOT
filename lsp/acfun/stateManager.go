@@ -12,6 +12,10 @@ type StateManager struct {
 	extraKey
 }
 
+func (s *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(s.StateManager.GetGroupConcernConfig(groupCode, id))
+}
+
 func NewStateManager(notify chan<- concern.Notify) *StateManager {
 	return &StateManager{
 		StateManager: concern.NewStateManagerWithInt64ID("Acfun", notify),
