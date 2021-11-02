@@ -4,21 +4,12 @@ import (
 	"context"
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
-func initConcern(t *testing.T, notifyChan chan<- concern.Notify) *Concern {
-	c := NewConcern(notifyChan)
-	assert.NotNil(t, c)
-	assert.Nil(t, c.Start())
-	return c
-}
-
 func TestNewConcern(t *testing.T) {
-	logrus.SetLevel(logrus.TraceLevel)
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 
@@ -39,9 +30,14 @@ func TestNewConcern(t *testing.T) {
 			}
 		}
 	})
+	assert.NotNil(t, c.GetStateManager())
 	assert.Nil(t, c.StateManager.Start())
 	defer c.Stop()
 	defer close(testEventChan)
+
+	_id, err := c.ParseId("123")
+	assert.Nil(t, err)
+	assert.EqualValues(t, 123, _id)
 
 	origUserInfo := &UserInfo{
 		Uid:  test.UID1,
@@ -49,6 +45,7 @@ func TestNewConcern(t *testing.T) {
 	}
 	origLiveInfo := &LiveInfo{
 		UserInfo: *origUserInfo,
+		Living:   true,
 	}
 
 	select {
@@ -63,7 +60,7 @@ func TestNewConcern(t *testing.T) {
 	case <-time.After(time.Second):
 	}
 
-	_, err := c.StateManager.AddGroupConcern(test.G1, test.UID1, Live)
+	_, err = c.StateManager.AddGroupConcern(test.G1, test.UID1, Live)
 	assert.Nil(t, err)
 	assert.Nil(t, c.StateManager.AddLiveInfo(origLiveInfo))
 
@@ -86,6 +83,11 @@ func TestNewConcern(t *testing.T) {
 	assert.Nil(t, err)
 	_, err = c.StateManager.AddGroupConcern(test.G2, test.UID2, Live)
 	assert.Nil(t, err)
+	err = c.StateManager.AddUserInfo(&UserInfo{
+		Uid:  test.UID2,
+		Name: test.NAME2,
+	})
+	assert.Nil(t, err)
 
 	select {
 	case testEventChan <- origLiveInfo:
@@ -103,5 +105,50 @@ func TestNewConcern(t *testing.T) {
 			assert.Fail(t, "no item received")
 		}
 	}
+
+	infos, _, err := c.List(test.G2, Live)
+	assert.Nil(t, err)
+	assert.Len(t, infos, 2)
+
+	logger.Debug("GroupWatchNotify")
+
+	go c.GroupWatchNotify(test.G2, test.UID1)
+	select {
+	case notify := <-testNotifyChan:
+		assert.NotNil(t, notify)
+		assert.EqualValues(t, test.UID1, notify.GetUid())
+		assert.EqualValues(t, test.G2, notify.GetGroupCode())
+		assert.NotNil(t, notify.Logger())
+		assert.NotNil(t, notify.ToMessage())
+	case <-time.After(time.Second):
+		assert.Fail(t, "no item received")
+	}
+
+}
+
+func TestNewConcern2(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	testNotifyChan := make(chan concern.Notify)
+	c := NewConcern(testNotifyChan)
+	assert.Nil(t, c.Start())
+	defer c.Stop()
+
+	timeup := time.After(time.Second * 5)
+
+	const testId int64 = 1
+
+	info, err := c.Add(nil, test.G1, testId, Live)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "admin", info.GetName())
+	assert.EqualValues(t, testId, info.GetUid())
+
+	info, err = c.Remove(nil, test.G1, testId, Live)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "admin", info.GetName())
+	assert.EqualValues(t, testId, info.GetUid())
+
+	<-timeup
 
 }
