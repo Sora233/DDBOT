@@ -71,7 +71,7 @@ func (c *Concern) fresh() concern.FreshFunc {
 		if config.GlobalConfig == nil {
 			interval = time.Second * 20
 		} else {
-			interval = config.GlobalConfig.GetDuration("bilibili.interval")
+			interval = config.GlobalConfig.GetDuration("acfun.interval")
 		}
 		for {
 			select {

@@ -38,11 +38,6 @@ func (c *exampleConcern) Site() string {
 }
 
 func (c *exampleConcern) Start() error {
-	err := c.StateManager.Start()
-	if err != nil {
-		return err
-	}
-
 	c.UseFreshFunc(c.EmitQueueFresher(func(p concern_type.Type, id interface{}) ([]concern.Event, error) {
 		return []concern.Event{&notify{id: id.(string)}}, nil
 	}))
@@ -51,7 +46,7 @@ func (c *exampleConcern) Start() error {
 		notify.groupCode = groupCode
 		return []concern.Notify{notify}
 	})
-	return nil
+	return c.StateManager.Start()
 }
 
 func (c *exampleConcern) Stop() {
