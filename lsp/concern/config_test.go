@@ -431,3 +431,9 @@ func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 		assert.Equalf(t, expected[index], result.Pass, "%v check fail", index)
 	}
 }
+
+func TestGroupConcernConfig_FilterHook(t *testing.T) {
+	var g = &GroupConcernConfig{}
+	result := g.FilterHook(newLiveInfo(test.UID1, true, true, true))
+	assert.True(t, result.Pass)
+}

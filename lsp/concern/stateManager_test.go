@@ -238,12 +238,17 @@ func TestStateManagerNotify(t *testing.T) {
 }
 
 func TestStateManager_GroupConcernConfig(t *testing.T) {
-	test.InitBuntdb(t)
-	defer test.CloseBuntdb(t)
-
 	sm := newStateManager(t)
 
 	c := sm.GetGroupConcernConfig(test.G1, test.UID1)
+	assert.NotNil(t, c)
+
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	sm = newStateManager(t)
+
+	c = sm.GetGroupConcernConfig(test.G1, test.UID1)
 	assert.NotNil(t, c)
 
 	assert.Nil(t, c.GetGroupConcernAt().AtSomeone)

@@ -92,10 +92,6 @@ func GetConcernManager(site string, ctype concern_type.Type) Concern {
 	}
 }
 
-func GetConcernManagerByNotify(notify Notify) Concern {
-	return GetConcernManager(notify.Site(), notify.Type())
-}
-
 func ListSite() []string {
 	resultMap := make(map[string]interface{})
 	for _, c := range ListConcernManager() {
