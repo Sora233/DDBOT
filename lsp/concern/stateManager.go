@@ -21,8 +21,22 @@ import (
 var logger = utils.GetModuleLogger("concern")
 var ErrEmitQueueNotInit = errors.New("emit queue not enabled")
 
+// NotifyGeneratorFunc 是 IStateManager.NotifyGenerator 函数的具体逻辑
+// 它针对一组 groupCode 把 Event 转变成一组 Notify
+// 使用StateManager时，在 StateManager.Start 之前，
+// 必须使用 StateManager.UseNotifyGeneratorFunc 来指定一个 NotifyGeneratorFunc, 否则会发生 panic
 type NotifyGeneratorFunc func(groupCode int64, event Event) []Notify
+
+// DispatchFunc 是 IStateManager.Dispatch 函数的具体逻辑
+// 它从event channel中获取 Event，把 Event 转变成（可能多个） Notify 并发送到notify channel
+// StateManager 可以使用 StateManager.UseDispatchFunc 来指定一个 DispatchFunc
+// StateManager 中有一个默认实现，适用于绝大多数情况，请参考 StateManager.DefaultDispatch
 type DispatchFunc func(event <-chan Event, notify chan<- Notify)
+
+// FreshFunc 是 IStateManager.Fresh 函数的具体逻辑，没有具体的限制
+// 对于大多数网站来说，它的逻辑是访问网页获取数据，和和之前的数据对比，判断新数据，产生 Event 发送给 eventChan
+// 使用StateManager时，在 StateManager.Start 之前，
+// 必须使用 StateManager.UseFreshFunc 来指定一个 FreshFunc, 否则会发生 panic
 type FreshFunc func(ctx context.Context, eventChan chan<- Event)
 
 type IStateManager interface {
@@ -46,11 +60,11 @@ type IStateManager interface {
 		ids []interface{}, idTypes []concern_type.Type, err error)
 	GroupTypeById(ids []interface{}, types []concern_type.Type) ([]interface{}, []concern_type.Type, error)
 
-	// NotifyGenerator 从event产生多个Notify
+	// NotifyGenerator 从 Event 产生多个 Notify
 	NotifyGenerator(groupCode int64, event Event) []Notify
-	// Fresh 是一个长生命周期的函数，它产生Event
+	// Fresh 是一个长生命周期的函数，它产生 Event
 	Fresh(wg *sync.WaitGroup, eventChan chan<- Event)
-	// Dispatch 是一个长生命周期的函数，它从event channel中获取event， 并产生Notify发送到notify channel
+	// Dispatch 是一个长生命周期的函数，它从event channel中获取 Event， 并产生 Notify 发送到notify channel
 	Dispatch(wg *sync.WaitGroup, event <-chan Event, notify chan<- Notify)
 }
 
@@ -403,6 +417,10 @@ func (c *StateManager) Start() error {
 	if c.notifyGeneratorFunc == nil {
 		panic(fmt.Sprintf("StateManager %v: notifyGenerator not set", c.name))
 	}
+	if c.dispatchFunc == nil {
+		c.Logger().Debugf("use default DispatchFunc")
+		c.UseDispatchFunc(c.DefaultDispatch())
+	}
 	c.FreshIndex()
 	if runtime.NumCPU() >= 3 {
 		for i := 0; i < 3; i++ {
@@ -500,7 +518,7 @@ func (c *StateManager) NotifyGenerator(groupCode int64, event Event) []Notify {
 	return c.notifyGeneratorFunc(groupCode, event)
 }
 
-func (c *StateManager) defaultDispatch() DispatchFunc {
+func (c *StateManager) DefaultDispatch() DispatchFunc {
 	return func(eventChan <-chan Event, notifyChan chan<- Notify) {
 		for event := range eventChan {
 			log := event.Logger()
@@ -525,7 +543,7 @@ func (c *StateManager) UseFreshFunc(freshFunc FreshFunc) {
 	c.freshFunc = freshFunc
 }
 
-func (c *StateManager) UseNotifyGenerator(notifyGeneratorFunc NotifyGeneratorFunc) {
+func (c *StateManager) UseNotifyGeneratorFunc(notifyGeneratorFunc NotifyGeneratorFunc) {
 	c.notifyGeneratorFunc = notifyGeneratorFunc
 }
 
@@ -549,6 +567,12 @@ func (c *StateManager) UseEmitQueue() {
 	c.emitQueue = localutils.NewEmitQueue(c.emitChan, interval)
 }
 
+func (c *StateManager) Logger() *logrus.Entry {
+	return logger.WithFields(logrus.Fields{
+		"Name": c.name,
+	})
+}
+
 func NewStateManagerWithCustomKey(name string, keySet KeySet, notifyChan chan<- Notify) *StateManager {
 	ctx, cancel := context.WithCancel(context.Background())
 	sm := &StateManager{
@@ -559,7 +583,6 @@ func NewStateManagerWithCustomKey(name string, keySet KeySet, notifyChan chan<- 
 		ctx:        ctx,
 		cancelCtx:  cancel,
 	}
-	sm.dispatchFunc = sm.defaultDispatch()
 	return sm
 }
 

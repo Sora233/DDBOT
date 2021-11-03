@@ -84,7 +84,7 @@ func (c *Concern) Start() error {
 		return nil
 	}
 
-	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
+	c.StateManager.UseNotifyGeneratorFunc(c.notifyGenerator())
 	c.StateManager.UseFreshFunc(c.fresh())
 
 	go func() {

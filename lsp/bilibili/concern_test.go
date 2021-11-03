@@ -179,7 +179,7 @@ func TestConcernNotify(t *testing.T) {
 	testNotifyChan := make(chan concern.Notify)
 
 	c := NewConcern(testNotifyChan)
-	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
+	c.StateManager.UseNotifyGeneratorFunc(c.notifyGenerator())
 	c.StateManager.UseFreshFunc(func(ctx context.Context, eventChan chan<- concern.Event) {
 		for e := range testEventChan {
 			eventChan <- e
@@ -240,7 +240,7 @@ func TestConcern_GroupWatchNotify(t *testing.T) {
 
 	c := NewConcern(testNotifyChan)
 	c.StateManager = initStateManager(t)
-	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
+	c.StateManager.UseNotifyGeneratorFunc(c.notifyGenerator())
 	c.StateManager.UseFreshFunc(func(ctx context.Context, eventChan chan<- concern.Event) {
 		for {
 			select {

@@ -42,7 +42,7 @@ func (c *Concern) Stop() {
 }
 
 func (c *Concern) Start() error {
-	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
+	c.StateManager.UseNotifyGeneratorFunc(c.notifyGenerator())
 	c.StateManager.UseFreshFunc(c.fresh())
 	return c.StateManager.Start()
 }

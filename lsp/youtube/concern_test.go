@@ -20,7 +20,7 @@ func TestConcern(t *testing.T) {
 
 	assert.NotNil(t, c.GetStateManager())
 
-	c.StateManager.UseNotifyGenerator(c.notifyGenerator())
+	c.StateManager.UseNotifyGeneratorFunc(c.notifyGenerator())
 	c.StateManager.UseFreshFunc(func(ctx context.Context, eventChan chan<- concern.Event) {
 		for {
 			select {

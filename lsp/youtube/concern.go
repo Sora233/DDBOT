@@ -100,7 +100,7 @@ func (c *Concern) Stop() {
 
 func (c *Concern) Start() error {
 	c.UseFreshFunc(c.fresh())
-	c.UseNotifyGenerator(c.notifyGenerator())
+	c.UseNotifyGeneratorFunc(c.notifyGenerator())
 	return c.StateManager.Start()
 }
 

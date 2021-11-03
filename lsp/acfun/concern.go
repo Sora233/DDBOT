@@ -37,7 +37,7 @@ func (c *Concern) ParseId(s string) (interface{}, error) {
 }
 
 func (c *Concern) Start() error {
-	c.UseNotifyGenerator(c.notifyGenerator())
+	c.UseNotifyGeneratorFunc(c.notifyGenerator())
 	c.UseFreshFunc(c.fresh())
 	return c.StateManager.Start()
 }

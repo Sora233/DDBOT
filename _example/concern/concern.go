@@ -40,7 +40,7 @@ func (c *exampleConcern) Start() error {
 	c.UseFreshFunc(c.EmitQueueFresher(func(p concern_type.Type, id interface{}) ([]concern.Event, error) {
 		return []concern.Event{&notify{id: id.(string)}}, nil
 	}))
-	c.UseNotifyGenerator(func(groupCode int64, ievent concern.Event) []concern.Notify {
+	c.UseNotifyGeneratorFunc(func(groupCode int64, ievent concern.Event) []concern.Notify {
 		notify := ievent.(*notify)
 		notify.groupCode = groupCode
 		return []concern.Notify{notify}

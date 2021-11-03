@@ -97,7 +97,7 @@ func TestNewStateManager(t *testing.T) {
 	defer test.CloseBuntdb(t)
 
 	sm := newStateManager(t)
-	sm.UseDispatchFunc(sm.defaultDispatch())
+	sm.UseDispatchFunc(sm.DefaultDispatch())
 	assert.Panics(t, func() {
 		sm.Start()
 	})
@@ -115,7 +115,7 @@ func TestNewStateManager(t *testing.T) {
 	assert.Panics(t, func() {
 		sm.Start()
 	})
-	sm.UseNotifyGenerator(func(groupCode int64, event Event) []Notify {
+	sm.UseNotifyGeneratorFunc(func(groupCode int64, event Event) []Notify {
 		return nil
 	})
 	sm.UseEmitQueue()
@@ -169,7 +169,7 @@ func TestNewStateManager2(t *testing.T) {
 			panic("error")
 		}
 	})
-	sm.UseNotifyGenerator(func(groupCode int64, event Event) []Notify {
+	sm.UseNotifyGeneratorFunc(func(groupCode int64, event Event) []Notify {
 		return nil
 	})
 	assert.Nil(t, sm.Start())
@@ -186,7 +186,7 @@ func TestStateManagerNotify(t *testing.T) {
 	testEventChan := make(chan Event, 16)
 	testNotifyChan := make(chan Notify, 16)
 	sm.notifyChan = testNotifyChan
-	sm.UseNotifyGenerator(func(groupCode int64, event Event) []Notify {
+	sm.UseNotifyGeneratorFunc(func(groupCode int64, event Event) []Notify {
 		event.(*testEvent).groupCode = groupCode
 		return []Notify{
 			event.(*testEvent),
