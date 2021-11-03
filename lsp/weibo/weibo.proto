@@ -1,0 +1,25 @@
+syntax = "proto3";
+package weibo;
+
+option go_package = "weibo";
+
+message GenVisitorResponse {
+  int64 retcode = 1;
+  string msg = 2;
+  message Data {
+    string tid = 1;
+    bool new_tid = 2;
+    int32 confidence = 3;
+  }
+  Data data = 3;
+}
+
+message VisitorIncarnateResponse {
+  int64 retcode = 1;
+  string msg = 2;
+  message Data {
+    string sub = 1;
+    string subp = 2;
+  }
+  Data data = 3;
+}

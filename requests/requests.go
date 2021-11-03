@@ -5,6 +5,7 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/guonaihong/gout"
 	"github.com/guonaihong/gout/dataflow"
+	middleware "github.com/guonaihong/gout/interface"
 	"io"
 	"net/http"
 	"time"
@@ -23,17 +24,38 @@ type option struct {
 	HttpCode            *int
 	Retry               int
 	ProxyCallbackOption func(out interface{}, proxy string)
+	CookieJar           http.CookieJar
+	ResponseMiddleware  []middleware.ResponseMiddler
+}
+
+type defaultResponseMiddleware struct {
+	f func(response *http.Response) error
+}
+
+func (d *defaultResponseMiddleware) ModifyResponse(response *http.Response) error {
+	return d.f(response)
+}
+
+func withResponseMiddleware(f func(response *http.Response) error) middleware.ResponseMiddler {
+	return &defaultResponseMiddleware{f}
 }
 
 func (o *option) getGout() *gout.Client {
-	var timeoutOpt = gout.WithTimeout(time.Second * 5)
+	var goutOpts []gout.Option
 	if o.Timeout != 0 {
-		timeoutOpt = gout.WithTimeout(o.Timeout)
+		goutOpts = append(goutOpts, gout.WithTimeout(o.Timeout))
+	} else {
+		goutOpts = append(goutOpts, gout.WithTimeout(time.Second*5))
 	}
 	if o.InsecureSkipVerify {
-		return gout.NewWithOpt(timeoutOpt, gout.WithInsecureSkipVerify())
+		goutOpts = append(goutOpts, gout.WithInsecureSkipVerify())
 	}
-	return gout.NewWithOpt(timeoutOpt)
+	if o.CookieJar != nil {
+		goutOpts = append(goutOpts, gout.WithClient(&http.Client{
+			Jar: o.CookieJar,
+		}))
+	}
+	return gout.NewWithOpt(goutOpts...)
 }
 
 type Option func(o *option)
@@ -116,6 +138,33 @@ func DebugOption() Option {
 	}
 }
 
+// WithCookieJar CookieJar可能导致Cookie泄漏，谨慎使用
+func WithCookieJar(jar http.CookieJar) Option {
+	return func(o *option) {
+		o.CookieJar = jar
+	}
+}
+
+func WithResponseMiddleware(middler middleware.ResponseMiddler) Option {
+	return func(o *option) {
+		o.ResponseMiddleware = append(o.ResponseMiddleware, middler)
+	}
+}
+
+func GetResponseCookieOption(cookies *[]*http.Cookie) Option {
+	if cookies == nil {
+		return empty
+	}
+	return WithResponseMiddleware(
+		withResponseMiddleware(
+			func(response *http.Response) error {
+				*cookies = response.Cookies()
+				return nil
+			},
+		),
+	)
+}
+
 func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Option) error {
 	var opt = new(option)
 	for _, o := range options {
@@ -141,6 +190,9 @@ func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Opt
 	}
 	if opt.HttpCode != nil {
 		df.Code(opt.HttpCode)
+	}
+	if opt.ResponseMiddleware != nil {
+		df.ResponseUse(opt.ResponseMiddleware...)
 	}
 	switch out.(type) {
 	case io.Writer, []byte, *string:
