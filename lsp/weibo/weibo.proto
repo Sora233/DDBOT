@@ -23,3 +23,86 @@ message VisitorIncarnateResponse {
   }
   Data data = 3;
 }
+
+message ApiContainerGetIndexProfileResponse {
+  int32 ok = 1;
+  message Data {
+    message UserInfo {
+      int64 id = 1;
+      string screen_name = 2;
+      string profile_image_url = 3;
+      string profile_url = 4;
+    }
+    UserInfo userInfo = 1;
+  }
+  Data data = 2;
+}
+
+enum CardType {
+  Unknown = 0;
+  // 发文字，图文，都是9
+  Normal = 9;
+}
+
+message ApiContainerGetIndexCardsResponse {
+  int32 ok = 1;
+  message Data {
+    message CardListInfo {
+      string containerid = 1;
+      int32 v_p = 2;
+      int32 show_style = 3;
+      int32 total = 4;
+      int32 page = 5;
+    }
+    CardListInfo cardlistInfo = 1;
+    repeated Card cards = 2;
+  }
+  Data data = 2;
+}
+
+message Card {
+  message Mblog {
+    message Visible {
+      int64 type = 1;
+      int64 list_id = 2;
+    }
+    message Pics {
+      string pid = 1;
+      string url = 2;
+      string size = 3;
+      message Geo {
+        int32 width = 1;
+        int32 height = 2;
+        bool croped = 3;
+      }
+      Geo geo = 4;
+      message Large {
+        string size = 1;
+        string url = 2;
+        Geo geo = 3;
+      }
+      Large large = 5;
+    }
+    Visible visible = 1;
+    // 可以用 time.RubyDate 解析
+    string created_at = 2;
+    string id = 3;
+    string mid = 4;
+    string text = 5;
+    int32 textLength = 6;
+    repeated string pic_ids = 7;
+    ApiContainerGetIndexProfileResponse.Data.UserInfo user = 8;
+    repeated Pics pics = 9;
+    bool isTop = 10;
+    Mblog retweeted_status = 11;
+    string raw_text = 12;
+  }
+  CardType card_type = 1;
+  string itemId = 2;
+  // 这个好像可以用来当做传送门链接
+  string schema = 3;
+  Mblog mblog = 4;
+  bool lastWeiboCard = 5;
+}
+
+

@@ -5,3 +5,7 @@ import (
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
+
+const (
+	Site = "weibo"
+)
