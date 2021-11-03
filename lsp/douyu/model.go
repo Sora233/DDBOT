@@ -17,8 +17,20 @@ type LiveInfo struct {
 	VideoLoop  VideoLoopStatus `json:"videoLoop"`
 	Avatar     *Avatar         `json:"avatar"`
 
-	LiveStatusChanged bool `json:"-"`
-	LiveTitleChanged  bool `json:"-"`
+	liveStatusChanged bool
+	liveTitleChanged  bool
+}
+
+func (m *LiveInfo) TitleChanged() bool {
+	return m.liveTitleChanged
+}
+
+func (m *LiveInfo) LiveStatusChanged() bool {
+	return m.liveStatusChanged
+}
+
+func (m *LiveInfo) IsLive() bool {
+	return true
 }
 
 func (m *LiveInfo) Site() string {
@@ -99,7 +111,7 @@ func (m *LiveInfo) GetAvatar() *Avatar {
 
 func (m *LiveInfo) GetLiveStatusChanged() bool {
 	if m != nil {
-		return m.LiveStatusChanged
+		return m.LiveStatusChanged()
 	}
 	return false
 }
@@ -125,10 +137,9 @@ func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 
 func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
 	m = mmsg.NewMSG()
-	switch notify.ShowStatus {
-	case ShowStatus_Living:
+	if notify.Living() {
 		m.Textf("斗鱼-%s正在直播【%v】\n%v", notify.Nickname, notify.RoomName, notify.RoomUrl)
-	case ShowStatus_NoLiving:
+	} else {
 		m.Textf("斗鱼-%s直播结束了", notify.Nickname)
 	}
 	m.ImageByUrl(notify.GetAvatar().GetBig(), "[封面]", proxy_pool.PreferNone)

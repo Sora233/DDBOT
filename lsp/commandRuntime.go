@@ -3,9 +3,9 @@ package lsp
 import (
 	"fmt"
 	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/parser"
-	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/alecthomas/kong"
 	"io"
 	"strings"
@@ -62,11 +62,11 @@ func (r *Runtime) parseCommandSyntax(ast interface{}, name string, options ...ko
 }
 
 func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, concern_type.Type, error) {
-	return registry.ParseRawSiteAndType(rawSite, rawType)
+	return concern.ParseRawSiteAndType(rawSite, rawType)
 }
 
 func (r *Runtime) ParseRawSite(rawSite string) (string, error) {
-	return registry.ParseRawSite(rawSite)
+	return concern.ParseRawSite(rawSite)
 }
 
 func NewRuntime(bot *miraiBot.Bot, l *Lsp, silence ...bool) *Runtime {

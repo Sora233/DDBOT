@@ -20,22 +20,6 @@ func (h *HookResult) PassOrReason(pass bool, reason string) {
 	}
 }
 
-// DefaultHook 定义 Hook 默认行为， FilterHook 与 ShouldSendHook 为Pass， AtBeforeHook 为Fail
-type DefaultHook struct {
-}
-
-func (d DefaultHook) FilterHook(notify Notify) *HookResult {
-	return HookResultPass
-}
-
-func (d DefaultHook) AtBeforeHook(notify Notify) *HookResult {
-	return defaultHookResult
-}
-
-func (d DefaultHook) ShouldSendHook(notify Notify) *HookResult {
-	return HookResultPass
-}
-
 var defaultHookResult = &HookResult{
 	Pass:   false,
 	Reason: "default hook",

@@ -69,7 +69,7 @@ func TestConcern(t *testing.T) {
 		},
 		VideoType:         VideoType_Live,
 		VideoStatus:       VideoStatus_Living,
-		LiveStatusChanged: true,
+		liveStatusChanged: true,
 	}
 
 	testEventChan <- &VideoInfo{
@@ -79,7 +79,7 @@ func TestConcern(t *testing.T) {
 		},
 		VideoType:         VideoType_Live,
 		VideoStatus:       VideoStatus_Living,
-		LiveStatusChanged: true,
+		liveStatusChanged: true,
 	}
 
 	select {

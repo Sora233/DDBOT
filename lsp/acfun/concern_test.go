@@ -45,7 +45,7 @@ func TestNewConcern(t *testing.T) {
 	}
 	origLiveInfo := &LiveInfo{
 		UserInfo: *origUserInfo,
-		Living:   true,
+		IsLiving: true,
 	}
 
 	select {

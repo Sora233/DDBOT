@@ -11,7 +11,6 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
 	"strings"
@@ -30,7 +29,7 @@ func IList(c *MessageContext, groupCode int64) {
 
 	listMsg := mmsg.NewMSG()
 
-	for _, c := range registry.ListConcernManager() {
+	for _, c := range concern.ListConcernManager() {
 		infos, ctypes, err := c.List(groupCode, concern_type.Empty)
 		if err != nil {
 			if first {
@@ -82,7 +81,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		return
 	}
 
-	cm := registry.GetConcernManager(site, watchType)
+	cm := concern.GetConcernManager(site, watchType)
 
 	mid, err := cm.ParseId(id)
 	if err != nil {
@@ -549,7 +548,7 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 	if err = configCmdGroupCommonCheck(c, groupCode); err != nil {
 		return err
 	}
-	cm := registry.GetConcernManager(site, ctype)
+	cm := concern.GetConcernManager(site, ctype)
 	if cm == nil {
 		return errors.New("<nil>")
 	}
@@ -570,7 +569,7 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 }
 
 func ReplyUserInfo(c *MessageContext, id string, site string, ctype concern_type.Type) {
-	cm := registry.GetConcernManager(site, ctype)
+	cm := concern.GetConcernManager(site, ctype)
 	mid, err := cm.ParseId(id)
 	if err != nil {
 		c.Log.Errorf("ReplyUserInfo %v got wrong id %v", site, id)

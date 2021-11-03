@@ -10,10 +10,10 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/DDBOT/lsp/registry"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
@@ -1153,7 +1153,7 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 	m := mmsg.NewMSG()
 	m.Textf("当前好友数：%v\n", len(c.bot.FriendList))
 	m.Textf("当前群组数：%v\n", len(c.bot.GroupList))
-	for index, cm := range registry.ListConcernManager() {
+	for index, cm := range concern.ListConcernManager() {
 		_, ids, ctypes, err := cm.GetStateManager().ListConcernState(
 			func(groupCode int64, id interface{}, p concern_type.Type) bool {
 				return true

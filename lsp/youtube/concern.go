@@ -183,11 +183,11 @@ func (c *Concern) freshInfo(channelId string) (result []concern.Event, err error
 							log.Debugf("live time change notify")
 						} else if newV.IsLiving() && oldV.IsWaiting() {
 							// live begin
-							newV.LiveStatusChanged = true
+							newV.liveStatusChanged = true
 							result = append(result, newV)
 							log.Debugf("live begin notify")
 						} else if newV.VideoTitle != oldV.VideoTitle {
-							newV.LiveTitleChanged = true
+							newV.liveTitleChanged = true
 							result = append(result, newV)
 						}
 					}

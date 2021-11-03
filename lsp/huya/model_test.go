@@ -25,7 +25,7 @@ func TestLiveInfo(t *testing.T) {
 	m := notify.ToMessage()
 	assert.NotNil(t, m)
 
-	notify.Living = true
+	notify.IsLiving = true
 	m = notify.ToMessage()
 	assert.NotNil(t, m)
 }

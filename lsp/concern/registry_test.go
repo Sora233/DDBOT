@@ -1,7 +1,6 @@
-package registry
+package concern
 
 import (
-	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/stretchr/testify/assert"
@@ -23,23 +22,23 @@ func (t *testConcern) ParseId(s string) (interface{}, error) {
 	return s, nil
 }
 
-func (t *testConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (t *testConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error) {
 	return nil, nil
 }
 
-func (t *testConcern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (t *testConcern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error) {
 	return nil, nil
 }
 
-func (t *testConcern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
+func (t *testConcern) List(groupCode int64, ctype concern_type.Type) ([]IdentityInfo, []concern_type.Type, error) {
 	return nil, nil, nil
 }
 
-func (t *testConcern) Get(id interface{}) (concern.IdentityInfo, error) {
+func (t *testConcern) Get(id interface{}) (IdentityInfo, error) {
 	return nil, nil
 }
 
-func (t *testConcern) GetStateManager() concern.IStateManager {
+func (t *testConcern) GetStateManager() IStateManager {
 	return nil
 }
 

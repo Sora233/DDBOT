@@ -35,8 +35,20 @@ type VideoInfo struct {
 	VideoStatus    VideoStatus `json:"video_status"`
 	VideoTimestamp int64       `json:"video_timestamp"`
 
-	LiveStatusChanged bool `json:"-"`
-	LiveTitleChanged  bool `json:"-"`
+	liveStatusChanged bool
+	liveTitleChanged  bool
+}
+
+func (v *VideoInfo) TitleChanged() bool {
+	return v.liveTitleChanged
+}
+
+func (v *VideoInfo) Living() bool {
+	return v.IsLiving()
+}
+
+func (v *VideoInfo) LiveStatusChanged() bool {
+	return v.liveStatusChanged
 }
 
 func (v *VideoInfo) Site() string {

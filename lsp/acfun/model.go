@@ -26,14 +26,30 @@ func (u *UserInfo) GetName() string {
 
 type LiveInfo struct {
 	UserInfo
-	LiveId  string `json:"live_id"`
-	Title   string `json:"title"`
-	Cover   string `json:"cover"`
-	StartTs int64  `json:"start_ts"`
-	Living  bool   `json:"living"`
+	LiveId   string `json:"live_id"`
+	Title    string `json:"title"`
+	Cover    string `json:"cover"`
+	StartTs  int64  `json:"start_ts"`
+	IsLiving bool   `json:"living"`
 
-	LiveStatusChanged bool `json:"-"`
-	LiveTitleChanged  bool `json:"-"`
+	liveStatusChanged bool
+	liveTitleChanged  bool
+}
+
+func (l *LiveInfo) IsLive() bool {
+	return true
+}
+
+func (l *LiveInfo) Living() bool {
+	return l.IsLiving
+}
+
+func (l *LiveInfo) LiveStatusChanged() bool {
+	return l.liveStatusChanged
+}
+
+func (l *LiveInfo) TitleChanged() bool {
+	return l.liveTitleChanged
 }
 
 func (l *LiveInfo) Site() string {
@@ -65,7 +81,7 @@ func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 
 func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
 	m = mmsg.NewMSG()
-	if notify.Living {
+	if notify.Living() {
 		m.Textf("ACFUN-%s正在直播【%v】\n%v", notify.Name, notify.Title, notify.LiveUrl)
 	} else {
 		m.Textf("ACFUN-%s直播结束了", notify.Name)

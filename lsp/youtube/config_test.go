@@ -13,8 +13,8 @@ func newLiveInfo(channelId string, live bool, liveStatusChanged bool, liveTitleC
 			UserInfo: UserInfo{
 				ChannelId: channelId,
 			},
-			LiveStatusChanged: liveStatusChanged,
-			LiveTitleChanged:  liveTitleChanged,
+			liveStatusChanged: liveStatusChanged,
+			liveTitleChanged:  liveTitleChanged,
 			VideoType:         VideoType_Live,
 		},
 	}

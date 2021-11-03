@@ -57,7 +57,7 @@ func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 		case *LiveInfo:
 			notify := NewConcernLiveNotify(groupCode, event)
 			result = append(result, notify)
-			if event.Living {
+			if event.Living() {
 				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
 			} else {
 				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
@@ -126,15 +126,15 @@ func (c *Concern) fresh() concern.FreshFunc {
 					if oldInfo == nil {
 						// first live info
 						if newInfo, found := liveInfoMap[uid]; found {
-							newInfo.LiveStatusChanged = true
+							newInfo.liveStatusChanged = true
 							sendLiveInfo(newInfo)
 						}
 						continue
 					}
-					if !oldInfo.Living {
+					if !oldInfo.Living() {
 						if newInfo, found := liveInfoMap[uid]; found {
 							// notliving -> living
-							newInfo.LiveStatusChanged = true
+							newInfo.liveStatusChanged = true
 							sendLiveInfo(newInfo)
 						}
 					} else {
@@ -156,15 +156,15 @@ func (c *Concern) fresh() concern.FreshFunc {
 								Title:             oldInfo.Title,
 								Cover:             oldInfo.Cover,
 								StartTs:           oldInfo.StartTs,
-								Living:            false,
-								LiveStatusChanged: true,
+								IsLiving:          false,
+								liveStatusChanged: true,
 							}
 							sendLiveInfo(newInfo)
 						} else {
 							c.ClearNotLiveCount(uid)
 							if newInfo.Title != oldInfo.Title {
 								// live title change
-								newInfo.LiveTitleChanged = true
+								newInfo.liveTitleChanged = true
 								sendLiveInfo(newInfo)
 							}
 						}
@@ -213,7 +213,7 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype c
 	}
 	if ctype.ContainAny(Live) {
 		// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
-		if liveInfo != nil && liveInfo.Living {
+		if liveInfo != nil && liveInfo.Living() {
 			if ctx.GetTarget().TargetType().IsGroup() {
 				defer c.GroupWatchNotify(groupCode, uid)
 			}
@@ -327,8 +327,8 @@ func (c *Concern) FindOrLoadUserInfo(uid int64) (*UserInfo, error) {
 
 func (c *Concern) GroupWatchNotify(groupCode, mid int64) {
 	liveInfo, _ := c.GetLiveInfo(mid)
-	if liveInfo.Living {
-		liveInfo.LiveStatusChanged = true
+	if liveInfo.Living() {
+		liveInfo.liveStatusChanged = true
 		c.notify <- NewConcernLiveNotify(groupCode, liveInfo)
 	}
 }
@@ -370,11 +370,11 @@ func (c *Concern) freshLiveInfo() ([]*LiveInfo, error) {
 					UserImg:  liveItem.GetUser().GetHeadUrl(),
 					LiveUrl:  LiveUrl(uid),
 				},
-				LiveId:  liveItem.GetLiveId(),
-				Cover:   cover,
-				Title:   liveItem.GetTitle(),
-				StartTs: liveItem.GetCreateTime(),
-				Living:  true,
+				LiveId:   liveItem.GetLiveId(),
+				Cover:    cover,
+				Title:    liveItem.GetTitle(),
+				StartTs:  liveItem.GetCreateTime(),
+				IsLiving: true,
 			})
 		}
 	}

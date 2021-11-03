@@ -14,8 +14,8 @@ func newLiveInfo(uid int64, living bool, liveStatusChanged bool, liveTitleChange
 			UserInfo: UserInfo{
 				Mid: uid,
 			},
-			LiveStatusChanged: liveStatusChanged,
-			LiveTitleChanged:  liveTitleChanged,
+			liveStatusChanged: liveStatusChanged,
+			liveTitleChanged:  liveTitleChanged,
 		},
 	}
 	if living {
@@ -51,6 +51,9 @@ func TestNewGroupConcernConfig(t *testing.T) {
 }
 
 func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
 	var notify = []concern.Notify{
 		// 下播状态 什么也没变 不推
 		newLiveInfo(test.UID1, false, false, false),
@@ -68,10 +71,8 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 		newLiveInfo(test.UID1, true, true, false),
 		// 开播了改了标题 推
 		newLiveInfo(test.UID1, true, true, true),
-	}
-	// 无法处理news，应该pass
-	for _, card := range newNewsInfo(test.UID1, DynamicDescType_TextOnly) {
-		notify = append(notify, card)
+		// 无法处理news，应该pass
+		newNewsInfo(test.UID1, DynamicDescType_TextOnly)[0],
 	}
 	var testCase = []*GroupConcernConfig{
 		{
@@ -134,7 +135,7 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 }
 
 func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
-	var liveInfos = []*ConcernLiveNotify{
+	var liveInfos = []concern.Notify{
 		// 下播状态 什么也没变 不推
 		newLiveInfo(test.UID1, false, false, false),
 		// 下播状态 标题变了 不推
@@ -151,11 +152,14 @@ func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 		newLiveInfo(test.UID1, true, true, false),
 		// 开播了改了标题 推
 		newLiveInfo(test.UID1, true, true, true),
+		// news 默认pass
+		newNewsInfo(test.UID1, DynamicDescType_TextOnly)[0],
 	}
 	var g = NewGroupConcernConfig(new(concern.GroupConcernConfig), nil)
 	var expected = []bool{
 		false, false, false, false,
 		false, false, true, true,
+		true,
 	}
 	assert.Equal(t, len(expected), len(liveInfos))
 	for index, liveInfo := range liveInfos {

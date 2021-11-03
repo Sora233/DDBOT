@@ -53,9 +53,9 @@ func RoomPage(roomId string) (*LiveInfo, error) {
 			continue
 		}
 		if attr.Val == "host-prevStartTime" {
-			ri.Living = false
+			ri.IsLiving = false
 		} else {
-			ri.Living = true
+			ri.IsLiving = true
 		}
 	}
 

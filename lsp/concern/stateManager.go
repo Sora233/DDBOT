@@ -84,7 +84,9 @@ func (c *StateManager) getGroupConcernConfig(groupCode int64, id interface{}) (c
 		return err
 	})
 	if err != nil && err != buntdb.ErrNotFound {
-		logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id).Errorf("GetGroupConcernConfig error %v", err)
+		logger.WithFields(localutils.GroupLogFields(groupCode)).
+			WithField("id", id).
+			Errorf("GetGroupConcernConfig error %v", err)
 	}
 	if concernConfig == nil {
 		concernConfig = new(GroupConcernConfig)

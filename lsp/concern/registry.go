@@ -1,34 +1,31 @@
-package registry
+package concern
 
 import (
 	"fmt"
-	"github.com/Logiase/MiraiGo-Template/utils"
-	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"golang.org/x/sync/errgroup"
 	"sort"
 )
 
-var logger = utils.GetModuleLogger("registry")
 var globalCenter = newConcernCenter()
-var notifyChan = make(chan concern.Notify, 500)
+var notifyChan = make(chan Notify, 500)
 
 type option struct {
 }
 
 type OptFunc func(opt *option) *option
 
-type ConcernCenter struct {
-	M map[string]map[concern_type.Type]concern.Concern
+type center struct {
+	M map[string]map[concern_type.Type]Concern
 }
 
-func newConcernCenter() *ConcernCenter {
-	cc := new(ConcernCenter)
-	cc.M = make(map[string]map[concern_type.Type]concern.Concern)
+func newConcernCenter() *center {
+	cc := new(center)
+	cc.M = make(map[string]map[concern_type.Type]Concern)
 	return cc
 }
 
-func RegisterConcernManager(c concern.Concern, concernType []concern_type.Type, opts ...OptFunc) {
+func RegisterConcernManager(c Concern, concernType []concern_type.Type, opts ...OptFunc) {
 	site := c.Site()
 	for _, ctype := range concernType {
 		if !ctype.IsTrivial() {
@@ -36,7 +33,7 @@ func RegisterConcernManager(c concern.Concern, concernType []concern_type.Type, 
 		}
 	}
 	if _, found := globalCenter.M[site]; !found {
-		globalCenter.M[site] = make(map[concern_type.Type]concern.Concern)
+		globalCenter.M[site] = make(map[concern_type.Type]Concern)
 	}
 	for _, ctype := range concernType {
 		if _, found := globalCenter.M[site][ctype]; !found {
@@ -70,14 +67,14 @@ func StopAll() {
 	close(notifyChan)
 }
 
-func ListConcernManager() []concern.Concern {
-	var resultMap = make(map[concern.Concern]interface{})
+func ListConcernManager() []Concern {
+	var resultMap = make(map[Concern]interface{})
 	for _, cmap := range globalCenter.M {
 		for _, c := range cmap {
 			resultMap[c] = struct{}{}
 		}
 	}
-	var result []concern.Concern
+	var result []Concern
 	for k := range resultMap {
 		result = append(result, k)
 	}
@@ -87,12 +84,16 @@ func ListConcernManager() []concern.Concern {
 	return result
 }
 
-func GetConcernManager(site string, ctype concern_type.Type) concern.Concern {
+func GetConcernManager(site string, ctype concern_type.Type) Concern {
 	if sub, found := globalCenter.M[site]; !found {
 		return nil
 	} else {
 		return sub[ctype]
 	}
+}
+
+func GetConcernManagerByNotify(notify Notify) Concern {
+	return GetConcernManager(notify.Site(), notify.Type())
 }
 
 func ListSite() []string {
@@ -108,11 +109,11 @@ func ListSite() []string {
 	return result
 }
 
-func GetNotifyChan() chan<- concern.Notify {
+func GetNotifyChan() chan<- Notify {
 	return notifyChan
 }
 
-func ReadNotifyChan() <-chan concern.Notify {
+func ReadNotifyChan() <-chan Notify {
 	return notifyChan
 }
 

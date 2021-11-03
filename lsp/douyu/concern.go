@@ -144,13 +144,13 @@ func (c *Concern) fresh() concern.FreshFunc {
 				return nil, fmt.Errorf("load liveinfo failed %v", err)
 			}
 			if oldInfo == nil {
-				liveInfo.LiveStatusChanged = true
+				liveInfo.liveStatusChanged = true
 			}
 			if oldInfo != nil && oldInfo.Living() != liveInfo.Living() {
-				liveInfo.LiveStatusChanged = true
+				liveInfo.liveStatusChanged = true
 			}
 			if oldInfo != nil && oldInfo.RoomName != liveInfo.RoomName {
-				liveInfo.LiveTitleChanged = true
+				liveInfo.liveTitleChanged = true
 			}
 			if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {
 				result = append(result, liveInfo)

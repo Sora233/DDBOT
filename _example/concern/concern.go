@@ -5,7 +5,6 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/lsp/registry"
 )
 
 var logger = utils.GetModuleLogger("example-concern")
@@ -107,10 +106,10 @@ func (c *exampleConcern) GetStateManager() concern.IStateManager {
 
 func NewConcern() *exampleConcern {
 	return &exampleConcern{
-		exampleStateManager: newExampleStateManager(registry.GetNotifyChan()),
+		exampleStateManager: newExampleStateManager(concern.GetNotifyChan()),
 	}
 }
 
 func init() {
-	registry.RegisterConcernManager(NewConcern(), []concern_type.Type{Example})
+	concern.RegisterConcernManager(NewConcern(), []concern_type.Type{Example})
 }

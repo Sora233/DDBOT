@@ -63,6 +63,14 @@ type ConcernNewsNotify struct {
 	concern       *Concern
 }
 
+func (notify *ConcernNewsNotify) IsLive() bool {
+	return false
+}
+
+func (notify *ConcernNewsNotify) Living() bool {
+	return false
+}
+
 type ConcernLiveNotify struct {
 	GroupCode int64 `json:"group_code"`
 	LiveInfo
@@ -114,8 +122,20 @@ type LiveInfo struct {
 	LiveTitle string     `json:"live_title"`
 	Cover     string     `json:"cover"`
 
-	LiveStatusChanged bool `json:"-"`
-	LiveTitleChanged  bool `json:"-"`
+	liveStatusChanged bool
+	liveTitleChanged  bool
+}
+
+func (l *LiveInfo) TitleChanged() bool {
+	return l.liveTitleChanged
+}
+
+func (l *LiveInfo) LiveStatusChanged() bool {
+	return l.liveStatusChanged
+}
+
+func (l *LiveInfo) IsLive() bool {
+	return true
 }
 
 func (l *LiveInfo) Site() string {

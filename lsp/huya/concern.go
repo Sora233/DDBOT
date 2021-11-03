@@ -142,7 +142,7 @@ func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 	return func(groupCode int64, event concern.Event) []concern.Notify {
 		switch info := event.(type) {
 		case *LiveInfo:
-			if info.Living {
+			if info.Living() {
 				info.Logger().WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
 			} else {
 				info.Logger().WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
@@ -177,15 +177,15 @@ func (c *Concern) fresh() concern.FreshFunc {
 			}
 			// first load
 			if oldInfo == nil {
-				liveInfo.LiveStatusChanged = true
+				liveInfo.liveStatusChanged = true
 			}
-			if oldInfo != nil && oldInfo.Living != liveInfo.Living {
-				liveInfo.LiveStatusChanged = true
+			if oldInfo != nil && oldInfo.Living() != liveInfo.Living() {
+				liveInfo.liveStatusChanged = true
 			}
 			if oldInfo != nil && oldInfo.RoomName != liveInfo.RoomName {
-				liveInfo.LiveTitleChanged = true
+				liveInfo.liveTitleChanged = true
 			}
-			if oldInfo == nil || oldInfo.Living != liveInfo.Living || oldInfo.RoomName != liveInfo.RoomName {
+			if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {
 				result = append(result, liveInfo)
 			}
 		}

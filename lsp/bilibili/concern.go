@@ -397,7 +397,7 @@ func (c *Concern) fresh() concern.FreshFunc {
 					if oldInfo == nil {
 						// first live info
 						if newInfo, found := liveInfoMap[mid]; found {
-							newInfo.LiveStatusChanged = true
+							newInfo.liveStatusChanged = true
 							sendLiveInfo(newInfo)
 						}
 						continue
@@ -405,7 +405,7 @@ func (c *Concern) fresh() concern.FreshFunc {
 					if oldInfo.Status == LiveStatus_NoLiving {
 						if newInfo, found := liveInfoMap[mid]; found {
 							// notliving -> living
-							newInfo.LiveStatusChanged = true
+							newInfo.liveStatusChanged = true
 							sendLiveInfo(newInfo)
 						}
 					} else if oldInfo.Status == LiveStatus_Living {
@@ -423,7 +423,7 @@ func (c *Concern) fresh() concern.FreshFunc {
 							c.ClearNotLiveCount(mid)
 							newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle,
 								oldInfo.Cover, LiveStatus_NoLiving)
-							newInfo.LiveStatusChanged = true
+							newInfo.liveStatusChanged = true
 							sendLiveInfo(newInfo)
 						} else {
 							if newInfo.LiveTitle == "bilibili主播的直播间" {
@@ -432,7 +432,7 @@ func (c *Concern) fresh() concern.FreshFunc {
 							c.ClearNotLiveCount(mid)
 							if newInfo.LiveTitle != oldInfo.LiveTitle {
 								// live title change
-								newInfo.LiveTitleChanged = true
+								newInfo.liveTitleChanged = true
 								sendLiveInfo(newInfo)
 							}
 						}
@@ -764,7 +764,7 @@ func (c *Concern) FindUserNews(mid int64, load bool) (*NewsInfo, error) {
 func (c *Concern) GroupWatchNotify(groupCode, mid int64) {
 	liveInfo, _ := c.GetLiveInfo(mid)
 	if liveInfo.Living() {
-		liveInfo.LiveStatusChanged = true
+		liveInfo.liveStatusChanged = true
 		c.notify <- NewConcernLiveNotify(groupCode, liveInfo)
 	}
 }

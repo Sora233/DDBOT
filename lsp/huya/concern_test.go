@@ -63,8 +63,8 @@ func TestConcern(t *testing.T) {
 	assert.EqualValues(t, info.GetUid(), liveInfo2.RoomId)
 	assert.EqualValues(t, info.GetName(), liveInfo2.GetName())
 
-	liveInfo2.LiveStatusChanged = true
-	liveInfo2.Living = true
+	liveInfo2.liveStatusChanged = true
+	liveInfo2.IsLiving = true
 
 	testEventChan <- liveInfo2
 

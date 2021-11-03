@@ -1,4 +1,4 @@
-package registry
+package concern
 
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"

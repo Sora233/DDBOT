@@ -14,10 +14,26 @@ type LiveInfo struct {
 	Avatar   string `json:"avatar"`
 	Name     string `json:"name"`
 	RoomName string `json:"room_name"`
-	Living   bool   `json:"living"`
+	IsLiving bool   `json:"living"`
 
-	LiveStatusChanged bool `json:"-"`
-	LiveTitleChanged  bool `json:"-"`
+	liveStatusChanged bool
+	liveTitleChanged  bool
+}
+
+func (m *LiveInfo) TitleChanged() bool {
+	return m.liveTitleChanged
+}
+
+func (m *LiveInfo) IsLive() bool {
+	return true
+}
+
+func (m *LiveInfo) Living() bool {
+	return m.IsLiving
+}
+
+func (m *LiveInfo) LiveStatusChanged() bool {
+	return m.liveStatusChanged
 }
 
 func (m *LiveInfo) GetUid() interface{} {
@@ -71,7 +87,7 @@ func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 
 func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
 	m = mmsg.NewMSG()
-	if notify.Living {
+	if notify.Living() {
 		m.Textf("虎牙-%s正在直播【%v】\n%v", notify.Name, notify.RoomName, notify.RoomUrl)
 	} else {
 		m.Textf("虎牙-%s直播结束了", notify.Name)

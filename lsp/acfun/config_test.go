@@ -13,9 +13,9 @@ func newLiveInfo(uid int64, living bool, liveStatusChanged bool, liveTitleChange
 			UserInfo: UserInfo{
 				Uid: uid,
 			},
-			Living:            living,
-			LiveStatusChanged: liveStatusChanged,
-			LiveTitleChanged:  liveTitleChanged,
+			IsLiving:          living,
+			liveStatusChanged: liveStatusChanged,
+			liveTitleChanged:  liveTitleChanged,
 		},
 	}
 	return notify

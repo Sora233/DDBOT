@@ -14,7 +14,6 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/lsp/version"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/local_proxy_pool"
@@ -335,7 +334,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		log := logger.WithField("GroupCode", event.Group.Code).
 			WithField("GroupName", event.Group.Name).
 			WithField("MemberCount", event.Group.MemberCount)
-		for _, c := range registry.ListConcernManager() {
+		for _, c := range concern.ListConcernManager() {
 			_, ids, _, err := c.GetStateManager().ListConcernState(
 				func(groupCode int64, id interface{}, p concern_type.Type) bool {
 					return groupCode == event.Group.Code
@@ -414,7 +413,7 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 			l.FreshIndex()
 		}
 	}()
-	registry.StartAll()
+	concern.StartAll()
 	l.started = true
 	logger.Infof("DDBOT启动完成")
 	logger.Infof("D宝，一款真正人性化的单推BOT")
@@ -437,7 +436,7 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 		close(l.stop)
 	}
 
-	registry.StopAll()
+	concern.StopAll()
 
 	l.wg.Wait()
 	logger.Debug("等待所有推送发送完毕")
@@ -451,7 +450,7 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 }
 
 func (l *Lsp) FreshIndex() {
-	for _, c := range registry.ListConcernManager() {
+	for _, c := range concern.ListConcernManager() {
 		c.FreshIndex()
 	}
 	l.PermissionStateManager.FreshIndex()
@@ -459,7 +458,7 @@ func (l *Lsp) FreshIndex() {
 }
 
 func (l *Lsp) RemoveAllByGroup(groupCode int64) {
-	for _, c := range registry.ListConcernManager() {
+	for _, c := range concern.ListConcernManager() {
 		c.GetStateManager().RemoveAllByGroupCode(groupCode)
 	}
 	l.PermissionStateManager.RemoveAllByGroupCode(groupCode)
@@ -547,7 +546,7 @@ var Instance *Lsp
 
 func init() {
 	Instance = &Lsp{
-		concernNotify: registry.ReadNotifyChan(),
+		concernNotify: concern.ReadNotifyChan(),
 		stop:          make(chan interface{}),
 		status:        NewStatus(),
 	}

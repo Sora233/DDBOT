@@ -5,7 +5,6 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"runtime/debug"
@@ -37,7 +36,7 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				continue
 			}
 
-			c := registry.GetConcernManager(inotify.Site(), inotify.Type())
+			c := concern.GetConcernManager(inotify.Site(), inotify.Type())
 			cfg := c.GetStateManager().GetGroupConcernConfig(inotify.GetGroupCode(), inotify.GetUid())
 
 			sendHookResult := cfg.ShouldSendHook(inotify)

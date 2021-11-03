@@ -3,6 +3,8 @@ package concern
 import (
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -216,31 +218,216 @@ func TestGroupConcernNotifyConfig_CheckOfflineNotify(t *testing.T) {
 
 func TestGroupConcernFilterConfig_GetFilter(t *testing.T) {
 	var g GroupConcernConfig
-	_, err := g.GroupConcernFilter.GetFilterByType()
+	assert.NotNil(t, g.GetGroupConcernNotify())
+	assert.NotNil(t, g.GetGroupConcernAt())
+	assert.NotNil(t, g.GetGroupConcernFilter())
+
+	_, err := g.GetGroupConcernFilter().GetFilterByType()
 	assert.NotNil(t, err)
 
 	assert.True(t, g.GroupConcernFilter.Empty())
 
-	g.GroupConcernFilter.Type = FilterTypeType
-	g.GroupConcernFilter.Config = new(GroupConcernFilterConfigByType).ToString()
+	g.GetGroupConcernFilter().Type = FilterTypeType
+	g.GetGroupConcernFilter().Config = new(GroupConcernFilterConfigByType).ToString()
 
-	_, err = g.GroupConcernFilter.GetFilterByType()
+	_, err = g.GetGroupConcernFilter().GetFilterByType()
 	assert.Nil(t, err)
 
-	_, err = g.GroupConcernFilter.GetFilterByText()
+	_, err = g.GetGroupConcernFilter().GetFilterByText()
 	assert.NotNil(t, err)
 
-	assert.False(t, g.GroupConcernFilter.Empty())
+	assert.False(t, g.GetGroupConcernFilter().Empty())
 
-	g.GroupConcernFilter.Type = FilterTypeText
-	g.GroupConcernFilter.Config = new(GroupConcernFilterConfigByText).ToString()
+	g.GetGroupConcernFilter().Type = FilterTypeText
+	g.GetGroupConcernFilter().Config = new(GroupConcernFilterConfigByText).ToString()
 
-	_, err = g.GroupConcernFilter.GetFilterByText()
+	_, err = g.GetGroupConcernFilter().GetFilterByText()
 	assert.Nil(t, err)
 
-	_, err = g.GroupConcernFilter.GetFilterByType()
+	_, err = g.GetGroupConcernFilter().GetFilterByType()
 	assert.NotNil(t, err)
 
-	assert.False(t, g.GroupConcernFilter.Empty())
+	assert.False(t, g.GetGroupConcernFilter().Empty())
+}
 
+type testInfo struct {
+	isLive        bool
+	living        bool
+	titleChanged  bool
+	statusChanged bool
+	uid           int64
+	groupCode     int64
+	t             concern_type.Type
+}
+
+func (t *testInfo) Site() string {
+	return testSite
+}
+
+func (t *testInfo) Type() concern_type.Type {
+	if t.t.Empty() {
+		return test.BibiliLive
+	}
+	return t.t
+}
+
+func (t *testInfo) GetUid() interface{} {
+	return t.uid
+}
+
+func (t *testInfo) Logger() *logrus.Entry {
+	return logrus.WithField("Site", t.Site())
+}
+
+func (t *testInfo) GetGroupCode() int64 {
+	return t.groupCode
+}
+
+func (t *testInfo) ToMessage() *mmsg.MSG {
+	return mmsg.NewMSG()
+}
+
+func (t *testInfo) TitleChanged() bool {
+	return t.titleChanged
+}
+
+func (t *testInfo) IsLive() bool {
+	return t.isLive
+}
+
+func (t *testInfo) Living() bool {
+	return t.living
+}
+
+func (t *testInfo) LiveStatusChanged() bool {
+	return t.statusChanged
+}
+
+func newLiveInfo(uid int64, living, liveStatusChanged, liveTitleChanged bool) *testInfo {
+	return &testInfo{
+		isLive:        true,
+		living:        living,
+		titleChanged:  liveTitleChanged,
+		statusChanged: liveStatusChanged,
+		uid:           uid,
+	}
+}
+
+func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	var notify = []Notify{
+		// 下播状态 什么也没变 不推
+		newLiveInfo(test.UID1, false, false, false),
+		// 下播状态 标题变了 不推
+		newLiveInfo(test.UID1, false, false, true),
+		// 下播了 检查配置
+		newLiveInfo(test.UID1, false, true, false),
+		// 下播了 检查配置
+		newLiveInfo(test.UID1, false, true, true),
+		// 直播状态 什么也没变 不推
+		newLiveInfo(test.UID1, true, false, false),
+		// 直播状态 改了标题 检查配置
+		newLiveInfo(test.UID1, true, false, true),
+		// 开播了 推
+		newLiveInfo(test.UID1, true, true, false),
+		// 开播了改了标题 推
+		newLiveInfo(test.UID1, true, true, true),
+	}
+	// 其他类型应该pass
+	notify = append(notify, &testInfo{
+		uid: test.UID2,
+		t:   test.BilibiliNews,
+	})
+	var testCase = []*GroupConcernConfig{
+		{},
+		{
+			GroupConcernNotify: GroupConcernNotifyConfig{
+				TitleChangeNotify: test.BibiliLive,
+			},
+		},
+		{
+
+			GroupConcernNotify: GroupConcernNotifyConfig{
+				OfflineNotify: test.BibiliLive,
+			},
+		},
+		{
+			GroupConcernNotify: GroupConcernNotifyConfig{
+				OfflineNotify:     test.BibiliLive,
+				TitleChangeNotify: test.BibiliLive,
+			},
+		},
+	}
+	var expected = [][]bool{
+		{
+			false, false, false, false,
+			false, false, true, true,
+			true,
+		},
+		{
+			false, false, false, false,
+			false, true, true, true,
+			true,
+		},
+		{
+			false, false, true, true,
+			false, false, true, true,
+			true,
+		},
+		{
+			false, false, true, true,
+			false, true, true, true,
+			true,
+		},
+	}
+	assert.Equal(t, len(expected), len(testCase))
+	for index1, g := range testCase {
+		assert.Equal(t, len(expected[index1]), len(notify))
+		for index2, liveInfo := range notify {
+			result := g.ShouldSendHook(liveInfo)
+			if index1 == 1 && index2 == 5 {
+				result = g.ShouldSendHook(liveInfo)
+			}
+			assert.NotNil(t, result)
+			assert.Equalf(t, expected[index1][index2], result.Pass, "%v and %v check fail", index1, index2)
+		}
+	}
+}
+
+func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
+	var liveInfos = []Notify{
+		// 下播状态 什么也没变 不推
+		newLiveInfo(test.UID1, false, false, false),
+		// 下播状态 标题变了 不推
+		newLiveInfo(test.UID1, false, false, true),
+		// 下播了 检查配置
+		newLiveInfo(test.UID1, false, true, false),
+		// 下播了 检查配置
+		newLiveInfo(test.UID1, false, true, true),
+		// 直播状态 什么也没变 不推
+		newLiveInfo(test.UID1, true, false, false),
+		// 直播状态 改了标题 检查配置
+		newLiveInfo(test.UID1, true, false, true),
+		// 开播了 推
+		newLiveInfo(test.UID1, true, true, false),
+		// 开播了改了标题 推
+		newLiveInfo(test.UID1, true, true, true),
+		// news 默认pass
+		&testInfo{
+			t: test.BilibiliNews,
+		},
+	}
+	var g = &GroupConcernConfig{}
+	var expected = []bool{
+		false, false, false, false,
+		false, false, true, true,
+		true,
+	}
+	assert.Equal(t, len(expected), len(liveInfos))
+	for index, liveInfo := range liveInfos {
+		result := g.AtBeforeHook(liveInfo)
+		assert.Equalf(t, expected[index], result.Pass, "%v check fail", index)
+	}
 }

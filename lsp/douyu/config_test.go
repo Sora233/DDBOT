@@ -11,8 +11,8 @@ func newLiveInfo(roomId int64, live bool, liveStatusChanged bool, liveTitleChang
 	li := &ConcernLiveNotify{
 		LiveInfo: LiveInfo{
 			RoomId:            roomId,
-			LiveStatusChanged: liveStatusChanged,
-			LiveTitleChanged:  liveTitleChanged,
+			liveStatusChanged: liveStatusChanged,
+			liveTitleChanged:  liveTitleChanged,
 		},
 	}
 	if live {

@@ -3,6 +3,7 @@ package lsp
 import (
 	"bytes"
 	"fmt"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"go.uber.org/atomic"
 	"math/rand"
 	"runtime/debug"
@@ -26,7 +27,6 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/DDBOT/lsp/registry"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/utils"
 )
@@ -382,7 +382,9 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		name = "watch"
 	}
 
-	_, output := lgc.parseCommandSyntax(&watchCmd, name, kong.Description(fmt.Sprintf("当前支持的网站：%v", strings.Join(registry.ListSite(), "/"))))
+	_, output := lgc.parseCommandSyntax(&watchCmd, name, kong.Description(
+		fmt.Sprintf("当前支持的网站：%v", strings.Join(concern.ListSite(), "/"))),
+	)
 	if output != "" {
 		lgc.textReply(output)
 	}
