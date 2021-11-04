@@ -1,13 +1,16 @@
 package weibo
 
 import (
+	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/tidwall/buntdb"
 	"strconv"
+	"time"
 )
 
 var logger = utils.GetModuleLogger("weibo-concern")
@@ -18,7 +21,10 @@ type Concern struct {
 
 func (c *Concern) Start() error {
 	c.StateManager.UseFreshFunc(c.EmitQueueFresher(func(p concern_type.Type, id interface{}) ([]concern.Event, error) {
-		// TODO
+		uid := id.(int64)
+		if p.ContainAny(News) {
+			return c.freshNews(uid)
+		}
 		return nil, nil
 	}))
 	c.StateManager.UseNotifyGeneratorFunc(func(groupCode int64, ievent concern.Event) []concern.Notify {
@@ -62,6 +68,15 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype 
 	if err != nil {
 		log.Errorf("FindOrLoadUserInfo error %v", err)
 		return nil, fmt.Errorf("查询用户信息失败 %v - %v", id, err)
+	}
+	// LatestNewsTs 第一次就手动塞一下时间戳，以此来过滤旧的微博
+	err = c.AddNewsInfo(&NewsInfo{
+		UserInfo:     info,
+		LatestNewsTs: time.Now().Unix(),
+	})
+	if err != nil {
+		log.Errorf("AddNewsInfo error %v", err)
+		return nil, fmt.Errorf("添加订阅失败 - 内部错误")
 	}
 	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
 	if err != nil {
@@ -110,6 +125,63 @@ func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
 
 func (c *Concern) GetStateManager() concern.IStateManager {
 	return c.StateManager
+}
+
+func (c *Concern) freshNews(uid int64) ([]concern.Event, error) {
+	log := logger.WithField("uid", uid)
+	userInfo, err := c.FindOrLoadUserInfo(uid)
+	if err != nil {
+		return nil, fmt.Errorf("FindOrLoadUserInfo error %v", err)
+	}
+	if userInfo == nil {
+		return nil, fmt.Errorf("userInfo is nil")
+	}
+	cardResp, err := ApiContainerGetIndexCards(uid)
+	if err != nil {
+		log.Errorf("ApiContainerGetIndexCards error %v", err)
+		return nil, err
+	}
+	if cardResp.GetOk() != 1 {
+		log.Errorf("ApiContainerGetIndexCards ok=%v ", cardResp.GetOk())
+		return nil, errors.New("ApiContainerGetIndexCards not success")
+	}
+	var lastTs int64
+	var newsInfo = &NewsInfo{UserInfo: userInfo}
+	oldNewsInfo, err := c.GetNewsInfo(uid)
+	if err == buntdb.ErrNotFound {
+		lastTs = time.Now().Unix()
+		newsInfo.LatestNewsTs = lastTs
+	} else {
+		lastTs = oldNewsInfo.LatestNewsTs
+		newsInfo.LatestNewsTs = lastTs
+	}
+	var replaced bool
+	for _, card := range cardResp.GetData().GetCards() {
+		replaced, err = c.MarkMblogId(card.GetMblog().GetId())
+		if err != nil || replaced {
+			if err != nil {
+				log.WithField("mblogId", card.GetMblog().GetId()).
+					Errorf("MarkMblogId error %v", err)
+			}
+			continue
+		}
+		if t, err := time.Parse(time.RubyDate, card.GetMblog().GetCreatedAt()); err != nil {
+			log.WithField("time_string", card.GetMblog().GetCreatedAt()).
+				Errorf("can not parse Mblog.CreatedAt %v", err)
+			continue
+		} else if lastTs > 0 && t.Unix() > lastTs {
+			newsInfo.Cards = append(newsInfo.Cards, card)
+			if t.Unix() > newsInfo.LatestNewsTs {
+				newsInfo.LatestNewsTs = t.Unix()
+			}
+		}
+	}
+	err = c.AddNewsInfo(newsInfo)
+	if err != nil {
+		log.Errorf("AddNewsInfo error %v", err)
+		return nil, err
+	}
+	return []concern.Event{newsInfo}, nil
 }
 
 func (c *Concern) FindUserInfo(uid int64, load bool) (*UserInfo, error) {

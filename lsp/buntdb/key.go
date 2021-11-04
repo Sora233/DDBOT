@@ -154,6 +154,9 @@ func WeiboUserInfoKey(keys ...interface{}) string {
 func WeiboNewsInfoKey(keys ...interface{}) string {
 	return NamedKey("WeiboNewsInfo", keys)
 }
+func WeiboMarkMblogIdKey(keys ...interface{}) string {
+	return NamedKey("WeiboMarkMblogId", keys)
+}
 
 func PermissionKey(keys ...interface{}) string {
 	return NamedKey("Permission", keys)

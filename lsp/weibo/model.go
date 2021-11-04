@@ -39,7 +39,7 @@ func (u *UserInfo) Logger() *logrus.Entry {
 
 type NewsInfo struct {
 	*UserInfo
-	LatestItemId string  `json:"latest_item_id"`
+	LatestNewsTs int64   `json:"latest_news_time"`
 	Cards        []*Card `json:"-"`
 }
 
