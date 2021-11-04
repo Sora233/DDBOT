@@ -34,9 +34,6 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype 
 
 	err := c.StateManager.CheckGroupConcern(groupCode, id, ctype)
 	if err != nil {
-		if err == concern.ErrAlreadyExists {
-			return nil, errors.New("已经watch过了")
-		}
 		return nil, err
 	}
 	info, err := c.FindOrLoad(id)

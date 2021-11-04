@@ -2,7 +2,6 @@ package acfun
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
@@ -191,9 +190,6 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype c
 
 	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
 	if err != nil {
-		if err == concern.ErrAlreadyExists {
-			return nil, errors.New("已经watch过了")
-		}
 		return nil, err
 	}
 	liveInfo, _ := c.GetLiveInfo(uid)

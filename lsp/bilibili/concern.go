@@ -112,10 +112,6 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 
 	err = c.StateManager.CheckGroupConcern(groupCode, mid, ctype)
 	if err != nil {
-		if err == concern.ErrAlreadyExists {
-			return nil, errors.New("已经watch过了")
-		}
-		log.Errorf("CheckGroupConcern error %v", err)
 		return nil, err
 	}
 	var userInfo *UserInfo
