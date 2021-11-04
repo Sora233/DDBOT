@@ -61,11 +61,10 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				var checkAtAll = qqadmin && cfg.GetGroupConcernAt().CheckAtAll(inotify.Type())
 				var atAllMark = checkAtAll && c.GetStateManager().CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
 				nLogger.WithFields(logrus.Fields{
-					"atBeforeHook": atBeforeHook,
-					"qqAdmin":      qqadmin,
-					"checkAtAll":   checkAtAll,
-					"atMark":       atAllMark,
-				}).Trace("at_all")
+					"qqAdmin":    qqadmin,
+					"checkAtAll": checkAtAll,
+					"atMark":     atAllMark,
+				}).Trace("at_all condition")
 				if atBeforeHook.Pass && qqadmin && checkAtAll && atAllMark {
 					nLogger = nLogger.WithField("at_all", true)
 					chainMsg = append(chainMsg, newAtAllMsg())

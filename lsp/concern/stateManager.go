@@ -418,7 +418,7 @@ func (c *StateManager) Start() error {
 		panic(fmt.Sprintf("StateManager %v: notifyGenerator not set", c.name))
 	}
 	if c.dispatchFunc == nil {
-		c.Logger().Debugf("use default DispatchFunc")
+		c.Logger().Trace("use default DispatchFunc")
 		c.UseDispatchFunc(c.DefaultDispatch())
 	}
 	c.FreshIndex()

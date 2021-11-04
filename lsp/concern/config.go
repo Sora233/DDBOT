@@ -13,7 +13,7 @@ type IConfig interface {
 }
 
 // GroupConcernConfig 默认实现了一些逻辑
-// 如果 Notify 有实现 NotifyLive , NotifyLiveStatusChanged , NotifyTitleChanged 等，则会使用默认逻辑
+// 如果 Notify 有实现 NotifyLiveExt ，则会使用默认逻辑
 type GroupConcernConfig struct {
 	DefaultCallback
 	GroupConcernAt     GroupConcernAtConfig     `json:"group_concern_at"`
