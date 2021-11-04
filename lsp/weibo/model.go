@@ -69,8 +69,15 @@ func (c *ConcernNewsNotify) GetGroupCode() int64 {
 }
 
 func (c *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
-	// TODO 定义推送格式
 	m = mmsg.NewMSG()
+	switch c.Card.GetCardType() {
+	//case CardType_Normal:
+	default:
+		m.Textf("weibo-%v发布了新微博：\n%v\n%v\n",
+			c.GetName(),
+			c.Card.GetMblog().GetCreatedAt(),
+			c.Card.GetSchema())
+	}
 	return
 }
 
