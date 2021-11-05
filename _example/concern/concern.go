@@ -22,12 +22,6 @@ func (c *exampleStateManager) GetGroupConcernConfig(groupCode int64, id interfac
 	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id))
 }
 
-func newExampleStateManager(notify chan<- concern.Notify) *exampleStateManager {
-	sm := &exampleStateManager{concern.NewStateManagerWithStringID("example", notify)}
-	sm.UseEmitQueue()
-	return sm
-}
-
 type exampleConcern struct {
 	*exampleStateManager
 }
@@ -104,12 +98,12 @@ func (c *exampleConcern) GetStateManager() concern.IStateManager {
 	return c.StateManager
 }
 
-func NewConcern() *exampleConcern {
-	return &exampleConcern{
-		exampleStateManager: newExampleStateManager(concern.GetNotifyChan()),
-	}
+func NewConcern(notify chan<- concern.Notify) *exampleConcern {
+	sm := &exampleStateManager{concern.NewStateManagerWithStringID("example", notify)}
+	sm.UseEmitQueue()
+	return &exampleConcern{sm}
 }
 
 func init() {
-	concern.RegisterConcernManager(NewConcern(), []concern_type.Type{Example})
+	concern.RegisterConcernManager(NewConcern(concern.GetNotifyChan()), []concern_type.Type{Example})
 }

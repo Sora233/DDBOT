@@ -1,12 +1,10 @@
 # 为DDBOT编写插件
 
-**警告：现阶段DDBOT还会继续重构一部分，会尽力（但不是绝对）保证代码的兼容性。**
-
 *阅读这个内容需要一定的开发能力。*
 
 为DDBOT编写插件的基本步骤为：
 
-- 实现`concern.Concern`接口
+- 通过`concern.StateManager`，实现`concern.Concern`接口
 - 在`init()`函数中进行注册
 - 在`main`中引入刚刚编写的包
 
@@ -30,4 +28,29 @@
 /list
 ```
 
-更多文档正在施工中。
+## 一些开箱即用的组件
+
+**示例代码为了简洁，均忽略错误处理，在实际编写代码的过程中，请注意错误处理。**
+
+在编写插件的过程中，第一步通常是通过创建新的`StateManager`，下面的示例均基于这个结构：
+
+```go
+type StateManager struct {
+*concern.StateManager
+}
+var s *StateManager = ... // 初始化
+```
+
+### 持久化
+
+在编写插件的过程中，总会遇到想要存储一些数据的需求，DDBOT默认提供了一个key-value数据库可以使用，支持事务，key过期，并且已经包含在`StateManager`中：
+
+```go
+s.SetInt64("myInt64", 123456) // 即可往数据库中设置kv对 "myInt64" - 123456 
+v, _ := s.GetInt64("myInt64") // 获取刚刚写入的值
+// v == 123456
+```
+
+还有更多方法请参考`buntdb/shortcut.go`
+
+### 更多文档正在施工中。

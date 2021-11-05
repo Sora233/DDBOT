@@ -69,10 +69,12 @@ type IStateManager interface {
 }
 
 // StateManager 定义了一些通用的状态行为，例如添加订阅，删除订阅，查询订阅，
-// 还默认集成了一种定时刷新策略，即“每隔几秒钟刷新一个id这个”策略，开箱即用，如果不需要使用，也可以自定义策略。
-// 不同的订阅源必须持有不同的 StateManager，操作一个 StateManager 时不会对其他 StateManager 内的数据产生影响。
+// 还默认集成了一种定时刷新策略，“每隔几秒钟刷新一个id”（即：轮询）这个策略，开箱即用，如果不需要使用，也可以自定义策略。
+// StateManager 是每个 Concern 之间隔离的，不同的订阅源必须持有不同的 StateManager，
+// 操作一个 StateManager 时不会对其他 StateManager 内的数据产生影响，
+// 读取当前 StateManager 内的订阅时，也不会获取到其他 StateManager 内的订阅。
 // StateManager 通过 KeySet 来隔离存储的数据，创建 StateManager 时必须使用唯一的 KeySet，
-// 请通过 NewStateManagerWithStringID / NewStateManagerWithInt64ID / NewStateManagerWithCustomKey 来创建 StateManager
+// 请通过 NewStateManagerWithStringID / NewStateManagerWithInt64ID / NewStateManagerWithCustomKey 来创建 StateManager。
 type StateManager struct {
 	*localdb.ShortCut
 	KeySet
@@ -187,10 +189,12 @@ func (c *StateManager) CheckConcern(id interface{}, ctype concern_type.Type) err
 	return nil
 }
 
-// AddGroupConcern 在group内添加id的ctype订阅，多次添加同样的订阅不会返回错误
-// 如果需要检查是否添加过，请使用 CheckGroupConcern
+// AddGroupConcern 在group内添加id的ctype订阅，多次添加同样的订阅会返回 ErrAlreadyExists
 func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
 	groupStateKey := c.GroupConcernStateKey(groupCode, id)
+	if c.CheckGroupConcern(groupCode, id, ctype) == ErrAlreadyExists {
+		return concern_type.Empty, ErrAlreadyExists
+	}
 	oldCtype, err := c.GetConcern(id)
 	if err != nil {
 		return concern_type.Empty, err
@@ -263,7 +267,7 @@ func (c *StateManager) RemoveAllById(_id interface{}) (err error) {
 	})
 }
 
-// GetGroupConcern return the concern_type.Type in specific group for an id
+// GetGroupConcern 返回一个id在群内的所有 concern_type.Type
 func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result concern_type.Type, err error) {
 	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
