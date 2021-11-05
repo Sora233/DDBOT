@@ -77,9 +77,14 @@ message Card {
       }
       Geo geo = 4;
       message Large {
+        message LargeGeo {
+          string width = 1;
+          string height = 2;
+          bool croped = 3;
+        }
         string size = 1;
         string url = 2;
-        Geo geo = 3;
+        LargeGeo geo = 3;
       }
       Large large = 5;
     }

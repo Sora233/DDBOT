@@ -3,6 +3,7 @@ package weibo
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"strings"
@@ -73,16 +74,23 @@ func (c *ConcernNewsNotify) GetGroupCode() int64 {
 
 func (c *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
 	m = mmsg.NewMSG()
+	var createdTime string
 	newsTime, err := time.Parse(time.RubyDate, c.Card.GetMblog().GetCreatedAt())
 	if err == nil {
-		m.Textf("weibo-%v发布了新微博：\n%v",
+		createdTime = newsTime.Format("2006-01-02 15:04:05")
+	} else {
+		createdTime = c.Card.GetMblog().GetCreatedAt()
+	}
+	if c.Card.GetMblog().GetRetweetedStatus() != nil {
+		m.Textf("weibo-%v转发了%v的微博：\n%v",
 			c.GetName(),
-			newsTime.Format("2006-01-02 15:04:05"),
+			c.Card.GetMblog().GetRetweetedStatus().GetUser().GetScreenName(),
+			createdTime,
 		)
 	} else {
 		m.Textf("weibo-%v发布了新微博：\n%v",
 			c.GetName(),
-			c.Card.GetMblog().GetCreatedAt(),
+			createdTime,
 		)
 	}
 	switch c.Card.GetCardType() {
@@ -91,6 +99,9 @@ func (c *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
 			m.Textf("\n%v", localutils.RemoveHtmlTag(c.Card.GetMblog().GetRawText()))
 		} else {
 			m.Textf("\n%v", localutils.RemoveHtmlTag(c.Card.GetMblog().GetText()))
+		}
+		for _, pic := range c.Card.GetMblog().GetPics() {
+			m.ImageByUrl(pic.GetUrl(), "", proxy_pool.PreferNone)
 		}
 	default:
 		c.Logger().Debug("found new card_types")

@@ -80,6 +80,15 @@ func (m *MSG) ImageByUrl(url string, alternative string, prefer proxy_pool.Prefe
 	return m
 }
 
+func (m *MSG) NormImageByUrl(url string, alternative string, prefer proxy_pool.Prefer, opts ...requests.Option) *MSG {
+	img := NewNormImageByUrl(url, prefer, opts...)
+	if len(alternative) > 0 {
+		img.Alternative(alternative)
+	}
+	m.Append(img)
+	return m
+}
+
 // ToMessage 总是返回 non-nil
 func (m *MSG) ToMessage(target Target) *message.SendingMessage {
 	var sending = message.NewSendingMessage()
