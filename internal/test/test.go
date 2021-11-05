@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/stretchr/testify/assert"
@@ -51,4 +52,11 @@ func InitBuntdb(t *testing.T) {
 }
 func CloseBuntdb(t *testing.T) {
 	assert.Nil(t, localdb.Close())
+}
+
+func FakeImage(size int) string {
+	if size == 0 {
+		size = 150
+	}
+	return fmt.Sprintf("https://via.placeholder.com/%v", size)
 }

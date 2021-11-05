@@ -1,19 +1,20 @@
-package acfun
+package weibo
 
 import (
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"testing"
 	"time"
 )
 
-func TestApiChannelList(t *testing.T) {
-	var resp *ApiChannelListResponse
+func TestFreshCookie(t *testing.T) {
+	var cookies []*http.Cookie
 	var err error
 	localutils.Retry(5, time.Second, func() bool {
-		resp, err = ApiChannelList(100, "")
+		cookies, err = FreshCookie()
 		return err == nil
 	})
 	assert.Nil(t, err)
-	assert.NotNil(t, resp)
+	assert.NotEmpty(t, cookies)
 }

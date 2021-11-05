@@ -52,6 +52,9 @@ func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, cty
 	id := _id.(string)
 	identity, _ := c.Get(id)
 	_, err := c.StateManager.RemoveGroupConcern(groupCode, id, ctype)
+	if identity == nil {
+		identity = concern.NewIdentity(_id, "unknown")
+	}
 	return identity, err
 }
 

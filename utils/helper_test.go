@@ -3,6 +3,7 @@ package utils
 import (
 	"github.com/guonaihong/gout"
 	"github.com/stretchr/testify/assert"
+	"html"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -210,4 +211,25 @@ func TestToCamel(t *testing.T) {
 	assert.EqualValues(t, "", toCamel(""))
 	assert.EqualValues(t, "boy_loves_girl", toCamel("BoyLovesGirl"))
 	assert.EqualValues(t, "dog_god", toCamel("DogGod"))
+}
+
+func TestRemoveHtmlTag(t *testing.T) {
+	var testCase = []string{
+		"</a>",
+		"aaa??qweqwe",
+		"qabcd<a></a>www",
+		"qwe<html></html>",
+		html.EscapeString("qwe<html></html>"),
+	}
+	var expected = []string{
+		"",
+		"aaa??qweqwe",
+		"qabcdwww",
+		"qwe",
+		html.EscapeString("qwe<html></html>"),
+	}
+	assert.EqualValues(t, len(expected), len(testCase))
+	for idx := range testCase {
+		assert.EqualValues(t, expected[idx], RemoveHtmlTag(testCase[idx]))
+	}
 }

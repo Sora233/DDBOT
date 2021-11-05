@@ -68,6 +68,11 @@ type IStateManager interface {
 	Dispatch(wg *sync.WaitGroup, event <-chan Event, notify chan<- Notify)
 }
 
+// StateManager 定义了一些通用的状态行为，例如添加订阅，删除订阅，查询订阅，
+// 还默认集成了一种定时刷新策略，即“每隔几秒钟刷新一个id这个”策略，开箱即用，如果不需要使用，也可以自定义策略。
+// 不同的订阅源必须持有不同的 StateManager，操作一个 StateManager 时不会对其他 StateManager 内的数据产生影响。
+// StateManager 通过 KeySet 来隔离存储的数据，创建 StateManager 时必须使用唯一的 KeySet，
+// 请通过 NewStateManagerWithStringID / NewStateManagerWithInt64ID / NewStateManagerWithCustomKey 来创建 StateManager
 type StateManager struct {
 	*localdb.ShortCut
 	KeySet
@@ -137,7 +142,7 @@ func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}
 	return err
 }
 
-// CheckAndSetAtAllMark 检查@全体标记是否过期，已过期返回true，并重置标记，否则返回false。
+// CheckAndSetAtAllMark 检查@全体标记是否过期，未设置过或已过期返回true，并重置标记，否则返回false。
 // 因为@全体有次数限制，并且较为恼人，故设置标记，两次@全体之间必须有间隔。
 func (c *StateManager) CheckAndSetAtAllMark(groupCode int64, id interface{}) (result bool) {
 	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
@@ -157,6 +162,7 @@ func (c *StateManager) CheckAndSetAtAllMark(groupCode int64, id interface{}) (re
 	return
 }
 
+// CheckGroupConcern 检查group是否已经添加过id的ctype订阅，如果添加过，返回 ErrAlreadyExists
 func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) error {
 	return c.RCoverTx(func(tx *buntdb.Tx) error {
 		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
@@ -169,6 +175,7 @@ func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype 
 	})
 }
 
+// CheckConcern 检查是否有任意一个群添加过id的ctype订阅，如果添加过，返回 ErrAlreadyExists
 func (c *StateManager) CheckConcern(id interface{}, ctype concern_type.Type) error {
 	state, err := c.GetConcern(id)
 	if err != nil {
@@ -180,6 +187,8 @@ func (c *StateManager) CheckConcern(id interface{}, ctype concern_type.Type) err
 	return nil
 }
 
+// AddGroupConcern 在group内添加id的ctype订阅，多次添加同样的订阅不会返回错误
+// 如果需要检查是否添加过，请使用 CheckGroupConcern
 func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
 	groupStateKey := c.GroupConcernStateKey(groupCode, id)
 	oldCtype, err := c.GetConcern(id)
@@ -199,6 +208,7 @@ func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype co
 	return
 }
 
+// RemoveGroupConcern 在group内删除id的ctype订阅，并返回删除后当前id的综合ctype，删除不存在的订阅会返回 buntdb.ErrNotFound
 func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
 	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
 		groupStateKey := c.GroupConcernStateKey(groupCode, id)
@@ -218,6 +228,7 @@ func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype
 	return
 }
 
+// RemoveAllByGroupCode 删除一个group内所有订阅
 func (c *StateManager) RemoveAllByGroupCode(groupCode int64) (keys []string, err error) {
 	var indexKey = []string{
 		c.GroupConcernStateKey(),

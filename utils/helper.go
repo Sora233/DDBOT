@@ -226,3 +226,9 @@ func JoinInt64(ele []int64, sep string) string {
 	}
 	return strings.Join(s, sep)
 }
+
+var reHtmlTag = regexp.MustCompile(`<[^>]+>`)
+
+func RemoveHtmlTag(s string) string {
+	return reHtmlTag.ReplaceAllString(s, "")
+}

@@ -31,6 +31,19 @@ func NewImageByUrl(url string, prefer proxy_pool.Prefer, opts ...requests.Option
 	return img
 }
 
+func NewNormImageByUrl(url string, prefer proxy_pool.Prefer, opts ...requests.Option) *ImageBytesElement {
+	var img = NewImage(nil)
+	var b []byte
+	var err error
+	b, err = utils.ImageGetAndNorm(url, prefer, opts...)
+	if err == nil {
+		img.Buf = b
+	} else {
+		logger.WithField("url", url).Errorf("ImageGet error %v", err)
+	}
+	return img
+}
+
 func (i *ImageBytesElement) Alternative(s string) *ImageBytesElement {
 	i.alternative = s
 	return i

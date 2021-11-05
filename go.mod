@@ -13,7 +13,7 @@ require (
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
 	github.com/go-playground/validator/v10 v10.9.0 // indirect
 	github.com/golang/protobuf v1.5.2
-	github.com/guonaihong/gout v0.2.6
+	github.com/guonaihong/gout v0.2.9
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/json-iterator/go v1.1.12
 	github.com/jupp0r/go-priority-queue v0.0.0-20160601094913-ab1073853bde

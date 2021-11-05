@@ -148,6 +148,15 @@ func AcfunNotLiveKey(keys ...interface{}) string {
 func AcfunUidFirstTimestampKey(keys ...interface{}) string {
 	return NamedKey("AcfunUidFirstTimestamp", keys)
 }
+func WeiboUserInfoKey(keys ...interface{}) string {
+	return NamedKey("WeiboUserInfo", keys)
+}
+func WeiboNewsInfoKey(keys ...interface{}) string {
+	return NamedKey("WeiboNewsInfo", keys)
+}
+func WeiboMarkMblogIdKey(keys ...interface{}) string {
+	return NamedKey("WeiboMarkMblogId", keys)
+}
 
 func PermissionKey(keys ...interface{}) string {
 	return NamedKey("Permission", keys)
