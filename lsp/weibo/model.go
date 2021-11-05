@@ -3,7 +3,10 @@ package weibo
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
+	"strings"
+	"time"
 )
 
 const (
@@ -70,13 +73,32 @@ func (c *ConcernNewsNotify) GetGroupCode() int64 {
 
 func (c *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
 	m = mmsg.NewMSG()
-	switch c.Card.GetCardType() {
-	//case CardType_Normal:
-	default:
-		m.Textf("weibo-%v发布了新微博：\n%v\n%v\n",
+	newsTime, err := time.Parse(time.RubyDate, c.Card.GetMblog().GetCreatedAt())
+	if err == nil {
+		m.Textf("weibo-%v发布了新微博：\n%v",
+			c.GetName(),
+			newsTime.Format("2006-01-02 15:04:05"),
+		)
+	} else {
+		m.Textf("weibo-%v发布了新微博：\n%v",
 			c.GetName(),
 			c.Card.GetMblog().GetCreatedAt(),
-			c.Card.GetSchema())
+		)
+	}
+	switch c.Card.GetCardType() {
+	case CardType_Normal:
+		if len(c.Card.GetMblog().GetRawText()) > 0 {
+			m.Textf("\n%v", localutils.RemoveHtmlTag(c.Card.GetMblog().GetRawText()))
+		} else {
+			m.Textf("\n%v", localutils.RemoveHtmlTag(c.Card.GetMblog().GetText()))
+		}
+	default:
+		c.Logger().Debug("found new card_types")
+	}
+	if idx := strings.Index(c.Card.GetScheme(), "?"); idx > 0 {
+		m.Textf("\n%v", c.Card.GetScheme()[:idx])
+	} else {
+		m.Textf("\n%v", c.Card.GetScheme())
 	}
 	return
 }

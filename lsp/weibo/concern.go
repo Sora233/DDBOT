@@ -31,8 +31,10 @@ func (c *Concern) Start() error {
 		var result []concern.Notify
 		switch news := ievent.(type) {
 		case *NewsInfo:
-			for _, n := range NewConcernNewsNotify(groupCode, news) {
-				result = append(result, n)
+			if len(news.Cards) > 0 {
+				for _, n := range NewConcernNewsNotify(groupCode, news) {
+					result = append(result, n)
+				}
 			}
 		}
 		return result
@@ -180,6 +182,9 @@ func (c *Concern) freshNews(uid int64) ([]concern.Event, error) {
 	if err != nil {
 		log.Errorf("AddNewsInfo error %v", err)
 		return nil, err
+	}
+	if len(newsInfo.Cards) == 0 {
+		return nil, nil
 	}
 	return []concern.Event{newsInfo}, nil
 }

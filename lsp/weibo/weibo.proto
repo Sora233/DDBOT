@@ -100,7 +100,7 @@ message Card {
   CardType card_type = 1;
   string itemId = 2;
   // 这个好像可以用来当做传送门链接
-  string schema = 3;
+  string scheme = 3;
   Mblog mblog = 4;
   bool lastWeiboCard = 5;
 }
