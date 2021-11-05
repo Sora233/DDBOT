@@ -49,12 +49,10 @@ type IStateManager interface {
 	CheckAndSetAtAllMark(groupCode int64, id interface{}) (result bool)
 	CheckGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) error
 	CheckConcern(id interface{}, ctype concern_type.Type) error
-	CheckFresh(id interface{}, setTTL bool) (result bool, err error)
 
 	AddGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error)
 	RemoveGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error)
 	RemoveAllByGroupCode(groupCode int64) (keys []string, err error)
-	RemoveAllById(_id interface{}) (err error)
 
 	ListConcernState(filter func(groupCode int64, id interface{}, p concern_type.Type) bool) (idGroups []int64,
 		ids []interface{}, idTypes []concern_type.Type, err error)
