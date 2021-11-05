@@ -2,15 +2,17 @@ package utils
 
 import (
 	"bytes"
+	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/stretchr/testify/assert"
 	"image"
 	"testing"
 )
 
-const imageUrl = "https://via.placeholder.com/1500"
+var imageUrl = test.FakeImage(1500)
 
 func TestImageNormSize(t *testing.T) {
+	test.FakeImage(0)
 	b, err := ImageGet(imageUrl, proxy_pool.PreferAny)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, b)

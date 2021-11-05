@@ -72,6 +72,10 @@ func (c *ConcernNewsNotify) GetGroupCode() int64 {
 	return c.GroupCode
 }
 
+func (c *ConcernNewsNotify) Logger() *logrus.Entry {
+	return c.UserInfo.Logger().WithFields(localutils.GroupLogFields(c.GroupCode))
+}
+
 func (c *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
 	m = mmsg.NewMSG()
 	var createdTime string

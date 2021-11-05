@@ -23,22 +23,19 @@ func (c *Concern) Start() error {
 	c.StateManager.UseFreshFunc(c.EmitQueueFresher(func(p concern_type.Type, id interface{}) ([]concern.Event, error) {
 		uid := id.(int64)
 		if p.ContainAny(News) {
-			return c.freshNews(uid)
+			newsInfo, err := c.freshNews(uid)
+			if err != nil {
+				return nil, err
+			}
+			if len(newsInfo.Cards) == 0 {
+				return nil, nil
+			}
+			return []concern.Event{newsInfo}, nil
+
 		}
 		return nil, nil
 	}))
-	c.StateManager.UseNotifyGeneratorFunc(func(groupCode int64, ievent concern.Event) []concern.Notify {
-		var result []concern.Notify
-		switch news := ievent.(type) {
-		case *NewsInfo:
-			if len(news.Cards) > 0 {
-				for _, n := range NewConcernNewsNotify(groupCode, news) {
-					result = append(result, n)
-				}
-			}
-		}
-		return result
-	})
+	c.StateManager.UseNotifyGeneratorFunc(c.notifyGenerator())
 	return c.StateManager.Start()
 }
 
@@ -129,7 +126,7 @@ func (c *Concern) GetStateManager() concern.IStateManager {
 	return c.StateManager
 }
 
-func (c *Concern) freshNews(uid int64) ([]concern.Event, error) {
+func (c *Concern) freshNews(uid int64) (*NewsInfo, error) {
 	log := logger.WithField("uid", uid)
 	userInfo, err := c.FindOrLoadUserInfo(uid)
 	if err != nil {
@@ -183,10 +180,22 @@ func (c *Concern) freshNews(uid int64) ([]concern.Event, error) {
 		log.Errorf("AddNewsInfo error %v", err)
 		return nil, err
 	}
-	if len(newsInfo.Cards) == 0 {
-		return nil, nil
+	return newsInfo, nil
+}
+
+func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
+	return func(groupCode int64, ievent concern.Event) []concern.Notify {
+		var result []concern.Notify
+		switch news := ievent.(type) {
+		case *NewsInfo:
+			if len(news.Cards) > 0 {
+				for _, n := range NewConcernNewsNotify(groupCode, news) {
+					result = append(result, n)
+				}
+			}
+		}
+		return result
 	}
-	return []concern.Event{newsInfo}, nil
 }
 
 func (c *Concern) FindUserInfo(uid int64, load bool) (*UserInfo, error) {
