@@ -86,7 +86,7 @@ message Card {
     repeated string pic_ids = 7;
     ApiContainerGetIndexProfileResponse.Data.UserInfo user = 8;
     repeated Pics pics = 9;
-    bool isTop = 10;
+    int32 isTop = 10;
     Mblog retweeted_status = 11;
     string raw_text = 12;
   }
