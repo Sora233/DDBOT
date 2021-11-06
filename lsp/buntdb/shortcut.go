@@ -233,6 +233,7 @@ func (s *ShortCut) setWithOpts(tx *buntdb.Tx, key string, value string, opt *opt
 	if err != nil {
 		return err
 	}
+	opt.setIsOverWrite(replaced)
 	opt.setPrevious(prev)
 	if replaced && opt.getNoOverWrite() {
 		return ErrRollback

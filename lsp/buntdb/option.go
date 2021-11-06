@@ -9,6 +9,7 @@ import (
 type option struct {
 	ignoreExpire   bool
 	noOverWrite    bool
+	isOverWrite    *bool
 	expire         time.Duration
 	keepLastExpire bool
 	previous       interface{}
@@ -54,7 +55,7 @@ func (o *option) getIgnoreNotFound() bool {
 }
 
 func (o *option) setPrevious(previous string) {
-	if o.previous == nil {
+	if o == nil || o.previous == nil {
 		return
 	}
 	switch ptr := o.previous.(type) {
@@ -70,6 +71,13 @@ func (o *option) setPrevious(previous string) {
 	default:
 		_ = json.Unmarshal([]byte(previous), ptr)
 	}
+}
+
+func (o *option) setIsOverWrite(replaced bool) {
+	if o == nil || o.isOverWrite == nil {
+		return
+	}
+	*o.isOverWrite = replaced
 }
 
 type OptionFunc func(o *option)
@@ -123,6 +131,15 @@ func SetGetPreviousValueJsonObjectOpt(previous interface{}) OptionFunc {
 	}
 	return func(o *option) {
 		o.previous = previous
+	}
+}
+
+func SetGetIsOverwrite(isOverWrite *bool) OptionFunc {
+	if isOverWrite == nil {
+		return emptyOptionFunc
+	}
+	return func(o *option) {
+		o.isOverWrite = isOverWrite
 	}
 }
 

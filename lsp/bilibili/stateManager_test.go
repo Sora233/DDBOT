@@ -149,13 +149,15 @@ func TestStateManager_CheckDynamicId(t *testing.T) {
 
 	assert.True(t, c.CheckDynamicId(test.DynamicID1))
 
-	err := c.MarkDynamicId(test.DynamicID1)
+	replaced, err := c.MarkDynamicId(test.DynamicID1)
 	assert.Nil(t, err)
+	assert.False(t, replaced)
 
 	assert.False(t, c.CheckDynamicId(test.DynamicID1))
 
-	err = c.MarkDynamicId(test.DynamicID1)
+	replaced, err = c.MarkDynamicId(test.DynamicID1)
 	assert.Nil(t, err)
+	assert.True(t, replaced)
 }
 
 func TestStateManager_IncNotLiveCount(t *testing.T) {

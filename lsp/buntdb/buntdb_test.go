@@ -563,10 +563,13 @@ func TestGet(t *testing.T) {
 	assert.Nil(t, err)
 
 	var prev string
-	assert.Nil(t, Set(key, "1", SetGetPreviousValueStringOpt(&prev)))
+	var replaced bool
+	assert.Nil(t, Set(key, "1", SetGetPreviousValueStringOpt(&prev), SetGetIsOverwrite(&replaced)))
 	assert.Equal(t, "", prev)
-	assert.Nil(t, Set(key, "2", SetGetPreviousValueStringOpt(nil)))
-	assert.Nil(t, Set(key, "3", SetGetPreviousValueStringOpt(&prev)))
+	assert.False(t, replaced)
+	assert.Nil(t, Set(key, "2", SetGetPreviousValueStringOpt(nil), SetGetIsOverwrite(nil)))
+	assert.Nil(t, Set(key, "3", SetGetPreviousValueStringOpt(&prev), SetGetIsOverwrite(&replaced)))
+	assert.True(t, replaced)
 	assert.EqualValues(t, "2", prev)
 
 	var prevInt64 int64

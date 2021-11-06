@@ -149,7 +149,7 @@ func (c *StateManager) CheckDynamicId(dynamic int64) (result bool) {
 	return false
 }
 
-func (c *StateManager) MarkDynamicId(dynamic int64) error {
+func (c *StateManager) MarkDynamicId(dynamic int64) (bool, error) {
 	//	一个错误的写法，用闭包返回值简单地替代了RWTxCover返回值
 	//	在磁盘空间用尽的情况下，闭包可以成功执行，但RWTxCover执行持久化时会报错，这个错误就被意外地忽略了
 	//	c.RWCoverTx(func(tx *buntdb.Tx) error {
@@ -157,7 +157,10 @@ func (c *StateManager) MarkDynamicId(dynamic int64) error {
 	//		_, replaced, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*120))
 	//		return err
 	//	})
-	return c.Set(c.DynamicIdKey(dynamic), "", localdb.SetExpireOpt(time.Hour*120))
+	var isOverwrite bool
+	err := c.Set(c.DynamicIdKey(dynamic), "",
+		localdb.SetExpireOpt(time.Hour*120), localdb.SetGetIsOverwrite(&isOverwrite))
+	return isOverwrite, err
 }
 
 func (c *StateManager) IncNotLiveCount(uid int64) int64 {
