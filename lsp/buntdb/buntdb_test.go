@@ -223,7 +223,7 @@ func TestNestedCover(t *testing.T) {
 	assert.Nil(t, err)
 	err = RCoverTx(func(tx *buntdb.Tx) error {
 		_, err := tx.Get("c")
-		assert.EqualValues(t, buntdb.ErrNotFound, err)
+		assert.True(t, IsNotFound(err))
 		return nil
 	})
 	assert.Nil(t, err)
@@ -349,7 +349,7 @@ func TestSeqNext(t *testing.T) {
 	assert.Nil(t, err)
 
 	_, err = Delete(seq1)
-	assert.EqualValues(t, buntdb.ErrNotFound, err)
+	assert.True(t, IsNotFound(err))
 	_, err = Delete(seq1, IgnoreNotFoundOpt())
 	assert.Nil(t, err)
 
@@ -448,7 +448,7 @@ func TestRemoveByPrefixAndIndex(t *testing.T) {
 	err = RCoverTx(func(tx *buntdb.Tx) error {
 		assertNotExist := func(key string) {
 			_, err := tx.Get(key)
-			assert.Equal(t, buntdb.ErrNotFound, err)
+			assert.True(t, IsNotFound(err))
 		}
 		assertNotExist(BilibiliGroupConcernStateKey("1"))
 		assertNotExist(BilibiliGroupConcernStateKey("2"))
@@ -517,7 +517,7 @@ func TestGetInt64(t *testing.T) {
 	const key = "test1"
 
 	result, err := GetInt64(key)
-	assert.EqualValues(t, buntdb.ErrNotFound, err)
+	assert.True(t, IsNotFound(err))
 
 	result, err = GetInt64(key, IgnoreNotFoundOpt())
 	assert.Nil(t, err)
@@ -557,7 +557,7 @@ func TestGet(t *testing.T) {
 	const key = "test1"
 
 	result, err := Get(key)
-	assert.EqualValues(t, buntdb.ErrNotFound, err)
+	assert.True(t, IsNotFound(err))
 
 	result, err = Get(key, IgnoreNotFoundOpt())
 	assert.Nil(t, err)
