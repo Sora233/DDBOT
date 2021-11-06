@@ -344,7 +344,7 @@ func TestStateManager_GroupConcern(t *testing.T) {
 
 	ctype, err := sm.GetConcern(test.UID1)
 	assert.Nil(t, err)
-	assert.EqualValues(t, test.BibiliLive.Add(test.YoutubeLive).Add(test.HuyaLive), ctype)
+	assert.EqualValues(t, test.BibiliLive.Add(test.YoutubeLive, test.HuyaLive), ctype)
 
 	// G1 UID1: blive|ylive , UID2: dlive
 	// G2 UID1: hlive       , UID2  dlive
@@ -450,6 +450,29 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.EqualValues(t, test.DouyuLive, ctype)
 	ctype, err = sm.GetGroupConcern(test.G2, test.UID2)
 	assert.EqualValues(t, buntdb.ErrNotFound, err)
+}
+
+func TestStateManager_GroupConcern2(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	var err error
+	sm := newStateManager(t)
+	_, err = sm.AddGroupConcern(test.G1, test.UID1, test.BilibiliNews)
+	assert.Nil(t, err)
+
+	_, err = sm.AddGroupConcern(test.G1, test.UID1, test.BibiliLive)
+	assert.Nil(t, err)
+
+	_, err = sm.AddGroupConcern(test.G1, test.UID1, test.DouyuLive)
+	assert.Nil(t, err)
+
+	_, err = sm.AddGroupConcern(test.G1, test.UID1, test.HuyaLive)
+	assert.Nil(t, err)
+
+	ctype, err := sm.GetGroupConcern(test.G1, test.UID1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, test.BilibiliNews.Add(test.BibiliLive, test.DouyuLive, test.HuyaLive), ctype)
 }
 
 func listIds(sm *StateManager) ([]interface{}, error) {

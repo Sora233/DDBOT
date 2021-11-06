@@ -163,22 +163,26 @@ func (c *StateManager) CheckConcern(id interface{}, ctype concern_type.Type) err
 
 // AddGroupConcern 在group内添加id的ctype订阅，多次添加同样的订阅会返回 ErrAlreadyExists
 func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
-	groupStateKey := c.GroupConcernStateKey(groupCode, id)
-	if c.CheckGroupConcern(groupCode, id, ctype) == ErrAlreadyExists {
-		return concern_type.Empty, ErrAlreadyExists
-	}
-	oldCtype, err := c.GetConcern(id)
+	err = c.RWCover(func() error {
+		if c.CheckGroupConcern(groupCode, id, ctype) == ErrAlreadyExists {
+			return ErrAlreadyExists
+		}
+		groupStateKey := c.GroupConcernStateKey(groupCode, id)
+		newCtype, err = c.upsertConcernType(groupStateKey, ctype)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
-		return concern_type.Empty, err
+		return
 	}
-	newCtype, err = c.upsertConcernType(groupStateKey, ctype)
-	if err != nil {
-		return concern_type.Empty, err
-	}
-
-	if c.useEmit && oldCtype.Empty() {
-		for _, t := range ctype.Split() {
-			c.emitQueue.Add(localutils.NewEmitE(id, t), time.Time{})
+	if c.useEmit {
+		allCtype, err := c.GetConcern(id)
+		if err != nil {
+			logger.WithField("id", id).Errorf("GetConcern error %v", err)
+		} else {
+			c.emitQueue.Add(localutils.NewEmitE(id, allCtype))
 		}
 	}
 	return
@@ -201,6 +205,21 @@ func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype
 		}
 		return err
 	})
+	if err != nil {
+		return
+	}
+	if c.useEmit {
+		allCtype, err := c.GetConcern(id)
+		if err != nil {
+			logger.WithField("id", id).Errorf("GetConcern error %v", err)
+		} else {
+			if allCtype.Empty() {
+				c.emitQueue.Delete(id)
+			} else {
+				c.emitQueue.Update(localutils.NewEmitE(id, allCtype))
+			}
+		}
+	}
 	return
 }
 
@@ -251,12 +270,11 @@ func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result 
 
 // GetConcern 查询一个id在所有group内的 concern_type.Type
 func (c *StateManager) GetConcern(id interface{}) (result concern_type.Type, err error) {
-	_, _, _, err = c.ListConcernState(func(groupCode int64, _id interface{}, p concern_type.Type) bool {
-		if id == _id {
-			result = result.Add(p)
-		}
-		return true
+	var ctypes []concern_type.Type
+	_, _, ctypes, err = c.ListConcernState(func(groupCode int64, _id interface{}, p concern_type.Type) bool {
+		return id == _id
 	})
+	result = concern_type.Empty.Add(ctypes...)
 	return
 }
 
@@ -388,6 +406,10 @@ func (c *StateManager) upsertConcernType(key string, ctype concern_type.Type) (n
 }
 
 func (c *StateManager) Stop() {
+	if c.useEmit {
+		c.emitQueue.Stop()
+		close(c.emitChan)
+	}
 	c.cancelCtx()
 	c.freshWg.Wait()
 	close(c.eventChan)
@@ -415,20 +437,18 @@ func (c *StateManager) Start() error {
 	}
 	if c.useEmit {
 		c.emitQueue.Start()
-		_, ids, types, err := c.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+		_, ids, ctypes, err := c.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 			return true
 		})
 		if err != nil {
 			return err
 		}
-		ids, types, err = c.GroupTypeById(ids, types)
+		ids, ctypes, err = c.GroupTypeById(ids, ctypes)
 		if err != nil {
 			return err
 		}
 		for index := range ids {
-			for _, t := range types[index].Split() {
-				c.emitQueue.Add(localutils.NewEmitE(ids[index], t), time.Now())
-			}
+			c.emitQueue.Add(localutils.NewEmitE(ids[index], ctypes[index]))
 		}
 	}
 	go c.Fresh(&c.freshWg, c.eventChan)
@@ -443,7 +463,10 @@ func (c *StateManager) EmitQueueFresher(doFresh func(p concern_type.Type, id int
 		}
 		for {
 			select {
-			case emitItem := <-c.emitChan:
+			case emitItem, received := <-c.emitChan:
+				if !received {
+					break
+				}
 				id := emitItem.Id
 				if ok, _ := c.CheckFresh(id, true); !ok {
 					logger.WithFields(logrus.Fields{
