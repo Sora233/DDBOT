@@ -232,30 +232,11 @@ func (c *StateManager) CheckGlobalCommandFunc(command string, f func(val string,
 }
 
 func (c *StateManager) CheckGlobalSilence() bool {
-	var result bool
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		key := c.GlobalSilenceKey()
-		_, err := tx.Get(key)
-		if err != nil && err != buntdb.ErrNotFound {
-			return err
-		}
-		if err == nil {
-			result = true
-		}
-		return nil
-	})
-	if err != nil {
-		result = false
-	}
-	return result
+	return c.Exist(c.GlobalSilenceKey())
 }
 
 func (c *StateManager) GlobalSilence() error {
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.GlobalSilenceKey()
-		_, _, err := tx.Set(key, "", nil)
-		return err
-	})
+	return c.Set(c.GlobalSilenceKey(), "")
 }
 
 func (c *StateManager) UndoGlobalSilence() error {
@@ -264,30 +245,7 @@ func (c *StateManager) UndoGlobalSilence() error {
 }
 
 func (c *StateManager) CheckGroupSilence(groupCode int64) bool {
-	var result bool
-	var globalResult bool
-	err := c.RCover(func() error {
-		globalResult = c.CheckGlobalSilence()
-		err := c.RCoverTx(func(tx *buntdb.Tx) error {
-			key := c.GroupSilenceKey(groupCode)
-			_, err := tx.Get(key)
-			if err != nil && err != buntdb.ErrNotFound {
-				return err
-			}
-			if err == nil {
-				result = true
-			}
-			return nil
-		})
-		if err != nil {
-			result = false
-		}
-		return nil
-	})
-	if err != nil {
-		return false
-	}
-	return globalResult || result
+	return c.CheckGlobalSilence() || c.Exist(c.GroupSilenceKey(groupCode))
 }
 
 func (c *StateManager) GroupSilence(groupCode int64) error {
@@ -330,86 +288,33 @@ func (c *StateManager) CheckGroupAdministrator(groupCode int64, caller int64) bo
 }
 
 func (c *StateManager) CheckGroupCommandPermission(groupCode int64, caller int64, command string) bool {
-	if c.CheckRole(caller, Admin) {
-		return true
-	}
-	var result bool
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		key := c.PermissionKey(groupCode, caller, command)
-		_, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			return nil
-		} else if err != nil {
-			return err
-		}
-		result = true
-		return nil
-	})
-	if err != nil {
-		logger.WithFields(localutils.GroupLogFields(groupCode)).
-			WithField("caller", caller).
-			WithField("command", command).
-			Errorf("check group command err %v", err)
-		result = false
-	}
-	return result
+	return c.CheckRole(caller, Admin) || c.Exist(c.PermissionKey(groupCode, caller, command))
 }
 
 func (c *StateManager) GrantRole(target int64, role RoleType) error {
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.PermissionKey(target, role.String())
-		_, replaced, err := tx.Set(key, "", nil)
-		if err != nil {
-			return err
-		}
-		if replaced {
-			return ErrPermissionExist
-		}
-		return nil
-	})
+	err := c.Set(c.PermissionKey(target, role.String()), "", localdb.SetNoOverWriteOpt())
+	if localdb.IsRollback(err) {
+		return ErrPermissionExist
+	}
+	return err
 }
 
 func (c *StateManager) UngrantRole(target int64, role RoleType) error {
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.PermissionKey(target, role.String())
-		_, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			return ErrPermissionNotExist
-		} else if err == nil {
-			tx.Delete(key)
-			return nil
-		} else {
-			return err
-		}
-	})
+	_, err := c.Delete(c.PermissionKey(target, role.String()))
+	if localdb.IsNotFound(err) {
+		return ErrPermissionNotExist
+	}
+	return err
 }
 
 func (c *StateManager) CheckNoAdmin() bool {
-	var result = true
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		return tx.Ascend(c.PermissionKey(), func(key, value string) bool {
-			splits := strings.Split(key, ":")
-			if len(splits) != 3 {
-				return true
-			}
-			if NewRoleFromString(splits[2]) == Admin {
-				result = false
-				return false
-			}
-			return true
-		})
-	})
-	if err != nil {
-		result = false
-		logger.Errorf("CheckNoAdmin error %v", err)
-	}
-	return result
+	return len(c.ListAdmin()) == 0
 }
 
 func (c *StateManager) ListAdmin() []int64 {
@@ -442,63 +347,44 @@ func (c *StateManager) GrantGroupRole(groupCode int64, target int64, role RoleTy
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.GroupPermissionKey(groupCode, target, role.String())
-		_, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			_, _, err := tx.Set(key, "", nil)
-			return err
-		} else if err == nil {
-			return ErrPermissionExist
-		} else {
-			return err
-		}
-	})
+	err := c.Set(c.GroupPermissionKey(groupCode, target, role.String()), "", localdb.SetNoOverWriteOpt())
+	if localdb.IsRollback(err) {
+		return ErrPermissionExist
+	}
+	return err
 }
 
 func (c *StateManager) UngrantGroupRole(groupCode int64, target int64, role RoleType) error {
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.GroupPermissionKey(groupCode, target, role.String())
-		_, err := tx.Delete(key)
-		if err == buntdb.ErrNotFound {
-			return ErrPermissionNotExist
-		}
-		return err
-	})
+	_, err := c.Delete(c.GroupPermissionKey(groupCode, target, role.String()))
+	if localdb.IsNotFound(err) {
+		return ErrPermissionNotExist
+	}
+	return err
 }
 
 func (c *StateManager) GrantPermission(groupCode int64, target int64, command string) error {
 	if c.CheckGlobalCommandDisabled(command) {
 		return ErrGlobalDisabled
 	}
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.PermissionKey(groupCode, target, command)
-		_, replaced, err := tx.Set(key, "", nil)
-		if err != nil {
-			return err
-		}
-		if replaced {
-			return ErrPermissionExist
-		}
-		return nil
-	})
+	err := c.Set(c.PermissionKey(groupCode, target, command), "", localdb.SetNoOverWriteOpt())
+	if localdb.IsRollback(err) {
+		return ErrPermissionExist
+	}
+	return err
 }
 
 func (c *StateManager) UngrantPermission(groupCode int64, target int64, command string) error {
 	if c.CheckGlobalCommandDisabled(command) {
 		return ErrGlobalDisabled
 	}
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.PermissionKey(groupCode, target, command)
-		_, err := tx.Delete(key)
-		if err == buntdb.ErrNotFound {
-			return ErrPermissionNotExist
-		}
-		return err
-	})
+	_, err := c.Delete(c.PermissionKey(groupCode, target, command))
+	if localdb.IsNotFound(err) {
+		return ErrPermissionNotExist
+	}
+	return err
 }
 
 func (c *StateManager) RequireAny(option ...RequireOption) bool {

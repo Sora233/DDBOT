@@ -135,34 +135,18 @@ func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}
 // CheckAndSetAtAllMark 检查@全体标记是否过期，未设置过或已过期返回true，并重置标记，否则返回false。
 // 因为@全体有次数限制，并且较为恼人，故设置标记，两次@全体之间必须有间隔。
 func (c *StateManager) CheckAndSetAtAllMark(groupCode int64, id interface{}) (result bool) {
-	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.GroupAtAllMarkKey(groupCode, id)
-		_, replaced, err := tx.Set(key, "", localdb.ExpireOption(time.Hour*2))
-		if err != nil {
-			return err
-		}
-		if replaced {
-			return localdb.ErrRollback
-		}
-		return nil
-	})
-	if err == nil {
-		result = true
-	}
-	return
+	err := c.Set(c.GroupAtAllMarkKey(groupCode, id), "",
+		localdb.SetExpireOpt(time.Hour*2), localdb.SetNoOverWriteOpt())
+	return err == nil
 }
 
 // CheckGroupConcern 检查group是否已经添加过id的ctype订阅，如果添加过，返回 ErrAlreadyExists
 func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) error {
-	return c.RCoverTx(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
-		if err == nil {
-			if concern_type.FromString(val).ContainAll(ctype) {
-				return ErrAlreadyExists
-			}
-		}
-		return nil
-	})
+	state, _ := c.GetGroupConcern(groupCode, id)
+	if state.ContainAll(ctype) {
+		return ErrAlreadyExists
+	}
+	return nil
 }
 
 // CheckConcern 检查是否有任意一个群添加过id的ctype订阅，如果添加过，返回 ErrAlreadyExists
@@ -257,15 +241,12 @@ func (c *StateManager) RemoveAllById(_id interface{}) (err error) {
 
 // GetGroupConcern 返回一个id在群内的所有 concern_type.Type
 func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result concern_type.Type, err error) {
-	err = c.RCoverTx(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.GroupConcernStateKey(groupCode, id))
-		if err != nil {
-			return err
-		}
-		result = concern_type.FromString(val)
-		return nil
-	})
-	return result, err
+	val, err := c.Get(c.GroupConcernStateKey(groupCode, id))
+	if err != nil {
+		return
+	}
+	result = concern_type.FromString(val)
+	return
 }
 
 // GetConcern 查询一个id在所有group内的 concern_type.Type

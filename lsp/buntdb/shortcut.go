@@ -201,6 +201,12 @@ func (s *ShortCut) Set(key, value string, opt ...OptionFunc) error {
 	})
 }
 
+// DeleteInt64 删除key，解析key上的值到int64并返回
+// 支持 IgnoreNotFoundOpt
+func (s *ShortCut) DeleteInt64(key string, opt ...OptionFunc) (int64, error) {
+	return s.int64Wrapper(s.Delete(key, opt...))
+}
+
 // GetInt64 通过key获取value，并将value解析成int64
 // 支持 GetIgnoreExpireOpt IgnoreNotFoundOpt GetTTLOpt
 // 当设置了 IgnoreNotFoundOpt 时，key不存在时会直接返回0，不会返回错误

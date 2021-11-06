@@ -40,9 +40,7 @@ func (c *StateManager) AddUserStat(userStat *UserStat, expire time.Duration) err
 	if userStat == nil {
 		return errors.New("nil UserStat")
 	}
-	return c.RWCover(func() error {
-		return c.SetJson(c.UserStatKey(userStat.Mid), userStat, localdb.SetExpireOpt(expire))
-	})
+	return c.SetJson(c.UserStatKey(userStat.Mid), userStat, localdb.SetExpireOpt(expire))
 }
 
 func (c *StateManager) GetUserStat(mid int64) (*UserStat, error) {
@@ -191,8 +189,7 @@ func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err err
 
 func (c *StateManager) SetGroupCompactMarkIfNotExist(groupCode int64, compactKey string) error {
 	return c.Set(c.CompactMarkKey(groupCode, compactKey), "",
-		localdb.SetExpireOpt(CompactExpireTime), localdb.SetNoOverWriteOpt(),
-	)
+		localdb.SetExpireOpt(CompactExpireTime), localdb.SetNoOverWriteOpt())
 }
 func (c *StateManager) SetLastFreshTime(ts int64) error {
 	return c.SetInt64(c.LastFreshKey(), ts)
@@ -217,8 +214,7 @@ func (c *StateManager) SetNotifyMsg(notifyKey string, msg *message.GroupMessage)
 		return err
 	}
 	return c.Set(c.NotifyMsgKey(tmp.GroupCode, notifyKey), value,
-		localdb.SetExpireOpt(CompactExpireTime), localdb.SetNoOverWriteOpt(),
-	)
+		localdb.SetExpireOpt(CompactExpireTime), localdb.SetNoOverWriteOpt())
 }
 
 func (c *StateManager) GetNotifyMsg(groupCode int64, notifyKey string) (*message.GroupMessage, error) {

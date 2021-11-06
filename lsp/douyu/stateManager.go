@@ -4,7 +4,6 @@ import (
 	"errors"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/tidwall/buntdb"
 	"time"
 )
 
@@ -26,11 +25,7 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	if liveInfo == nil {
 		return errors.New("nil LiveInfo")
 	}
-
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(c.CurrentLiveKey(liveInfo.RoomId), liveInfo.ToString(), localdb.ExpireOption(time.Hour*24*7))
-		return err
-	})
+	return c.SetJson(c.CurrentLiveKey(liveInfo.RoomId), liveInfo, localdb.SetExpireOpt(time.Hour*24*7))
 }
 
 func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
