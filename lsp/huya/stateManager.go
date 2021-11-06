@@ -15,7 +15,7 @@ type StateManager struct {
 
 func (c *StateManager) GetLiveInfo(id string) (*LiveInfo, error) {
 	var liveInfo = &LiveInfo{}
-	err := c.JsonGet(c.CurrentLiveKey(id), liveInfo)
+	err := c.GetJson(c.CurrentLiveKey(id), liveInfo)
 	if err != nil {
 		return nil, err
 	}

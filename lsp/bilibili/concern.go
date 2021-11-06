@@ -468,13 +468,11 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 		// 应该用dynamic_id_str
 		// 但好像已经没法保持向后兼容同时改动了
 		// 只能相信概率论了，出问题的概率应该比较小，出问题会导致推送丢失
-		replaced, err := c.MarkDynamicId(card.GetDesc().GetDynamicId())
-		if err != nil || replaced {
-			if err != nil {
-				logger.WithField("uid", uid).
-					WithField("dynamicId", card.GetDesc().GetDynamicId()).
-					Errorf("MarkDynamicId error %v", err)
-			}
+
+		if err := c.MarkDynamicId(card.GetDesc().GetDynamicId()); err != nil {
+			logger.WithField("uid", uid).
+				WithField("dynamicId", card.GetDesc().GetDynamicId()).
+				Errorf("MarkDynamicId error %v", err)
 			continue
 		}
 		ts, err := c.StateManager.GetUidFirstTimestamp(uid)
@@ -643,7 +641,7 @@ func (c *Concern) StatUserWithCache(mid int64, expire time.Duration) (*UserStat,
 		return nil, fmt.Errorf("code:%v %v", resp.GetCode(), resp.GetMessage())
 	}
 	userStat = NewUserStat(mid, resp.GetData().GetFollowing(), resp.GetData().GetFollower())
-	err = c.StateManager.AddUserStat(userStat, localdb.ExpireOption(expire))
+	err = c.StateManager.AddUserStat(userStat, expire)
 	if err != nil {
 		return nil, err
 	}

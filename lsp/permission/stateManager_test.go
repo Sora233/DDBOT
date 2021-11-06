@@ -52,21 +52,14 @@ func TestStateManager_CheckGroupCommandFunc(t *testing.T) {
 	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
 	assert.True(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
 
-	assert.Nil(t, c.EnableGroupCommand(test.G1, test.CMD1, ExpireOption(time.Millisecond*100)))
+	assert.Nil(t, c.EnableGroupCommand(test.G1, test.CMD1))
 	assert.True(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
 	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
 
-	time.Sleep(time.Millisecond * 150)
-	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
-	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
-
-	assert.Nil(t, c.DisableGroupCommand(test.G1, test.CMD1, ExpireOption(time.Millisecond*100)))
+	assert.Nil(t, c.DisableGroupCommand(test.G1, test.CMD1))
 	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
 	assert.True(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
 
-	time.Sleep(time.Millisecond * 150)
-	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
-	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
 }
 
 func TestStateManager_CheckGlobalCommandFunc(t *testing.T) {
@@ -84,10 +77,7 @@ func TestStateManager_CheckGlobalCommandFunc(t *testing.T) {
 	assert.False(t, c.CheckGlobalCommandDisabled(test.CMD1))
 	assert.Nil(t, c.GlobalDisableGroupCommand(test.CMD1))
 
-	assert.Nil(t, c.GlobalEnableGroupCommand(test.CMD1, ExpireOption(time.Millisecond*100)))
-
-	time.Sleep(time.Millisecond * 150)
-	assert.False(t, c.CheckGlobalCommandDisabled(test.CMD1))
+	assert.Nil(t, c.GlobalEnableGroupCommand(test.CMD1))
 
 	assert.Nil(t, c.GlobalDisableGroupCommand(test.CMD1))
 	assert.Equal(t, ErrGlobalDisabled, c.EnableGroupCommand(test.G1, test.CMD1))

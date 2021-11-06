@@ -22,7 +22,7 @@ func (s *StateManager) AddInfo(info *Info) error {
 
 func (s *StateManager) GetInfo(channelId string) (*Info, error) {
 	info := new(Info)
-	err := s.JsonGet(s.InfoKey(channelId), info)
+	err := s.GetJson(s.InfoKey(channelId), info)
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (s *StateManager) GetInfo(channelId string) (*Info, error) {
 
 func (s *StateManager) GetVideo(channelId string, videoId string) (*VideoInfo, error) {
 	var v = new(VideoInfo)
-	err := s.JsonGet(s.VideoKey(channelId, videoId), v)
+	err := s.GetJson(s.VideoKey(channelId, videoId), v)
 	if err != nil {
 		return nil, err
 	}

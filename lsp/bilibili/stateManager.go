@@ -7,7 +7,6 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
-	"strconv"
 	"time"
 )
 
@@ -25,35 +24,30 @@ func (c *StateManager) AddUserInfo(userInfo *UserInfo) error {
 	if userInfo == nil {
 		return errors.New("nil UserInfo")
 	}
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.UserInfoKey(userInfo.Mid)
-		_, _, err := tx.Set(key, userInfo.ToString(), nil)
-		return err
-	})
+	return c.SetJson(c.UserInfoKey(userInfo.Mid), userInfo)
 }
 
 func (c *StateManager) GetUserInfo(mid int64) (*UserInfo, error) {
 	var userInfo = &UserInfo{}
-	err := c.JsonGet(c.UserInfoKey(mid), userInfo)
+	err := c.GetJson(c.UserInfoKey(mid), userInfo)
 	if err != nil {
 		return nil, err
 	}
 	return userInfo, nil
 }
 
-func (c *StateManager) AddUserStat(userStat *UserStat, opt *buntdb.SetOptions) error {
+func (c *StateManager) AddUserStat(userStat *UserStat, expire time.Duration) error {
 	if userStat == nil {
 		return errors.New("nil UserStat")
 	}
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(c.UserStatKey(userStat.Mid), userStat.ToString(), opt)
-		return err
+	return c.RWCover(func() error {
+		return c.SetJson(c.UserStatKey(userStat.Mid), userStat, localdb.SetExpireOpt(expire))
 	})
 }
 
 func (c *StateManager) GetUserStat(mid int64) (*UserStat, error) {
 	var userStat = &UserStat{}
-	err := c.JsonGet(c.UserStatKey(mid), userStat)
+	err := c.GetJson(c.UserStatKey(mid), userStat)
 	if err != nil {
 		return nil, err
 	}
@@ -64,20 +58,18 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	if liveInfo == nil {
 		return errors.New("nil LiveInfo")
 	}
-	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(c.UserInfoKey(liveInfo.Mid), liveInfo.UserInfo.ToString(), nil)
+	return c.RWCover(func() error {
+		err := c.SetJson(c.UserInfoKey(liveInfo.Mid), liveInfo.UserInfo)
 		if err != nil {
 			return err
 		}
-		_, _, err = tx.Set(c.CurrentLiveKey(liveInfo.Mid), liveInfo.ToString(), localdb.ExpireOption(time.Hour*24*7))
-		return err
+		return c.SetJson(c.CurrentLiveKey(liveInfo.Mid), liveInfo, localdb.SetExpireOpt(time.Hour*24*7))
 	})
-	return err
 }
 
 func (c *StateManager) GetLiveInfo(mid int64) (*LiveInfo, error) {
 	var liveInfo = &LiveInfo{}
-	err := c.JsonGet(c.CurrentLiveKey(mid), liveInfo)
+	err := c.GetJson(c.CurrentLiveKey(mid), liveInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -88,28 +80,23 @@ func (c *StateManager) AddNewsInfo(newsInfo *NewsInfo) error {
 	if newsInfo == nil {
 		return errors.New("nil NewsInfo")
 	}
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(c.UserInfoKey(newsInfo.Mid), newsInfo.UserInfo.ToString(), nil)
+	return c.RWCover(func() error {
+		err := c.SetJson(c.UserInfoKey(newsInfo.Mid), newsInfo.UserInfo)
 		if err != nil {
 			return err
 		}
-		_, _, err = tx.Set(c.CurrentNewsKey(newsInfo.Mid), newsInfo.ToString(), nil)
-		return err
+		return c.SetJson(c.CurrentNewsKey(newsInfo.Mid), newsInfo)
 	})
 }
 
 func (c *StateManager) DeleteNewsInfo(mid int64) error {
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		_, err := tx.Delete(c.CurrentNewsKey(mid))
-		return err
-	})
+	_, err := c.Delete(c.CurrentNewsKey(mid))
+	return err
 }
 
 func (c *StateManager) DeleteLiveInfo(mid int64) error {
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		_, err := tx.Delete(c.CurrentLiveKey(mid))
-		return err
-	})
+	_, err := c.Delete(c.CurrentLiveKey(mid))
+	return err
 }
 
 func (c *StateManager) DeleteNewsAndLiveInfo(mid int64) error {
@@ -147,7 +134,7 @@ func (c *StateManager) ClearByMid(mid int64) error {
 
 func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 	var newsInfo = &NewsInfo{}
-	err := c.JsonGet(c.CurrentNewsKey(mid), newsInfo)
+	err := c.GetJson(c.CurrentNewsKey(mid), newsInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -155,25 +142,14 @@ func (c *StateManager) GetNewsInfo(mid int64) (*NewsInfo, error) {
 }
 
 func (c *StateManager) CheckDynamicId(dynamic int64) (result bool) {
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		key := c.DynamicIdKey(dynamic)
-		_, err := tx.Get(key)
-		if err == nil {
-			result = false
-		} else if err == buntdb.ErrNotFound {
-			result = true
-		} else {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		result = false
+	_, err := c.Get(c.DynamicIdKey(dynamic))
+	if err == buntdb.ErrNotFound {
+		return true
 	}
-	return result
+	return false
 }
 
-func (c *StateManager) MarkDynamicId(dynamic int64) (replaced bool, err error) {
+func (c *StateManager) MarkDynamicId(dynamic int64) error {
 	//	一个错误的写法，用闭包返回值简单地替代了RWTxCover返回值
 	//	在磁盘空间用尽的情况下，闭包可以成功执行，但RWTxCover执行持久化时会报错，这个错误就被意外地忽略了
 	//	c.RWCoverTx(func(tx *buntdb.Tx) error {
@@ -181,13 +157,7 @@ func (c *StateManager) MarkDynamicId(dynamic int64) (replaced bool, err error) {
 	//		_, replaced, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*120))
 	//		return err
 	//	})
-	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
-		var err error
-		key := c.DynamicIdKey(dynamic)
-		_, replaced, err = tx.Set(key, "", localdb.ExpireOption(time.Hour*120))
-		return err
-	})
-	return
+	return c.Set(c.DynamicIdKey(dynamic), "", localdb.SetExpireOpt(time.Hour*120))
 }
 
 func (c *StateManager) IncNotLiveCount(uid int64) int64 {
@@ -199,53 +169,34 @@ func (c *StateManager) IncNotLiveCount(uid int64) int64 {
 }
 
 func (c *StateManager) ClearNotLiveCount(uid int64) error {
-	return c.SeqClear(c.NotLiveKey(uid))
-}
-
-func (c *StateManager) SetUidFirstTimestampIfNotExist(uid int64, timestamp int64) error {
-	return c.SetIfNotExist(c.UidFirstTimestamp(uid), strconv.FormatInt(timestamp, 10), nil)
-}
-
-func (c *StateManager) UnsetUidFirstTimestamp(uid int64) error {
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.UidFirstTimestamp(uid)
-		_, err := tx.Delete(key)
-		return err
-	})
-}
-
-func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err error) {
-	err = c.RCoverTx(func(tx *buntdb.Tx) error {
-		var err error
-		key := c.UidFirstTimestamp(uid)
-		var tsStr string
-		tsStr, err = tx.Get(key)
-		if err != nil {
-			return err
-		}
-		timestamp, err = strconv.ParseInt(tsStr, 10, 64)
-		return err
-	})
-	if err != nil {
-		timestamp = 0
-	}
-	return
-}
-
-func (c *StateManager) SetGroupCompactMarkIfNotExist(groupCode int64, compactKey string) error {
-	return localdb.SetIfNotExist(
-		c.CompactMarkKey(groupCode, compactKey),
-		"",
-		localdb.ExpireOption(CompactExpireTime),
-	)
-}
-func (c *StateManager) SetLastFreshTime(ts int64) error {
-	_, err := localdb.SetInt64(c.LastFreshKey(), ts, nil)
+	_, err := c.Delete(c.NotLiveKey(uid), localdb.DeleteIgnoreNotFound())
 	return err
 }
 
+func (c *StateManager) SetUidFirstTimestampIfNotExist(uid int64, timestamp int64) error {
+	return c.SetInt64(c.UidFirstTimestamp(uid), timestamp, localdb.SetNoOverWriteOpt())
+}
+
+func (c *StateManager) UnsetUidFirstTimestamp(uid int64) error {
+	_, err := c.Delete(c.UidFirstTimestamp(uid))
+	return err
+}
+
+func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err error) {
+	return c.GetInt64(c.UidFirstTimestamp(uid))
+}
+
+func (c *StateManager) SetGroupCompactMarkIfNotExist(groupCode int64, compactKey string) error {
+	return c.Set(c.CompactMarkKey(groupCode, compactKey), "",
+		localdb.SetExpireOpt(CompactExpireTime), localdb.SetNoOverWriteOpt(),
+	)
+}
+func (c *StateManager) SetLastFreshTime(ts int64) error {
+	return c.SetInt64(c.LastFreshKey(), ts)
+}
+
 func (c *StateManager) GetLastFreshTime() (int64, error) {
-	return localdb.GetInt64(c.LastFreshKey())
+	return c.GetInt64(c.LastFreshKey())
 }
 
 func (c *StateManager) SetNotifyMsg(notifyKey string, msg *message.GroupMessage) error {
@@ -262,16 +213,13 @@ func (c *StateManager) SetNotifyMsg(notifyKey string, msg *message.GroupMessage)
 	if err != nil {
 		return err
 	}
-	return c.SetIfNotExist(c.NotifyMsgKey(tmp.GroupCode, notifyKey), value, localdb.ExpireOption(CompactExpireTime))
+	return c.Set(c.NotifyMsgKey(tmp.GroupCode, notifyKey), value,
+		localdb.SetExpireOpt(CompactExpireTime), localdb.SetNoOverWriteOpt(),
+	)
 }
 
 func (c *StateManager) GetNotifyMsg(groupCode int64, notifyKey string) (*message.GroupMessage, error) {
-	var value string
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		var err error
-		value, err = tx.Get(c.NotifyMsgKey(groupCode, notifyKey))
-		return err
-	})
+	value, err := c.Get(c.NotifyMsgKey(groupCode, notifyKey))
 	if err != nil {
 		return nil, err
 	}
@@ -282,50 +230,26 @@ func SetCookieInfo(username string, cookieInfo *LoginResponse_Data_CookieInfo) e
 	if cookieInfo == nil {
 		return errors.New("<nil> cookieInfo")
 	}
-	return localdb.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := localdb.BilibiliUserCookieInfoKey(username)
-		cookieData, err := json.Marshal(cookieInfo)
-		if err != nil {
-			return err
-		}
-		var expire int64
-		for _, cookie := range cookieInfo.GetCookies() {
-			expire = cookie.GetExpires()
-			break
-		}
-		if expire != 0 {
-			_, _, err = tx.Set(key, string(cookieData), localdb.ExpireOption(time.Duration(expire-time.Now().Unix())*time.Second))
-		} else {
-			_, _, err = tx.Set(key, string(cookieData), nil)
-		}
-		return err
-	})
+	var expire int64
+	for _, cookie := range cookieInfo.GetCookies() {
+		expire = cookie.GetExpires()
+		break
+	}
+	var opt localdb.OptionFunc
+	if expire != 0 {
+		opt = localdb.SetExpireOpt(time.Duration(expire-time.Now().Unix()) * time.Second)
+	}
+	return localdb.SetJson(localdb.BilibiliUserCookieInfoKey(username), cookieInfo, opt)
 }
 
 func GetCookieInfo(username string) (cookieInfo *LoginResponse_Data_CookieInfo, err error) {
-	err = localdb.RCoverTx(func(tx *buntdb.Tx) error {
-		var err error
-		key := localdb.BilibiliUserCookieInfoKey(username)
-		var cookieStr string
-		cookieStr, err = tx.Get(key)
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal([]byte(cookieStr), &cookieInfo)
-		return err
-	})
+	err = localdb.GetJson(localdb.BilibiliUserCookieInfoKey(username), &cookieInfo)
 	return
 }
 
 func ClearCookieInfo(username string) error {
-	return localdb.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := localdb.BilibiliUserCookieInfoKey(username)
-		_, err := tx.Delete(key)
-		if err == buntdb.ErrNotFound {
-			err = nil
-		}
-		return err
-	})
+	_, err := localdb.Delete(localdb.BilibiliUserCookieInfoKey(username), localdb.DeleteIgnoreNotFound())
+	return err
 }
 
 func (c *StateManager) Start() error {

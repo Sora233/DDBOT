@@ -231,7 +231,7 @@ func (s *StateManager) ListNewFriendRequest() (results []*client.NewFriendReques
 		)
 		err = tx.Ascend(s.NewFriendRequestKey(), func(key, value string) bool {
 			var item = new(client.NewFriendRequest)
-			iterErr = s.JsonGet(key, &item)
+			iterErr = s.GetJson(key, &item)
 			if iterErr == nil {
 				results = append(results, item)
 				return true
@@ -256,7 +256,7 @@ func (s *StateManager) ListGroupInvitedRequest() (results []*client.GroupInvited
 		)
 		err = tx.Ascend(s.GroupInvitedKey(), func(key, value string) bool {
 			var item = new(client.GroupInvitedRequest)
-			iterErr = s.JsonGet(key, &item)
+			iterErr = s.GetJson(key, &item)
 			if iterErr == nil {
 				results = append(results, item)
 				return true
@@ -301,11 +301,11 @@ func (s *StateManager) GetGroupInvitedRequest(requestId int64) (result *client.G
 }
 
 func (s *StateManager) saveRequest(requestId int64, request interface{}, keyFunc localdb.KeyPatternFunc) error {
-	return s.JsonSave(keyFunc(requestId), request, true)
+	return s.SetJson(keyFunc(requestId), request)
 }
 
 func (s *StateManager) getRequest(requestId int64, request interface{}, keyFunc localdb.KeyPatternFunc) error {
-	return s.JsonGet(keyFunc(requestId), request)
+	return s.GetJson(keyFunc(requestId), request)
 }
 
 func NewStateManager() *StateManager {

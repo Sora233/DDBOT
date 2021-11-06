@@ -22,5 +22,6 @@ func GetCurrentVersion(name string) int64 {
 }
 
 func SetVersion(name string, version int64) (oldVersion int64, err error) {
-	return localdb.SetInt64(localdb.VersionKey(name), version)
+	err = localdb.SetInt64(localdb.VersionKey(name), version, localdb.SetGetPreviousValueInt64Opt(&oldVersion))
+	return
 }

@@ -53,7 +53,7 @@ func TestConcern_List(t *testing.T) {
 	assert.Nil(t, err)
 
 	_, err = c.AddGroupConcern(test.G1, test.UID1, test.BibiliLive)
-	assert.Nil(t, err)
+	assert.EqualValues(t, concern.ErrAlreadyExists, err)
 
 	userInfos, ctypes, err := c.List(test.G1, test.BibiliLive)
 	assert.Nil(t, err)

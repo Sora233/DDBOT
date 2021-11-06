@@ -322,7 +322,8 @@ func TestSeqNext(t *testing.T) {
 		assert.EqualValuesf(t, i+1, s, "Seq %v times must eq %v", i+1, i+1)
 	}
 
-	assert.Nil(t, SeqClear(seq1))
+	_, err = Delete(seq1)
+	assert.Nil(t, err)
 
 	var wg sync.WaitGroup
 	for i := 0; i < 10; i++ {
@@ -344,7 +345,13 @@ func TestSeqNext(t *testing.T) {
 	assert.Nil(t, err)
 	assert.EqualValues(t, 1, s)
 
-	assert.Nil(t, SeqClear(seq1))
+	_, err = Delete(seq1)
+	assert.Nil(t, err)
+
+	_, err = Delete(seq1)
+	assert.EqualValues(t, buntdb.ErrNotFound, err)
+	_, err = Delete(seq1, DeleteIgnoreNotFound())
+	assert.Nil(t, err)
 
 	s, err = SeqNext(seq2)
 	assert.Nil(t, err)
@@ -395,8 +402,8 @@ func TestJsonGet(t *testing.T) {
 	err = RWCover(func() error {
 		for index, exp := range expected {
 			var tmp = new(testJson)
-			assert.Nil(t, JsonSave(keys[index], exp, true))
-			assert.Nil(t, JsonGet(keys[index], tmp))
+			assert.Nil(t, SetJson(keys[index], exp))
+			assert.Nil(t, GetJson(keys[index], tmp))
 			assert.EqualValues(t, exp, tmp)
 		}
 		return nil
@@ -404,7 +411,7 @@ func TestJsonGet(t *testing.T) {
 	assert.Nil(t, err)
 
 	err = RCover(func() error {
-		return JsonSave(keys[0], expected[0], true)
+		return SetJson(keys[0], expected[0])
 	})
 	assert.NotNil(t, err)
 }
@@ -465,9 +472,9 @@ func TestSetIfNotExist(t *testing.T) {
 		key2 = "key2"
 	)
 
-	assert.Nil(t, SetIfNotExist(key1, "1"))
-	assert.True(t, IsRollback(SetIfNotExist(key1, "2")))
-	assert.Nil(t, SetIfNotExist(key2, "1", ExpireOption(time.Hour)))
+	assert.Nil(t, Set(key1, "1", SetNoOverWriteOpt()))
+	assert.True(t, IsRollback(Set(key1, "1", SetNoOverWriteOpt())))
+	assert.Nil(t, Set(key2, "1", SetExpireOpt(time.Hour)))
 }
 
 func TestCreatePatternIndex(t *testing.T) {
@@ -512,11 +519,15 @@ func TestGetInt64(t *testing.T) {
 	result, err := GetInt64(key)
 	assert.EqualValues(t, buntdb.ErrNotFound, err)
 
-	result, err = SetInt64(key, 1)
+	result, err = GetInt64(key, GetIgnoreNotFound())
 	assert.Nil(t, err)
 	assert.Zero(t, result)
 
-	result, err = SetInt64(key, 10, ExpireOption(time.Hour))
+	err = SetInt64(key, 1, SetGetPreviousValueInt64Opt(&result))
+	assert.Nil(t, err)
+	assert.Zero(t, result)
+
+	err = SetInt64(key, 10, SetExpireOpt(time.Hour), SetGetPreviousValueInt64Opt(&result))
 	assert.Nil(t, err)
 	assert.EqualValues(t, 1, result)
 
@@ -524,4 +535,59 @@ func TestGetInt64(t *testing.T) {
 	assert.Nil(t, err)
 	assert.EqualValues(t, 10, result)
 
+	time.Sleep(time.Second * 3)
+
+	assert.Nil(t, SetInt64(key, 12, SetKeepLastExpireOpt()))
+	err = RCoverTx(func(tx *buntdb.Tx) error {
+		ttl, err := tx.TTL(key)
+		assert.True(t, ttl < time.Hour)
+		assert.True(t, ttl > (time.Hour-time.Second*4))
+		assert.Nil(t, err)
+		return err
+	})
+	assert.Nil(t, err)
+}
+
+func TestGet(t *testing.T) {
+	var err error
+	err = InitBuntDB(MEMORYDB)
+	assert.Nil(t, err)
+	defer Close()
+
+	const key = "test1"
+
+	result, err := Get(key)
+	assert.EqualValues(t, buntdb.ErrNotFound, err)
+
+	result, err = Get(key, GetIgnoreNotFound())
+	assert.Nil(t, err)
+
+	var prev string
+	assert.Nil(t, Set(key, "1", SetGetPreviousValueStringOpt(&prev)))
+	assert.Equal(t, "", prev)
+	assert.Nil(t, Set(key, "2", SetGetPreviousValueStringOpt(nil)))
+	assert.Nil(t, Set(key, "3", SetGetPreviousValueStringOpt(&prev)))
+	assert.EqualValues(t, "2", prev)
+
+	var prevInt64 int64
+	assert.Nil(t, SetInt64(key, 2, SetGetPreviousValueInt64Opt(&prevInt64)))
+	assert.EqualValues(t, 3, prevInt64)
+	assert.Nil(t, SetInt64(key, 5, SetGetPreviousValueInt64Opt(nil)))
+	assert.Nil(t, SetInt64(key, 10, SetGetPreviousValueInt64Opt(&prevInt64)))
+	assert.EqualValues(t, 5, prevInt64)
+
+	result, err = Get(key)
+	assert.Nil(t, err)
+	assert.Equal(t, "10", result)
+
+	_, err = Delete(key, DeleteIgnoreNotFound())
+	assert.Nil(t, err)
+
+	assert.Nil(t, Set(key, "1", SetExpireOpt(time.Millisecond*50)))
+
+	time.Sleep(time.Millisecond * 60)
+
+	result, err = Get(key, GetIgnoreExpireOpt())
+	assert.Nil(t, err)
+	assert.EqualValues(t, "1", result)
 }

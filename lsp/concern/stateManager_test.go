@@ -368,9 +368,9 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.EqualValues(t, nil, sm.CheckGroupConcern(test.G1, test.UID2, test.BibiliLive))
 	assert.EqualValues(t, nil, sm.CheckGroupConcern(test.G1, test.UID2, test.YoutubeLive))
 
-	// 添加已有的状态不会报错
+	// 添加已有的状态会报错
 	_, err = sm.AddGroupConcern(test.G1, test.UID1, test.BibiliLive)
-	assert.Nil(t, err)
+	assert.EqualValues(t, ErrAlreadyExists, err)
 
 	// 检查UID在所有G中有blive和ylive和hlive
 	assert.EqualValues(t, ErrAlreadyExists, sm.CheckConcern(test.UID1, test.BibiliLive.Add(test.YoutubeLive).Add(test.HuyaLive)))

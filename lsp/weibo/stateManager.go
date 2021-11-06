@@ -23,12 +23,12 @@ func (s *StateManager) AddUserInfo(info *UserInfo) error {
 	if info == nil {
 		return errors.New("<nil userInfo>")
 	}
-	return s.JsonSave(s.UserInfoKey(info.Uid), info, true)
+	return s.SetJson(s.UserInfoKey(info.Uid), info)
 }
 
 func (s *StateManager) GetUserInfo(uid int64) (*UserInfo, error) {
 	var userInfo *UserInfo
-	err := s.JsonGet(s.UserInfoKey(uid), &userInfo)
+	err := s.GetJson(s.UserInfoKey(uid), &userInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -41,17 +41,17 @@ func (s *StateManager) AddNewsInfo(info *NewsInfo) error {
 	}
 	return s.RWCover(func() error {
 		var err error
-		err = s.JsonSave(s.UserInfoKey(info.Uid), info.UserInfo, true)
+		err = s.SetJson(s.UserInfoKey(info.Uid), info.UserInfo)
 		if err != nil {
 			return err
 		}
-		return s.JsonSave(s.NewsInfoKey(info.Uid), info, true)
+		return s.SetJson(s.NewsInfoKey(info.Uid), info)
 	})
 }
 
 func (s *StateManager) GetNewsInfo(uid int64) (*NewsInfo, error) {
 	var newsInfo *NewsInfo
-	err := s.JsonGet(s.NewsInfoKey(uid), &newsInfo)
+	err := s.GetJson(s.NewsInfoKey(uid), &newsInfo)
 	if err != nil {
 		return nil, err
 	}

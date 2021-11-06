@@ -149,15 +149,13 @@ func TestStateManager_CheckDynamicId(t *testing.T) {
 
 	assert.True(t, c.CheckDynamicId(test.DynamicID1))
 
-	replaced, err := c.MarkDynamicId(test.DynamicID1)
+	err := c.MarkDynamicId(test.DynamicID1)
 	assert.Nil(t, err)
-	assert.False(t, replaced)
 
 	assert.False(t, c.CheckDynamicId(test.DynamicID1))
 
-	replaced, err = c.MarkDynamicId(test.DynamicID1)
+	err = c.MarkDynamicId(test.DynamicID1)
 	assert.Nil(t, err)
-	assert.True(t, replaced)
 }
 
 func TestStateManager_IncNotLiveCount(t *testing.T) {
@@ -298,15 +296,15 @@ func TestStateManager_GetUserStat(t *testing.T) {
 	userStat, err := c.GetUserStat(test.UID1)
 	assert.NotNil(t, err)
 
-	assert.NotNil(t, c.AddUserStat(nil, nil))
+	assert.NotNil(t, c.AddUserStat(nil, 0))
 
 	userStat = NewUserStat(test.UID1, 1, 2)
 
-	assert.Nil(t, c.AddUserStat(userStat, localdb.ExpireOption(time.Hour)))
+	assert.Nil(t, c.AddUserStat(userStat, time.Hour))
 
 	userStat = NewUserStat(test.UID2, 3, 4)
 
-	assert.Nil(t, c.AddUserStat(userStat, localdb.ExpireOption(time.Hour)))
+	assert.Nil(t, c.AddUserStat(userStat, time.Hour))
 
 	userStat, err = c.GetUserStat(test.UID1)
 

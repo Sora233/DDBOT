@@ -5,7 +5,6 @@ import (
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/modern-go/gls"
 	"github.com/tidwall/buntdb"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -23,6 +22,7 @@ var logger = utils.GetModuleLogger("localdb")
 // 有可能f返回nil，但RWTxCover返回non-nil
 // 可以忽略error，但不要简单地用f返回值替代RWTxCover返回值，ref: bilibili/MarkDynamicId
 // 需要注意可写事务是唯一的，同一时间只会存在一个可写事务，所有耗时操作禁止放在可写事务中执行
+// 在同一Goroutine中，可写事务可以嵌套
 func (*ShortCut) RWCoverTx(f func(tx *buntdb.Tx) error) error {
 	if itx := gls.Get(TxKey); itx != nil {
 		return f(itx.(*buntdb.Tx))
@@ -43,6 +43,7 @@ func (*ShortCut) RWCoverTx(f func(tx *buntdb.Tx) error) error {
 
 // RWCover 在一个可读可写事务中执行f，不同的是它不获取 buntdb.Tx ，而由 f 自己控制。
 // 需要注意可写事务是唯一的，同一时间只会存在一个可写事务，所有耗时操作禁止放在可写事务中执行
+// 在同一Goroutine中，可写事务可以嵌套
 func (*ShortCut) RWCover(f func() error) error {
 	if itx := gls.Get(TxKey); itx != nil {
 		return f()
@@ -61,7 +62,7 @@ func (*ShortCut) RWCover(f func() error) error {
 	})
 }
 
-// RCoverTx 在一个只读事物中执行f。
+// RCoverTx 在一个只读事务中执行f。
 // 所有写操作会失败或者回滚。
 func (*ShortCut) RCoverTx(f func(tx *buntdb.Tx) error) error {
 	if itx := gls.Get(TxKey); itx != nil {
@@ -81,7 +82,7 @@ func (*ShortCut) RCoverTx(f func(tx *buntdb.Tx) error) error {
 	})
 }
 
-// RCover 在一个只读事物中执行f，不同的是它不获取 buntdb.Tx ，而由 f 自己控制。
+// RCover 在一个只读事务中执行f，不同的是它不获取 buntdb.Tx ，而由 f 自己控制。
 // 所有写操作会失败，或者回滚。
 func (*ShortCut) RCover(f func() error) error {
 	if itx := gls.Get(TxKey); itx != nil {
@@ -101,51 +102,8 @@ func (*ShortCut) RCover(f func() error) error {
 	})
 }
 
-// JsonSave 将obj通过 json.Marshal 转成字符串，并设置到key上。
-// overwrite 控制当key已经存在时是否进行覆盖，如果key已存在并且不覆盖，则会返回 ErrRollback。
-// opts 是可选的写入key时的过期时间，不传则表示不过期。
-func (s *ShortCut) JsonSave(key string, obj interface{}, overwrite bool, opts ...*buntdb.SetOptions) error {
-	if obj == nil {
-		return errors.New("<nil obj>")
-	}
-	return s.RWCoverTx(func(tx *buntdb.Tx) error {
-		b, err := json.Marshal(obj)
-		if err != nil {
-			return err
-		}
-		var opt *buntdb.SetOptions
-		var replaced bool
-		if len(opts) > 0 {
-			opt = opts[0]
-		}
-		_, replaced, err = tx.Set(key, string(b), opt)
-		if replaced && !overwrite {
-			return ErrRollback
-		}
-		return err
-	})
-}
-
-// JsonGet 获取key对应的value，并通过 json.Unmarshal 到obj上
-func (s *ShortCut) JsonGet(key string, obj interface{}) error {
-	if obj == nil {
-		return errors.New("<nil obj>")
-	}
-	return s.RWCoverTx(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(key)
-		if err != nil {
-			return err
-		}
-		err = json.Unmarshal([]byte(val), obj)
-		if err != nil {
-			logger.Errorf("JsonGet %v failed %v", reflect.TypeOf(obj).Name(), err)
-		}
-		return err
-	})
-}
-
 // SeqNext 通过key获取value，将value解析成int64，将其加1并保存，返回加1后的值。
-// 如果key不存在，则会默认其为0
+// 如果key不存在，则会默认其为0，返回值为1
 func (s *ShortCut) SeqNext(key string) (int64, error) {
 	var result int64
 	err := s.RWCoverTx(func(tx *buntdb.Tx) error {
@@ -168,38 +126,146 @@ func (s *ShortCut) SeqNext(key string) (int64, error) {
 	return result, err
 }
 
-// SeqClear 删除key，key不存在也不会返回错误
-func (s *ShortCut) SeqClear(key string) error {
-	err := s.RWCoverTx(func(tx *buntdb.Tx) error {
-		_, err := tx.Delete(key)
-		if err == buntdb.ErrNotFound {
-			err = nil
-		}
+// GetJson 获取key对应的value，并通过 json.Unmarshal 到obj上
+// 支持 GetIgnoreExpireOpt GetIgnoreNotFound
+func (s *ShortCut) GetJson(key string, obj interface{}, opt ...OptionFunc) error {
+	if obj == nil {
+		return errors.New("<nil obj>")
+	}
+	opts := getOption(opt...)
+	var value string
+	err := s.RCoverTx(func(tx *buntdb.Tx) error {
+		var err error
+		value, err = s.getWithOpts(tx, key, opts)
 		return err
 	})
-	return err
+	if err != nil {
+		return err
+	}
+	if len(value) == 0 {
+		return nil
+	}
+	return json.Unmarshal([]byte(value), obj)
 }
 
-// SetIfNotExist 使用opt设置key value，如果key已经存在，则回滚并返回 ErrRollback
-func (s *ShortCut) SetIfNotExist(key, value string, opt ...*buntdb.SetOptions) error {
+// SetJson 将obj通过 json.Marshal 转成json字符串，并设置到key上。
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetPreviousValueStringOpt
+// SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
+func (s *ShortCut) SetJson(key string, obj interface{}, opt ...OptionFunc) error {
+	if obj == nil {
+		return errors.New("<nil obj>")
+	}
+	b, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	opts := getOption(opt...)
 	return s.RWCoverTx(func(tx *buntdb.Tx) error {
-		var (
-			replaced bool
-			err      error
-		)
-		if len(opt) == 0 {
-			_, replaced, err = tx.Set(key, value, nil)
-		} else {
-			_, replaced, err = tx.Set(key, value, opt[0])
-		}
-		if err != nil {
-			return err
-		}
-		if replaced {
-			return ErrRollback
-		}
-		return nil
+		return s.setWithOpts(tx, key, string(b), opts)
 	})
+}
+
+// Delete 删除key，并返回key上的值
+// 支持 DeleteIgnoreNotFound
+func (s *ShortCut) Delete(key string, opt ...OptionFunc) (string, error) {
+	opts := getOption(opt...)
+	var previous string
+	err := s.RWCoverTx(func(tx *buntdb.Tx) error {
+		var err error
+		previous, err = s.deleteWithOpts(tx, key, opts)
+		return err
+	})
+	return previous, err
+}
+
+// Get 通过key获取value
+// 支持 GetIgnoreExpireOpt GetIgnoreNotFound
+func (s *ShortCut) Get(key string, opt ...OptionFunc) (string, error) {
+	var result string
+	opts := getOption(opt...)
+	err := s.RCoverTx(func(tx *buntdb.Tx) error {
+		var err error
+		result, err = s.getWithOpts(tx, key, opts)
+		return err
+	})
+	return result, err
+}
+
+// Set 通过key设置value
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt
+func (s *ShortCut) Set(key, value string, opt ...OptionFunc) error {
+	opts := getOption(opt...)
+	return s.RWCoverTx(func(tx *buntdb.Tx) error {
+		return s.setWithOpts(tx, key, value, opts)
+	})
+}
+
+// GetInt64 通过key获取value，并将value解析成int64
+// 支持 GetIgnoreExpireOpt GetIgnoreNotFound
+// 当设置了 GetIgnoreNotFound 时，key不存在时会直接返回0
+func (s *ShortCut) GetInt64(key string, opt ...OptionFunc) (int64, error) {
+	return s.int64Wrapper(s.Get(key, opt...))
+}
+
+// SetInt64 通过key设置int64格式的value
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt
+func (s *ShortCut) SetInt64(key string, value int64, opt ...OptionFunc) error {
+	return s.Set(key, strconv.FormatInt(value, 10), opt...)
+}
+
+// setWithOpts 统一在有option的情况下的set行为，考虑到性能需要手动传 buntdb.Tx
+func (s *ShortCut) setWithOpts(tx *buntdb.Tx, key string, value string, opt *option) error {
+	var (
+		prev     string
+		replaced bool
+		err      error
+		setOpt   *buntdb.SetOptions
+	)
+	if innerOpt := opt.getInnerExpire(); innerOpt != nil {
+		setOpt = innerOpt
+	} else if opt.keepLastExpire {
+		lastTTL, _ := tx.TTL(key)
+		if lastTTL > 0 {
+			setOpt = ExpireOption(lastTTL)
+		}
+	}
+	prev, replaced, err = tx.Set(key, value, setOpt)
+	if err != nil {
+		return err
+	}
+	opt.setPrevious(prev)
+	if replaced && opt.getNoOverWrite() {
+		return ErrRollback
+	}
+	return nil
+}
+
+// getWithOpts 统一在有option的情况下的get行为，考虑到性能需要手动传 buntdb.Tx
+func (s *ShortCut) getWithOpts(tx *buntdb.Tx, key string, opt *option) (string, error) {
+	result, err := tx.Get(key, opt.getIgnoreExpire())
+	if opt.getIgnoreNotFound() && err == buntdb.ErrNotFound {
+		err = nil
+	}
+	return result, err
+}
+
+// deleteWithOpts 统一在有option的情况下的delete行为，考虑到性能需要手动传 buntdb.Tx
+func (s *ShortCut) deleteWithOpts(tx *buntdb.Tx, key string, opt *option) (string, error) {
+	result, err := tx.Delete(key)
+	if opt.getIgnoreNotFound() && err == buntdb.ErrNotFound {
+		err = nil
+	}
+	return result, err
+}
+
+func (s *ShortCut) int64Wrapper(result string, err error) (int64, error) {
+	if err != nil {
+		return 0, err
+	}
+	if len(result) == 0 {
+		return 0, nil
+	}
+	return strconv.ParseInt(result, 10, 64)
 }
 
 func (s *ShortCut) CreatePatternIndex(patternFunc KeyPatternFunc, suffix []interface{}, less ...func(a, b string) bool) error {
@@ -216,91 +282,81 @@ func (s *ShortCut) CreatePatternIndex(patternFunc KeyPatternFunc, suffix []inter
 	})
 }
 
-// GetInt64 通过key获取value，并将value解析成int64，如果key不存在，返回 buntdb.ErrNotFound
-func (s *ShortCut) GetInt64(key string) (int64, error) {
-	var result int64
-	err := s.RCoverTx(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(key)
-		if err != nil {
-			return err
-		}
-		r, err := strconv.ParseInt(val, 10, 64)
-		if err != nil {
-			return err
-		}
-		result = r
-		return nil
-	})
-	return result, err
-}
-
-// SetInt64 通过key设置int64格式的value
-// opt 可以设置过期时间
-// 返回key上之前的int64值，如果之前key不存在，或者上一个value无法解析成int64，则返回0
-func (s *ShortCut) SetInt64(key string, value int64, opt ...*buntdb.SetOptions) (int64, error) {
-	var prev int64
-	err := s.RWCoverTx(func(tx *buntdb.Tx) error {
-		var err error
-		var s string
-		if len(opt) == 0 {
-			s, _, err = tx.Set(key, strconv.FormatInt(value, 10), nil)
-		} else {
-			s, _, err = tx.Set(key, strconv.FormatInt(value, 10), opt[0])
-		}
-		if err != nil {
-			return err
-		}
-		if len(s) == 0 {
-			return nil
-		}
-		prev, _ = strconv.ParseInt(s, 10, 64)
-		return nil
-	})
-	return prev, err
-}
-
+// RWCoverTx 在一个可读可写事务中执行f，注意f的返回值不一定是RWCoverTx的返回值
+// 有可能f返回nil，但RWTxCover返回non-nil
+// 可以忽略error，但不要简单地用f返回值替代RWTxCover返回值，ref: bilibili/MarkDynamicId
+// 需要注意可写事务是唯一的，同一时间只会存在一个可写事务，所有耗时操作禁止放在可写事务中执行
+// 在同一Goroutine中，可写事务可以嵌套
 func RWCoverTx(f func(tx *buntdb.Tx) error) error {
 	return shortCut.RWCoverTx(f)
 }
 
-func RCoverTx(f func(tx *buntdb.Tx) error) error {
-	return shortCut.RCoverTx(f)
-}
-
+// RWCover 在一个可读可写事务中执行f，不同的是它不获取 buntdb.Tx ，而由 f 自己控制。
+// 需要注意可写事务是唯一的，同一时间只会存在一个可写事务，所有耗时操作禁止放在可写事务中执行
+// 在同一Goroutine中，可写事务可以嵌套
 func RWCover(f func() error) error {
 	return shortCut.RWCover(f)
 }
 
+// RCoverTx 在一个只读事务中执行f。
+// 所有写操作会失败或者回滚。
+func RCoverTx(f func(tx *buntdb.Tx) error) error {
+	return shortCut.RCoverTx(f)
+}
+
+// RCover 在一个只读事务中执行f，不同的是它不获取 buntdb.Tx ，而由 f 自己控制。
+// 所有写操作会失败，或者回滚。
 func RCover(f func() error) error {
 	return shortCut.RCover(f)
 }
 
-func JsonGet(key string, obj interface{}) error {
-	return shortCut.JsonGet(key, obj)
-}
-
-func JsonSave(key string, obj interface{}, overwrite bool, opt ...*buntdb.SetOptions) error {
-	return shortCut.JsonSave(key, obj, overwrite, opt...)
-}
-
+// SeqNext 通过key获取value，将value解析成int64，将其加1并保存，返回加1后的值。
+// 如果key不存在，则会默认其为0，返回值为1
 func SeqNext(key string) (int64, error) {
 	return shortCut.SeqNext(key)
 }
 
-func SeqClear(key string) error {
-	return shortCut.SeqClear(key)
+// GetJson 获取key对应的value，并通过 json.Unmarshal 到obj上
+// 支持 GetIgnoreExpireOpt GetIgnoreNotFound
+func GetJson(key string, obj interface{}, opt ...OptionFunc) error {
+	return shortCut.GetJson(key, obj, opt...)
 }
 
-func SetIfNotExist(key, value string, opt ...*buntdb.SetOptions) error {
-	return shortCut.SetIfNotExist(key, value, opt...)
+// SetJson 将obj通过 json.Marshal 转成json字符串，并设置到key上。
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
+func SetJson(key string, obj interface{}, opt ...OptionFunc) error {
+	return shortCut.SetJson(key, obj, opt...)
 }
 
-func SetInt64(key string, value int64, opt ...*buntdb.SetOptions) (int64, error) {
+// Delete 删除key，并返回key上的值
+// 支持 DeleteIgnoreNotFound
+func Delete(key string, opt ...OptionFunc) (string, error) {
+	return shortCut.Delete(key, opt...)
+}
+
+// Get 通过key获取value
+// 支持 GetIgnoreExpireOpt GetIgnoreNotFound
+func Get(key string, opt ...OptionFunc) (string, error) {
+	return shortCut.Get(key, opt...)
+}
+
+// Set 通过key设置value
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt
+func Set(key, value string, opt ...OptionFunc) error {
+	return shortCut.Set(key, value, opt...)
+}
+
+// GetInt64 通过key获取value，并将value解析成int64
+// 支持 GetIgnoreExpireOpt GetIgnoreNotFound
+// 当设置了 GetIgnoreNotFound 时，key不存在时会直接返回0
+func GetInt64(key string, opt ...OptionFunc) (int64, error) {
+	return shortCut.GetInt64(key, opt...)
+}
+
+// SetInt64 通过key设置int64格式的value
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt
+func SetInt64(key string, value int64, opt ...OptionFunc) error {
 	return shortCut.SetInt64(key, value, opt...)
-}
-
-func GetInt64(key string) (int64, error) {
-	return shortCut.GetInt64(key)
 }
 
 // ExpireOption 是一个创建expire的函数糖

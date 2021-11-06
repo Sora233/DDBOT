@@ -2,9 +2,9 @@ package acfun
 
 import (
 	"errors"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/tidwall/buntdb"
-	"strconv"
 )
 
 type StateManager struct {
@@ -24,7 +24,7 @@ func NewStateManager(notify chan<- concern.Notify) *StateManager {
 
 func (s *StateManager) GetUserInfo(uid int64) (*UserInfo, error) {
 	var userInfo *UserInfo
-	err := s.JsonGet(s.UserInfoKey(uid), &userInfo)
+	err := s.GetJson(s.UserInfoKey(uid), &userInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -35,23 +35,23 @@ func (s *StateManager) AddUserInfo(info *UserInfo) error {
 	if info == nil {
 		return errors.New("<nil userinfo>")
 	}
-	return s.JsonSave(s.UserInfoKey(info.Uid), info, true)
+	return s.SetJson(s.UserInfoKey(info.Uid), info)
 }
 
 func (s *StateManager) AddLiveInfo(info *LiveInfo) error {
 	return s.RWCover(func() error {
-		err := s.JsonSave(s.UserInfoKey(info.Uid), info.UserInfo, true)
+		err := s.SetJson(s.UserInfoKey(info.Uid), info.UserInfo)
 		if err != nil {
 			return err
 		}
-		err = s.JsonSave(s.LiveInfoKey(info.Uid), info, true)
+		err = s.SetJson(s.LiveInfoKey(info.Uid), info)
 		return err
 	})
 }
 
 func (s *StateManager) GetLiveInfo(uid int64) (*LiveInfo, error) {
 	var liveInfo *LiveInfo
-	err := s.JsonGet(s.LiveInfoKey(uid), &liveInfo)
+	err := s.GetJson(s.LiveInfoKey(uid), &liveInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -74,11 +74,12 @@ func (s *StateManager) IncNotLiveCount(uid int64) int64 {
 }
 
 func (s *StateManager) ClearNotLiveCount(uid int64) error {
-	return s.SeqClear(s.NotLiveKey(uid))
+	_, err := s.Delete(s.NotLiveKey(uid), localdb.DeleteIgnoreNotFound())
+	return err
 }
 
 func (s *StateManager) SetUidFirstTimestampIfNotExist(uid int64, timestamp int64) error {
-	return s.SetIfNotExist(s.UidFirstTimestamp(uid), strconv.FormatInt(timestamp, 10), nil)
+	return s.SetInt64(s.UidFirstTimestamp(uid), timestamp, localdb.SetNoOverWriteOpt())
 }
 
 func (s *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err error) {

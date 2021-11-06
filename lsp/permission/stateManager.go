@@ -21,18 +21,6 @@ type StateManager struct {
 	*KeySet
 }
 
-type commandOption struct {
-	duration time.Duration
-}
-
-type CommandOption func(c *commandOption)
-
-func ExpireOption(d time.Duration) CommandOption {
-	return func(c *commandOption) {
-		c.duration = d
-	}
-}
-
 // CheckBlockList return true if blocked
 func (c *StateManager) CheckBlockList(caller int64) bool {
 	var result bool
@@ -133,35 +121,31 @@ func (c *StateManager) CheckGroupRole(groupCode int64, caller int64, role RoleTy
 	return result
 }
 
-func (c *StateManager) EnableGroupCommand(groupCode int64, command string, opts ...CommandOption) error {
+func (c *StateManager) EnableGroupCommand(groupCode int64, command string) error {
 	if c.CheckGlobalCommandDisabled(command) {
 		return ErrGlobalDisabled
 	}
-	return c.operatorEnableKey(c.GroupEnabledKey(groupCode, command), Enable, opts...)
+	return c.operatorEnableKey(c.GroupEnabledKey(groupCode, command), Enable)
 }
 
-func (c *StateManager) DisableGroupCommand(groupCode int64, command string, opts ...CommandOption) error {
+func (c *StateManager) DisableGroupCommand(groupCode int64, command string) error {
 	if c.CheckGlobalCommandDisabled(command) {
 		return ErrGlobalDisabled
 	}
-	return c.operatorEnableKey(c.GroupEnabledKey(groupCode, command), Disable, opts...)
+	return c.operatorEnableKey(c.GroupEnabledKey(groupCode, command), Disable)
 }
 
-func (c *StateManager) GlobalEnableGroupCommand(command string, opts ...CommandOption) error {
-	return c.operatorEnableKey(c.GlobalEnabledKey(command), Enable, opts...)
+func (c *StateManager) GlobalEnableGroupCommand(command string) error {
+	return c.operatorEnableKey(c.GlobalEnabledKey(command), Enable)
 }
 
-func (c *StateManager) GlobalDisableGroupCommand(command string, opts ...CommandOption) error {
-	return c.operatorEnableKey(c.GlobalEnabledKey(command), Disable, opts...)
+func (c *StateManager) GlobalDisableGroupCommand(command string) error {
+	return c.operatorEnableKey(c.GlobalEnabledKey(command), Disable)
 }
 
-func (c *StateManager) operatorEnableKey(key string, status string, opts ...CommandOption) error {
-	opt := new(commandOption)
-	for _, o := range opts {
-		o(opt)
-	}
+func (c *StateManager) operatorEnableKey(key string, status string) error {
 	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		prev, replaced, err := tx.Set(key, status, localdb.ExpireOption(opt.duration))
+		prev, replaced, err := tx.Set(key, status, nil)
 		if err != nil {
 			return err
 		}

@@ -2,6 +2,7 @@ package buntdb
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/buntdb"
 	"reflect"
 	"testing"
 )
@@ -42,14 +43,32 @@ func TestShortCut_JsonGet(t *testing.T) {
 
 	for i := 0; i < len(expected); i++ {
 		err = RWCover(func() error {
-			return JsonSave(keys[i], expected[i], true)
+			return SetJson(keys[i], expected[i])
 		})
 		assert.Nil(t, err)
 		var a = reflect.New(reflect.TypeOf(expected[i]).Elem()).Interface()
 		err = RCover(func() error {
-			return JsonGet(keys[i], a)
+			return GetJson(keys[i], a)
 		})
 		assert.Nil(t, err)
 		assert.EqualValues(t, expected[i], a)
 	}
+
+	var notfound = &test1{}
+
+	assert.EqualValues(t, buntdb.ErrNotFound, GetJson("not_found", notfound))
+	assert.Nil(t, GetJson("not_found", notfound, GetIgnoreNotFound()))
+
+	assert.NotNil(t, GetJson("nil", nil))
+	assert.NotNil(t, SetJson("nil", nil))
+
+	_, err = Delete(key1, DeleteIgnoreNotFound())
+	assert.Nil(t, err)
+
+	var lastS *test1
+	var s1 = &test1{"A1", "B1"}
+	var s2 = &test1{"A2", "B2"}
+	assert.Nil(t, SetJson(key1, s1, SetGetPreviousValueJsonObjectOpt(nil)))
+	assert.Nil(t, SetJson(key1, s2, SetGetPreviousValueJsonObjectOpt(&lastS)))
+	assert.EqualValues(t, s1, lastS)
 }
