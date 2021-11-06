@@ -72,6 +72,8 @@ func TestConcern(t *testing.T) {
 		liveStatusChanged: true,
 	}
 
+	time.Sleep(time.Millisecond * 500)
+
 	testEventChan <- &VideoInfo{
 		UserInfo: UserInfo{
 			ChannelId:   test.NAME1,

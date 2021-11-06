@@ -259,14 +259,8 @@ func (c *StateManager) GlobalSilence() error {
 }
 
 func (c *StateManager) UndoGlobalSilence() error {
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.GlobalSilenceKey()
-		_, err := tx.Delete(key)
-		if err == buntdb.ErrNotFound {
-			err = nil
-		}
-		return err
-	})
+	_, err := c.Delete(c.GlobalSilenceKey(), localdb.IgnoreNotFoundOpt())
+	return err
 }
 
 func (c *StateManager) CheckGroupSilence(groupCode int64) bool {
@@ -300,25 +294,15 @@ func (c *StateManager) GroupSilence(groupCode int64) error {
 	if c.CheckGlobalSilence() {
 		return ErrGlobalSilenced
 	}
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.GroupSilenceKey(groupCode)
-		_, _, err := tx.Set(key, "", nil)
-		return err
-	})
+	return c.Set(c.GroupSilenceKey(groupCode), "")
 }
 
 func (c *StateManager) UndoGroupSilence(groupCode int64) error {
 	if c.CheckGlobalSilence() {
 		return ErrGlobalSilenced
 	}
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.GroupSilenceKey(groupCode)
-		_, err := tx.Delete(key)
-		if err == buntdb.ErrNotFound {
-			err = nil
-		}
-		return err
-	})
+	_, err := c.Delete(c.GroupSilenceKey(groupCode), localdb.IgnoreNotFoundOpt())
+	return err
 }
 
 func (c *StateManager) CheckGroupAdministrator(groupCode int64, caller int64) bool {

@@ -127,7 +127,7 @@ func (s *ShortCut) SeqNext(key string) (int64, error) {
 }
 
 // GetJson 获取key对应的value，并通过 json.Unmarshal 到obj上
-// 支持 GetIgnoreExpireOpt GetIgnoreNotFound
+// 支持 GetIgnoreExpireOpt IgnoreNotFoundOpt GetTTLOpt
 func (s *ShortCut) GetJson(key string, obj interface{}, opt ...OptionFunc) error {
 	if obj == nil {
 		return errors.New("<nil obj>")
@@ -149,8 +149,8 @@ func (s *ShortCut) GetJson(key string, obj interface{}, opt ...OptionFunc) error
 }
 
 // SetJson 将obj通过 json.Marshal 转成json字符串，并设置到key上。
-// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetPreviousValueStringOpt
-// SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetIsOverwriteOpt
+// SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
 func (s *ShortCut) SetJson(key string, obj interface{}, opt ...OptionFunc) error {
 	if obj == nil {
 		return errors.New("<nil obj>")
@@ -166,7 +166,7 @@ func (s *ShortCut) SetJson(key string, obj interface{}, opt ...OptionFunc) error
 }
 
 // Delete 删除key，并返回key上的值
-// 支持 DeleteIgnoreNotFound
+// 支持 IgnoreNotFoundOpt
 func (s *ShortCut) Delete(key string, opt ...OptionFunc) (string, error) {
 	opts := getOption(opt...)
 	var previous string
@@ -179,7 +179,7 @@ func (s *ShortCut) Delete(key string, opt ...OptionFunc) (string, error) {
 }
 
 // Get 通过key获取value
-// 支持 GetIgnoreExpireOpt GetIgnoreNotFound
+// 支持 GetIgnoreExpireOpt IgnoreNotFoundOpt GetTTLOpt
 func (s *ShortCut) Get(key string, opt ...OptionFunc) (string, error) {
 	var result string
 	opts := getOption(opt...)
@@ -192,7 +192,8 @@ func (s *ShortCut) Get(key string, opt ...OptionFunc) (string, error) {
 }
 
 // Set 通过key设置value
-// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetIsOverwriteOpt
+// SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
 func (s *ShortCut) Set(key, value string, opt ...OptionFunc) error {
 	opts := getOption(opt...)
 	return s.RWCoverTx(func(tx *buntdb.Tx) error {
@@ -201,16 +202,32 @@ func (s *ShortCut) Set(key, value string, opt ...OptionFunc) error {
 }
 
 // GetInt64 通过key获取value，并将value解析成int64
-// 支持 GetIgnoreExpireOpt GetIgnoreNotFound
-// 当设置了 GetIgnoreNotFound 时，key不存在时会直接返回0
+// 支持 GetIgnoreExpireOpt IgnoreNotFoundOpt GetTTLOpt
+// 当设置了 IgnoreNotFoundOpt 时，key不存在时会直接返回0，不会返回错误
 func (s *ShortCut) GetInt64(key string, opt ...OptionFunc) (int64, error) {
 	return s.int64Wrapper(s.Get(key, opt...))
 }
 
 // SetInt64 通过key设置int64格式的value
-// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetIsOverwriteOpt
+// SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
 func (s *ShortCut) SetInt64(key string, value int64, opt ...OptionFunc) error {
 	return s.Set(key, strconv.FormatInt(value, 10), opt...)
+}
+
+// Exist 查询key是否存在，key不存在或者发生任何错误时返回 false
+// 支持 GetTTLOpt GetIgnoreExpireOpt
+func (s *ShortCut) Exist(key string, opt ...OptionFunc) bool {
+	var result bool
+	opts := getOption(opt...)
+	err := s.RWCoverTx(func(tx *buntdb.Tx) error {
+		result = s.existWithOpts(tx, key, opts)
+		return nil
+	})
+	if err != nil {
+		result = false
+	}
+	return result
 }
 
 // setWithOpts 统一在有option的情况下的set行为，考虑到性能需要手动传 buntdb.Tx
@@ -244,6 +261,10 @@ func (s *ShortCut) setWithOpts(tx *buntdb.Tx, key string, value string, opt *opt
 // getWithOpts 统一在有option的情况下的get行为，考虑到性能需要手动传 buntdb.Tx
 func (s *ShortCut) getWithOpts(tx *buntdb.Tx, key string, opt *option) (string, error) {
 	result, err := tx.Get(key, opt.getIgnoreExpire())
+	if opt.getTTL() != nil {
+		ttl, _ := tx.TTL(key)
+		opt.setTTL(ttl)
+	}
 	if opt.getIgnoreNotFound() && err == buntdb.ErrNotFound {
 		err = nil
 	}
@@ -257,6 +278,16 @@ func (s *ShortCut) deleteWithOpts(tx *buntdb.Tx, key string, opt *option) (strin
 		err = nil
 	}
 	return result, err
+}
+
+// existWithOpts 统一在有option的情况下的exist行为，考虑到性能需要手动传 buntdb.Tx
+func (s *ShortCut) existWithOpts(tx *buntdb.Tx, key string, opt *option) bool {
+	_, err := tx.Get(key, opt.getIgnoreExpire())
+	if opt.getTTL() != nil {
+		ttl, _ := tx.TTL(key)
+		opt.setTTL(ttl)
+	}
+	return err == nil
 }
 
 func (s *ShortCut) int64Wrapper(result string, err error) (int64, error) {
@@ -318,46 +349,55 @@ func SeqNext(key string) (int64, error) {
 }
 
 // GetJson 获取key对应的value，并通过 json.Unmarshal 到obj上
-// 支持 GetIgnoreExpireOpt GetIgnoreNotFound
+// 支持 GetIgnoreExpireOpt IgnoreNotFoundOpt GetTTLOpt
 func GetJson(key string, obj interface{}, opt ...OptionFunc) error {
 	return shortCut.GetJson(key, obj, opt...)
 }
 
 // SetJson 将obj通过 json.Marshal 转成json字符串，并设置到key上。
-// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetIsOverwriteOpt
+// SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
 func SetJson(key string, obj interface{}, opt ...OptionFunc) error {
 	return shortCut.SetJson(key, obj, opt...)
 }
 
 // Delete 删除key，并返回key上的值
-// 支持 DeleteIgnoreNotFound
+// 支持 IgnoreNotFoundOpt
 func Delete(key string, opt ...OptionFunc) (string, error) {
 	return shortCut.Delete(key, opt...)
 }
 
 // Get 通过key获取value
-// 支持 GetIgnoreExpireOpt GetIgnoreNotFound
+// 支持 GetIgnoreExpireOpt IgnoreNotFoundOpt GetTTLOpt
 func Get(key string, opt ...OptionFunc) (string, error) {
 	return shortCut.Get(key, opt...)
 }
 
 // Set 通过key设置value
-// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetIsOverwriteOpt
+// SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
 func Set(key, value string, opt ...OptionFunc) error {
 	return shortCut.Set(key, value, opt...)
 }
 
 // GetInt64 通过key获取value，并将value解析成int64
-// 支持 GetIgnoreExpireOpt GetIgnoreNotFound
-// 当设置了 GetIgnoreNotFound 时，key不存在时会直接返回0
+// 支持 GetIgnoreExpireOpt IgnoreNotFoundOpt GetTTLOpt
+// 当设置了 IgnoreNotFoundOpt 时，key不存在时会直接返回0
 func GetInt64(key string, opt ...OptionFunc) (int64, error) {
 	return shortCut.GetInt64(key, opt...)
 }
 
 // SetInt64 通过key设置int64格式的value
-// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetIsOverwriteOpt
+// SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
 func SetInt64(key string, value int64, opt ...OptionFunc) error {
 	return shortCut.SetInt64(key, value, opt...)
+}
+
+// Exist 查询key是否存在，key不存在或者发生任何错误时返回 false
+// 支持 GetTTLOpt GetIgnoreExpireOpt
+func Exist(key string, opt ...OptionFunc) bool {
+	return shortCut.Exist(key, opt...)
 }
 
 // ExpireOption 是一个创建expire的函数糖

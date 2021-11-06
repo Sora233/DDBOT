@@ -28,6 +28,9 @@ func TestStateManager_GetInfo(t *testing.T) {
 	sm := initStateManager(t)
 	assert.NotNil(t, sm)
 
+	_, err := sm.GetInfo(test.NAME1)
+	assert.NotNil(t, err)
+
 	expected := &Info{
 		UserInfo: UserInfo{
 			ChannelId:   test.NAME1,

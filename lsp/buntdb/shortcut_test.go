@@ -57,12 +57,12 @@ func TestShortCut_JsonGet(t *testing.T) {
 	var notfound = &test1{}
 
 	assert.EqualValues(t, buntdb.ErrNotFound, GetJson("not_found", notfound))
-	assert.Nil(t, GetJson("not_found", notfound, GetIgnoreNotFound()))
+	assert.Nil(t, GetJson("not_found", notfound, IgnoreNotFoundOpt()))
 
 	assert.NotNil(t, GetJson("nil", nil))
 	assert.NotNil(t, SetJson("nil", nil))
 
-	_, err = Delete(key1, DeleteIgnoreNotFound())
+	_, err = Delete(key1, IgnoreNotFoundOpt())
 	assert.Nil(t, err)
 
 	var lastS *test1

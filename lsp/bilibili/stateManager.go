@@ -159,7 +159,7 @@ func (c *StateManager) MarkDynamicId(dynamic int64) (bool, error) {
 	//	})
 	var isOverwrite bool
 	err := c.Set(c.DynamicIdKey(dynamic), "",
-		localdb.SetExpireOpt(time.Hour*120), localdb.SetGetIsOverwrite(&isOverwrite))
+		localdb.SetExpireOpt(time.Hour*120), localdb.SetGetIsOverwriteOpt(&isOverwrite))
 	return isOverwrite, err
 }
 
@@ -172,7 +172,7 @@ func (c *StateManager) IncNotLiveCount(uid int64) int64 {
 }
 
 func (c *StateManager) ClearNotLiveCount(uid int64) error {
-	_, err := c.Delete(c.NotLiveKey(uid), localdb.DeleteIgnoreNotFound())
+	_, err := c.Delete(c.NotLiveKey(uid), localdb.IgnoreNotFoundOpt())
 	return err
 }
 
@@ -251,7 +251,7 @@ func GetCookieInfo(username string) (cookieInfo *LoginResponse_Data_CookieInfo, 
 }
 
 func ClearCookieInfo(username string) error {
-	_, err := localdb.Delete(localdb.BilibiliUserCookieInfoKey(username), localdb.DeleteIgnoreNotFound())
+	_, err := localdb.Delete(localdb.BilibiliUserCookieInfoKey(username), localdb.IgnoreNotFoundOpt())
 	return err
 }
 

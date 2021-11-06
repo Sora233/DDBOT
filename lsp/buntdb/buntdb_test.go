@@ -350,7 +350,7 @@ func TestSeqNext(t *testing.T) {
 
 	_, err = Delete(seq1)
 	assert.EqualValues(t, buntdb.ErrNotFound, err)
-	_, err = Delete(seq1, DeleteIgnoreNotFound())
+	_, err = Delete(seq1, IgnoreNotFoundOpt())
 	assert.Nil(t, err)
 
 	s, err = SeqNext(seq2)
@@ -519,7 +519,7 @@ func TestGetInt64(t *testing.T) {
 	result, err := GetInt64(key)
 	assert.EqualValues(t, buntdb.ErrNotFound, err)
 
-	result, err = GetInt64(key, GetIgnoreNotFound())
+	result, err = GetInt64(key, IgnoreNotFoundOpt())
 	assert.Nil(t, err)
 	assert.Zero(t, result)
 
@@ -559,16 +559,16 @@ func TestGet(t *testing.T) {
 	result, err := Get(key)
 	assert.EqualValues(t, buntdb.ErrNotFound, err)
 
-	result, err = Get(key, GetIgnoreNotFound())
+	result, err = Get(key, IgnoreNotFoundOpt())
 	assert.Nil(t, err)
 
 	var prev string
 	var replaced bool
-	assert.Nil(t, Set(key, "1", SetGetPreviousValueStringOpt(&prev), SetGetIsOverwrite(&replaced)))
+	assert.Nil(t, Set(key, "1", SetGetPreviousValueStringOpt(&prev), SetGetIsOverwriteOpt(&replaced)))
 	assert.Equal(t, "", prev)
 	assert.False(t, replaced)
-	assert.Nil(t, Set(key, "2", SetGetPreviousValueStringOpt(nil), SetGetIsOverwrite(nil)))
-	assert.Nil(t, Set(key, "3", SetGetPreviousValueStringOpt(&prev), SetGetIsOverwrite(&replaced)))
+	assert.Nil(t, Set(key, "2", SetGetPreviousValueStringOpt(nil), SetGetIsOverwriteOpt(nil)))
+	assert.Nil(t, Set(key, "3", SetGetPreviousValueStringOpt(&prev), SetGetIsOverwriteOpt(&replaced)))
 	assert.True(t, replaced)
 	assert.EqualValues(t, "2", prev)
 
@@ -583,7 +583,7 @@ func TestGet(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "10", result)
 
-	_, err = Delete(key, DeleteIgnoreNotFound())
+	_, err = Delete(key, IgnoreNotFoundOpt())
 	assert.Nil(t, err)
 
 	assert.Nil(t, Set(key, "1", SetExpireOpt(time.Millisecond*50)))
@@ -593,4 +593,15 @@ func TestGet(t *testing.T) {
 	result, err = Get(key, GetIgnoreExpireOpt())
 	assert.Nil(t, err)
 	assert.EqualValues(t, "1", result)
+
+	var ttl time.Duration
+	assert.Nil(t, Set(key, "2", SetExpireOpt(time.Hour)))
+	_, err = Get(key, GetTTLOpt(&ttl))
+	assert.Nil(t, err)
+	assert.NotZero(t, ttl)
+
+	assert.True(t, Exist(key, GetTTLOpt(&ttl)))
+	assert.NotZero(t, ttl)
+
+	assert.False(t, Exist("wrong", GetTTLOpt(&ttl)))
 }

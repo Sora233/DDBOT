@@ -23,20 +23,22 @@ var ErrEmitQueueNotInit = errors.New("emit queue not enabled")
 
 // NotifyGeneratorFunc 是 IStateManager.NotifyGenerator 函数的具体逻辑
 // 它针对一组 groupCode 把 Event 转变成一组 Notify
-// 使用StateManager时，在 StateManager.Start 之前，
+//
+// 使用 StateManager 时，在 StateManager.Start 之前，
 // 必须使用 StateManager.UseNotifyGeneratorFunc 来指定一个 NotifyGeneratorFunc, 否则会发生 panic
 type NotifyGeneratorFunc func(groupCode int64, event Event) []Notify
 
 // DispatchFunc 是 IStateManager.Dispatch 函数的具体逻辑
 // 它从event channel中获取 Event，把 Event 转变成（可能多个） Notify 并发送到notify channel
+//
 // StateManager 可以使用 StateManager.UseDispatchFunc 来指定一个 DispatchFunc
 // StateManager 中有一个默认实现，适用于绝大多数情况，请参考 StateManager.DefaultDispatch
 type DispatchFunc func(event <-chan Event, notify chan<- Notify)
 
 // FreshFunc 是 IStateManager.Fresh 函数的具体逻辑，没有具体的限制
 // 对于大多数网站来说，它的逻辑是访问网页获取数据，和和之前的数据对比，判断新数据，产生 Event 发送给 eventChan
-// 使用StateManager时，在 StateManager.Start 之前，
-// 必须使用 StateManager.UseFreshFunc 来指定一个 FreshFunc, 否则会发生 panic
+//
+// 使用 StateManager 时，在 StateManager.Start 之前，必须使用 StateManager.UseFreshFunc 来指定一个 FreshFunc, 否则会发生 panic
 type FreshFunc func(ctx context.Context, eventChan chan<- Event)
 
 type IStateManager interface {
@@ -71,6 +73,7 @@ type IStateManager interface {
 // StateManager 是每个 Concern 之间隔离的，不同的订阅源必须持有不同的 StateManager，
 // 操作一个 StateManager 时不会对其他 StateManager 内的数据产生影响，
 // 读取当前 StateManager 内的订阅时，也不会获取到其他 StateManager 内的订阅。
+//
 // StateManager 通过 KeySet 来隔离存储的数据，创建 StateManager 时必须使用唯一的 KeySet，
 // 请通过 NewStateManagerWithStringID / NewStateManagerWithInt64ID / NewStateManagerWithCustomKey 来创建 StateManager。
 type StateManager struct {
@@ -93,19 +96,18 @@ type StateManager struct {
 }
 
 func (c *StateManager) getGroupConcernConfig(groupCode int64, id interface{}) (concernConfig *GroupConcernConfig) {
-	var err error
-	err = c.RCoverTx(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(c.GroupConcernConfigKey(groupCode, id))
-		if err != nil {
-			return err
-		}
-		concernConfig, err = NewGroupConcernConfigFromString(val)
-		return err
-	})
-	if err != nil && err != buntdb.ErrNotFound {
+	val, err := c.Get(c.GroupConcernConfigKey(groupCode, id), localdb.IgnoreNotFoundOpt())
+	if err != nil {
 		logger.WithFields(localutils.GroupLogFields(groupCode)).
 			WithField("id", id).
 			Errorf("GetGroupConcernConfig error %v", err)
+	}
+	if len(val) > 0 {
+		concernConfig, err = NewGroupConcernConfigFromString(val)
+		if err != nil {
+			logger.WithFields(localutils.GroupLogFields(groupCode)).
+				WithFields(logrus.Fields{"id": id, "val": val}).Errorf("NewGroupConcernConfigFromString error %v", err)
+		}
 	}
 	if concernConfig == nil {
 		concernConfig = new(GroupConcernConfig)
@@ -121,23 +123,11 @@ func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) IC
 // OperateGroupConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，如果返回true，就保存GroupConcernConfig，否则就回滚。
 func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig IConfig) bool) error {
 	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
-		var concernConfig *GroupConcernConfig
-		var configKey = c.GroupConcernConfigKey(groupCode, id)
-		val, err := tx.Get(configKey)
-		if err == nil {
-			concernConfig, err = NewGroupConcernConfigFromString(val)
-		} else if err == buntdb.ErrNotFound {
-			concernConfig = new(GroupConcernConfig)
-			err = nil
-		}
-		if err != nil {
-			return err
-		}
+		concernConfig := c.getGroupConcernConfig(groupCode, id)
 		if !f(concernConfig) {
 			return localdb.ErrRollback
 		}
-		_, _, err = tx.Set(configKey, concernConfig.ToString(), nil)
-		return err
+		return c.Set(c.GroupConcernConfigKey(groupCode, id), concernConfig.ToString())
 	})
 	return err
 }

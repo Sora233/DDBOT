@@ -4,7 +4,6 @@ import (
 	"errors"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/tidwall/buntdb"
 	"time"
 )
 
@@ -59,10 +58,7 @@ func (s *StateManager) GetNewsInfo(uid int64) (*NewsInfo, error) {
 }
 
 func (s *StateManager) MarkMblogId(mblogId string) (replaced bool, err error) {
-	err = s.RWCoverTx(func(tx *buntdb.Tx) error {
-		var err error
-		_, replaced, err = tx.Set(s.MarkMblogIdKey(mblogId), "", localdb.ExpireOption(time.Hour*120))
-		return err
-	})
+	err = s.Set(s.MarkMblogIdKey(mblogId), "",
+		localdb.SetExpireOpt(time.Hour*120), localdb.SetGetIsOverwriteOpt(&replaced))
 	return
 }

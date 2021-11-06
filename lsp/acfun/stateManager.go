@@ -74,7 +74,7 @@ func (s *StateManager) IncNotLiveCount(uid int64) int64 {
 }
 
 func (s *StateManager) ClearNotLiveCount(uid int64) error {
-	_, err := s.Delete(s.NotLiveKey(uid), localdb.DeleteIgnoreNotFound())
+	_, err := s.Delete(s.NotLiveKey(uid), localdb.IgnoreNotFoundOpt())
 	return err
 }
 
