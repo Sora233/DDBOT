@@ -18,7 +18,7 @@ import (
 
 var errNilParam = errors.New("内部参数错误")
 
-func IList(c *MessageContext, groupCode int64) {
+func IList(c *MessageContext, groupCode int64, site string) {
 	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ListCommand) {
 		c.DisabledReply()
 		return
@@ -26,10 +26,22 @@ func IList(c *MessageContext, groupCode int64) {
 
 	var empty = true
 	var first = true
+	var err error
 
 	listMsg := mmsg.NewMSG()
 
+	if len(site) > 0 {
+		site, err = concern.ParseRawSite(site)
+		if err != nil {
+			c.TextReply(fmt.Sprintf("失败 - %v", err))
+			return
+		}
+	}
+
 	for _, c := range concern.ListConcernManager() {
+		if len(site) > 0 && site != c.Site() {
+			continue
+		}
 		infos, ctypes, err := c.List(groupCode, concern_type.Empty)
 		if err != nil {
 			if first {

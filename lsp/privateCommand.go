@@ -154,7 +154,8 @@ func (c *LspPrivateCommand) ListCommand() {
 	defer func() { log.Info("list command end") }()
 
 	var listCmd struct {
-		Group int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Site  string `optional:"" short:"s" help:"订阅网站"`
 	}
 	_, output := c.parseCommandSyntax(&listCmd, ListCommand)
 	if output != "" {
@@ -170,7 +171,7 @@ func (c *LspPrivateCommand) ListCommand() {
 		return
 	}
 	log = log.WithFields(localutils.GroupLogFields(groupCode))
-	IList(c.NewMessageContext(log), groupCode)
+	IList(c.NewMessageContext(log), groupCode, listCmd.Site)
 }
 
 func (c *LspPrivateCommand) ConfigCommand() {

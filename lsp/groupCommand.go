@@ -413,7 +413,9 @@ func (lgc *LspGroupCommand) ListCommand() {
 	log.Info("run list command")
 	defer func() { log.Info("list command end") }()
 
-	var listCmd struct{}
+	var listCmd struct {
+		Site string `optional:"" short:"s" help:"订阅网站"`
+	}
 	_, output := lgc.parseCommandSyntax(&listCmd, ListCommand)
 	if output != "" {
 		lgc.textReply(output)
@@ -422,7 +424,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 		return
 	}
 
-	IList(lgc.NewMessageContext(log), groupCode)
+	IList(lgc.NewMessageContext(log), groupCode, listCmd.Site)
 }
 
 func (lgc *LspGroupCommand) RollCommand() {
