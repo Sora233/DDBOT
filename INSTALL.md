@@ -11,7 +11,7 @@
 - 根据系统选择windows / linux / darwin
 - 根据架构选择 32位->386 / 64位->amd64 / arm->arm
 
-例如对于windows 7/8/10/11/server，64位系统，推荐选择-windows-amd64.zip
+例如对于windows 7/8/10/11/server，64位系统，推荐选择`-windows-amd64.zip`
 
 <details>
 <summary>从源码编译（不推荐，需要编程能力）</summary>
@@ -33,9 +33,19 @@ go build
 
 ## 配置
 
-下载后可以直接运行，首次运行默认会通过二维码登陆，并且会自动生成所有配置。
+获取的DDBOT程序为二进制程序，可以直接运行。
 
-DDBOT的配置文件为`application.yaml`，该文件可以用文本编辑器打开。
+**Linux**下请确认DDBOT程序对所在目录有读写权限，并需要赋予程序可执行权限，可通过下面的命令实现：`chmod +x ./DDBOT`
+
+然后可以通过`./DDBOT`运行DDBOT程序。
+
+**windows**版DDBOT默认应该有.exe后缀，即程序名为`DDBOT.exe`，如果没有后缀，请确认下载的程序是windows版本。
+
+Windows版可以双击运行DDBOT程序。
+
+首次运行默认会通过二维码登陆，并且会自动生成所有配置。
+
+DDBOT的配置文件为`application.yaml`，该文件可以用文本编辑器（windows的记事本/vscode，linux的nano/vim等）打开。
 
 ### 设置BOT管理员
 
@@ -144,7 +154,7 @@ logLevel: info
 bot:
   account: # bot账号
   password: # bot密码
-  commandPrefix: # bot命令前缀，默认为单斜杠 /
+  commandPrefix: "/"     # bot触发命令的前缀，默认为单斜杠 /
   onDisconnected: "exit" # 设置掉线时处理方式，exit为退出，不填或者其他值为尝试重连
   onJoinGroup:
     rename: "【bot】"     # BOT进群后自动改名，默认改名为“【bot】”，如果留空则不自动改名
