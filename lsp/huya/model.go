@@ -68,7 +68,7 @@ func (m *LiveInfo) Logger() *logrus.Entry {
 		"Name":   m.Name,
 		"RoomId": m.RoomId,
 		"Title":  m.RoomName,
-		"Living": m.Living,
+		"Living": m.IsLiving,
 	})
 }
 
