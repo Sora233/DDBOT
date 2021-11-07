@@ -537,15 +537,23 @@ func TestGetInt64(t *testing.T) {
 
 	time.Sleep(time.Second * 3)
 
+	var lastTTL time.Duration
 	assert.Nil(t, SetInt64(key, 12, SetKeepLastExpireOpt()))
-	err = RCoverTx(func(tx *buntdb.Tx) error {
-		ttl, err := tx.TTL(key)
-		assert.True(t, ttl < time.Hour)
-		assert.True(t, ttl > (time.Hour-time.Second*4))
-		assert.Nil(t, err)
-		return err
-	})
+	assert.True(t, Exist(key, GetTTLOpt(&lastTTL)))
+	assert.True(t, lastTTL < time.Hour)
+	assert.True(t, lastTTL > (time.Hour-time.Second*4))
 	assert.Nil(t, err)
+
+	assert.Nil(t, SetInt64(key, 13, SetExpireOpt(time.Millisecond*10)))
+	time.Sleep(time.Millisecond * 50)
+
+	result, err = GetInt64(key)
+	assert.True(t, IsNotFound(err))
+	assert.Zero(t, result)
+
+	result, err = GetInt64(key, GetIgnoreExpireOpt())
+	assert.Nil(t, err)
+	assert.EqualValues(t, 13, result)
 }
 
 func TestGet(t *testing.T) {
