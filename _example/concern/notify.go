@@ -7,31 +7,41 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type notify struct {
-	groupCode int64
-	id        string
+// Event 实现 concern.Event 接口
+type Event struct {
+	id string
 }
 
-func (n *notify) Site() string {
+func (e *Event) Site() string {
 	return Site
 }
 
-func (n *notify) Type() concern_type.Type {
+func (e *Event) Type() concern_type.Type {
 	return Example
 }
 
-func (n *notify) GetGroupCode() int64 {
+func (e *Event) GetUid() interface{} {
+	return e.id
+}
+
+func (e *Event) Logger() *logrus.Entry {
+	return logger.WithField("Id", e.id)
+}
+
+// Notify 实现 concern.Notify 接口
+type Notify struct {
+	groupCode int64
+	*Event
+}
+
+func (n *Notify) GetGroupCode() int64 {
 	return n.groupCode
 }
 
-func (n *notify) GetUid() interface{} {
-	return n.id
-}
-
-func (n *notify) ToMessage() *mmsg.MSG {
+func (n *Notify) ToMessage() *mmsg.MSG {
 	return mmsg.NewTextf("EXAMPLE推送：%v", n.id)
 }
 
-func (n *notify) Logger() *logrus.Entry {
-	return logger.WithField("Id", n.id).WithFields(localutils.GroupLogFields(n.groupCode))
+func (n *Notify) Logger() *logrus.Entry {
+	return n.Event.Logger().WithFields(localutils.GroupLogFields(n.groupCode))
 }
