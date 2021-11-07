@@ -3,8 +3,9 @@
 [<img src="https://github.com/Sora233/DDBOT/actions/workflows/ci.yml/badge.svg"/>](https://github.com/Sora233/DDBOT/actions/workflows/ci.yml)
 [<img src="https://coveralls.io/repos/github/Sora233/DDBOT/badge.svg?branch=master"/>](https://coveralls.io/github/Sora233/DDBOT)
 
-DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送机器人，
-支持b站直播/动态，斗鱼直播，YTB直播/预约直播，虎牙直播，ACFUN直播，微博动态。
+DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送框架， 
+内置支持b站直播/动态，斗鱼直播，YTB直播/预约直播，虎牙直播，ACFUN直播，微博动态，
+也可以通过插件支持任何订阅源。
 
 *DDBOT不是一个聊天机器人。*
 
@@ -31,9 +32,10 @@ DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送�
   - 支持推送预约直播信息及视频更新。
 - **虎牙直播推送**
   - 不知道能看谁。
-- **ACFUN直播**
+- **ACFUN直播推送**
   - 好像也有一些虚拟主播
-- **微博动态** 
+- **微博动态推送**
+- 支持自定义插件，可通过插件支持任意订阅来源。
 - 可配置的 **@全体成员**
   - 只建议单推群开启。
 - **倒放**

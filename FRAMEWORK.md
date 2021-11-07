@@ -11,8 +11,10 @@
 请参考`_example/concern`目录，该目录为一个样例插件，展示了为DDBOT编写插件的方法。
 
 ```golang
-// 引入插件
-_ "github.com/Sora233/DDBOT/_example/concern"
+// 引入刚刚编写的插件
+import (
+    _ "github.com/Sora233/DDBOT/_example/concern"
+)
 ```
 
 这个例子为网站`example`新增了一个类型`example`，可以使用对应的`watch`命令进行订阅：
