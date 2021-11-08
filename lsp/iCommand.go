@@ -3,7 +3,6 @@ package lsp
 import (
 	"errors"
 	"fmt"
-	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
@@ -196,7 +195,7 @@ func IGrantRole(c *MessageContext, groupCode int64, grantRole permission.RoleTyp
 			c.NoPermissionReply()
 			return
 		}
-		if gi := bot.Instance.FindGroup(groupCode); gi != nil && gi.FindMember(grantTo) != nil {
+		if gi := utils.GetBot().FindGroup(groupCode); gi != nil && gi.FindMember(grantTo) != nil {
 			if del {
 				err = c.Lsp.PermissionStateManager.UngrantGroupRole(groupCode, grantTo, grantRole)
 			} else {
@@ -256,7 +255,7 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 		return
 	}
 
-	if gi := bot.Instance.FindGroup(groupCode); gi != nil && gi.FindMember(grantTo) != nil {
+	if gi := utils.GetBot().FindGroup(groupCode); gi != nil && gi.FindMember(grantTo) != nil {
 		if del {
 			err = c.Lsp.PermissionStateManager.UngrantPermission(groupCode, grantTo, command)
 		} else {
@@ -335,7 +334,7 @@ func ISilenceCmd(c *MessageContext, groupCode int64, delete bool) {
 func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, action string, QQ []int64) {
 	err := configCmdGroupCommonCheck(c, groupCode)
 	if err == nil {
-		g := bot.Instance.FindGroup(groupCode)
+		g := utils.GetBot().FindGroup(groupCode)
 		if g == nil {
 			// 可能没找到吗
 			return

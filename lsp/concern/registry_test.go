@@ -136,4 +136,6 @@ func TestConcernManager(t *testing.T) {
 
 	site, ctype, err = ParseRawSiteAndType("test3", "4")
 	assert.NotNil(t, err)
+
+	ClearConcern()
 }

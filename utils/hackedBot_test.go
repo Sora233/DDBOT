@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -15,6 +16,17 @@ func TestGetBot(t *testing.T) {
 	assert.Empty(t, bot.GetGroupList())
 	bot.SolveFriendRequest(nil, false)
 	bot.SolveGroupJoinRequest(nil, false, false, "")
+
+	bot.TESTAddGroup(123)
+	bot.TESTAddGroup(test.G2)
+	bot.TESTAddGroup(test.G1)
+	bot.TESTAddMember(test.G1, test.UID1, client.Administrator)
+	bot.TESTAddMember(test.G1, test.UID2, client.Administrator)
+	bot.TESTAddMember(test.G1, test.UID1, client.Administrator)
+	bot.TESTAddMember(test.G2, test.UID2, client.Administrator)
+	assert.Len(t, bot.GetGroupList(), 3)
+	bot.TESTClear()
+	assert.Empty(t, bot.GetGroupList())
 
 	test.InitMirai()
 	defer test.CloseMirai()
