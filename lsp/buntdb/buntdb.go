@@ -52,7 +52,7 @@ func MustGetClient() *buntdb.DB {
 // Close 关闭buntdb，正常情况下框架会负责关闭
 func Close() error {
 	if db != nil {
-		if itx := gls.Get(TxKey); itx != nil {
+		if itx := gls.Get(txKey); itx != nil {
 			itx.(*buntdb.Tx).Rollback()
 		}
 		if err := db.Close(); err != nil {

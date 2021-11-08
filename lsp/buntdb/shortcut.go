@@ -10,11 +10,12 @@ import (
 	"time"
 )
 
+// ShortCut 包含了许多数据库的读写helper，只需嵌入即可使用，如果不想嵌入，也可以通过包名调用
 type ShortCut struct{}
 
 var shortCut = new(ShortCut)
 
-var TxKey = new(struct{})
+var txKey = new(struct{})
 
 var logger = utils.GetModuleLogger("localdb")
 
@@ -24,7 +25,7 @@ var logger = utils.GetModuleLogger("localdb")
 // 需要注意可写事务是唯一的，同一时间只会存在一个可写事务，所有耗时操作禁止放在可写事务中执行
 // 在同一Goroutine中，可写事务可以嵌套
 func (*ShortCut) RWCoverTx(f func(tx *buntdb.Tx) error) error {
-	if itx := gls.Get(TxKey); itx != nil {
+	if itx := gls.Get(txKey); itx != nil {
 		return f(itx.(*buntdb.Tx))
 	}
 	db, err := GetClient()
@@ -34,7 +35,7 @@ func (*ShortCut) RWCoverTx(f func(tx *buntdb.Tx) error) error {
 	return db.Update(func(tx *buntdb.Tx) error {
 		var err error
 		gls.WithEmptyGls(func() {
-			gls.Set(TxKey, tx)
+			gls.Set(txKey, tx)
 			err = f(tx)
 		})()
 		return err
@@ -45,7 +46,7 @@ func (*ShortCut) RWCoverTx(f func(tx *buntdb.Tx) error) error {
 // 需要注意可写事务是唯一的，同一时间只会存在一个可写事务，所有耗时操作禁止放在可写事务中执行
 // 在同一Goroutine中，可写事务可以嵌套
 func (*ShortCut) RWCover(f func() error) error {
-	if itx := gls.Get(TxKey); itx != nil {
+	if itx := gls.Get(txKey); itx != nil {
 		return f()
 	}
 	db, err := GetClient()
@@ -55,7 +56,7 @@ func (*ShortCut) RWCover(f func() error) error {
 	return db.Update(func(tx *buntdb.Tx) error {
 		var err error
 		gls.WithEmptyGls(func() {
-			gls.Set(TxKey, tx)
+			gls.Set(txKey, tx)
 			err = f()
 		})()
 		return err
@@ -65,7 +66,7 @@ func (*ShortCut) RWCover(f func() error) error {
 // RCoverTx 在一个只读事务中执行f。
 // 所有写操作会失败或者回滚。
 func (*ShortCut) RCoverTx(f func(tx *buntdb.Tx) error) error {
-	if itx := gls.Get(TxKey); itx != nil {
+	if itx := gls.Get(txKey); itx != nil {
 		return f(itx.(*buntdb.Tx))
 	}
 	db, err := GetClient()
@@ -75,7 +76,7 @@ func (*ShortCut) RCoverTx(f func(tx *buntdb.Tx) error) error {
 	return db.View(func(tx *buntdb.Tx) error {
 		var err error
 		gls.WithEmptyGls(func() {
-			gls.Set(TxKey, tx)
+			gls.Set(txKey, tx)
 			err = f(tx)
 		})()
 		return err
@@ -85,7 +86,7 @@ func (*ShortCut) RCoverTx(f func(tx *buntdb.Tx) error) error {
 // RCover 在一个只读事务中执行f，不同的是它不获取 buntdb.Tx ，而由 f 自己控制。
 // 所有写操作会失败，或者回滚。
 func (*ShortCut) RCover(f func() error) error {
-	if itx := gls.Get(TxKey); itx != nil {
+	if itx := gls.Get(txKey); itx != nil {
 		return f()
 	}
 	db, err := GetClient()
@@ -95,7 +96,7 @@ func (*ShortCut) RCover(f func() error) error {
 	return db.View(func(tx *buntdb.Tx) error {
 		var err error
 		gls.WithEmptyGls(func() {
-			gls.Set(TxKey, tx)
+			gls.Set(txKey, tx)
 			err = f()
 		})()
 		return err
@@ -106,23 +107,17 @@ func (*ShortCut) RCover(f func() error) error {
 // 如果key不存在，则会默认其为0，返回值为1
 func (s *ShortCut) SeqNext(key string) (int64, error) {
 	var result int64
-	err := s.RWCoverTx(func(tx *buntdb.Tx) error {
-		oldV, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			oldV = "0"
-		} else if err != nil {
-			return err
-		}
-		old, err := strconv.ParseInt(oldV, 10, 64)
+	err := s.RWCover(func() error {
+		oldVal, err := s.GetInt64(key, IgnoreNotFoundOpt())
 		if err != nil {
 			return err
 		}
-		_, _, err = tx.Set(key, strconv.FormatInt(old+1, 10), nil)
-		if err == nil {
-			result = old + 1
-		}
-		return err
+		result = oldVal + 1
+		return s.SetInt64(key, result)
 	})
+	if err != nil {
+		result = 0
+	}
 	return result, err
 }
 

@@ -306,16 +306,12 @@ func TestStateManager_FreshCheck(t *testing.T) {
 
 	sm := newStateManager(t)
 
-	result, err := sm.CheckFresh(test.UID1, false)
+	result := sm.CheckFresh(test.UID1, false)
 	assert.True(t, result)
-	assert.Nil(t, err)
-	result, err = sm.CheckFresh(test.UID1, true)
+	result = sm.CheckFresh(test.UID1, true)
 	assert.True(t, result)
-	assert.Nil(t, err)
-	result, err = sm.CheckFresh(test.UID1, true)
+	result = sm.CheckFresh(test.UID1, true)
 	assert.False(t, result)
-	assert.Nil(t, err)
-
 }
 
 func TestStateManager_GroupConcern(t *testing.T) {

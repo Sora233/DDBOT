@@ -115,14 +115,14 @@ func (c *StateManager) getGroupConcernConfig(groupCode int64, id interface{}) (c
 	return
 }
 
-// GetGroupConcernConfig always return non-nil
+// GetGroupConcernConfig 总是返回non-nil
 func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) IConfig {
 	return c.getGroupConcernConfig(groupCode, id)
 }
 
 // OperateGroupConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，如果返回true，就保存GroupConcernConfig，否则就回滚。
 func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig IConfig) bool) error {
-	err := c.RWCoverTx(func(tx *buntdb.Tx) error {
+	err := c.RWCover(func() error {
 		concernConfig := c.getGroupConcernConfig(groupCode, id)
 		if !f(concernConfig) {
 			return localdb.ErrRollback
@@ -339,24 +339,13 @@ func (c *StateManager) GroupTypeById(ids []interface{}, types []concern_type.Typ
 	return result, resultType, nil
 }
 
-func (c *StateManager) CheckFresh(id interface{}, setTTL bool) (result bool, err error) {
-	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
-		freshKey := c.FreshKey(id)
-		_, err := tx.Get(freshKey)
-		if err == buntdb.ErrNotFound {
-			result = true
-			if setTTL {
-				_, _, err = tx.Set(freshKey, "", localdb.ExpireOption(time.Minute))
-				if err != nil {
-					return err
-				}
-			}
-		} else if err != nil {
-			return err
-		}
-		return nil
-	})
-	return
+func (c *StateManager) CheckFresh(id interface{}, setTTL bool) bool {
+	var opts = []localdb.OptionFunc{localdb.SetNoOverWriteOpt()}
+	if setTTL {
+		opts = append(opts, localdb.SetExpireOpt(time.Minute))
+	}
+	err := c.Set(c.FreshKey(id), "", opts...)
+	return err == nil
 }
 
 func (c *StateManager) FreshIndex(groups ...int64) {
@@ -389,18 +378,13 @@ func (c *StateManager) FreshIndex(groups ...int64) {
 }
 
 func (c *StateManager) upsertConcernType(key string, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
-	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			newCtype = ctype
-			_, _, err = tx.Set(key, ctype.String(), nil)
-		} else if err == nil {
-			newCtype = concern_type.FromString(val).Add(ctype)
-			_, _, err = tx.Set(key, newCtype.String(), nil)
-		} else {
+	err = c.RWCover(func() error {
+		val, err := c.Get(key, localdb.IgnoreNotFoundOpt())
+		if err != nil {
 			return err
 		}
-		return err
+		newCtype = concern_type.FromString(val).Add(ctype)
+		return c.Set(key, newCtype.String())
 	})
 	return
 }
@@ -468,7 +452,7 @@ func (c *StateManager) EmitQueueFresher(doFresh func(p concern_type.Type, id int
 					break
 				}
 				id := emitItem.Id
-				if ok, _ := c.CheckFresh(id, true); !ok {
+				if ok := c.CheckFresh(id, true); !ok {
 					logger.WithFields(logrus.Fields{
 						"Id":     id,
 						"Type":   emitItem.Type.String(),
