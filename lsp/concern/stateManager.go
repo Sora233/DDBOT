@@ -127,6 +127,9 @@ func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}
 		if !f(concernConfig) {
 			return localdb.ErrRollback
 		}
+		if err := concernConfig.Validate(); err != nil {
+			return err
+		}
 		return c.Set(c.GroupConcernConfigKey(groupCode, id), concernConfig.ToString())
 	})
 	return err

@@ -250,6 +250,14 @@ func TestGroupConcernFilterConfig_GetFilter(t *testing.T) {
 	assert.False(t, g.GetGroupConcernFilter().Empty())
 }
 
+func TestGroupConcernConfig_Validate(t *testing.T) {
+	var g GroupConcernConfig
+	assert.Nil(t, g.Validate())
+	g.GetGroupConcernFilter().Type = FilterTypeType
+	g.GetGroupConcernFilter().Config = "wrong"
+	assert.NotNil(t, g.Validate())
+}
+
 type testInfo struct {
 	isLive        bool
 	living        bool

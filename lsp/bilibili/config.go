@@ -1,6 +1,7 @@
 package bilibili
 
 import (
+	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
@@ -12,6 +13,24 @@ import (
 type GroupConcernConfig struct {
 	concern.IConfig
 	Concern *Concern
+}
+
+func (g *GroupConcernConfig) Validate() error {
+	if !g.GetGroupConcernFilter().Empty() {
+		switch g.GetGroupConcernFilter().Type {
+		case concern.FilterTypeNotType, concern.FilterTypeType:
+			filterByType, err := g.GetGroupConcernFilter().GetFilterByType()
+			if err != nil {
+				return err
+			}
+			var invalid = CheckTypeDefine(filterByType.Type)
+			if len(invalid) != 0 {
+				return fmt.Errorf("未定义的类型：\n%v", strings.Join(invalid, " "))
+			}
+			return nil
+		}
+	}
+	return g.IConfig.Validate()
 }
 
 func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {

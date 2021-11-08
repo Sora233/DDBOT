@@ -6,6 +6,7 @@ import (
 
 // IConfig 定义了Config的通用接口
 type IConfig interface {
+	Validate() error
 	GetGroupConcernAt() *GroupConcernAtConfig
 	GetGroupConcernNotify() *GroupConcernNotifyConfig
 	GetGroupConcernFilter() *GroupConcernFilterConfig
@@ -20,6 +21,16 @@ type GroupConcernConfig struct {
 	GroupConcernAt     GroupConcernAtConfig     `json:"group_concern_at"`
 	GroupConcernNotify GroupConcernNotifyConfig `json:"group_concern_notify"`
 	GroupConcernFilter GroupConcernFilterConfig `json:"group_concern_filter"`
+}
+
+// Validate 可以在此自定义config校验，每次对config修改后会在同一个事务中调用，如果返回non-nil，则改动会回滚，此次操作失败
+// 默认支持 GroupConcernNotifyConfig GroupConcernAtConfig
+// GroupConcernFilterConfig 默认只支持 text
+func (g *GroupConcernConfig) Validate() error {
+	if !g.GetGroupConcernFilter().Empty() && g.GetGroupConcernFilter().Type != FilterTypeText {
+		return ErrConfigNotSupported
+	}
+	return nil
 }
 
 // FilterHook 默认为Pass，可以重写这个函数实现自定义的过滤

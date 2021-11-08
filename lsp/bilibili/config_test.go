@@ -48,6 +48,17 @@ func newNewsInfo(uid int64, cardTypes ...DynamicDescType) []*ConcernNewsNotify {
 func TestNewGroupConcernConfig(t *testing.T) {
 	g := NewGroupConcernConfig(new(concern.GroupConcernConfig), nil)
 	assert.NotNil(t, g)
+	assert.Nil(t, g.Validate())
+
+	g.GetGroupConcernFilter().Type = concern.FilterTypeNotType
+	g.GetGroupConcernFilter().Config = (&concern.GroupConcernFilterConfigByType{Type: []string{"q", "a"}}).ToString()
+
+	assert.NotNil(t, g.Validate())
+	g.GetGroupConcernFilter().Config = "wrong"
+	assert.NotNil(t, g.Validate())
+	g.GetGroupConcernFilter().Config = ""
+	g.GetGroupConcernFilter().Type = ""
+	assert.Nil(t, g.Validate())
 }
 
 func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
@@ -236,6 +247,7 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 				Config: typeFilter[index].ToString(),
 			},
 		}, nil)
+		assert.Nil(t, g.Validate())
 
 		var resultType []DynamicDescType
 		for _, notify := range notifies {

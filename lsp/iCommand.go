@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
@@ -16,15 +15,12 @@ import (
 	"strings"
 )
 
-var errNilParam = errors.New("内部参数错误")
-
 func IList(c *MessageContext, groupCode int64, site string) {
 	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ListCommand) {
 		c.DisabledReply()
 		return
 	}
 
-	var empty = true
 	var first = true
 	var err error
 
@@ -52,7 +48,6 @@ func IList(c *MessageContext, groupCode int64, site string) {
 			listMsg.Textf("%v订阅查询失败 - %v", c.Site(), err)
 		} else {
 			if len(infos) > 0 {
-				empty = false
 				if first {
 					first = false
 				} else {
@@ -68,7 +63,7 @@ func IList(c *MessageContext, groupCode int64, site string) {
 		}
 	}
 
-	if empty {
+	if len(listMsg.Elements()) == 0 {
 		listMsg.Append(message.NewText("暂无订阅，可以使用/watch命令订阅"))
 	}
 	c.Send(listMsg)
@@ -419,11 +414,6 @@ func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site st
 			c.TextReply("失败 - 没有指定过滤类型")
 			return
 		}
-		var invalid = bilibili.CheckTypeDefine(types)
-		if len(invalid) != 0 {
-			c.TextReply(fmt.Sprintf("失败 - 未定义的类型：\n%v", strings.Join(invalid, " ")))
-			return
-		}
 		err = iConfigCmd(c, groupCode, id, site, ctype, func(config concern.IConfig) bool {
 			config.GetGroupConcernFilter().Type = concern.FilterTypeType
 			filterConfig := &concern.GroupConcernFilterConfigByType{Type: types}
@@ -447,11 +437,6 @@ func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site
 
 		if len(types) == 0 {
 			c.TextReply("失败 - 没有指定过滤类型")
-			return
-		}
-		var invalid = bilibili.CheckTypeDefine(types)
-		if len(invalid) != 0 {
-			c.TextReply(fmt.Sprintf("失败 - 未定义的类型：\n%v", strings.Join(invalid, " ")))
 			return
 		}
 		err = iConfigCmd(c, groupCode, id, site, ctype, func(config concern.IConfig) bool {
@@ -580,7 +565,7 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 	err = cm.GetStateManager().OperateGroupConcernConfig(groupCode, mid, f)
 	if err != nil && !localdb.IsRollback(err) {
 		c.GetLog().Errorf("OperateGroupConcernConfig failed %v", err)
-		err = errors.New("失败 - 内部错误")
+		err = fmt.Errorf("失败 - %v", err)
 	}
 	return
 }
@@ -723,13 +708,4 @@ func operateOfflineNotifyConcernConfig(c *MessageContext, ctype concern_type.Typ
 			}
 		}
 	}
-}
-
-func (c *MessageContext) requireNotNil(param ...interface{}) error {
-	for _, p := range param {
-		if p == nil {
-			return errNilParam
-		}
-	}
-	return nil
 }

@@ -3,6 +3,7 @@ package test
 import (
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
+	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/stretchr/testify/assert"
@@ -46,6 +47,18 @@ const (
 	YoutubeLive  concern_type.Type = "youtubeLive"
 	YoutubeVideo concern_type.Type = "youtubeVideo"
 	HuyaLive     concern_type.Type = "huyaLive"
+)
+
+var (
+	Sender1 = &message.Sender{
+		Uin:      UID1,
+		Nickname: NAME1,
+	}
+
+	Sender2 = &message.Sender{
+		Uin:      UID2,
+		Nickname: NAME2,
+	}
 )
 
 func InitBuntdb(t *testing.T) {

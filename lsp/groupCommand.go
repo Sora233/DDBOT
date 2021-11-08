@@ -20,7 +20,6 @@ import (
 
 	"github.com/Sora233/DDBOT/image_pool"
 	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
-	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
@@ -359,7 +358,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	var (
 		groupCode = lgc.groupCode()
-		site      = bilibili.Site
+		site      string
 		watchType = concern_type.Type("live")
 		err       error
 	)
@@ -771,11 +770,6 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		if err != nil {
 			log.WithField("site", configCmd.Filter.Site).Errorf("ParseRawSiteAndType failed %v", err)
 			lgc.textSend(fmt.Sprintf("失败 - %v", err.Error()))
-			return
-		}
-		if site != bilibili.Site || ctype != bilibili.News {
-			log.WithField("site", site).WithField("ctype", ctype.String()).Errorf("not supported")
-			lgc.textSend("失败 - 暂不支持")
 			return
 		}
 		switch filterCmd {
