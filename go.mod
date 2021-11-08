@@ -24,7 +24,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/buntdb v1.2.7
-	gocv.io/x/gocv v0.28.0
+	gocv.io/x/gocv v0.29.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
 
