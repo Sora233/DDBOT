@@ -340,11 +340,16 @@ func (c *StateManager) GroupTypeById(ids []interface{}, types []concern_type.Typ
 }
 
 func (c *StateManager) CheckFresh(id interface{}, setTTL bool) bool {
-	var opts = []localdb.OptionFunc{localdb.SetNoOverWriteOpt()}
-	if setTTL {
-		opts = append(opts, localdb.SetExpireOpt(time.Minute))
-	}
-	err := c.Set(c.FreshKey(id), "", opts...)
+	freshKey := c.FreshKey(id)
+	err := c.RWCover(func() error {
+		if c.Exist(freshKey) {
+			return ErrAlreadyExists
+		}
+		if setTTL {
+			return c.Set(freshKey, "", localdb.SetExpireOpt(time.Minute))
+		}
+		return nil
+	})
 	return err == nil
 }
 

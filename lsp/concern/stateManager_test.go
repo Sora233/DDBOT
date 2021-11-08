@@ -308,6 +308,8 @@ func TestStateManager_FreshCheck(t *testing.T) {
 
 	result := sm.CheckFresh(test.UID1, false)
 	assert.True(t, result)
+	result = sm.CheckFresh(test.UID1, false)
+	assert.True(t, result)
 	result = sm.CheckFresh(test.UID1, true)
 	assert.True(t, result)
 	result = sm.CheckFresh(test.UID1, true)

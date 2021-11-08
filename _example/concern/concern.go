@@ -126,7 +126,7 @@ func (c *exampleConcern) Get(id interface{}) (concern.IdentityInfo, error) {
 	return concern.NewIdentity(id, id.(string)), nil
 }
 
-// GetStateManager 返回我们自定义修改过的 concern.StateManager，让所有修改对框架生效
+// GetStateManager 返回我们自定义修改过的 concern.IStateManager，让所有修改对框架生效
 func (c *exampleConcern) GetStateManager() concern.IStateManager {
 	return c.StateManager
 }
@@ -139,7 +139,7 @@ func NewConcern(notify chan<- concern.Notify) *exampleConcern {
 }
 
 // init 向框架注册这个插件，引用这个插件即可使用
-// 注册时需要制定这个插件支持的订阅类型，在本例子中即是 Example ，指定的类型在watch命令中即是-t的参数
+// 注册时需要指定这个插件支持的订阅类型，在本例子中即是 Example ，指定的类型在watch命令中即是-t的参数
 // 这个例子中即是 /watch -s example -t example
 func init() {
 	concern.RegisterConcernManager(NewConcern(concern.GetNotifyChan()), []concern_type.Type{Example})
