@@ -226,6 +226,9 @@ func (s *ShortCut) Exist(key string, opt ...OptionFunc) bool {
 		return nil
 	})
 	if err != nil {
+		if !IsNotFound(err) {
+			logger.Errorf("Exist key %v error %v", key, err)
+		}
 		result = false
 	}
 	return result
@@ -266,7 +269,7 @@ func (s *ShortCut) getWithOpts(tx *buntdb.Tx, key string, opt *option) (string, 
 		ttl, _ := tx.TTL(key)
 		opt.setTTL(ttl)
 	}
-	if opt.getIgnoreNotFound() && err == buntdb.ErrNotFound {
+	if opt.getIgnoreNotFound() && IsNotFound(err) {
 		err = nil
 	}
 	return result, err
@@ -275,7 +278,7 @@ func (s *ShortCut) getWithOpts(tx *buntdb.Tx, key string, opt *option) (string, 
 // deleteWithOpts 统一在有option的情况下的delete行为，考虑到性能需要手动传 buntdb.Tx
 func (s *ShortCut) deleteWithOpts(tx *buntdb.Tx, key string, opt *option) (string, error) {
 	result, err := tx.Delete(key)
-	if opt.getIgnoreNotFound() && err == buntdb.ErrNotFound {
+	if opt.getIgnoreNotFound() && IsNotFound(err) {
 		err = nil
 	}
 	return result, err

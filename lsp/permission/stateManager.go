@@ -2,7 +2,6 @@ package permission
 
 import (
 	"errors"
-	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Mrs4s/MiraiGo/client"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
@@ -23,102 +22,33 @@ type StateManager struct {
 
 // CheckBlockList return true if blocked
 func (c *StateManager) CheckBlockList(caller int64) bool {
-	var result bool
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		key := c.BlockListKey(caller)
-		_, err := tx.Get(key)
-		if err == nil {
-			result = true
-			return nil
-		} else if err == buntdb.ErrNotFound {
-			return nil
-		} else {
-			return err
-		}
-	})
-	if err != nil {
-		logger.WithField("caller", caller).Errorf("check block list err %v", err)
-		result = false
-	}
-	return result
+	return c.Exist(c.BlockListKey(caller))
 }
 
 func (c *StateManager) AddBlockList(caller int64, d time.Duration) error {
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.BlockListKey(caller)
-		_, replaced, err := tx.Set(key, "", localdb.ExpireOption(d))
-		if err != nil {
-			return err
-		}
-		if replaced {
-			return localdb.ErrKeyExist
-		}
-		return nil
-	})
+	err := c.Set(c.BlockListKey(caller), "", localdb.SetExpireOpt(d), localdb.SetNoOverWriteOpt())
+	if localdb.IsRollback(err) {
+		err = localdb.ErrKeyExist
+	}
+	return err
 }
 
 func (c *StateManager) DeleteBlockList(caller int64) error {
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := c.BlockListKey(caller)
-		_, err := tx.Get(key)
-		if err != nil {
-			return err
-		}
-		_, err = tx.Delete(key)
-		return err
-	})
+	_, err := c.Delete(c.BlockListKey(caller))
+	return err
 }
 
 func (c *StateManager) CheckRole(caller int64, role RoleType) bool {
 	if role.String() == "" {
 		return false
 	}
-	var result bool
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		key := c.PermissionKey(caller, role.String())
-		_, err := tx.Get(key)
-		if err == nil {
-			result = true
-			return nil
-		} else if err == buntdb.ErrNotFound {
-			return nil
-		} else {
-			return err
-		}
-	})
-	if err != nil {
-		logger.WithField("caller", caller).
-			WithField("role", role.String()).
-			Errorf("check role err %v", err)
-		result = false
-	}
-	return result
+	return c.Exist(c.PermissionKey(caller, role.String()))
 }
 func (c *StateManager) CheckGroupRole(groupCode int64, caller int64, role RoleType) bool {
 	if role.String() == "" {
 		return false
 	}
-	var result bool
-	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		key := c.GroupPermissionKey(groupCode, caller, role.String())
-		_, err := tx.Get(key)
-		if err == nil {
-			result = true
-			return nil
-		} else if err == buntdb.ErrNotFound {
-			return nil
-		} else {
-			return err
-		}
-	})
-	if err != nil {
-		logger.WithFields(localutils.GroupLogFields(groupCode)).
-			WithField("caller", caller).
-			WithField("role", role.String()).
-			Errorf("check group role err %v", err)
-		result = false
-	}
-	return result
+	return c.Exist(c.GroupPermissionKey(groupCode, caller, role.String()))
 }
 
 func (c *StateManager) EnableGroupCommand(groupCode int64, command string) error {
@@ -144,25 +74,26 @@ func (c *StateManager) GlobalDisableGroupCommand(command string) error {
 }
 
 func (c *StateManager) operatorEnableKey(key string, status string) error {
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		prev, replaced, err := tx.Set(key, status, nil)
-		if err != nil {
-			return err
-		}
-		if replaced && prev == status {
-			return ErrPermissionExist
-		}
-		return nil
-	})
+	var prev string
+	var isOverwrite bool
+	err := c.Set(key, status, localdb.SetGetIsOverwriteOpt(&isOverwrite), localdb.SetGetPreviousValueStringOpt(&prev))
+	if err != nil {
+		return err
+	}
+	if isOverwrite && prev == status {
+		return ErrPermissionExist
+	}
+	return nil
 }
 
 // CheckGroupCommandEnabled check global first, check explicit enabled, must exist
 func (c *StateManager) CheckGroupCommandEnabled(groupCode int64, command string) bool {
 	var result bool
 	_ = c.RCover(func() error {
-		result = !c.CheckGlobalCommandDisabled(command) && c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
-			return exist && val == Enable
-		})
+		result = !c.CheckGlobalCommandDisabled(command) &&
+			c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
+				return exist && val == Enable
+			})
 		return nil
 	})
 	return result
@@ -172,9 +103,10 @@ func (c *StateManager) CheckGroupCommandEnabled(groupCode int64, command string)
 func (c *StateManager) CheckGroupCommandDisabled(groupCode int64, command string) bool {
 	var result bool
 	_ = c.RCover(func() error {
-		result = c.CheckGlobalCommandDisabled(command) || c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
-			return exist && val == Disable
-		})
+		result = c.CheckGlobalCommandDisabled(command) ||
+			c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
+				return exist && val == Disable
+			})
 		return nil
 	})
 	return result
@@ -186,18 +118,11 @@ func (c *StateManager) CheckGlobalCommandDisabled(command string) bool {
 	})
 }
 
-//func (c *StateManager) CheckGlobalCommandEnabled(command string) bool {
-//	return c.CheckGlobalCommandFunc(command, func(val string, exist bool) bool {
-//		return exist && val == Enable
-//	})
-//}
-
 func (c *StateManager) CheckGroupCommandFunc(groupCode int64, command string, f func(val string, exist bool) bool) bool {
 	var result bool
 	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		key := c.GroupEnabledKey(groupCode, command)
-		val, err := tx.Get(key)
-		if err != nil && err != buntdb.ErrNotFound {
+		val, err := c.Get(c.GroupEnabledKey(groupCode, command))
+		if err != nil && !localdb.IsNotFound(err) {
 			return err
 		}
 		result = f(val, err == nil)
@@ -215,9 +140,8 @@ func (c *StateManager) CheckGroupCommandFunc(groupCode int64, command string, f 
 func (c *StateManager) CheckGlobalCommandFunc(command string, f func(val string, exist bool) bool) bool {
 	var result bool
 	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		key := c.GlobalEnabledKey(command)
-		val, err := tx.Get(key)
-		if err != nil && err != buntdb.ErrNotFound {
+		val, err := c.Get(c.GlobalEnabledKey(command))
+		if err != nil && !localdb.IsNotFound(err) {
 			return err
 		}
 		result = f(val, err == nil)
@@ -409,10 +333,8 @@ func (c *StateManager) FreshIndex() {
 	for _, pattern := range []localdb.KeyPatternFunc{c.PermissionKey, c.GroupPermissionKey, c.GroupEnabledKey} {
 		c.CreatePatternIndex(pattern, nil)
 	}
-	if bot.Instance != nil {
-		for _, group := range localutils.GetBot().GetGroupList() {
-			c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{group.Code})
-		}
+	for _, group := range localutils.GetBot().GetGroupList() {
+		c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{group.Code})
 	}
 }
 
