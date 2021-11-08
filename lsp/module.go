@@ -223,7 +223,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			log.Info("收到加群邀请，当前BOT处于公开模式，将接受加群邀请")
 			sendingMsg := message.NewSendingMessage()
 			sendingMsg.Append(message.NewText(fmt.Sprintf("阁下的群邀请已通过，基于对阁下的信任，阁下已获得本bot在群【%s】的控制权限，相信阁下不会滥用本bot。", request.GroupName)))
-			bot.SendPrivateMessage(request.InvitorUin, sendingMsg)
+			l.sendPrivateMessage(request.InvitorUin, sendingMsg)
 			if err := l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
 				log.Errorf("设置群管理员权限失败 - %v", err)
 			}
@@ -289,7 +289,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 
 		sendingMsg := message.NewSendingMessage()
 		sendingMsg.Append(message.NewText("阁下的好友请求已通过，请使用/help查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。"))
-		bot.SendPrivateMessage(event.Friend.Uin, sendingMsg)
+		l.sendPrivateMessage(event.Friend.Uin, sendingMsg)
 	})
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
@@ -360,7 +360,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if err := l.LspStateManager.SaveMessageImageUrl(msg.GroupCode, msg.Id, msg.Elements); err != nil {
 			logger.Errorf("SaveMessageImageUrl failed %v", err)
 		}
-		cmd := NewLspGroupCommand(bot, l, msg)
+		cmd := NewLspGroupCommand(l, msg)
 		if Debug {
 			cmd.Debug()
 		}
@@ -388,7 +388,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if len(msg.Elements) == 0 {
 			return
 		}
-		cmd := NewLspPrivateCommand(bot, l, msg)
+		cmd := NewLspPrivateCommand(l, msg)
 		if Debug {
 			cmd.Debug()
 		}
@@ -471,6 +471,33 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 	return l.pool.Get(options...)
 }
 
+func (l *Lsp) sendPrivateMessage(uin int64, msg *message.SendingMessage) (res *message.PrivateMessage) {
+	if bot.Instance == nil || !bot.Instance.Online {
+		return &message.PrivateMessage{Id: -1, Elements: msg.Elements}
+	}
+	if msg == nil {
+		logger.WithFields(localutils.FriendLogFields(uin)).Debug("send with nil message")
+		return &message.PrivateMessage{Id: -1}
+	}
+	msg.Elements = localutils.MessageFilter(msg.Elements, func(element message.IMessageElement) bool {
+		return element != nil
+	})
+	if len(msg.Elements) == 0 {
+		logger.WithFields(localutils.FriendLogFields(uin)).Debug("send with empty message")
+		return &message.PrivateMessage{Id: -1}
+	}
+	res = bot.Instance.SendPrivateMessage(uin, msg)
+	if res == nil || res.Id == -1 {
+		logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
+			WithFields(localutils.GroupLogFields(uin)).
+			Errorf("发送消息失败")
+	}
+	if res == nil {
+		res = &message.PrivateMessage{Id: -1, Elements: msg.Elements}
+	}
+	return res
+}
+
 // sendGroupMessage 发送一条消息，返回值总是非nil，Id为-1表示发送失败
 // miraigo偶尔发送消息会panic？！
 func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, recovered ...bool) (res *message.GroupMessage) {
@@ -489,6 +516,9 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 			}
 		}
 	}()
+	if bot.Instance == nil || !bot.Instance.Online {
+		return &message.GroupMessage{Id: -1, Elements: msg.Elements}
+	}
 	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
 		logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
 			WithFields(localutils.GroupLogFields(groupCode)).
@@ -506,11 +536,8 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 		logger.WithFields(localutils.GroupLogFields(groupCode)).Debug("send with empty message")
 		return &message.GroupMessage{Id: -1}
 	}
-	result := localutils.Retry(2, time.Millisecond*500, func() bool {
-		res = bot.Instance.SendGroupMessage(groupCode, msg)
-		return res != nil && res.Id != -1
-	})
-	if !result {
+	res = bot.Instance.SendGroupMessage(groupCode, msg)
+	if res == nil || res.Id == -1 {
 		if msg.Count(func(e message.IMessageElement) bool {
 			return e.Type() == message.At && e.(*message.AtElement).Target == 0
 		}) > 0 {
@@ -542,13 +569,12 @@ func (l *Lsp) sendChainGroupMessage(groupCode int64, msgs []*message.SendingMess
 	return res
 }
 
-var Instance *Lsp
+var Instance = &Lsp{
+	concernNotify: concern.ReadNotifyChan(),
+	stop:          make(chan interface{}),
+	status:        NewStatus(),
+}
 
 func init() {
-	Instance = &Lsp{
-		concernNotify: concern.ReadNotifyChan(),
-		stop:          make(chan interface{}),
-		status:        NewStatus(),
-	}
 	bot.RegisterModule(Instance)
 }

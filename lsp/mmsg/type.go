@@ -1,7 +1,6 @@
 package mmsg
 
 import (
-	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 )
 
@@ -11,5 +10,5 @@ const (
 )
 
 type CustomElement interface {
-	PackToElement(client *client.QQClient, target Target) message.IMessageElement
+	PackToElement(target Target) message.IMessageElement
 }

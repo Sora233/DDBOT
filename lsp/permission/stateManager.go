@@ -268,12 +268,7 @@ func (c *StateManager) CheckGroupAdministrator(groupCode int64, caller int64) bo
 		"GroupCode": groupCode,
 		"Caller":    caller,
 	})
-	b := bot.Instance
-	if b == nil {
-		log.Errorf("bot not init")
-		return false
-	}
-	groupInfo := b.FindGroup(groupCode)
+	groupInfo := localutils.GetBot().FindGroup(groupCode)
 	if groupInfo == nil {
 		log.Errorf("nil group info")
 		return false
@@ -415,7 +410,7 @@ func (c *StateManager) FreshIndex() {
 		c.CreatePatternIndex(pattern, nil)
 	}
 	if bot.Instance != nil {
-		for _, group := range bot.Instance.GroupList {
+		for _, group := range localutils.GetBot().GetGroupList() {
 			c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{group.Code})
 		}
 	}

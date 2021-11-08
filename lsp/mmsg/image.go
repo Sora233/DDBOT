@@ -1,8 +1,6 @@
 package mmsg
 
 import (
-	"bytes"
-	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
@@ -53,14 +51,14 @@ func (i *ImageBytesElement) Type() message.ElementType {
 	return ImageBytes
 }
 
-func (i *ImageBytesElement) PackToElement(client *client.QQClient, target Target) message.IMessageElement {
+func (i *ImageBytesElement) PackToElement(target Target) message.IMessageElement {
 	if i == nil {
 		return message.NewText("[nil image]\n")
 	}
 	switch target.TargetType() {
 	case TargetPrivate:
 		if i.Buf != nil {
-			img, err := client.UploadPrivateImage(target.TargetCode(), bytes.NewReader(i.Buf))
+			img, err := utils.UploadPrivateImage(target.TargetCode(), i.Buf, false)
 			if err == nil {
 				return img
 			}
@@ -70,7 +68,7 @@ func (i *ImageBytesElement) PackToElement(client *client.QQClient, target Target
 		}
 	case TargetGroup:
 		if i.Buf != nil {
-			img, err := client.UploadGroupImage(target.TargetCode(), bytes.NewReader(i.Buf))
+			img, err := utils.UploadGroupImage(target.TargetCode(), i.Buf, false)
 			if err == nil {
 				return img
 			}

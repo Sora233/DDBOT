@@ -2,7 +2,6 @@ package mmsg
 
 import (
 	"fmt"
-	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
@@ -95,7 +94,7 @@ func (m *MSG) ToMessage(target Target) *message.SendingMessage {
 	m.flushText()
 	for _, e := range m.elements {
 		if custom, ok := e.(CustomElement); ok {
-			packed := custom.PackToElement(bot.Instance.QQClient, target)
+			packed := custom.PackToElement(target)
 			if packed != nil {
 				sending.Append(packed)
 			}

@@ -8,11 +8,12 @@ import (
 
 func TestImage(t *testing.T) {
 	var im *ImageBytesElement
-	e := im.PackToElement(nil, NewGroupTarget(0))
+	e := im.PackToElement(NewGroupTarget(0))
 	assert.Equal(t, e.(*message.TextElement).Content, "[nil image]\n")
 
 	im = NewImage(nil)
 	im.Alternative("test")
-	e = im.PackToElement(nil, NewGroupTarget(0))
+	assert.EqualValues(t, ImageBytes, im.Type())
+	e = im.PackToElement(NewGroupTarget(0))
 	assert.Equal(t, e.(*message.TextElement).Content, "test\n")
 }

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/guonaihong/gout"
 	"github.com/stretchr/testify/assert"
 	"html"
@@ -232,4 +233,12 @@ func TestRemoveHtmlTag(t *testing.T) {
 	for idx := range testCase {
 		assert.EqualValues(t, expected[idx], RemoveHtmlTag(testCase[idx]))
 	}
+}
+
+func TestGroupLogFields(t *testing.T) {
+	assert.NotNil(t, GroupLogFields(test.G1))
+}
+
+func TestFriendLogFields(t *testing.T) {
+	assert.NotNil(t, FriendLogFields(1))
 }

@@ -1,7 +1,6 @@
 package mmsg
 
 import (
-	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 )
 
@@ -30,7 +29,7 @@ func (t *TypedElement) Type() message.ElementType {
 	return Typed
 }
 
-func (t *TypedElement) PackToElement(client *client.QQClient, target Target) message.IMessageElement {
+func (t *TypedElement) PackToElement(target Target) message.IMessageElement {
 	if t.privateE == nil && t.groupE == nil {
 		return nil
 	}
@@ -45,7 +44,7 @@ func (t *TypedElement) PackToElement(client *client.QQClient, target Target) mes
 		return e
 	}
 	if ce, ok := e.(CustomElement); ok {
-		return ce.PackToElement(client, target)
+		return ce.PackToElement(target)
 	}
 	return e
 }

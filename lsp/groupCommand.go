@@ -1,7 +1,6 @@
 package lsp
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"go.uber.org/atomic"
@@ -12,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/sliceutil"
@@ -38,9 +36,9 @@ type LspGroupCommand struct {
 	*Runtime
 }
 
-func NewLspGroupCommand(bot *miraiBot.Bot, l *Lsp, msg *message.GroupMessage) *LspGroupCommand {
+func NewLspGroupCommand(l *Lsp, msg *message.GroupMessage) *LspGroupCommand {
 	c := &LspGroupCommand{
-		Runtime: NewRuntime(bot, l, l.PermissionStateManager.CheckGroupSilence(msg.GroupCode)),
+		Runtime: NewRuntime(l, l.PermissionStateManager.CheckGroupSilence(msg.GroupCode)),
 		msg:     msg,
 		prefix:  l.commandPrefix,
 	}
@@ -895,7 +893,7 @@ func (lgc *LspGroupCommand) reserveGif(url string) {
 		return
 	}
 	sendingMsg := message.NewSendingMessage()
-	groupImage, err := lgc.bot.UploadGroupImage(lgc.groupCode(), bytes.NewReader(img))
+	groupImage, err := utils.UploadGroupImage(lgc.groupCode(), img, false)
 	if err != nil {
 		log.Errorf("upload group image failed %v", err)
 		lgc.textReply("上传失败")
@@ -1004,20 +1002,6 @@ func (lgc *LspGroupCommand) send(msg *message.SendingMessage) *message.GroupMess
 
 func (lgc *LspGroupCommand) sender() *message.Sender {
 	return lgc.msg.Sender
-}
-
-func (lgc *LspGroupCommand) privateSend(msg *message.SendingMessage) {
-	if lgc.msg.Sender.IsFriend {
-		lgc.bot.SendPrivateMessage(lgc.uin(), msg)
-	} else {
-		lgc.bot.SendGroupTempMessage(lgc.groupCode(), lgc.uin(), msg)
-	}
-}
-
-func (lgc *LspGroupCommand) privateTextSend(text string) {
-	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(message.NewText(text))
-	lgc.privateSend(sendingMsg)
 }
 
 func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {

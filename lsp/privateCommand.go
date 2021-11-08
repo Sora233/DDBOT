@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
@@ -33,10 +32,10 @@ type LspPrivateCommand struct {
 	*Runtime
 }
 
-func NewLspPrivateCommand(bot *miraiBot.Bot, l *Lsp, msg *message.PrivateMessage) *LspPrivateCommand {
+func NewLspPrivateCommand(l *Lsp, msg *message.PrivateMessage) *LspPrivateCommand {
 	c := &LspPrivateCommand{
 		msg:     msg,
-		Runtime: NewRuntime(bot, l),
+		Runtime: NewRuntime(l),
 		prefix:  l.commandPrefix,
 	}
 	c.Parse(c.msg.Elements)
@@ -1152,8 +1151,8 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 	}
 
 	m := mmsg.NewMSG()
-	m.Textf("当前好友数：%v\n", len(c.bot.FriendList))
-	m.Textf("当前群组数：%v\n", len(c.bot.GroupList))
+	m.Textf("当前好友数：%v\n", len(c.bot.GetFriendList()))
+	m.Textf("当前群组数：%v\n", len(c.bot.GetGroupList()))
 	for index, cm := range concern.ListConcernManager() {
 		_, ids, ctypes, err := cm.GetStateManager().ListConcernState(
 			func(groupCode int64, id interface{}, p concern_type.Type) bool {
@@ -1216,14 +1215,12 @@ func (c *LspPrivateCommand) textSend(text string) *message.PrivateMessage {
 
 func (c *LspPrivateCommand) textReply(text string) *message.PrivateMessage {
 	sendingMsg := message.NewSendingMessage()
-	// reply work bad
-	//sendingMsg.Append(message.NewPrivateReply(c.msg))
 	sendingMsg.Append(message.NewText(text))
 	return c.send(sendingMsg)
 }
 
 func (c *LspPrivateCommand) send(msg *message.SendingMessage) *message.PrivateMessage {
-	return c.bot.SendPrivateMessage(c.uin(), msg)
+	return c.l.sendPrivateMessage(c.uin(), msg)
 }
 func (c *LspPrivateCommand) sender() *message.Sender {
 	return c.msg.Sender

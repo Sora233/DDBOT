@@ -2,17 +2,17 @@ package lsp
 
 import (
 	"fmt"
-	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/parser"
+	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/alecthomas/kong"
 	"io"
 	"strings"
 )
 
 type Runtime struct {
-	bot *miraiBot.Bot
+	bot *localutils.HackedBot
 	l   *Lsp
 	*parser.Parser
 
@@ -69,9 +69,9 @@ func (r *Runtime) ParseRawSite(rawSite string) (string, error) {
 	return concern.ParseRawSite(rawSite)
 }
 
-func NewRuntime(bot *miraiBot.Bot, l *Lsp, silence ...bool) *Runtime {
+func NewRuntime(l *Lsp, silence ...bool) *Runtime {
 	r := &Runtime{
-		bot:    bot,
+		bot:    localutils.GetBot(),
 		l:      l,
 		Parser: parser.NewParser(),
 	}

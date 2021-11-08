@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"github.com/Logiase/MiraiGo-Template/bot"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/stretchr/testify/assert"
@@ -59,4 +60,12 @@ func FakeImage(size int) string {
 		size = 150
 	}
 	return fmt.Sprintf("https://via.placeholder.com/%v", size)
+}
+
+func InitMirai() {
+	bot.InitBot(123456, "fake")
+}
+
+func CloseMirai() {
+	bot.Instance = nil
 }

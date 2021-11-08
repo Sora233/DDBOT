@@ -201,7 +201,7 @@ func IGrantRole(c *MessageContext, groupCode int64, grantRole permission.RoleTyp
 			c.NoPermissionReply()
 			return
 		}
-		if bot.Instance.FindGroup(groupCode).FindMember(grantTo) != nil {
+		if gi := bot.Instance.FindGroup(groupCode); gi != nil && gi.FindMember(grantTo) != nil {
 			if del {
 				err = c.Lsp.PermissionStateManager.UngrantGroupRole(groupCode, grantTo, grantRole)
 			} else {
@@ -261,7 +261,7 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 		return
 	}
 
-	if bot.Instance.FindGroup(groupCode).FindMember(grantTo) != nil {
+	if gi := bot.Instance.FindGroup(groupCode); gi != nil && gi.FindMember(grantTo) != nil {
 		if del {
 			err = c.Lsp.PermissionStateManager.UngrantPermission(groupCode, grantTo, command)
 		} else {

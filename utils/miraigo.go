@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
@@ -37,11 +38,24 @@ func UploadGroupImage(groupCode int64, img []byte, isNorm bool) (image *message.
 			return nil, err
 		}
 	}
-	image, err = bot.Instance.UploadGroupImage(groupCode, bytes.NewReader(img))
-	if err != nil {
-		return nil, err
+	if !bot.Instance.Online {
+		return nil, errors.New("bot offline")
 	}
-	return image, nil
+	return bot.Instance.UploadGroupImage(groupCode, bytes.NewReader(img))
+}
+
+func UploadPrivateImage(uin int64, img []byte, isNorm bool) (*message.FriendImageElement, error) {
+	var err error
+	if isNorm {
+		img, err = ImageNormSize(img)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if !bot.Instance.Online {
+		return nil, errors.New("bot offline")
+	}
+	return bot.Instance.UploadPrivateImage(uin, bytes.NewReader(img))
 }
 
 const (
@@ -107,8 +121,9 @@ type internalElem struct {
 }
 
 const (
-	internalTypeText       = "text"
-	internalTypeGroupImage = "group_image"
+	internalTypeText        = "text"
+	internalTypeGroupImage  = "group_image"
+	internalTypeFriendImage = "friend_image"
 )
 
 // SerializationElement 序列化消息，只支持图片，文字
@@ -127,6 +142,12 @@ func SerializationElement(e []message.IMessageElement) (string, error) {
 			b, _ := json.Marshal(o)
 			tmp = append(tmp, &internalElem{
 				Type:    internalTypeGroupImage,
+				Content: string(b),
+			})
+		case *message.FriendImageElement:
+			b, _ := json.Marshal(o)
+			tmp = append(tmp, &internalElem{
+				Type:    internalTypeFriendImage,
 				Content: string(b),
 			})
 		default:
@@ -155,6 +176,12 @@ func DeserializationElement(r string) ([]message.IMessageElement, error) {
 			}
 		case internalTypeText:
 			var elem *message.TextElement
+			json.UnmarshalFromString(e.Content, &elem)
+			if elem != nil {
+				result = append(result, elem)
+			}
+		case internalTypeFriendImage:
+			var elem *message.FriendImageElement
 			json.UnmarshalFromString(e.Content, &elem)
 			if elem != nil {
 				result = append(result, elem)
