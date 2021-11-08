@@ -38,6 +38,10 @@ const (
 	ID2 = 2002
 
 	VersionName = "testVersion"
+
+	Site1 = "site1"
+	Site2 = "site2"
+	Site3 = "site3"
 )
 
 const (
@@ -47,6 +51,9 @@ const (
 	YoutubeLive  concern_type.Type = "youtubeLive"
 	YoutubeVideo concern_type.Type = "youtubeVideo"
 	HuyaLive     concern_type.Type = "huyaLive"
+	T1           concern_type.Type = "t1"
+	T2           concern_type.Type = "t2"
+	T3           concern_type.Type = "t3"
 )
 
 var (

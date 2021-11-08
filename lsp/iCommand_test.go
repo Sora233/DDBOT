@@ -1,23 +1,18 @@
 package lsp
 
 import (
+	"context"
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/Sora233/DDBOT/lsp/bilibili"
+	tc "github.com/Sora233/DDBOT/internal/test_concern"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"github.com/stretchr/testify/assert"
 	"testing"
-
-	_ "github.com/Sora233/DDBOT/lsp/acfun"
-	_ "github.com/Sora233/DDBOT/lsp/bilibili"
-	_ "github.com/Sora233/DDBOT/lsp/douyu"
-	_ "github.com/Sora233/DDBOT/lsp/huya"
-	_ "github.com/Sora233/DDBOT/lsp/weibo"
-	_ "github.com/Sora233/DDBOT/lsp/youtube"
 )
 
 const (
@@ -73,9 +68,32 @@ func getCM(site string) concern.Concern {
 	return nil
 }
 
+func testFresh(testEventChan <-chan concern.Event) concern.FreshFunc {
+	return func(ctx context.Context, eventChan chan<- concern.Event) {
+		for {
+			select {
+			case e := <-testEventChan:
+				if e != nil {
+					eventChan <- e
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}
+}
+
+func newTestConcern(t *testing.T, e chan concern.Event, n chan concern.Notify, site string, ctypes []concern_type.Type) *tc.TestConcern {
+	c := tc.NewTestConcern(n, site, ctypes)
+	c.UseFreshFunc(testFresh(e))
+	assert.Nil(t, c.Start())
+	return c
+}
+
 func TestIList(t *testing.T) {
 	initLsp(t)
 	defer closeLsp(t)
+	defer concern.ClearConcern()
 
 	msgChan := make(chan *mmsg.MSG, 10)
 	target := mmsg.NewGroupTarget(test.G1)
@@ -101,45 +119,51 @@ func TestIList(t *testing.T) {
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), disabled)
 	assert.Nil(t, Instance.PermissionStateManager.GlobalEnableGroupCommand(ListCommand))
 
-	const bsite = "bilibili"
+	testEventChan := make(chan concern.Event, 16)
+	testNotifyChan := make(chan concern.Notify, 1)
 
-	// 没初始化，应该报错
-	IList(ctx, test.G1, bsite)
-	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "订阅查询失败")
+	tc1 := newTestConcern(t, testEventChan, testNotifyChan, test.Site1, []concern_type.Type{test.T1})
+	concern.RegisterConcernManager(tc1, tc1.Ctypes)
+	defer tc1.Stop()
 
-	cm := getCM(bsite)
-	assert.NotNil(t, cm)
-	sm := cm.GetStateManager().(*bilibili.StateManager)
-	assert.NotNil(t, sm)
-	sm.FreshIndex(test.G1, test.G2)
+	tc2 := newTestConcern(t, testEventChan, testNotifyChan, test.Site2, []concern_type.Type{test.T2})
+	concern.RegisterConcernManager(tc2, tc2.Ctypes)
+	defer tc2.Stop()
 
-	IList(ctx, test.G1, bsite)
+	defer close(testNotifyChan)
+	assert.Len(t, concern.ListSite(), 2)
+	assert.Contains(t, concern.ListSite(), test.Site1)
+	assert.Contains(t, concern.ListSite(), test.Site2)
+
+	IList(ctx, test.G1, "")
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "暂无订阅")
 
-	err := sm.AddUserInfo(&bilibili.UserInfo{
-		Mid:  test.UID1,
-		Name: test.NAME1,
-	})
+	_, err := tc1.GetStateManager().AddGroupConcern(test.G1, test.NAME1, test.T1)
 	assert.Nil(t, err)
-	_, err = sm.AddGroupConcern(test.G1, test.UID1, test.BibiliLive)
+	_, err = tc2.GetStateManager().AddGroupConcern(test.G1, test.NAME2, test.T2)
 	assert.Nil(t, err)
 
-	err = sm.AddUserInfo(&bilibili.UserInfo{
-		Mid:  test.UID2,
-		Name: test.NAME2,
-	})
-	assert.Nil(t, err)
-	_, err = sm.AddGroupConcern(test.G1, test.UID2, test.BilibiliNews)
-	assert.Nil(t, err)
-
-	IList(ctx, test.G1, bsite)
+	IList(ctx, test.G1, "")
 	result = <-msgChan
-
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements),
-		fmt.Sprintf("%v %v %v", test.NAME1, test.UID1, test.BibiliLive))
-
+		fmt.Sprintf("%v %v %v", test.NAME1, test.NAME1, test.T1))
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements),
-		fmt.Sprintf("%v %v %v", test.NAME2, test.UID2, test.BilibiliNews))
+		fmt.Sprintf("%v %v %v", test.NAME2, test.NAME2, test.T2))
+
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G2, test.NAME1, test.T1)
+	assert.Nil(t, err)
+
+	assert.Nil(t, Instance.PermissionStateManager.EnableGroupCommand(test.G2, ListCommand))
+	IList(ctx, test.G2, "")
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements),
+		fmt.Sprintf("%v %v %v", test.NAME1, test.NAME1, test.T1))
+	assert.NotContains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), test.NAME2)
+
+	IList(ctx, test.G1, tc1.Site())
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements),
+		fmt.Sprintf("%v %v %v", test.NAME1, test.NAME1, test.T1))
+	assert.NotContains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), test.NAME2)
 }

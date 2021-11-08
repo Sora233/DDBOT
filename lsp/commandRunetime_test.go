@@ -1,31 +1,34 @@
 package lsp
 
 import (
+	"github.com/Sora233/DDBOT/internal/test"
+	tc "github.com/Sora233/DDBOT/internal/test_concern"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/stretchr/testify/assert"
 	"testing"
-
-	_ "github.com/Sora233/DDBOT/lsp/acfun"
-	_ "github.com/Sora233/DDBOT/lsp/bilibili"
-	_ "github.com/Sora233/DDBOT/lsp/douyu"
-	_ "github.com/Sora233/DDBOT/lsp/huya"
-	_ "github.com/Sora233/DDBOT/lsp/weibo"
-	_ "github.com/Sora233/DDBOT/lsp/youtube"
 )
 
 func TestNewRuntime(t *testing.T) {
+	defer concern.ClearConcern()
 	r := NewRuntime(Instance, true)
 	assert.NotNil(t, r)
 
-	assert.Len(t, concern.ListSite(), 6)
-	site, err := r.ParseRawSite("bil")
-	assert.Nil(t, err)
-	assert.EqualValues(t, "bilibili", site)
+	tc1 := tc.NewTestConcern(concern.GetNotifyChan(), test.Site1, []concern_type.Type{test.T1})
+	concern.RegisterConcernManager(tc1, tc1.Ctypes)
 
-	site, ctype, err := r.ParseRawSiteAndType("bil", "news")
+	tc2 := tc.NewTestConcern(concern.GetNotifyChan(), test.Site2, []concern_type.Type{test.T2})
+	concern.RegisterConcernManager(tc2, tc2.Ctypes)
+
+	assert.Len(t, concern.ListSite(), 2)
+	site, err := r.ParseRawSite(test.Site1)
 	assert.Nil(t, err)
-	assert.EqualValues(t, "bilibili", site)
-	assert.EqualValues(t, "news", ctype)
+	assert.EqualValues(t, test.Site1, site)
+
+	site, ctype, err := r.ParseRawSiteAndType(test.Site1, test.T1.String())
+	assert.Nil(t, err)
+	assert.EqualValues(t, test.Site1, site)
+	assert.EqualValues(t, test.T1, ctype)
 
 	assert.False(t, r.exit)
 	r.Exit(1)

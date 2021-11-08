@@ -44,6 +44,11 @@ func RegisterConcernManager(c Concern, concernType []concern_type.Type, opts ...
 	}
 }
 
+// ClearConcern 现阶段仅用于测试，如果用于其他目的将导致不可预料的后果。
+func ClearConcern() {
+	globalCenter = newConcernCenter()
+}
+
 func StartAll() error {
 	all := ListConcernManager()
 	errG := errgroup.Group{}
