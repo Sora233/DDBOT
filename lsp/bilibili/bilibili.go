@@ -38,6 +38,7 @@ var BasePath = map[string]string{
 	PathPassportLoginWebKey:      PassportHost,
 	PathPassportLoginOAuth2Login: PassportHost,
 	PathXRelationStat:            BaseHost,
+	PathXWebInterfaceNav:         BaseHost,
 }
 
 type VerifyInfo struct {
@@ -51,13 +52,14 @@ type ICode interface {
 }
 
 var (
-	ErrVerifyRequired = errors.New("verify required")
+	ErrVerifyRequired = errors.New("账号信息缺失")
 	// atomicVerifyInfo is a *VerifyInfo
 	atomicVerifyInfo atomic.Value
 
 	mux                  = new(sync.Mutex)
 	username             string
 	password             string
+	accountUid           atomic.Int64
 	delete412ProxyOption = func() requests.Option {
 		return requests.ProxyCallbackOption(func(out interface{}, proxy string) {
 			if out == nil {
@@ -77,6 +79,7 @@ func Init() {
 	)
 	if len(SESSDATA) != 0 && len(biliJct) != 0 {
 		SetVerify(SESSDATA, biliJct)
+		FreshSelfInfo()
 	}
 	SetAccount(config.GlobalConfig.GetString("bilibili.account"), config.GlobalConfig.GetString("bilibili.password"))
 }
@@ -176,6 +179,7 @@ func GetVerifyInfo() *VerifyInfo {
 			} else {
 				ok = true
 				SetVerify(SESSDATA, biliJct)
+				FreshSelfInfo()
 				if expire > 0 {
 					// 尝试cookie过期之后自动刷新
 					// 但是登陆方法有效期应该比cookie有效期短
@@ -195,9 +199,38 @@ func GetVerifyInfo() *VerifyInfo {
 		}
 		if !ok {
 			SetVerify("wrong", "wrong")
+			FreshSelfInfo()
 		}
 	}
 	return getVerify()
+}
+
+func FreshSelfInfo() {
+	navResp, err := XWebInterfaceNav()
+	if err != nil {
+		logger.Errorf("获取个人信息失败 - %v，b站功能可能无法使用", err)
+	} else {
+		if navResp.GetCode() != 0 {
+			logger.Errorf("获取个人信息失败 - %v %v", navResp.GetCode(), navResp.GetMessage())
+		} else {
+			if navResp.GetData().GetIsLogin() {
+				logger.Infof("B站启动成功，当前使用账号：UID:%v %v LV%v %v",
+					navResp.GetData().GetMid(),
+					navResp.GetData().GetVipLabel().GetText(),
+					navResp.GetData().GetLevelInfo().GetCurrentLevel(),
+					navResp.GetData().GetUname())
+				if navResp.GetData().GetLevelInfo().GetCurrentLevel() >= 5 {
+					logger.Warnf("注意：当前使用的B站账号为5级或以上，请注意使用b站订阅时，该账号会自动关注订阅的目标用户！" +
+						"如果不想新增关注，请使用小号。")
+				}
+				accountUid.Store(navResp.GetData().GetMid())
+				return
+			} else {
+				logger.Errorf("账号未登陆")
+			}
+		}
+	}
+	accountUid.Store(0)
 }
 
 func AddUAOption() requests.Option {

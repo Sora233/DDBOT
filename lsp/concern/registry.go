@@ -57,7 +57,11 @@ func StartAll() error {
 		errG.Go(func() error {
 			c.FreshIndex()
 			logger.Debugf("启动Concern %v模块", c.Site())
-			return c.Start()
+			err := c.Start()
+			if err != nil {
+				logger.Errorf("启动 %v 失败 - %v", c.Site(), err)
+			}
+			return err
 		})
 	}
 	return errG.Wait()

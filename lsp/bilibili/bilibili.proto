@@ -424,6 +424,26 @@ message GetAttentionListResponse {
   Data data = 3;
 }
 
+message WebInterfaceNavResponse {
+  int32 code = 1;
+  string message = 2;
+  int64 ttl = 3;
+  message Data {
+    message LevelInfo {
+      int32 current_level = 1;
+    }
+    message VipLabel {
+      string text = 1;
+    }
+    bool isLogin = 1;
+    int64 mid = 2;
+    string uname = 3;
+    LevelInfo level_info = 4;
+    VipLabel vip_label = 5;
+  }
+  Data data = 4;
+}
+
 message CardWithImage {
   message Item {
     int64 id = 1;
