@@ -13,11 +13,11 @@ require (
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
 	github.com/go-playground/validator/v10 v10.9.0 // indirect
 	github.com/golang/protobuf v1.5.2
-	github.com/guonaihong/gout v0.2.9
+	github.com/guonaihong/gout v0.2.10
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/json-iterator/go v1.1.12
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
-	github.com/mattn/go-isatty v0.0.13 // indirect
+	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/modern-go/gls v0.0.0-20190610040709-84558782a674
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
@@ -26,7 +26,8 @@ require (
 	github.com/tidwall/buntdb v1.2.7
 	github.com/tidwall/gjson v1.11.0 // indirect
 	go.uber.org/atomic v1.9.0
-	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
+	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa // indirect
+	golang.org/x/net v0.0.0-20211108170745-6635138e15ea // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20211109065445-02f5c0300f6e // indirect
 	golang.org/x/text v0.3.7 // indirect

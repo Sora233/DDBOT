@@ -28,18 +28,6 @@ type option struct {
 	ResponseMiddleware  []middleware.ResponseMiddler
 }
 
-type defaultResponseMiddleware struct {
-	f func(response *http.Response) error
-}
-
-func (d *defaultResponseMiddleware) ModifyResponse(response *http.Response) error {
-	return d.f(response)
-}
-
-func withResponseMiddleware(f func(response *http.Response) error) middleware.ResponseMiddler {
-	return &defaultResponseMiddleware{f}
-}
-
 func (o *option) getGout() *gout.Client {
 	var goutOpts []gout.Option
 	if o.Timeout != 0 {
@@ -155,14 +143,12 @@ func GetResponseCookieOption(cookies *[]*http.Cookie) Option {
 	if cookies == nil {
 		return empty
 	}
-	return WithResponseMiddleware(
-		withResponseMiddleware(
-			func(response *http.Response) error {
-				*cookies = response.Cookies()
-				return nil
-			},
-		),
-	)
+	return WithResponseMiddleware(middleware.WithResponseMiddlerFunc(
+		func(response *http.Response) error {
+			*cookies = response.Cookies()
+			return nil
+		},
+	))
 }
 
 func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Option) error {
