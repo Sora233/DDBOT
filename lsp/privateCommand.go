@@ -153,7 +153,7 @@ func (c *LspPrivateCommand) ListCommand() {
 
 	var listCmd struct {
 		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
-		Site  string `optional:"" short:"s" help:"订阅网站"`
+		Site  string `optional:"" short:"s" help:"网站参数"`
 	}
 	_, output := c.parseCommandSyntax(&listCmd, ListCommand)
 	if output != "" {
@@ -179,28 +179,28 @@ func (c *LspPrivateCommand) ConfigCommand() {
 
 	var configCmd struct {
 		At struct {
-			Site   string  `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Site   string  `optional:"" short:"s" default:"bilibili" help:"网站参数"`
 			Id     string  `arg:"" help:"配置的主播id"`
 			Action string  `arg:"" enum:"add,remove,clear,show" help:"add / remove / clear / show"`
 			QQ     []int64 `arg:"" optional:"" help:"需要@的成员QQ号码"`
-		} `cmd:"" help:"配置推送时的@人员列表" name:"at"`
+		} `cmd:"" help:"配置推送时的@人员列表，默认为空" name:"at"`
 		AtAll struct {
-			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Site   string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
 			Id     string `arg:"" help:"配置的主播id"`
 			Switch string `arg:"" default:"on" enum:"on,off" help:"on / off"`
-		} `cmd:"" help:"配置推送时@全体成员，需要管理员权限" name:"at_all"`
+		} `cmd:"" help:"配置推送时@全体成员，默认关闭，需要管理员权限" name:"at_all"`
 		TitleNotify struct {
-			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Site   string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
 			Id     string `arg:"" help:"配置的主播id"`
 			Switch string `arg:"" default:"off" enum:"on,off" help:"on / off"`
 		} `cmd:"" help:"配置直播间标题发生变化时是否进行推送，默认不推送" name:"title_notify"`
 		OfflineNotify struct {
-			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Site   string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
 			Id     string `arg:"" help:"配置的主播id"`
 			Switch string `arg:"" default:"off" enum:"on,off," help:"on / off"`
 		} `cmd:"" help:"配置下播时是否进行推送，默认不推送" name:"offline_notify"`
 		Filter struct {
-			Site string `optional:"" short:"s" default:"bilibili" help:"bilibili"`
+			Site string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
 			Type struct {
 				Id   string   `arg:"" help:"配置的主播id"`
 				Type []string `arg:"" optional:"" help:"指定的种类"`
@@ -219,11 +219,13 @@ func (c *LspPrivateCommand) ConfigCommand() {
 			Show struct {
 				Id string `arg:"" help:"配置的主播id"`
 			} `cmd:"" help:"查看当前过滤器" name:"show" group:"filter"`
-		} `cmd:"" help:"配置动态过滤器，目前只支持b站动态" name:"filter"`
+		} `cmd:"" help:"配置动态过滤器" name:"filter"`
 		Group int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
 	}
 
-	kongCtx, output := c.parseCommandSyntax(&configCmd, ConfigCommand, kong.Description("管理BOT的配置，目前支持配置@成员、@全体成员、开启下播推送、开启标题推送"))
+	kongCtx, output := c.parseCommandSyntax(&configCmd, ConfigCommand,
+		kong.Description("管理BOT的配置，目前支持配置@成员、@全体成员、开启下播推送、开启标题推送、推送过滤"),
+	)
 	if output != "" {
 		c.textReply(output)
 	}
@@ -330,8 +332,8 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 	}
 
 	var watchCmd struct {
-		Site  string `optional:"" short:"s" default:"bilibili" help:"订阅网站"`
-		Type  string `optional:"" short:"t" default:"live" help:"订阅类型"`
+		Site  string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
+		Type  string `optional:"" short:"t" default:"live" help:"类型参数"`
 		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
 		Id    string `arg:""`
 	}
@@ -457,10 +459,10 @@ func (c *LspPrivateCommand) GrantCommand() {
 
 	var grantCmd struct {
 		Group   int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
-		Command string `optional:"" short:"c" xor:"1" help:"command name"`
+		Command string `optional:"" short:"c" xor:"1" help:"命令名"`
 		Role    string `optional:"" short:"r" xor:"1" enum:"Admin,GroupAdmin," help:"Admin / GroupAdmin"`
-		Delete  bool   `short:"d" help:"perform a ungrant instead"`
-		Target  int64  `arg:""`
+		Delete  bool   `short:"d" help:"删除模式，执行删除权限操作"`
+		Target  int64  `arg:"" help:"目标qq号"`
 	}
 	_, output := c.parseCommandSyntax(&grantCmd, GrantCommand)
 	if output != "" {
@@ -579,9 +581,9 @@ func (c *LspPrivateCommand) LogCommand() {
 	}
 
 	var logCmd struct {
-		N       int       `arg:"" optional:"" help:"the number of lines from tail"`
-		Date    time.Time `optional:"" short:"d" format:"2006-01-02"`
-		Keyword string    `optional:"" short:"k" help:"the lines contains at lease one keyword"`
+		N       int       `arg:"" optional:"" help:"要查询的行数"`
+		Date    time.Time `optional:"" short:"d" format:"2006-01-02" help:"要查询的日期，需要日志保留才能生效"`
+		Keyword string    `optional:"" short:"k" help:"要包含的关键字"`
 	}
 
 	_, output := c.parseCommandSyntax(&logCmd, LogCommand)
@@ -1076,7 +1078,7 @@ func (c *LspPrivateCommand) PingCommand() {
 	log.Info("run ping command")
 	defer func() { log.Info("ping command end") }()
 
-	_, output := c.parseCommandSyntax(&struct{}{}, PingCommand, kong.Description("reply a pong"), kong.UsageOnError())
+	_, output := c.parseCommandSyntax(&struct{}{}, PingCommand, kong.Description("返回pong"), kong.UsageOnError())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -1091,7 +1093,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 	log.Info("run help command")
 	defer func() { log.Info("help command end") }()
 
-	_, output := c.parseCommandSyntax(&struct{}{}, HelpCommand, kong.Description("print help message"))
+	_, output := c.parseCommandSyntax(&struct{}{}, HelpCommand, kong.Description("显示帮助信息"))
 	if output != "" {
 		c.textReply(output)
 	}

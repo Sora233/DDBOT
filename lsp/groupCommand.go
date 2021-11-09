@@ -368,8 +368,8 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 	defer func() { log.Info("watch command end") }()
 
 	var watchCmd struct {
-		Site string `optional:"" short:"s" default:"bilibili" help:"订阅网站"`
-		Type string `optional:"" short:"t" default:"live" help:"订阅类型"`
+		Site string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
+		Type string `optional:"" short:"t" default:"live" help:"类型参数"`
 		Id   string `arg:""`
 	}
 	var name string
@@ -411,7 +411,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 	defer func() { log.Info("list command end") }()
 
 	var listCmd struct {
-		Site string `optional:"" short:"s" help:"订阅网站"`
+		Site string `optional:"" short:"s" help:"网站参数"`
 	}
 	_, output := lgc.parseCommandSyntax(&listCmd, ListCommand)
 	if output != "" {
@@ -611,10 +611,10 @@ func (lgc *LspGroupCommand) GrantCommand() {
 	defer func() { log.Info("grant command end") }()
 
 	var grantCmd struct {
-		Command string `optional:"" short:"c" xor:"1" help:"command name"`
+		Command string `optional:"" short:"c" xor:"1" help:"命令名"`
 		Role    string `optional:"" short:"r" xor:"1" enum:"Admin,GroupAdmin," help:"Admin / GroupAdmin"`
-		Delete  bool   `short:"d" help:"perform a ungrant instead"`
-		Target  int64  `arg:""`
+		Delete  bool   `short:"d" help:"删除模式，执行删除权限操作"`
+		Target  int64  `arg:"" help:"目标qq号"`
 	}
 	_, output := lgc.parseCommandSyntax(&grantCmd, GrantCommand)
 	if output != "" {
@@ -668,28 +668,28 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 
 	var configCmd struct {
 		At struct {
-			Site   string  `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Site   string  `optional:"" short:"s" default:"bilibili" help:"网站参数"`
 			Id     string  `arg:"" help:"配置的主播id"`
 			Action string  `arg:"" enum:"add,remove,clear,show" help:"add / remove / clear / show"`
 			QQ     []int64 `arg:"" optional:"" help:"需要@的成员QQ号码"`
 		} `cmd:"" help:"配置推送时的@人员列表，默认为空" name:"at"`
 		AtAll struct {
-			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Site   string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
 			Id     string `arg:"" help:"配置的主播id"`
 			Switch string `arg:"" default:"on" enum:"on,off" help:"on / off"`
 		} `cmd:"" help:"配置推送时@全体成员，默认关闭，需要管理员权限" name:"at_all"`
 		TitleNotify struct {
-			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Site   string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
 			Id     string `arg:"" help:"配置的主播id"`
 			Switch string `arg:"" default:"off" enum:"on,off" help:"on / off"`
 		} `cmd:"" help:"配置直播间标题发生变化时是否进行推送，默认不推送" name:"title_notify"`
 		OfflineNotify struct {
-			Site   string `optional:"" short:"s" default:"bilibili" help:"bilibili / douyu / youtube / huya"`
+			Site   string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
 			Id     string `arg:"" help:"配置的主播id"`
 			Switch string `arg:"" default:"off" enum:"on,off," help:"on / off"`
 		} `cmd:"" help:"配置下播时是否进行推送，默认不推送" name:"offline_notify"`
 		Filter struct {
-			Site string `optional:"" short:"s" default:"bilibili" help:"bilibili"`
+			Site string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
 			Type struct {
 				Id   string   `arg:"" help:"配置的主播id"`
 				Type []string `arg:"" optional:"" help:"指定的种类"`
@@ -708,10 +708,12 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 			Show struct {
 				Id string `arg:"" help:"配置的主播id"`
 			} `cmd:"" help:"查看当前过滤器" name:"show" group:"filter"`
-		} `cmd:"" help:"配置动态过滤器，目前只支持b站动态" name:"filter"`
+		} `cmd:"" help:"配置动态过滤器" name:"filter"`
 	}
 
-	kongCtx, output := lgc.parseCommandSyntax(&configCmd, ConfigCommand, kong.Description("管理BOT的配置，目前支持配置@成员、@全体成员、开启下播推送、开启标题推送"))
+	kongCtx, output := lgc.parseCommandSyntax(&configCmd, ConfigCommand,
+		kong.Description("管理BOT的配置，目前支持配置@成员、@全体成员、开启下播推送、开启标题推送、推送过滤"),
+	)
 	if output != "" {
 		lgc.textReply(output)
 	}
