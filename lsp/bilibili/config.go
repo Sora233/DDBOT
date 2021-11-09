@@ -76,6 +76,15 @@ func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, msg *me
 	}
 }
 
+func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.HookResult) {
+	hook = new(concern.HookResult)
+	if g.Concern != nil && g.Concern.unsafeStart.Load() {
+		hook.Reason = "bilibili unsafe start status"
+		return
+	}
+	return g.IConfig.AtBeforeHook(notify)
+}
+
 func (g *GroupConcernConfig) FilterHook(notify concern.Notify) (hook *concern.HookResult) {
 	hook = new(concern.HookResult)
 	switch n := notify.(type) {
