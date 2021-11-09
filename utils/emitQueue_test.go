@@ -70,7 +70,7 @@ func TestEmitQueue(t *testing.T) {
 }
 
 func TestEmitQueue2(t *testing.T) {
-	c := make(chan *EmitE, 1)
+	c := make(chan *EmitE, 100)
 	eq := NewEmitQueue(c, time.Millisecond*100)
 
 	eq.Start()
@@ -95,4 +95,12 @@ func TestEmitQueue2(t *testing.T) {
 	case <-time.After(time.Second * 1):
 	}
 
+LOOP:
+	for {
+		select {
+		case <-c:
+		case <-time.After(time.Second * 3):
+			break LOOP
+		}
+	}
 }

@@ -5,7 +5,6 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"strconv"
 	"strings"
 )
@@ -98,27 +97,6 @@ func (g *GroupConcernConfig) FilterHook(notify concern.Notify) (hook *concern.Ho
 
 		logger := notify.Logger().WithField("FilterType", g.GetGroupConcernFilter().Type)
 		switch g.GetGroupConcernFilter().Type {
-		case concern.FilterTypeText:
-			textFilter, err := g.GetGroupConcernFilter().GetFilterByText()
-			if err != nil {
-				logger.WithField("GroupConcernTextFilter", g.GetGroupConcernFilter().Config).
-					Errorf("get text filter error %v", err)
-				hook.Pass = true
-			} else {
-				for _, text := range textFilter.Text {
-					if strings.Contains(msgstringer.MsgToString(notify.ToMessage().Elements()), text) {
-						hook.Pass = true
-						break
-					}
-				}
-				if !hook.Pass {
-					logger.WithField("TextFilter", textFilter.Text).
-						Debug("news notify filtered by textFilter")
-					hook.Reason = "TextFilter All pattern match failed"
-				} else {
-					logger.Debugf("news notify FilterHook pass")
-				}
-			}
 		case concern.FilterTypeType, concern.FilterTypeNotType:
 			typeFilter, err := g.GetGroupConcernFilter().GetFilterByType()
 			if err != nil {
@@ -166,7 +144,7 @@ func (g *GroupConcernConfig) FilterHook(notify concern.Notify) (hook *concern.Ho
 				}
 			}
 		default:
-			hook.Reason = "unknown filter type"
+			hook = g.IConfig.FilterHook(notify)
 		}
 		return
 	default:

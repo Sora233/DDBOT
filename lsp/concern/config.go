@@ -1,6 +1,7 @@
 package concern
 
 import (
+	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"strings"
 )
 
@@ -33,9 +34,38 @@ func (g *GroupConcernConfig) Validate() error {
 	return nil
 }
 
-// FilterHook 默认为Pass，可以重写这个函数实现自定义的过滤
+// FilterHook 默认支持filter text配置，其他为Pass，可以重写这个函数实现自定义的过滤
 // b站推送使用这个Hook来支持配置动态类型的过滤（过滤转发动态等）
 func (g *GroupConcernConfig) FilterHook(notify Notify) *HookResult {
+	if g.GetGroupConcernFilter().Empty() {
+		return HookResultPass
+	}
+	logger := notify.Logger().WithField("FilterType", g.GetGroupConcernFilter().Type)
+	switch g.GetGroupConcernFilter().Type {
+	case FilterTypeText:
+		textFilter, err := g.GetGroupConcernFilter().GetFilterByText()
+		if err != nil {
+			logger.WithField("Content", g.GetGroupConcernFilter().Config).
+				Errorf("GetFilterByText() error %v", err)
+		} else {
+			var hook = new(HookResult)
+			msgString := msgstringer.MsgToString(notify.ToMessage().Elements())
+			for _, text := range textFilter.Text {
+				if strings.Contains(msgString, text) {
+					hook.Pass = true
+					break
+				}
+			}
+			if !hook.Pass {
+				logger.WithField("TextFilter", textFilter.Text).
+					Debug("news notify filtered by textFilter")
+				hook.Reason = "TextFilter All pattern match failed"
+			} else {
+				logger.Debugf("news notify FilterHook pass")
+			}
+			return hook
+		}
+	}
 	return HookResultPass
 }
 

@@ -561,7 +561,8 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 	if err != concern.ErrAlreadyExists {
 		return errors.New("失败 - 该id尚未watch")
 	}
-	err = cm.GetStateManager().OperateGroupConcernConfig(groupCode, mid, f)
+	cfg := cm.GetStateManager().GetGroupConcernConfig(groupCode, mid)
+	err = cm.GetStateManager().OperateGroupConcernConfig(groupCode, mid, cfg, f)
 	if err != nil && !localdb.IsRollback(err) {
 		c.GetLog().Errorf("OperateGroupConcernConfig failed %v", err)
 		err = fmt.Errorf("失败 - %v", err)

@@ -114,13 +114,12 @@ func (q *EmitQueue) core() {
 			return
 		}
 		q.cond.L.Lock()
-
 		if q.eqlist.Len() > 0 {
-			headE := q.eqlistCur.Value.(*EmitE)
-			q.eqlistCur = q.eqlistCur.Next()
 			if q.eqlistCur == nil {
 				q.eqlistCur = q.eqlist.Front()
 			}
+			headE := q.eqlistCur.Value.(*EmitE)
+			q.eqlistCur = q.eqlistCur.Next()
 			q.cond.L.Unlock()
 
 			select {

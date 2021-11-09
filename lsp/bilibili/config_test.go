@@ -46,7 +46,13 @@ func newNewsInfo(uid int64, cardTypes ...DynamicDescType) []*ConcernNewsNotify {
 }
 
 func TestNewGroupConcernConfig(t *testing.T) {
-	g := NewGroupConcernConfig(new(concern.GroupConcernConfig), nil)
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	c := initConcern(t)
+
+	g := c.GetGroupConcernConfig(test.G1, test.UID1)
+
 	assert.NotNil(t, g)
 	assert.Nil(t, g.Validate())
 
@@ -59,6 +65,22 @@ func TestNewGroupConcernConfig(t *testing.T) {
 	g.GetGroupConcernFilter().Config = ""
 	g.GetGroupConcernFilter().Type = ""
 	assert.Nil(t, g.Validate())
+
+	g = c.GetGroupConcernConfig(test.G1, test.UID1)
+	err := c.OperateGroupConcernConfig(test.G1, test.UID1, g, func(concernConfig concern.IConfig) bool {
+		concernConfig.GetGroupConcernFilter().Type = concern.FilterTypeNotType
+		concernConfig.GetGroupConcernFilter().Config = (&concern.GroupConcernFilterConfigByType{Type: []string{"wrong"}}).ToString()
+		return true
+	})
+	assert.NotNil(t, err)
+
+	g = c.GetGroupConcernConfig(test.G1, test.UID1)
+	err = c.OperateGroupConcernConfig(test.G1, test.UID1, g, func(concernConfig concern.IConfig) bool {
+		concernConfig.GetGroupConcernFilter().Type = concern.FilterTypeNotType
+		concernConfig.GetGroupConcernFilter().Config = (&concern.GroupConcernFilterConfigByType{Type: []string{Tougao}}).ToString()
+		return true
+	})
+	assert.Nil(t, err)
 }
 
 func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {

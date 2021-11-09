@@ -43,7 +43,7 @@ type FreshFunc func(ctx context.Context, eventChan chan<- Event)
 
 type IStateManager interface {
 	GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig IConfig)
-	OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig IConfig) bool) error
+	OperateGroupConcernConfig(groupCode int64, id interface{}, cfg IConfig, f func(concernConfig IConfig) bool) error
 
 	GetGroupConcern(groupCode int64, id interface{}) (result concern_type.Type, err error)
 	GetConcern(id interface{}) (result concern_type.Type, err error)
@@ -121,16 +121,15 @@ func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) IC
 }
 
 // OperateGroupConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，如果返回true，就保存GroupConcernConfig，否则就回滚。
-func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, f func(concernConfig IConfig) bool) error {
+func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, cfg IConfig, f func(concernConfig IConfig) bool) error {
 	err := c.RWCover(func() error {
-		concernConfig := c.getGroupConcernConfig(groupCode, id)
-		if !f(concernConfig) {
+		if !f(cfg) {
 			return localdb.ErrRollback
 		}
-		if err := concernConfig.Validate(); err != nil {
+		if err := cfg.Validate(); err != nil {
 			return err
 		}
-		return c.Set(c.GroupConcernConfigKey(groupCode, id), concernConfig.ToString())
+		return c.SetJson(c.GroupConcernConfigKey(groupCode, id), cfg)
 	})
 	return err
 }

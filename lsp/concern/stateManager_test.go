@@ -254,7 +254,8 @@ func TestStateManager_GroupConcernConfig(t *testing.T) {
 	assert.Nil(t, c.GetGroupConcernAt().AtSomeone)
 	assert.EqualValues(t, c, new(GroupConcernConfig))
 
-	err := sm.OperateGroupConcernConfig(test.G1, test.UID1, func(concernConfig IConfig) bool {
+	cfg := sm.GetGroupConcernConfig(test.G1, test.UID1)
+	err := sm.OperateGroupConcernConfig(test.G1, test.UID1, cfg, func(concernConfig IConfig) bool {
 		concernConfig.GetGroupConcernNotify().TitleChangeNotify = test.BibiliLive
 		concernConfig.GetGroupConcernAt().AtSomeone = []*AtSomeone{
 			{
@@ -279,7 +280,8 @@ func TestStateManager_GroupConcernConfig(t *testing.T) {
 		},
 	})
 
-	err = sm.OperateGroupConcernConfig(test.G1, test.UID1, func(concernConfig IConfig) bool {
+	cfg = sm.GetGroupConcernConfig(test.G1, test.UID1)
+	err = sm.OperateGroupConcernConfig(test.G1, test.UID1, cfg, func(concernConfig IConfig) bool {
 		concernConfig.GetGroupConcernNotify().TitleChangeNotify = concern_type.Empty
 		return false
 	})
@@ -288,6 +290,14 @@ func TestStateManager_GroupConcernConfig(t *testing.T) {
 	c = sm.GetGroupConcernConfig(test.G1, test.UID1)
 	assert.NotNil(t, c)
 	assert.EqualValues(t, c.GetGroupConcernNotify().TitleChangeNotify, test.BibiliLive)
+
+	cfg = sm.GetGroupConcernConfig(test.G1, test.UID1)
+	err = sm.OperateGroupConcernConfig(test.G1, test.UID1, cfg, func(concernConfig IConfig) bool {
+		concernConfig.GetGroupConcernFilter().Type = FilterTypeType
+		concernConfig.GetGroupConcernFilter().Config = (&GroupConcernFilterConfigByType{Type: []string{"q", "w", "e"}}).ToString()
+		return true
+	})
+	assert.EqualValues(t, ErrConfigNotSupported, err)
 }
 
 func TestStateManager_CheckAndSetAtAllMark(t *testing.T) {
