@@ -59,7 +59,7 @@ func StartAll() error {
 			logger.Debugf("启动Concern %v模块", c.Site())
 			err := c.Start()
 			if err != nil {
-				logger.Errorf("启动 %v 失败 - %v", c.Site(), err)
+				logger.Errorf("启动Concern %v 失败 - %v", c.Site(), err)
 			}
 			return err
 		})

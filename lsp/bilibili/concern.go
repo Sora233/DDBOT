@@ -107,6 +107,7 @@ func (c *Concern) Start() error {
 func (c *Concern) Add(ctx mmsg.IMsgCtx,
 	groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := _id.(int64)
+	selfUid := accountUid.Load()
 	var err error
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("mid", mid)
 
@@ -153,27 +154,31 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 		userInfo.UserStat = userStat
 	}
 
-	oldCtype, err := c.StateManager.GetConcern(mid)
-	if err != nil {
-		log.Errorf("GetConcern error %v", err)
-	} else if oldCtype.Empty() {
-		var actType = ActSub
-		if config.GlobalConfig.GetBool("bilibili.hiddenSub") {
-			actType = ActHiddenSub
-		}
-		resp, err := c.ModifyUserRelation(mid, actType)
+	if selfUid != 0 && mid != selfUid {
+		oldCtype, err := c.StateManager.GetConcern(mid)
 		if err != nil {
-			if err == ErrVerifyRequired {
-				log.Errorf("ModifyUserRelation error %v", err)
-				return nil, fmt.Errorf("关注用户失败 - 未配置B站")
-			} else {
-				log.WithField("action", actType).Errorf("ModifyUserRelation error %v", err)
-				return nil, fmt.Errorf("关注用户失败 - 内部错误")
+			log.Errorf("GetConcern error %v", err)
+		} else if oldCtype.Empty() {
+			var actType = ActSub
+			if config.GlobalConfig.GetBool("bilibili.hiddenSub") {
+				actType = ActHiddenSub
+			}
+			resp, err := c.ModifyUserRelation(mid, actType)
+			if err != nil {
+				if err == ErrVerifyRequired {
+					log.Errorf("ModifyUserRelation error %v", err)
+					return nil, fmt.Errorf("关注用户失败 - 未配置B站")
+				} else {
+					log.WithField("action", actType).Errorf("ModifyUserRelation error %v", err)
+					return nil, fmt.Errorf("关注用户失败 - 内部错误")
+				}
+			}
+			if resp.Code != 0 {
+				return nil, fmt.Errorf("关注用户失败 - %v", resp.GetMessage())
 			}
 		}
-		if resp.Code != 0 {
-			return nil, fmt.Errorf("关注用户失败 - %v", resp.GetMessage())
-		}
+	} else {
+		log.Debug("正在订阅账号自己，跳过关注")
 	}
 
 	_, err = c.StateManager.AddGroupConcern(groupCode, mid, ctype)
@@ -357,6 +362,7 @@ func (c *Concern) fresh() concern.FreshFunc {
 					logger.Errorf("freshLive error %v", err)
 					return err
 				}
+				// liveInfoMap内是所有正在直播的列表，没有直播的不应该放进去
 				var liveInfoMap = make(map[int64]*LiveInfo)
 				for _, info := range liveInfo {
 					liveInfoMap[info.Mid] = info
@@ -387,8 +393,27 @@ func (c *Concern) fresh() concern.FreshFunc {
 					}
 				}
 
+				selfUid := accountUid.Load()
 				for _, id := range ids {
 					mid := id.(int64)
+					if selfUid != 0 && selfUid == mid {
+						// 特殊处理下关注自己
+						accResp, err := XSpaceAccInfo(selfUid)
+						if err != nil {
+							logger.Errorf("freshLive self-fresh %v error %v", selfUid, err)
+							return err
+						}
+						liveRoom := accResp.GetData().GetLiveRoom()
+						selfLiveInfo := NewLiveInfo(
+							NewUserInfo(selfUid, liveRoom.GetRoomid(), accResp.GetData().GetName(), liveRoom.GetUrl()),
+							liveRoom.GetTitle(),
+							liveRoom.GetCover(),
+							liveRoom.GetLiveStatus(),
+						)
+						if selfLiveInfo.Living() {
+							liveInfoMap[selfUid] = selfLiveInfo
+						}
+					}
 					oldInfo, _ := c.GetLiveInfo(mid)
 					if oldInfo == nil {
 						// first live info
@@ -701,6 +726,9 @@ func (c *Concern) SyncSub() {
 	}
 
 	for mid := range midSet {
+		if mid == accountUid.Load() {
+			continue
+		}
 		if _, found := attentionMidSet[mid]; !found {
 			resp, err := c.ModifyUserRelation(mid, actType)
 			if err == nil && resp.Code == 22002 {
