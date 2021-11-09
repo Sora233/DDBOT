@@ -11,7 +11,7 @@ import (
 
 type GroupConcernConfig struct {
 	concern.IConfig
-	Concern *Concern
+	concern *Concern
 }
 
 func (g *GroupConcernConfig) Validate() error {
@@ -41,21 +41,21 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 	case DynamicDescType_WithVideo:
 		// 解决联合投稿的时候刷屏
 		notify.compactKey = notify.Card.GetDesc().GetBvid()
-		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
+		err := g.concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	case DynamicDescType_WithOrigin:
 		// 解决一起转发的时候刷屏
 		notify.compactKey = notify.Card.GetDesc().GetOrigDyIdStr()
-		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
+		err := g.concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	default:
 		// 其他动态也设置一下
 		notify.compactKey = notify.Card.GetDesc().GetDynamicIdStr()
-		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
+		err := g.concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
 		if err != nil && !localdb.IsRollback(err) {
 			logger.Errorf("SetGroupOriginMarkIfNotExist error %v", err)
 		}
@@ -70,7 +70,7 @@ func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, msg *me
 	if notify.shouldCompact || len(notify.compactKey) == 0 {
 		return
 	}
-	err := g.Concern.SetNotifyMsg(notify.compactKey, msg)
+	err := g.concern.SetNotifyMsg(notify.compactKey, msg)
 	if err != nil && !localdb.IsRollback(err) {
 		notify.Logger().Errorf("set notify msg error %v", err)
 	}
@@ -78,7 +78,7 @@ func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, msg *me
 
 func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.HookResult) {
 	hook = new(concern.HookResult)
-	if g.Concern != nil && g.Concern.unsafeStart.Load() {
+	if g.concern != nil && g.concern.unsafeStart.Load() {
 		hook.Reason = "bilibili unsafe start status"
 		return
 	}

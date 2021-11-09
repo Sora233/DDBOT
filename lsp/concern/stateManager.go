@@ -128,7 +128,11 @@ func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}
 		if err := cfg.Validate(); err != nil {
 			return err
 		}
-		return c.SetJson(c.GroupConcernConfigKey(groupCode, id), cfg)
+		ccfg := c.getGroupConcernConfig(groupCode, id)
+		ccfg.GroupConcernNotify = *cfg.GetGroupConcernNotify()
+		ccfg.GroupConcernAt = *cfg.GetGroupConcernAt()
+		ccfg.GroupConcernFilter = *cfg.GetGroupConcernFilter()
+		return c.SetJson(c.GroupConcernConfigKey(groupCode, id), ccfg)
 	})
 	return err
 }

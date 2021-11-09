@@ -1,6 +1,7 @@
 package bilibili
 
 import (
+	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
@@ -309,11 +310,19 @@ func TestGroupConcernConfig_NotifyAfterCallback(t *testing.T) {
 		},
 	}
 	var g = new(GroupConcernConfig)
-	g.Concern = c
+	g.concern = c
 
 	g.NotifyAfterCallback(notify, msg)
 
 	msg2, err := c.GetNotifyMsg(test.G1, test.BVID1)
 	assert.Nil(t, err)
 	assert.EqualValues(t, msg, msg2)
+}
+
+func TestConfigJson(t *testing.T) {
+	var g = NewGroupConcernConfig(&concern.GroupConcernConfig{
+		GroupConcernFilter: concern.GroupConcernFilterConfig{},
+	}, nil)
+	fmt.Println(json.MarshalToString(g))
+
 }
