@@ -38,7 +38,7 @@ func UploadGroupImage(groupCode int64, img []byte, isNorm bool) (image *message.
 			return nil, err
 		}
 	}
-	if !bot.Instance.Online {
+	if !GetBot().IsOnline() {
 		return nil, errors.New("bot offline")
 	}
 	return bot.Instance.UploadGroupImage(groupCode, bytes.NewReader(img))
@@ -52,7 +52,7 @@ func UploadPrivateImage(uin int64, img []byte, isNorm bool) (*message.FriendImag
 			return nil, err
 		}
 	}
-	if !bot.Instance.Online {
+	if !GetBot().IsOnline() {
 		return nil, errors.New("bot offline")
 	}
 	return bot.Instance.UploadPrivateImage(uin, bytes.NewReader(img))

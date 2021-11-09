@@ -32,7 +32,7 @@ func initLsp(t *testing.T) {
 }
 
 func closeLsp(t *testing.T) {
-	localutils.GetBot().TESTClear()
+	localutils.GetBot().TESTReset()
 	concern.ClearConcern()
 	test.CloseBuntdb(t)
 	test.CloseMirai()

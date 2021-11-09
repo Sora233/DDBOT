@@ -9,6 +9,7 @@ import (
 type HackedBot struct {
 	Bot        **miraiBot.Bot
 	testGroups []*client.GroupInfo
+	testUin    int64
 }
 
 func (h *HackedBot) valid() bool {
@@ -69,10 +70,22 @@ func (h *HackedBot) IsOnline() bool {
 	return h.valid()
 }
 
+func (h *HackedBot) GetUin() int64 {
+	if !h.valid() {
+		return h.testUin
+	}
+	return (*h.Bot).Uin
+}
+
 var hackedBot = &HackedBot{Bot: &miraiBot.Instance}
 
 func GetBot() *HackedBot {
 	return hackedBot
+}
+
+// TESTSetUin 仅可用于测试
+func (h *HackedBot) TESTSetUin(uin int64) {
+	h.testUin = uin
 }
 
 // TESTAddGroup 仅可用于测试
@@ -108,7 +121,8 @@ func (h *HackedBot) TESTAddMember(groupCode int64, uin int64, permission client.
 	}
 }
 
-// TESTClear 仅可用于测试
-func (h *HackedBot) TESTClear() {
+// TESTReset 仅可用于测试
+func (h *HackedBot) TESTReset() {
 	h.testGroups = nil
+	h.testUin = 0
 }

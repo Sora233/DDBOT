@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/utils"
 	"strings"
@@ -53,10 +52,10 @@ func (p *Parser) GetCmdArgs() []string {
 }
 
 func (p *Parser) AtCheck() bool {
-	if bot.Instance == nil || p.AtTarget == 0 {
+	if p.AtTarget == 0 {
 		return true
 	}
-	return p.AtTarget == bot.Instance.Uin
+	return p.AtTarget == utils.GetBot().GetUin()
 }
 
 func NewParser() *Parser {

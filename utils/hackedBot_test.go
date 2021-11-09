@@ -8,7 +8,11 @@ import (
 )
 
 func TestGetBot(t *testing.T) {
+	defer GetBot().TESTReset()
+
 	bot := GetBot()
+	bot.TESTSetUin(test.UID1)
+	assert.EqualValues(t, test.UID1, bot.GetUin())
 	assert.Nil(t, bot.FindFriend(1))
 	assert.Nil(t, bot.FindGroup(test.G1))
 	assert.False(t, bot.IsOnline())
@@ -25,7 +29,7 @@ func TestGetBot(t *testing.T) {
 	bot.TESTAddMember(test.G1, test.UID1, client.Administrator)
 	bot.TESTAddMember(test.G2, test.UID2, client.Administrator)
 	assert.Len(t, bot.GetGroupList(), 3)
-	bot.TESTClear()
+	bot.TESTReset()
 	assert.Empty(t, bot.GetGroupList())
 
 	test.InitMirai()

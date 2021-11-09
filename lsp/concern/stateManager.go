@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
@@ -362,8 +361,8 @@ func (c *StateManager) FreshIndex(groups ...int64) {
 		c.CreatePatternIndex(pattern, nil)
 	}
 	var groupSet = make(map[int64]interface{})
-	if len(groups) == 0 && miraiBot.Instance != nil {
-		for _, groupInfo := range miraiBot.Instance.GroupList {
+	if len(groups) == 0 {
+		for _, groupInfo := range localutils.GetBot().GetGroupList() {
 			groupSet[groupInfo.Code] = struct{}{}
 		}
 	} else {
