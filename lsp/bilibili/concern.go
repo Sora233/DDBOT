@@ -482,8 +482,8 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 	}
 	var newsMap = make(map[int64][]*Card)
 	if resp.GetCode() != 0 {
-		logger.WithField("code", resp.GetCode()).
-			WithField("msg", resp.GetMessage()).
+		logger.WithField("RespCode", resp.GetCode()).
+			WithField("RespMsg", resp.GetMessage()).
 			Errorf("DynamicSvrDynamicNew failed")
 		return nil, fmt.Errorf("DynamicSvrDynamicNew failed %v - %v", resp.GetCode(), resp.GetMessage())
 	}
@@ -504,8 +504,8 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 				break
 			}
 			if historyResp.GetCode() != 0 {
-				logger.WithField("code", resp.GetCode()).
-					WithField("msg", resp.GetMessage()).
+				logger.WithField("RespCode", resp.GetCode()).
+					WithField("RespMsg", resp.GetMessage()).
 					Errorf("DynamicSvrDynamicHistory failed")
 				return nil, fmt.Errorf("DynamicSvrDynamicHistory failed %v - %v",
 					historyResp.GetCode(), historyResp.GetMessage())
