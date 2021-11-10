@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestDynamicSrvDynamicNew(t *testing.T) {
-	_, err := DynamicSvrDynamicNew()
+func TestDynamicSvrDynamicHistory(t *testing.T) {
+	_, err := DynamicSvrDynamicHistory("0")
 	assert.NotNil(t, err)
 }

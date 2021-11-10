@@ -2,7 +2,6 @@ package bilibili
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
@@ -476,19 +475,53 @@ func (c *Concern) fresh() concern.FreshFunc {
 
 func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 	var start = time.Now()
-	resp, err := DynamicSrvDynamicNew()
+	resp, err := DynamicSvrDynamicNew()
 	if err != nil {
+		logger.Errorf("DynamicSvrDynamicNew error %v", err)
 		return nil, err
 	}
 	var newsMap = make(map[int64][]*Card)
 	if resp.GetCode() != 0 {
 		logger.WithField("code", resp.GetCode()).
 			WithField("msg", resp.GetMessage()).
-			Errorf("fresh dynamic new failed")
-		return nil, errors.New(resp.Message)
+			Errorf("DynamicSvrDynamicNew failed")
+		return nil, fmt.Errorf("DynamicSvrDynamicNew failed %v - %v", resp.GetCode(), resp.GetMessage())
 	}
+	var cards []*Card
+	cards = append(cards, resp.GetData().GetCards()...)
+	// 尝试刷一下历史动态，看看能不能捞一下被审核的动态
+	if len(resp.GetData().GetCards()) > 0 {
+		var historyResp *DynamicSvrDynamicHistoryResponse
+		var lastDynamicId = resp.GetData().GetCards()[len(resp.GetData().GetCards())-1].GetDesc().GetDynamicIdStr()
+		for i := 0; i < 2; i++ {
+			if len(lastDynamicId) == 0 {
+				break
+			}
+			historyResp, err = DynamicSvrDynamicHistory(lastDynamicId)
+			if err != nil {
+				logger.WithField("lastDynamicId", lastDynamicId).
+					Errorf("DynamicSvrDynamicHistory error %v", err)
+				break
+			}
+			if historyResp.GetCode() != 0 {
+				logger.WithField("code", resp.GetCode()).
+					WithField("msg", resp.GetMessage()).
+					Errorf("DynamicSvrDynamicHistory failed")
+				return nil, fmt.Errorf("DynamicSvrDynamicHistory failed %v - %v",
+					historyResp.GetCode(), historyResp.GetMessage())
+			}
+			cards = append(cards, historyResp.GetData().GetCards()...)
+			if len(historyResp.GetData().GetCards()) > 0 {
+				cardSize := len(historyResp.GetData().GetCards())
+				lastDynamicId = historyResp.GetData().GetCards()[cardSize-1].GetDesc().GetDynamicIdStr()
+			} else {
+				lastDynamicId = ""
+			}
+		}
+	}
+
 	logger.WithField("cost", time.Now().Sub(start)).Trace("freshDynamicNew cost 1")
-	for _, card := range resp.GetData().GetCards() {
+	for _, card := range cards {
 		uid := card.GetDesc().GetUid()
 		// 应该用dynamic_id_str
 		// 但好像已经没法保持向后兼容同时改动了

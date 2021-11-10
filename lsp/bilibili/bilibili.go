@@ -39,6 +39,7 @@ var BasePath = map[string]string{
 	PathPassportLoginOAuth2Login: PassportHost,
 	PathXRelationStat:            BaseHost,
 	PathXWebInterfaceNav:         BaseHost,
+	PathDynamicSrvDynamicHistory: BaseVCHost,
 }
 
 type VerifyInfo struct {

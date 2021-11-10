@@ -409,6 +409,17 @@ message DynamicSvrDynamicNewResponse {
   Data data = 3;
 }
 
+message DynamicSvrDynamicHistoryResponse {
+  int32 code = 1;
+  string message = 2;
+  message Data {
+    repeated Card cards = 1;
+    int32 has_more = 2;
+    int64 next_offset = 3;
+  }
+  Data data = 3;
+}
+
 message RelationModifyResponse {
   int32 code = 1;
   string message = 2;

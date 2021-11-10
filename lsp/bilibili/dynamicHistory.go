@@ -9,16 +9,17 @@ import (
 )
 
 const (
-	PathDynamicSrvDynamicNew = "/dynamic_svr/v1/dynamic_svr/dynamic_new"
+	PathDynamicSrvDynamicHistory = "/dynamic_svr/v1/dynamic_svr/dynamic_history"
 )
 
-type DynamicSrvDynamicNewRequest struct {
-	Platform string `json:"platform"`
-	From     string `json:"from"`
-	TypeList string `json:"type_list"`
+type DynamicSrvDynamicHistoryRequest struct {
+	OffsetDynamicId string `json:"offset_dynamic_id"`
+	Platform        string `json:"platform"`
+	From            string `json:"from"`
+	Type            string `json:"type"`
 }
 
-func DynamicSvrDynamicNew() (*DynamicSvrDynamicNewResponse, error) {
+func DynamicSvrDynamicHistory(offsetDynamicId string) (*DynamicSvrDynamicHistoryResponse, error) {
 	if !IsVerifyGiven() {
 		return nil, ErrVerifyRequired
 	}
@@ -28,10 +29,11 @@ func DynamicSvrDynamicNew() (*DynamicSvrDynamicNewResponse, error) {
 		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
 	url := BPath(PathDynamicSrvDynamicNew)
-	params, err := utils.ToParams(&DynamicSrvDynamicNewRequest{
-		Platform: "web",
-		From:     "weball",
-		TypeList: "268435455", // 会变吗？
+	params, err := utils.ToParams(&DynamicSrvDynamicHistoryRequest{
+		OffsetDynamicId: offsetDynamicId,
+		Platform:        "web",
+		From:            "weball",
+		Type:            "268435455", // 会变吗？
 	})
 	if err != nil {
 		return nil, err
@@ -46,10 +48,10 @@ func DynamicSvrDynamicNew() (*DynamicSvrDynamicNewResponse, error) {
 		delete412ProxyOption,
 	)
 	opts = append(opts, GetVerifyOption()...)
-	dynamicNewResp := new(DynamicSvrDynamicNewResponse)
-	err = requests.Get(url, params, dynamicNewResp, opts...)
+	dynamicHistoryResp := new(DynamicSvrDynamicHistoryResponse)
+	err = requests.Get(url, params, dynamicHistoryResp, opts...)
 	if err != nil {
 		return nil, err
 	}
-	return dynamicNewResp, nil
+	return dynamicHistoryResp, nil
 }
