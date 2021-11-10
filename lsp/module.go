@@ -20,6 +20,7 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool/py"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	"os"
 	"runtime"
@@ -32,6 +33,8 @@ import (
 const ModuleName = "me.sora233.Lsp"
 
 var logger = utils.GetModuleLogger(ModuleName)
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 var Debug = false
 
@@ -422,10 +425,10 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 func (l *Lsp) Start(bot *bot.Bot) {
 	if runtime.NumCPU() >= 3 {
 		for i := 0; i < 3; i++ {
-			go l.ConcernNotify(bot)
+			go l.ConcernNotify()
 		}
 	} else {
-		go l.ConcernNotify(bot)
+		go l.ConcernNotify()
 	}
 
 }

@@ -1,7 +1,6 @@
 package lsp
 
 import (
-	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
@@ -10,11 +9,11 @@ import (
 	"runtime/debug"
 )
 
-func (l *Lsp) ConcernNotify(bot *bot.Bot) {
+func (l *Lsp) ConcernNotify() {
 	defer func() {
 		if err := recover(); err != nil {
 			logger.WithField("stack", string(debug.Stack())).Errorf("concern notify recoverd %v", err)
-			go l.ConcernNotify(bot)
+			go l.ConcernNotify()
 		}
 	}()
 	l.wg.Add(1)
@@ -31,12 +30,16 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 			}
 			nLogger := inotify.Logger()
 
-			if l.LspStateManager.IsMuted(inotify.GetGroupCode(), bot.Uin) {
+			if l.LspStateManager.IsMuted(inotify.GetGroupCode(), utils.GetBot().GetUin()) {
 				nLogger.Info("BOT群内被禁言，跳过本次推送")
 				continue
 			}
 
-			c := concern.GetConcernManager(inotify.Site(), inotify.Type())
+			c, err := concern.GetConcernManager(inotify.Site(), inotify.Type())
+			if err != nil {
+				nLogger.Errorf("GetConcernManager error %v", err)
+				continue
+			}
 			cfg := c.GetStateManager().GetGroupConcernConfig(inotify.GetGroupCode(), inotify.GetUid())
 
 			sendHookResult := cfg.ShouldSendHook(inotify)
@@ -57,9 +60,12 @@ func (l *Lsp) ConcernNotify(bot *bot.Bot) {
 				nLogger.WithField("Reason", atBeforeHook.Reason).Debug("notify @at filtered by hook AtBeforeHook")
 			} else {
 				// 有@全体成员 或者 @Someone
-				var qqadmin = atBeforeHook.Pass && l.PermissionStateManager.CheckGroupAdministrator(inotify.GetGroupCode(), bot.Uin)
-				var checkAtAll = qqadmin && cfg.GetGroupConcernAt().CheckAtAll(inotify.Type())
-				var atAllMark = checkAtAll && c.GetStateManager().CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
+				var qqadmin = atBeforeHook.Pass &&
+					l.PermissionStateManager.CheckGroupAdministrator(inotify.GetGroupCode(), utils.GetBot().GetUin())
+				var checkAtAll = qqadmin &&
+					cfg.GetGroupConcernAt().CheckAtAll(inotify.Type())
+				var atAllMark = checkAtAll &&
+					c.GetStateManager().CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
 				nLogger.WithFields(logrus.Fields{
 					"qqAdmin":    qqadmin,
 					"checkAtAll": checkAtAll,

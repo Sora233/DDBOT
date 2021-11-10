@@ -78,13 +78,8 @@ func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
 			_, err = tx.Delete(key)
 			return err
 		} else if t < 0 {
-			if uin == 0 {
-				// 开启全体禁言
-				_, _, err = tx.Set(key, "", nil)
-			} else {
-				// 可能有吗？
-				_, err = tx.Delete(key)
-			}
+			// 开启全体禁言
+			_, _, err = tx.Set(key, "", nil)
 		} else { // t > 0
 			_, _, err = tx.Set(key, "", localdb.ExpireOption(time.Second*time.Duration(t)))
 		}

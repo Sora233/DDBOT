@@ -404,9 +404,12 @@ func (c *StateManager) Stop() {
 		c.emitQueue.Stop()
 		close(c.emitChan)
 	}
+	c.Logger().Trace("StateManager stopping")
 	c.cancelCtx()
+	c.Logger().Trace("wait freshWg")
 	c.freshWg.Wait()
 	close(c.eventChan)
+	c.Logger().Trace("wait wg")
 	c.wg.Wait()
 }
 

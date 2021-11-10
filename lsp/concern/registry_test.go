@@ -96,10 +96,14 @@ func TestConcernManager(t *testing.T) {
 	assert.EqualValues(t, []concern_type.Type{"1", "2", "3"}, ListType("test1"))
 	assert.EqualValues(t, []concern_type.Type{"4", "5", "6"}, ListType("test2"))
 
-	assert.NotNil(t, GetConcernManager("test1", "1"))
-	assert.NotNil(t, GetConcernManager("test1", "3"))
-	assert.Nil(t, GetConcernManager("test1", "4"))
-	assert.Nil(t, GetConcernManager("test4", "10"))
+	cm, _ := GetConcernManager("test1", "1")
+	assert.NotNil(t, cm)
+	cm, _ = GetConcernManager("test1", "3")
+	assert.NotNil(t, cm)
+	cm, _ = GetConcernManager("test1", "4")
+	assert.Nil(t, cm)
+	cm, _ = GetConcernManager("test4", "10")
+	assert.Nil(t, cm)
 
 	assert.Nil(t, StartAll())
 

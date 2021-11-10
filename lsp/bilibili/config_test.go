@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/internal/test"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -299,6 +300,9 @@ func TestGroupConcernConfig_NotifyAfterCallback(t *testing.T) {
 	defer test.CloseBuntdb(t)
 
 	c := initConcern(t)
+
+	_, err := c.GetNotifyMsg(test.G1, test.BVID1)
+	assert.True(t, localdb.IsNotFound(err))
 
 	var notify = newNewsInfo(test.UID1, DynamicDescType_WithOrigin)[0]
 	notify.compactKey = test.BVID1

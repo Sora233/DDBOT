@@ -93,11 +93,15 @@ func ListConcernManager() []Concern {
 	return result
 }
 
-func GetConcernManager(site string, ctype concern_type.Type) Concern {
+func GetConcernManager(site string, ctype concern_type.Type) (Concern, error) {
 	if sub, found := globalCenter.M[site]; !found {
-		return nil
+		return nil, ErrSiteNotSupported
 	} else {
-		return sub[ctype]
+		if cm, found := sub[ctype]; found {
+			return cm, nil
+		} else {
+			return nil, ErrTypeNotSupported
+		}
 	}
 }
 

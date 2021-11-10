@@ -61,6 +61,7 @@ func TestStateManager_IsMuted(t *testing.T) {
 	assert.False(t, sm.IsMuted(test.G1, test.UID1))
 	assert.Nil(t, sm.Muted(test.G1, 0, -1))
 	assert.True(t, sm.IsMuted(test.G1, 0))
+	assert.Nil(t, sm.Muted(test.G1, test.UID1, -1))
 }
 
 func TestStateManager_GetMessageImageUrl(t *testing.T) {
@@ -80,9 +81,12 @@ func TestStateManager_GetMessageImageUrl(t *testing.T) {
 		&message.GroupImageElement{
 			Url: "image2",
 		},
+		&message.FriendImageElement{
+			Url: "image3",
+		},
 	}))
 
-	assert.Len(t, sm.GetMessageImageUrl(test.G1, test.MessageID1), 2)
+	assert.Len(t, sm.GetMessageImageUrl(test.G1, test.MessageID1), 3)
 }
 
 func TestStateManager_GetCurrentMode(t *testing.T) {

@@ -13,14 +13,18 @@ import (
 	"github.com/Sora233/DDBOT/lsp/permission"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 const (
 	noPermission   = "no permission"
 	globalDisabled = "global disabled"
 	disabled       = "disabled"
+	success        = "成功"
+	failed         = "失败"
 )
 
 func initLsp(t *testing.T) {
@@ -38,7 +42,7 @@ func closeLsp(t *testing.T) {
 	test.CloseMirai()
 }
 
-func NewCtx(receiver chan<- *mmsg.MSG, sender *message.Sender, target mmsg.Target) *MessageContext {
+func NewCtx(t *testing.T, receiver chan<- *mmsg.MSG, sender *message.Sender, target mmsg.Target) *MessageContext {
 	ctx := NewMessageContext()
 	ctx.Lsp = Instance
 	ctx.Log = logger.WithField("test", "test")
@@ -60,6 +64,11 @@ func NewCtx(receiver chan<- *mmsg.MSG, sender *message.Sender, target mmsg.Targe
 	ctx.NoPermissionReplyFunc = func() interface{} {
 		return ctx.Send(mmsg.NewTextf(noPermission))
 	}
+	assert.EqualValues(t, sender, ctx.GetSender())
+	assert.EqualValues(t, target, ctx.GetTarget())
+	ctx.IsFromPrivate()
+	ctx.IsFromGroup()
+	ctx.GetLog()
 	return ctx
 }
 
@@ -87,7 +96,7 @@ func testFresh(testEventChan <-chan concern.Event) concern.FreshFunc {
 	}
 }
 
-func newTestConcern(t *testing.T, e chan concern.Event, n chan concern.Notify, site string, ctypes []concern_type.Type) *tc.TestConcern {
+func newTestConcern(t *testing.T, e chan concern.Event, n chan<- concern.Notify, site string, ctypes []concern_type.Type) *tc.TestConcern {
 	c := tc.NewTestConcern(n, site, ctypes)
 	c.UseFreshFunc(testFresh(e))
 	assert.Nil(t, c.Start())
@@ -100,13 +109,13 @@ func TestIList(t *testing.T) {
 
 	msgChan := make(chan *mmsg.MSG, 10)
 	target := mmsg.NewGroupTarget(test.G1)
-	ctx := NewCtx(msgChan, test.Sender1, target)
+	ctx := NewCtx(t, msgChan, test.Sender1, target)
 
 	assert.Nil(t, Instance.PermissionStateManager.DisableGroupCommand(test.G2, ListCommand))
 
 	IList(ctx, test.G1, "xxx")
 	result := <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "失败")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
 	assert.Nil(t, Instance.PermissionStateManager.DisableGroupCommand(test.G1, ListCommand))
 
@@ -177,7 +186,7 @@ func TestIEnable(t *testing.T) {
 
 	msgChan := make(chan *mmsg.MSG, 10)
 	target := mmsg.NewGroupTarget(test.G1)
-	ctx := NewCtx(msgChan, test.Sender1, target)
+	ctx := NewCtx(t, msgChan, test.Sender1, target)
 
 	IEnable(ctx, test.G1, "watch", false)
 	result := <-msgChan
@@ -187,23 +196,23 @@ func TestIEnable(t *testing.T) {
 
 	IEnable(ctx, test.G1, "", false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "失败")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
 	IEnable(ctx, test.G1, "???", false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "失败")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
 	IEnable(ctx, test.G1, "enable", false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "失败")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
 	IEnable(ctx, test.G1, "watch", false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
 	IEnable(ctx, test.G1, "watch", false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "失败")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
 	assert.Nil(t, Instance.PermissionStateManager.GlobalDisableGroupCommand("watch"))
 
@@ -215,11 +224,11 @@ func TestIEnable(t *testing.T) {
 
 	IEnable(ctx, test.G1, "watch", true)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
 	IEnable(ctx, test.G1, "watch", true)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "失败")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 }
 
 func TestIGrantRole(t *testing.T) {
@@ -228,7 +237,7 @@ func TestIGrantRole(t *testing.T) {
 
 	msgChan := make(chan *mmsg.MSG, 10)
 	target := mmsg.NewGroupTarget(test.G1)
-	ctx := NewCtx(msgChan, test.Sender1, target)
+	ctx := NewCtx(t, msgChan, test.Sender1, target)
 
 	IGrantRole(ctx, test.G1, permission.GroupAdmin, test.UID2, false)
 	result := <-msgChan
@@ -248,7 +257,7 @@ func TestIGrantRole(t *testing.T) {
 
 	IGrantRole(ctx, test.G1, permission.GroupAdmin, test.UID2, false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
 	IGrantRole(ctx, test.G1, permission.GroupAdmin, test.UID2, false)
 	result = <-msgChan
@@ -256,7 +265,7 @@ func TestIGrantRole(t *testing.T) {
 
 	IGrantRole(ctx, test.G1, permission.GroupAdmin, test.UID2, true)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
 	IGrantRole(ctx, test.G1, permission.GroupAdmin, test.UID2, true)
 	result = <-msgChan
@@ -270,7 +279,7 @@ func TestIGrantRole(t *testing.T) {
 
 	IGrantRole(ctx, 0, permission.Admin, test.UID2, false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
 	IGrantRole(ctx, 0, permission.Admin, test.UID2, false)
 	result = <-msgChan
@@ -278,7 +287,7 @@ func TestIGrantRole(t *testing.T) {
 
 	IGrantRole(ctx, 0, permission.Admin, test.UID2, true)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
 	IGrantRole(ctx, 0, permission.Admin, test.UID2, true)
 	result = <-msgChan
@@ -291,7 +300,7 @@ func TestIGrantCmd(t *testing.T) {
 
 	msgChan := make(chan *mmsg.MSG, 10)
 	target := mmsg.NewGroupTarget(test.G1)
-	ctx := NewCtx(msgChan, test.Sender1, target)
+	ctx := NewCtx(t, msgChan, test.Sender1, target)
 
 	IGrantCmd(ctx, test.G1, "", test.Sender2.Uin, false)
 	result := <-msgChan
@@ -301,7 +310,7 @@ func TestIGrantCmd(t *testing.T) {
 
 	IGrantCmd(ctx, test.G1, "", test.Sender2.Uin, false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "失败")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
 	IGrantCmd(ctx, test.G1, "watch", test.Sender2.Uin, false)
 	result = <-msgChan
@@ -311,19 +320,19 @@ func TestIGrantCmd(t *testing.T) {
 
 	IGrantCmd(ctx, test.G1, "watch", test.Sender2.Uin, false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
 	IGrantCmd(ctx, test.G1, "watch", test.Sender2.Uin, false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "失败")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
 	IGrantCmd(ctx, test.G1, "watch", test.Sender2.Uin, true)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
 	IGrantCmd(ctx, test.G1, "watch", test.Sender2.Uin, true)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "失败")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
 	assert.Nil(t, Instance.PermissionStateManager.GlobalDisableGroupCommand("watch"))
 
@@ -342,7 +351,7 @@ func TestISilenceCmd(t *testing.T) {
 
 	msgChan := make(chan *mmsg.MSG, 10)
 	target := mmsg.NewGroupTarget(test.G1)
-	ctx := NewCtx(msgChan, test.Sender1, target)
+	ctx := NewCtx(t, msgChan, test.Sender1, target)
 
 	ISilenceCmd(ctx, 0, false)
 	result := <-msgChan
@@ -359,38 +368,126 @@ func TestISilenceCmd(t *testing.T) {
 
 	ISilenceCmd(ctx, test.G1, false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 	ISilenceCmd(ctx, test.G1, false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
 	ISilenceCmd(ctx, test.G1, true)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 	ISilenceCmd(ctx, test.G1, true)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
 	assert.Nil(t, Instance.PermissionStateManager.GrantRole(test.Sender1.Uin, permission.Admin))
 
 	ISilenceCmd(ctx, 0, false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
 	ISilenceCmd(ctx, 0, true)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
 	ISilenceCmd(ctx, 0, false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "成功")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
 	ISilenceCmd(ctx, test.G1, true)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "失败")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
 	ISilenceCmd(ctx, test.G1, false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "失败")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
+}
+
+func TestIWatch(t *testing.T) {
+	logrus.SetLevel(logrus.TraceLevel)
+	initLsp(t)
+	defer closeLsp(t)
+
+	testEventChan1 := make(chan concern.Event, 16)
+	testEventChan2 := make(chan concern.Event, 16)
+	testNotifyChan := make(chan concern.Notify, 1)
+	defer close(testNotifyChan)
+
+	var err error
+	var result *mmsg.MSG
+	msgChan := make(chan *mmsg.MSG, 10)
+	target := mmsg.NewGroupTarget(test.G1)
+	ctx := NewCtx(t, msgChan, test.Sender1, target)
+
+	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), noPermission)
+
+	err = Instance.PermissionStateManager.GrantRole(test.Sender1.Uin, permission.Admin)
+	assert.Nil(t, err)
+	assert.Nil(t, Instance.PermissionStateManager.DisableGroupCommand(test.G1, "watch"))
+
+	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), disabled)
+
+	assert.Nil(t, Instance.PermissionStateManager.EnableGroupCommand(test.G1, "watch"))
+
+	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	tc1 := newTestConcern(t, testEventChan1, testNotifyChan, test.Site1, []concern_type.Type{test.T1})
+	concern.RegisterConcernManager(tc1, tc1.Ctypes)
+	defer tc1.Stop()
+
+	tc2 := newTestConcern(t, testEventChan2, testNotifyChan, test.Site2, []concern_type.Type{test.T2})
+	concern.RegisterConcernManager(tc2, tc2.Ctypes)
+	defer tc2.Stop()
+
+	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	testEventChan1 <- tc1.NewTestEvent(test.T1, 0, test.NAME1)
+
+	select {
+	case <-testNotifyChan:
+		assert.Fail(t, "should no item received")
+	case <-time.After(time.Second):
+	}
+
+	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IWatch(ctx, test.G2, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	testEventChan1 <- tc1.NewTestEvent(test.T1, 0, test.NAME1)
+
+	for i := 0; i < 2; i++ {
+		select {
+		case notify := <-testNotifyChan:
+			assert.EqualValues(t, test.NAME1, notify.GetUid())
+			assert.EqualValues(t, test.Site1, notify.Site())
+			assert.Contains(t, []int64{test.G1, test.G2}, notify.GetGroupCode())
+		case <-time.After(time.Second):
+			assert.Fail(t, "no item received")
+		}
+	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/utils"
+	"github.com/Sora233/sliceutil"
 	"github.com/tidwall/buntdb"
 	"strings"
 )
@@ -87,7 +88,12 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		return
 	}
 
-	cm := concern.GetConcernManager(site, watchType)
+	cm, err := concern.GetConcernManager(site, watchType)
+	if err != nil {
+		log.Errorf("GetConcernManager error %v", err)
+		c.TextReply(fmt.Sprintf("失败 - %v", err))
+		return
+	}
 
 	mid, err := cm.ParseId(id)
 	if err != nil {
@@ -549,9 +555,14 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 	if err = configCmdGroupCommonCheck(c, groupCode); err != nil {
 		return err
 	}
-	cm := concern.GetConcernManager(site, ctype)
-	if cm == nil {
-		return errors.New("<nil>")
+	if !sliceutil.Contains(concern.ListSite(), site) {
+		return concern.ErrSiteNotSupported
+	}
+	cm, err := concern.GetConcernManager(site, ctype)
+	if err != nil {
+		c.GetLog().Errorf("GetConcernManager error %v", err)
+		c.TextReply(fmt.Sprintf("失败 - %v", err))
+		return
 	}
 	mid, err := cm.ParseId(id)
 	if err != nil {
@@ -571,7 +582,12 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 }
 
 func ReplyUserInfo(c *MessageContext, id string, site string, ctype concern_type.Type) {
-	cm := concern.GetConcernManager(site, ctype)
+	cm, err := concern.GetConcernManager(site, ctype)
+	if err != nil {
+		c.GetLog().Errorf("GetConcernManager error %v", err)
+		c.TextReply(fmt.Sprintf("失败 - %v", err))
+		return
+	}
 	mid, err := cm.ParseId(id)
 	if err != nil {
 		c.Log.Errorf("ReplyUserInfo %v got wrong id %v", site, id)

@@ -166,6 +166,12 @@ func TestStateManager_IncNotLiveCount(t *testing.T) {
 
 	c := initStateManager(t)
 
+	assert.Nil(t, c.Set(c.NotLiveKey(test.UID1), "wrong"))
+	assert.EqualValues(t, 0, c.IncNotLiveCount(test.UID1))
+
+	_, err := c.Delete(c.NotLiveKey(test.UID1))
+	assert.Nil(t, err)
+
 	assert.EqualValues(t, 1, c.IncNotLiveCount(test.UID1))
 	assert.EqualValues(t, 2, c.IncNotLiveCount(test.UID1))
 	assert.EqualValues(t, 3, c.IncNotLiveCount(test.UID1))
