@@ -36,7 +36,7 @@ func TestLsp_ConcernNotify(t *testing.T) {
 	assert.Nil(t, err)
 
 	tc1 := newTestConcern(t, testEventChan, testNotifyChan, test.Site1, []concern_type.Type{test.T1})
-	concern.RegisterConcernManager(tc1, tc1.Ctypes)
+	concern.RegisterConcernManager(tc1)
 	defer tc1.Stop()
 
 	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)

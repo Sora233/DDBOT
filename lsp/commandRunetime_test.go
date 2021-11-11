@@ -15,10 +15,10 @@ func TestNewRuntime(t *testing.T) {
 	assert.NotNil(t, r)
 
 	tc1 := tc.NewTestConcern(concern.GetNotifyChan(), test.Site1, []concern_type.Type{test.T1})
-	concern.RegisterConcernManager(tc1, tc1.Ctypes)
+	concern.RegisterConcernManager(tc1)
 
 	tc2 := tc.NewTestConcern(concern.GetNotifyChan(), test.Site2, []concern_type.Type{test.T2})
-	concern.RegisterConcernManager(tc2, tc2.Ctypes)
+	concern.RegisterConcernManager(tc2)
 
 	assert.Len(t, concern.ListSite(), 2)
 	site, err := r.ParseRawSite(test.Site1)

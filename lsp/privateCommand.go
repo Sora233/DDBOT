@@ -333,7 +333,7 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 
 	var watchCmd struct {
 		Site  string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
-		Type  string `optional:"" short:"t" default:"live" help:"类型参数"`
+		Type  string `optional:"" short:"t" default:"" help:"类型参数"`
 		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
 		Id    string `arg:""`
 	}

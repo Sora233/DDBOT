@@ -19,6 +19,14 @@ type Concern struct {
 	*StateManager
 }
 
+func (c *Concern) Site() string {
+	return Site
+}
+
+func (c *Concern) Types() []concern_type.Type {
+	return []concern_type.Type{News}
+}
+
 func (c *Concern) Start() error {
 	c.StateManager.UseFreshFunc(c.EmitQueueFresher(func(p concern_type.Type, id interface{}) ([]concern.Event, error) {
 		uid := id.(int64)
@@ -45,10 +53,6 @@ func (c *Concern) Stop() {
 	c.StateManager.Stop()
 	logger.Tracef("%v StateManager已停止", Site)
 	logger.Tracef("%v concern已停止", Site)
-}
-
-func (c *Concern) Site() string {
-	return Site
 }
 
 func (c *Concern) ParseId(s string) (interface{}, error) {

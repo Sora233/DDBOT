@@ -24,7 +24,11 @@ type Concern struct {
 }
 
 func (c *Concern) Site() string {
-	return "huya"
+	return Site
+}
+
+func (c *Concern) Types() []concern_type.Type {
+	return []concern_type.Type{Live}
 }
 
 func (c *Concern) ParseId(s string) (interface{}, error) {

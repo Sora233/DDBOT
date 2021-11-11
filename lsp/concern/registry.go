@@ -3,8 +3,9 @@ package concern
 import (
 	"fmt"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/utils"
 	"golang.org/x/sync/errgroup"
-	"sort"
+	"strings"
 )
 
 var globalCenter = newConcernCenter()
@@ -16,32 +17,62 @@ type option struct {
 type OptFunc func(opt *option) *option
 
 type center struct {
-	M map[string]map[concern_type.Type]Concern
+	concernMap     map[string]Concern
+	concernTypeMap map[string]concern_type.Type
+	concernSites   []string
+	concernList    []Concern
+}
+
+func checkSite(site string) error {
+	if _, found := globalCenter.concernMap[site]; found {
+		return nil
+	}
+	return ErrSiteNotSupported
+}
+
+func checkSiteAndType(site string, ctype concern_type.Type) error {
+	var err error
+	if err = checkSite(site); err != nil {
+		return err
+	}
+	if combineType, found := globalCenter.concernTypeMap[site]; found {
+		if combineType.ContainAll(ctype) {
+			return nil
+		}
+		return ErrTypeNotSupported
+	}
+	return ErrSiteNotSupported
 }
 
 func newConcernCenter() *center {
-	cc := new(center)
-	cc.M = make(map[string]map[concern_type.Type]Concern)
-	return cc
+	return &center{
+		concernMap:     make(map[string]Concern),
+		concernTypeMap: make(map[string]concern_type.Type),
+		concernList:    nil,
+		concernSites:   nil,
+	}
 }
 
-func RegisterConcernManager(c Concern, concernType []concern_type.Type, opts ...OptFunc) {
+func RegisterConcernManager(c Concern, opts ...OptFunc) {
+	if c == nil {
+		panic("Concern: Register <nil> concern")
+	}
 	site := c.Site()
-	for _, ctype := range concernType {
+	if _, found := globalCenter.concernMap[site]; found {
+		panic(fmt.Sprintf("Concern %v: is already registered", site))
+	}
+	for _, ctype := range c.Types() {
 		if !ctype.IsTrivial() {
-			panic(fmt.Sprintf("Concern %v: Type %v IsTrivial() must be True", site, ctype))
+			panic(fmt.Sprintf("Concern %v: Type %v IsTrivial() must be True", site, ctype.String()))
 		}
 	}
-	if _, found := globalCenter.M[site]; !found {
-		globalCenter.M[site] = make(map[concern_type.Type]Concern)
+	if concern_type.Empty.Add(c.Types()...).Empty() {
+		panic(fmt.Sprintf("Concern %v: register with empty types", site))
 	}
-	for _, ctype := range concernType {
-		if _, found := globalCenter.M[site][ctype]; !found {
-			globalCenter.M[site][ctype] = c
-		} else {
-			panic(fmt.Sprintf("Concern %v: Type %v is already registered", site, ctype))
-		}
-	}
+	globalCenter.concernMap[site] = c
+	globalCenter.concernList = append(globalCenter.concernList, c)
+	globalCenter.concernSites = append(globalCenter.concernSites, c.Site())
+	globalCenter.concernTypeMap[site] = concern_type.Empty.Add(c.Types()...)
 }
 
 // ClearConcern 现阶段仅用于测试，如果用于其他目的将导致不可预料的后果。
@@ -77,45 +108,25 @@ func StopAll() {
 }
 
 func ListConcernManager() []Concern {
-	var resultMap = make(map[Concern]interface{})
-	for _, cmap := range globalCenter.M {
-		for _, c := range cmap {
-			resultMap[c] = struct{}{}
-		}
-	}
-	var result []Concern
-	for k := range resultMap {
-		result = append(result, k)
-	}
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Site() < result[j].Site()
-	})
-	return result
+	return globalCenter.concernList
 }
 
-func GetConcernManager(site string, ctype concern_type.Type) (Concern, error) {
-	if sub, found := globalCenter.M[site]; !found {
-		return nil, ErrSiteNotSupported
-	} else {
-		if cm, found := sub[ctype]; found {
-			return cm, nil
-		} else {
-			return nil, ErrTypeNotSupported
-		}
+func GetConcernManagerBySite(site string) (Concern, error) {
+	if err := checkSite(site); err != nil {
+		return nil, err
 	}
+	return globalCenter.concernMap[site], nil
+}
+
+func GetConcernManagerBySiteAndType(site string, ctype concern_type.Type) (Concern, error) {
+	if err := checkSiteAndType(site, ctype); err != nil {
+		return nil, err
+	}
+	return globalCenter.concernMap[site], nil
 }
 
 func ListSite() []string {
-	resultMap := make(map[string]interface{})
-	for _, c := range ListConcernManager() {
-		resultMap[c.Site()] = struct{}{}
-	}
-	var result []string
-	for k := range resultMap {
-		result = append(result, k)
-	}
-	sort.Strings(result)
-	return result
+	return globalCenter.concernSites
 }
 
 func GetNotifyChan() chan<- Notify {
@@ -126,13 +137,71 @@ func ReadNotifyChan() <-chan Notify {
 	return notifyChan
 }
 
-func ListType(site string) []concern_type.Type {
-	var result []concern_type.Type
-	for k := range globalCenter.M[site] {
-		result = append(result, k)
+func GetConcernManagerTypes(site string) (concern_type.Type, error) {
+	if err := checkSite(site); err != nil {
+		return concern_type.Empty, err
 	}
-	sort.SliceStable(result, func(i, j int) bool {
-		return result[i] < result[j]
-	})
-	return result
+	return globalCenter.concernTypeMap[site], nil
+}
+
+func ParseRawSite(rawSite string) (string, error) {
+	var (
+		found bool
+		site  string
+	)
+
+	rawSite = strings.Trim(rawSite, `"`)
+	site, found = utils.PrefixMatch(ListSite(), rawSite)
+	if !found {
+		return "", ErrSiteNotSupported
+	}
+	return site, nil
+}
+
+// ParseRawSiteAndType 尝试解析string格式的 site 和 concern_type.Type，可以安全处理用户输入的site和type
+// 如果site合法，rawType为空，则默认返回注册时的第一个type
+func ParseRawSiteAndType(rawSite string, rawType string) (string, concern_type.Type, error) {
+	var (
+		site  string
+		_type string
+		found bool
+		err   error
+	)
+	rawSite = strings.Trim(rawSite, `"`)
+	rawType = strings.Trim(rawType, `"`)
+	site, err = ParseRawSite(rawSite)
+	if err != nil {
+		return "", concern_type.Empty, err
+	}
+	var sTypes []string
+	ctypes, _ := GetConcernManagerTypes(site)
+	// 如果没有指定type，则默认注册时的第一个type
+	if rawType == "" {
+		return site, ctypes.Split()[0], nil
+	}
+	for _, t := range ctypes.Split() {
+		sTypes = append(sTypes, t.String())
+	}
+	_type, found = utils.PrefixMatch(sTypes, rawType)
+	if !found {
+		return "", concern_type.Empty, ErrTypeNotSupported
+	}
+	return site, concern_type.Type(_type), nil
+}
+
+func GetConcernManagerByParseSite(rawSite string) (Concern, error) {
+	site, err := ParseRawSite(rawSite)
+	if err != nil {
+		return nil, err
+	}
+	return GetConcernManagerBySite(site)
+}
+
+func GetConcernManagerByParseSiteAndType(rawSite, rawType string) (Concern, string, concern_type.Type, error) {
+	site, ctypes, err := ParseRawSiteAndType(rawSite, rawType)
+	if err != nil {
+		return nil, "", concern_type.Empty, err
+	}
+	cm, _ := GetConcernManagerBySiteAndType(site, ctypes)
+	return cm, site, ctypes, nil
 }

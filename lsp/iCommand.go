@@ -88,7 +88,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		return
 	}
 
-	cm, err := concern.GetConcernManager(site, watchType)
+	cm, err := concern.GetConcernManagerBySiteAndType(site, watchType)
 	if err != nil {
 		log.Errorf("GetConcernManager error %v", err)
 		c.TextReply(fmt.Sprintf("失败 - %v", err))
@@ -558,7 +558,7 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 	if !sliceutil.Contains(concern.ListSite(), site) {
 		return concern.ErrSiteNotSupported
 	}
-	cm, err := concern.GetConcernManager(site, ctype)
+	cm, err := concern.GetConcernManagerBySiteAndType(site, ctype)
 	if err != nil {
 		c.GetLog().Errorf("GetConcernManager error %v", err)
 		c.TextReply(fmt.Sprintf("失败 - %v", err))
@@ -582,7 +582,7 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 }
 
 func ReplyUserInfo(c *MessageContext, id string, site string, ctype concern_type.Type) {
-	cm, err := concern.GetConcernManager(site, ctype)
+	cm, err := concern.GetConcernManagerBySiteAndType(site, ctype)
 	if err != nil {
 		c.GetLog().Errorf("GetConcernManager error %v", err)
 		c.TextReply(fmt.Sprintf("失败 - %v", err))

@@ -37,6 +37,13 @@ func (c *exampleConcern) Site() string {
 	return Site
 }
 
+// Types 实现 concern.Concern 的Types接口
+// 它的返回值会被用作watch命令的type参数
+// 这个例子中即是 /watch -s example -t example
+func (c *exampleConcern) Types() []concern_type.Type {
+	return []concern_type.Type{Example}
+}
+
 // exampleFresh 自定义 concern.FreshFunc，使用了EmitQueueFresher来刷新事件，
 // EmitQueue是开箱即用的轮训组件，会自动每隔一段时间对每个id调用刷新函数。
 func (c *exampleConcern) exampleFresh() concern.FreshFunc {
@@ -139,8 +146,6 @@ func NewConcern(notify chan<- concern.Notify) *exampleConcern {
 }
 
 // init 向框架注册这个插件，引用这个插件即可使用
-// 注册时需要指定这个插件支持的订阅类型，在本例子中即是 Example ，指定的类型在watch命令中即是-t的参数
-// 这个例子中即是 /watch -s example -t example
 func init() {
-	concern.RegisterConcernManager(NewConcern(concern.GetNotifyChan()), []concern_type.Type{Example})
+	concern.RegisterConcernManager(NewConcern(concern.GetNotifyChan()))
 }

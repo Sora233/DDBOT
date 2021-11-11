@@ -16,6 +16,10 @@ type Concern struct {
 	*StateManager
 }
 
+func (c *Concern) Types() []concern_type.Type {
+	return []concern_type.Type{Live, Video}
+}
+
 func (c *Concern) Site() string {
 	return "youtube"
 }

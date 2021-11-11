@@ -135,11 +135,11 @@ func TestIList(t *testing.T) {
 	testNotifyChan := make(chan concern.Notify, 1)
 
 	tc1 := newTestConcern(t, testEventChan, testNotifyChan, test.Site1, []concern_type.Type{test.T1})
-	concern.RegisterConcernManager(tc1, tc1.Ctypes)
+	concern.RegisterConcernManager(tc1)
 	defer tc1.Stop()
 
 	tc2 := newTestConcern(t, testEventChan, testNotifyChan, test.Site2, []concern_type.Type{test.T2})
-	concern.RegisterConcernManager(tc2, tc2.Ctypes)
+	concern.RegisterConcernManager(tc2)
 	defer tc2.Stop()
 
 	defer close(testNotifyChan)
@@ -439,11 +439,11 @@ func TestIWatch(t *testing.T) {
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
 	tc1 := newTestConcern(t, testEventChan1, testNotifyChan, test.Site1, []concern_type.Type{test.T1})
-	concern.RegisterConcernManager(tc1, tc1.Ctypes)
+	concern.RegisterConcernManager(tc1)
 	defer tc1.Stop()
 
 	tc2 := newTestConcern(t, testEventChan2, testNotifyChan, test.Site2, []concern_type.Type{test.T2})
-	concern.RegisterConcernManager(tc2, tc2.Ctypes)
+	concern.RegisterConcernManager(tc2)
 	defer tc2.Stop()
 
 	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)

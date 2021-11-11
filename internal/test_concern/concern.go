@@ -60,6 +60,10 @@ func (t *TestConcern) Site() string {
 	return t.site
 }
 
+func (t *TestConcern) Types() []concern_type.Type {
+	return t.Ctypes
+}
+
 func (t *TestConcern) ParseId(s string) (interface{}, error) {
 	return s, nil
 }

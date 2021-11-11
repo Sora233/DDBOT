@@ -83,7 +83,6 @@ func TestRetry(t *testing.T) {
 }
 
 func TestPrefixMatch(t *testing.T) {
-
 	result, found := PrefixMatch([]string{"aa", "ab", "ac", "bb", "cc", "dd"}, "q")
 	assert.False(t, found)
 

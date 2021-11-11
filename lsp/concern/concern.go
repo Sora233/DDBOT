@@ -33,7 +33,10 @@ type NotifyLiveExt interface {
 }
 
 type Concern interface {
+	// Site 必须全局唯一，不允许注册两个相同的site
 	Site() string
+	// Types 返回该 Concern 支持的 concern_type.Type，此处返回的每一项必须是单个type，并且第一个type为默认type
+	Types() []concern_type.Type
 	Start() error
 	Stop()
 	ParseId(string) (interface{}, error)

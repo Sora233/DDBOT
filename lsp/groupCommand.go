@@ -369,7 +369,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 
 	var watchCmd struct {
 		Site string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
-		Type string `optional:"" short:"t" default:"live" help:"类型参数"`
+		Type string `optional:"" short:"t" default:"" help:"类型参数"`
 		Id   string `arg:""`
 	}
 	var name string
