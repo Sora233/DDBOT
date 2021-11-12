@@ -549,7 +549,15 @@ func (notify *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
 		if description == "" {
 			description = cardVideo.GetDesc()
 		}
-		m.Textf("%v%v：\n%v\n%v\n%v\n", notify.Name, card.GetDisplay().GetUsrActionTxt(), date, cardVideo.GetTitle(), description)
+		if description == cardVideo.GetTitle() {
+			description = ""
+		}
+		// web接口好像还区分不了动态视频，先不处理了
+		actionText := card.GetDisplay().GetUsrActionTxt()
+		m.Textf("%v%v：\n%v\n%v\n", notify.Name, actionText, date, cardVideo.GetTitle())
+		if len(description) != 0 {
+			m.Textf("%v\n", description)
+		}
 		b, err := localutils.ImageGetAndNorm(cardVideo.GetPic(), proxy_pool.PreferNone)
 		if err != nil {
 			log.WithField("pic", cardVideo.GetPic()).Errorf("upload video cover failed %v", err)

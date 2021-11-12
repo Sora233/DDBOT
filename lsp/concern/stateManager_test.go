@@ -332,6 +332,7 @@ func TestStateManager_GroupConcern(t *testing.T) {
 
 	var err error
 	sm := newStateManager(t)
+	sm.UseEmitQueue()
 
 	assert.Nil(t, sm.CheckGroupConcern(test.G1, test.UID1, test.BibiliLive))
 
@@ -466,6 +467,7 @@ func TestStateManager_GroupConcern2(t *testing.T) {
 
 	var err error
 	sm := newStateManager(t)
+	sm.UseEmitQueue()
 	_, err = sm.AddGroupConcern(test.G1, test.UID1, test.BilibiliNews)
 	assert.Nil(t, err)
 
