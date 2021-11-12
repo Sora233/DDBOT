@@ -33,6 +33,7 @@ const (
 	CMD2 = "command2"
 
 	BVID1 = "bvid1"
+	BVID2 = "bvid2"
 
 	ID1 = 2001
 	ID2 = 2002

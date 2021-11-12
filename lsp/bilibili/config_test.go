@@ -7,6 +7,7 @@ import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/stretchr/testify/assert"
+	"strconv"
 	"testing"
 )
 
@@ -190,7 +191,7 @@ func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 		// news 默认pass
 		newNewsInfo(test.UID1, DynamicDescType_TextOnly)[0],
 	}
-	var g = NewGroupConcernConfig(new(concern.GroupConcernConfig), nil)
+	var g = NewGroupConcernConfig(new(concern.GroupConcernConfig), NewConcern(concern.GetNotifyChan()))
 	var expected = []bool{
 		false, false, false, false,
 		false, false, true, true,
@@ -200,6 +201,12 @@ func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 	for index, liveInfo := range liveInfos {
 		result := g.AtBeforeHook(liveInfo)
 		assert.Equalf(t, expected[index], result.Pass, "%v check fail", index)
+	}
+
+	g.concern.unsafeStart.Store(true)
+	for index, liveInfo := range liveInfos {
+		result := g.AtBeforeHook(liveInfo)
+		assert.Equalf(t, false, result.Pass, "%v check fail", index)
 	}
 }
 
@@ -264,7 +271,7 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 	}
 
 	testFn := func(index int, tp string, expected []DynamicDescType) {
-		notifies := newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
+		notifies := newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly, DynamicDescType_WithLiveV2)
 		var g = NewGroupConcernConfig(&concern.GroupConcernConfig{
 			GroupConcernFilter: concern.GroupConcernFilterConfig{
 				Type:   tp,
@@ -287,12 +294,54 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 		testFn(index, concern.FilterTypeType, expectedType[index])
 		testFn(index, concern.FilterTypeNotType, expectedNotType[index])
 	}
+
+	live := newLiveInfo(test.UID1, true, false, false)
+	g.FilterHook(live)
 }
 
 func TestCheckTypeDefine(t *testing.T) {
 	result := CheckTypeDefine([]string{"invalid", Zhuanlan, "1024", "0", "9"})
 	assert.Len(t, result, 3)
 	assert.EqualValues(t, []string{"invalid", "0", "9"}, result)
+}
+
+func TestGroupConcernConfig_NotifyBeforeCallback(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	c := initConcern(t)
+
+	_, err := c.GetNotifyMsg(test.G1, test.BVID1)
+	assert.True(t, localdb.IsNotFound(err))
+
+	var notify = newNewsInfo(test.UID1, DynamicDescType_WithOrigin)[0]
+	notify.Card.Desc.OrigDyIdStr = test.BVID1
+
+	var g = new(GroupConcernConfig)
+	g.concern = c
+	g.NotifyBeforeCallback(notify)
+	assert.False(t, notify.shouldCompact)
+	g.NotifyBeforeCallback(notify)
+	assert.True(t, notify.shouldCompact)
+
+	notify = newNewsInfo(test.UID1, DynamicDescType_WithVideo)[0]
+	notify.Card.Desc.Bvid = test.BVID2
+
+	g.NotifyBeforeCallback(notify)
+	assert.False(t, notify.shouldCompact)
+	g.NotifyBeforeCallback(notify)
+	assert.True(t, notify.shouldCompact)
+
+	notify = newNewsInfo(test.UID1, DynamicDescType_TextOnly)[0]
+	notify.Card.Desc.DynamicIdStr = strconv.FormatInt(test.DynamicID1, 10)
+
+	g.NotifyBeforeCallback(notify)
+	assert.False(t, notify.shouldCompact)
+	g.NotifyBeforeCallback(notify)
+	assert.False(t, notify.shouldCompact)
+
+	live := newLiveInfo(test.UID1, true, false, false)
+	g.NotifyBeforeCallback(live)
 }
 
 func TestGroupConcernConfig_NotifyAfterCallback(t *testing.T) {
@@ -321,6 +370,12 @@ func TestGroupConcernConfig_NotifyAfterCallback(t *testing.T) {
 	msg2, err := c.GetNotifyMsg(test.G1, test.BVID1)
 	assert.Nil(t, err)
 	assert.EqualValues(t, msg, msg2)
+
+	notify.shouldCompact = true
+	g.NotifyAfterCallback(notify, msg)
+
+	live := newLiveInfo(test.UID1, true, false, false)
+	g.NotifyAfterCallback(live, nil)
 }
 
 func TestConfigJson(t *testing.T) {
