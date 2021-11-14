@@ -53,7 +53,7 @@ func newConcernCenter() *center {
 	}
 }
 
-func RegisterConcernManager(c Concern, opts ...OptFunc) {
+func RegisterConcern(c Concern, opts ...OptFunc) {
 	if c == nil {
 		panic("Concern: Register <nil> concern")
 	}

@@ -32,14 +32,6 @@ func (n *NewsInfo) Type() concern_type.Type {
 	return News
 }
 
-func (n *NewsInfo) ToString() string {
-	if n == nil {
-		return ""
-	}
-	content, _ := json.Marshal(n)
-	return string(content)
-}
-
 func (n *NewsInfo) Logger() *logrus.Entry {
 	return logger.WithFields(logrus.Fields{
 		"Site":     Site,
@@ -84,14 +76,6 @@ type UserStat struct {
 	Follower int64 `json:"follower"`
 }
 
-func (us *UserStat) ToString() string {
-	if us == nil {
-		return ""
-	}
-	content, _ := json.Marshal(us)
-	return string(content)
-}
-
 type UserInfo struct {
 	Mid     int64  `json:"mid"`
 	Name    string `json:"name"`
@@ -106,14 +90,6 @@ func (ui *UserInfo) GetName() string {
 		return ""
 	}
 	return ui.Name
-}
-
-func (ui *UserInfo) ToString() string {
-	if ui == nil {
-		return ""
-	}
-	content, _ := json.Marshal(ui)
-	return string(content)
 }
 
 type LiveInfo struct {
@@ -155,14 +131,6 @@ func (l *LiveInfo) Living() bool {
 
 func (l *LiveInfo) Type() concern_type.Type {
 	return Live
-}
-
-func (l *LiveInfo) ToString() string {
-	if l == nil {
-		return ""
-	}
-	content, _ := json.Marshal(l)
-	return string(content)
 }
 
 func (l *LiveInfo) Logger() *logrus.Entry {

@@ -7,6 +7,8 @@ import (
 )
 
 func TestModelNotify(t *testing.T) {
+	var live *LiveInfo
+	assert.False(t, live.Living())
 	liveNotify := newLiveInfo(test.UID1, true, false, false)
 	liveNotify.GroupCode = test.G1
 	m := liveNotify.ToMessage()
@@ -32,6 +34,10 @@ func TestModelNotify(t *testing.T) {
 	assert.Equal(t, test.G2, newsNotify.GetGroupCode())
 	m = newsNotify.ToMessage()
 	assert.NotNil(t, m)
+	newsNotify.shouldCompact = true
+	newsNotify.compactKey = test.NAME1
+	m = newsNotify.ToMessage()
+	assert.NotNil(t, m)
 
 	notifies := newNewsInfo(test.UID1, DynamicDescType_WithVideo, DynamicDescType_WithImage,
 		DynamicDescType_WithPost, DynamicDescType_WithMusic, DynamicDescType_WithSketch, DynamicDescType_WithLive,
@@ -44,19 +50,26 @@ func TestModelNotify(t *testing.T) {
 		m = notify.ToMessage()
 		assert.NotNil(t, m)
 	}
+	notify := notifies[0]
+	assert.False(t, notify.IsLive())
+	assert.False(t, notify.Living())
 }
 
 func TestNewConcernLiveNotify(t *testing.T) {
+	notify := NewConcernLiveNotify(test.G1, nil)
+	assert.Nil(t, notify)
 	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
 	origLiveInfo := NewLiveInfo(origUserInfo, "", "", LiveStatus_Living)
-	notify := NewConcernLiveNotify(test.G1, origLiveInfo)
+	notify = NewConcernLiveNotify(test.G1, origLiveInfo)
 	assert.NotNil(t, notify)
 }
 
 func TestNewConcernNewsNotify(t *testing.T) {
+	notify := NewConcernNewsNotify(test.G1, nil, nil)
+	assert.Nil(t, notify)
 	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
 	origNewsInfo := NewNewsInfo(origUserInfo, test.DynamicID1, test.TIMESTAMP1)
 	origNewsInfo.Cards = []*Card{{}}
-	notify := NewConcernNewsNotify(test.G1, origNewsInfo, nil)
+	notify = NewConcernNewsNotify(test.G1, origNewsInfo, nil)
 	assert.NotNil(t, notify)
 }

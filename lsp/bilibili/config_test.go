@@ -37,6 +37,7 @@ func newNewsInfo(uid int64, cardTypes ...DynamicDescType) []*ConcernNewsNotify {
 			UserInfo: &UserInfo{
 				Mid: uid,
 			},
+			concern: NewConcern(concern.GetNotifyChan()),
 		}
 		notify.Card = &Card{
 			Desc: &Card_Desc{

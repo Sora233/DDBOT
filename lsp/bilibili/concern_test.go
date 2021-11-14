@@ -79,8 +79,11 @@ func TestConcern_FindUserLiving(t *testing.T) {
 
 	c := initConcern(t)
 
+	origLiveInfo := NewLiveInfo(nil, "", "", LiveStatus_Living)
+	assert.Nil(t, origLiveInfo)
+
 	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
-	origLiveInfo := NewLiveInfo(origUserInfo, "", "", LiveStatus_Living)
+	origLiveInfo = NewLiveInfo(origUserInfo, "", "", LiveStatus_Living)
 	assert.NotNil(t, origLiveInfo)
 
 	err := c.AddLiveInfo(origLiveInfo)
@@ -112,8 +115,11 @@ func TestConcern_FindUserNews(t *testing.T) {
 
 	c := initConcern(t)
 
+	origNewsInfo := NewNewsInfo(nil, test.DynamicID1, test.TIMESTAMP1)
+	assert.Nil(t, origNewsInfo)
+
 	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
-	origNewsInfo := NewNewsInfo(origUserInfo, test.DynamicID1, test.TIMESTAMP1)
+	origNewsInfo = NewNewsInfo(origUserInfo, test.DynamicID1, test.TIMESTAMP1)
 
 	err := c.AddNewsInfo(origNewsInfo)
 	assert.Nil(t, err)

@@ -6,6 +6,7 @@ import (
 )
 
 // IConfig 定义了Config的通用接口
+// TODO 需要一种支持自定义配置的方法，要怎么样做呢
 type IConfig interface {
 	Validate() error
 	GetGroupConcernAt() *GroupConcernAtConfig

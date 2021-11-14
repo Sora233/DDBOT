@@ -5,5 +5,5 @@ import (
 )
 
 func init() {
-	concern.RegisterConcernManager(NewConcern(concern.GetNotifyChan()))
+	concern.RegisterConcern(NewConcern(concern.GetNotifyChan()))
 }

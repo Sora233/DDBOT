@@ -64,13 +64,13 @@ func TestReadNotifyChan(t *testing.T) {
 func TestConcernManager(t *testing.T) {
 	assert.Empty(t, ListConcernManager())
 
-	RegisterConcernManager(&testConcern{site: "test1", types: []concern_type.Type{
+	RegisterConcern(&testConcern{site: "test1", types: []concern_type.Type{
 		"1",
 		"2",
 		"3",
 	}})
 
-	RegisterConcernManager(&testConcern{site: "test2", types: []concern_type.Type{
+	RegisterConcern(&testConcern{site: "test2", types: []concern_type.Type{
 		"4",
 		"5",
 		"6",
@@ -78,7 +78,7 @@ func TestConcernManager(t *testing.T) {
 
 	assert.Panics(t,
 		func() {
-			RegisterConcernManager(&testConcern{site: "test2", types: []concern_type.Type{
+			RegisterConcern(&testConcern{site: "test2", types: []concern_type.Type{
 				"4",
 				"5",
 				"6",
@@ -88,19 +88,19 @@ func TestConcernManager(t *testing.T) {
 
 	assert.Panics(t,
 		func() {
-			RegisterConcernManager(&testConcern{site: "test3", types: []concern_type.Type{
+			RegisterConcern(&testConcern{site: "test3", types: []concern_type.Type{
 				"4/5/6",
 			}})
 		},
 	)
 	assert.Panics(t,
 		func() {
-			RegisterConcernManager(&testConcern{site: "test10"})
+			RegisterConcern(&testConcern{site: "test10"})
 		},
 	)
 	assert.Panics(t,
 		func() {
-			RegisterConcernManager(nil)
+			RegisterConcern(nil)
 		},
 	)
 

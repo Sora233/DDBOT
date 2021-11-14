@@ -10,6 +10,9 @@ import (
 const PathXWebInterfaceNav = "/x/web-interface/nav"
 
 func XWebInterfaceNav() (*WebInterfaceNavResponse, error) {
+	if !IsVerifyGiven() {
+		return nil, ErrVerifyRequired
+	}
 	st := time.Now()
 	defer func() {
 		ed := time.Now()

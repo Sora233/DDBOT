@@ -147,5 +147,5 @@ func NewConcern(notify chan<- concern.Notify) *exampleConcern {
 
 // init 向框架注册这个插件，引用这个插件即可使用
 func init() {
-	concern.RegisterConcernManager(NewConcern(concern.GetNotifyChan()))
+	concern.RegisterConcern(NewConcern(concern.GetNotifyChan()))
 }
