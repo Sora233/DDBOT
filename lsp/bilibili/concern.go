@@ -157,7 +157,7 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 		userInfo.UserStat = userStat
 	}
 
-	if selfUid != 0 && mid != selfUid {
+	if selfUid == 0 || mid != selfUid {
 		oldCtype, err := c.StateManager.GetConcern(mid)
 		if err != nil {
 			log.Errorf("GetConcern error %v", err)
@@ -180,7 +180,7 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 				return nil, fmt.Errorf("关注用户失败 - %v", resp.GetMessage())
 			}
 		}
-	} else {
+	} else if selfUid != 0 {
 		log.Debug("正在订阅账号自己，跳过关注")
 	}
 
