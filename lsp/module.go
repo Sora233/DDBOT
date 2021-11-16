@@ -22,6 +22,7 @@ import (
 	"github.com/Sora233/DDBOT/utils/msgstringer"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/ratelimit"
 	"os"
 	"runtime"
 	"runtime/debug"
@@ -46,6 +47,7 @@ type Lsp struct {
 	status        *Status
 	notifyWg      sync.WaitGroup
 	commandPrefix string
+	msgRateLimit  ratelimit.Limiter
 
 	PermissionStateManager *permission.StateManager
 	LspStateManager        *StateManager
@@ -519,6 +521,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 			}
 		}
 	}()
+	l.msgRateLimit.Take()
 	if bot.Instance == nil || !bot.Instance.Online {
 		return &message.GroupMessage{Id: -1, Elements: msg.Elements}
 	}
@@ -576,6 +579,7 @@ var Instance = &Lsp{
 	concernNotify: concern.ReadNotifyChan(),
 	stop:          make(chan interface{}),
 	status:        NewStatus(),
+	msgRateLimit:  ratelimit.New(10),
 }
 
 func init() {

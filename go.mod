@@ -26,6 +26,7 @@ require (
 	github.com/tidwall/buntdb v1.2.7
 	github.com/tidwall/gjson v1.11.0 // indirect
 	go.uber.org/atomic v1.9.0
+	go.uber.org/ratelimit v0.2.0
 	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa // indirect
 	golang.org/x/net v0.0.0-20211108170745-6635138e15ea // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
