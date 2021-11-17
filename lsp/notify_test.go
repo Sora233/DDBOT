@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
@@ -54,4 +55,20 @@ func TestLsp_ConcernNotify(t *testing.T) {
 	Instance.wg.Wait()
 
 	close(testEventChan)
+}
+
+func TestNewAtAllMsg(t *testing.T) {
+	msg := newAtAllMsg()
+	assert.NotNil(t, msg)
+	e := msg.FirstOrNil(func(e message.IMessageElement) bool {
+		return e.Type() == message.At
+	})
+	assert.NotNil(t, e)
+	assert.EqualValues(t, 0, e.(*message.AtElement).Target)
+}
+
+func TestNewAtIdsMsg(t *testing.T) {
+	msg := newAtIdsMsg([]int64{test.UID1, test.UID2})
+	assert.NotNil(t, msg)
+	assert.Len(t, msg.Elements, 2)
 }

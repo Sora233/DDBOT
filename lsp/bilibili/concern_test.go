@@ -22,13 +22,15 @@ func TestNewConcern(t *testing.T) {
 	defer test.CloseBuntdb(t)
 
 	c := initConcern(t)
+
+	assert.NotNil(t, c.GetStateManager())
+
 	id, err := c.ParseId("uid:111")
 	assert.Nil(t, err)
 	assert.EqualValues(t, 111, id)
 
 	id, err = c.ParseId("uid:xxx")
 	assert.NotNil(t, err)
-	assert.Nil(t, c.GetStateManager())
 	c.Stop()
 }
 

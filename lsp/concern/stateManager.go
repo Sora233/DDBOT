@@ -18,7 +18,7 @@ import (
 )
 
 var logger = utils.GetModuleLogger("concern")
-var ErrEmitQueueNotInit = errors.New("emit queue not enabled")
+var ErrEmitQueueNotInit = errors.New("emit queue not init")
 
 // NotifyGeneratorFunc 是 IStateManager.NotifyGenerator 函数的具体逻辑
 // 它针对一组 groupCode 把 Event 转变成一组 Notify
@@ -456,7 +456,7 @@ func (c *StateManager) Start() error {
 func (c *StateManager) EmitQueueFresher(doFresh func(p concern_type.Type, id interface{}) ([]Event, error)) FreshFunc {
 	return func(ctx context.Context, eventChan chan<- Event) {
 		if !c.useEmit {
-			panic(ErrEmitQueueNotInit)
+			panic("emit queue not init, did you call UseEmitQueue() ?")
 		}
 		for {
 			select {

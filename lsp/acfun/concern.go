@@ -76,10 +76,11 @@ func (c *Concern) fresh() concern.FreshFunc {
 	return func(ctx context.Context, eventChan chan<- concern.Event) {
 		t := time.NewTimer(time.Second * 3)
 		var interval time.Duration
-		if config.GlobalConfig == nil {
-			interval = time.Second * 20
-		} else {
+		if config.GlobalConfig != nil {
 			interval = config.GlobalConfig.GetDuration("acfun.interval")
+		}
+		if interval == 0 {
+			interval = time.Second * 20
 		}
 		for {
 			select {
