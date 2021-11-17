@@ -13,8 +13,8 @@ import (
 	"github.com/Sora233/DDBOT/lsp/permission"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -188,7 +188,7 @@ func TestIEnable(t *testing.T) {
 	target := mmsg.NewGroupTarget(test.G1)
 	ctx := NewCtx(t, msgChan, test.Sender1, target)
 
-	IEnable(ctx, test.G1, "watch", false)
+	IEnable(ctx, test.G1, WatchCommand, false)
 	result := <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), noPermission)
 
@@ -202,31 +202,31 @@ func TestIEnable(t *testing.T) {
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
-	IEnable(ctx, test.G1, "enable", false)
+	IEnable(ctx, test.G1, EnableCommand, false)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
-	IEnable(ctx, test.G1, "watch", false)
+	IEnable(ctx, test.G1, WatchCommand, false)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
-	IEnable(ctx, test.G1, "watch", false)
+	IEnable(ctx, test.G1, WatchCommand, false)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
-	assert.Nil(t, Instance.PermissionStateManager.GlobalDisableGroupCommand("watch"))
+	assert.Nil(t, Instance.PermissionStateManager.GlobalDisableGroupCommand(WatchCommand))
 
-	IEnable(ctx, test.G1, "watch", false)
+	IEnable(ctx, test.G1, WatchCommand, false)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), globalDisabled)
 
-	assert.Nil(t, Instance.PermissionStateManager.GlobalEnableGroupCommand("watch"))
+	assert.Nil(t, Instance.PermissionStateManager.GlobalEnableGroupCommand(WatchCommand))
 
-	IEnable(ctx, test.G1, "watch", true)
+	IEnable(ctx, test.G1, WatchCommand, true)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
-	IEnable(ctx, test.G1, "watch", true)
+	IEnable(ctx, test.G1, WatchCommand, true)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 }
@@ -312,35 +312,35 @@ func TestIGrantCmd(t *testing.T) {
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
-	IGrantCmd(ctx, test.G1, "watch", test.Sender2.Uin, false)
+	IGrantCmd(ctx, test.G1, WatchCommand, test.Sender2.Uin, false)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "未找到用户")
 
 	localutils.GetBot().TESTAddMember(test.G1, test.Sender2.Uin, client.Member)
 
-	IGrantCmd(ctx, test.G1, "watch", test.Sender2.Uin, false)
+	IGrantCmd(ctx, test.G1, WatchCommand, test.Sender2.Uin, false)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
-	IGrantCmd(ctx, test.G1, "watch", test.Sender2.Uin, false)
+	IGrantCmd(ctx, test.G1, WatchCommand, test.Sender2.Uin, false)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
-	IGrantCmd(ctx, test.G1, "watch", test.Sender2.Uin, true)
+	IGrantCmd(ctx, test.G1, WatchCommand, test.Sender2.Uin, true)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
 
-	IGrantCmd(ctx, test.G1, "watch", test.Sender2.Uin, true)
+	IGrantCmd(ctx, test.G1, WatchCommand, test.Sender2.Uin, true)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
 
-	assert.Nil(t, Instance.PermissionStateManager.GlobalDisableGroupCommand("watch"))
+	assert.Nil(t, Instance.PermissionStateManager.GlobalDisableGroupCommand(WatchCommand))
 
-	IGrantCmd(ctx, test.G1, "watch", test.Sender2.Uin, true)
+	IGrantCmd(ctx, test.G1, WatchCommand, test.Sender2.Uin, true)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), globalDisabled)
 
-	IGrantCmd(ctx, test.G1, "watch", test.Sender2.Uin, false)
+	IGrantCmd(ctx, test.G1, WatchCommand, test.Sender2.Uin, false)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), globalDisabled)
 }
@@ -405,7 +405,6 @@ func TestISilenceCmd(t *testing.T) {
 }
 
 func TestIWatch(t *testing.T) {
-	logrus.SetLevel(logrus.TraceLevel)
 	initLsp(t)
 	defer closeLsp(t)
 
@@ -426,13 +425,13 @@ func TestIWatch(t *testing.T) {
 
 	err = Instance.PermissionStateManager.GrantRole(test.Sender1.Uin, permission.Admin)
 	assert.Nil(t, err)
-	assert.Nil(t, Instance.PermissionStateManager.DisableGroupCommand(test.G1, "watch"))
+	assert.Nil(t, Instance.PermissionStateManager.DisableGroupCommand(test.G1, WatchCommand))
 
 	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), disabled)
 
-	assert.Nil(t, Instance.PermissionStateManager.EnableGroupCommand(test.G1, "watch"))
+	assert.Nil(t, Instance.PermissionStateManager.EnableGroupCommand(test.G1, WatchCommand))
 
 	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
 	result = <-msgChan
@@ -490,4 +489,364 @@ func TestIWatch(t *testing.T) {
 			assert.Fail(t, "no item received")
 		}
 	}
+}
+
+func TestIConfigAtCmd(t *testing.T) {
+	initLsp(t)
+	defer closeLsp(t)
+
+	testEventChan1 := make(chan concern.Event, 16)
+	testEventChan2 := make(chan concern.Event, 16)
+	testNotifyChan := make(chan concern.Notify, 1)
+	defer close(testNotifyChan)
+
+	var result *mmsg.MSG
+	var err error
+	msgChan := make(chan *mmsg.MSG, 10)
+	target := mmsg.NewGroupTarget(test.G1)
+	ctx := NewCtx(t, msgChan, test.Sender1, target)
+
+	tc1 := newTestConcern(t, testEventChan1, testNotifyChan, test.Site1, []concern_type.Type{test.T1})
+	concern.RegisterConcern(tc1)
+	defer tc1.Stop()
+
+	tc2 := newTestConcern(t, testEventChan2, testNotifyChan, test.Site2, []concern_type.Type{test.T2})
+	concern.RegisterConcern(tc2)
+	defer tc2.Stop()
+
+	IConfigAtCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, "show", nil)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), noPermission)
+
+	err = Instance.PermissionStateManager.GrantRole(test.Sender1.Uin, permission.Admin)
+	assert.Nil(t, err)
+	assert.Nil(t, Instance.PermissionStateManager.DisableGroupCommand(test.G1, ConfigCommand))
+
+	IConfigAtCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, "show", nil)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), disabled)
+
+	assert.Nil(t, Instance.PermissionStateManager.EnableGroupCommand(test.G1, ConfigCommand))
+
+	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigAtCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, "show", nil)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "当前配置为空")
+
+	IConfigAtCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, "add", nil)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IConfigAtCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, "add", []int64{test.UID1, test.UID2})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	localutils.GetBot().TESTAddGroup(test.G1)
+	localutils.GetBot().TESTAddMember(test.G1, test.UID1, client.Member)
+
+	IConfigAtCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, "add", []int64{test.UID1, test.UID2})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	localutils.GetBot().TESTAddMember(test.G1, test.UID2, client.Member)
+
+	IConfigAtCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, "add", []int64{test.UID1, test.UID2})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigAtCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, "show", nil)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), strconv.FormatInt(test.UID1, 10))
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), strconv.FormatInt(test.UID2, 10))
+
+	IConfigAtCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, "remove", []int64{test.UID1, test.UID3})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigAtCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, "show", nil)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), strconv.FormatInt(test.UID2, 10))
+	assert.NotContains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), strconv.FormatInt(test.UID1, 10))
+	assert.NotContains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), strconv.FormatInt(test.UID3, 10))
+
+	IConfigAtCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, "clear", nil)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigAtCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, "show", nil)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "当前配置为空")
+
+	IConfigAtCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, "unknown", []int64{test.UID1})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+}
+
+func TestIConfigAtAllCmd(t *testing.T) {
+	initLsp(t)
+	defer closeLsp(t)
+
+	testEventChan1 := make(chan concern.Event, 16)
+	testEventChan2 := make(chan concern.Event, 16)
+	testNotifyChan := make(chan concern.Notify, 1)
+	defer close(testNotifyChan)
+
+	var result *mmsg.MSG
+	var err error
+	msgChan := make(chan *mmsg.MSG, 10)
+	target := mmsg.NewGroupTarget(test.G1)
+	ctx := NewCtx(t, msgChan, test.Sender1, target)
+
+	tc1 := newTestConcern(t, testEventChan1, testNotifyChan, test.Site1, []concern_type.Type{test.T1})
+	concern.RegisterConcern(tc1)
+	defer tc1.Stop()
+
+	tc2 := newTestConcern(t, testEventChan2, testNotifyChan, test.Site2, []concern_type.Type{test.T2})
+	concern.RegisterConcern(tc2)
+
+	IConfigAtAllCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), noPermission)
+
+	err = Instance.PermissionStateManager.GrantRole(test.Sender1.Uin, permission.Admin)
+	assert.Nil(t, err)
+	assert.Nil(t, Instance.PermissionStateManager.DisableGroupCommand(test.G1, ConfigCommand))
+
+	IConfigAtAllCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), disabled)
+
+	assert.Nil(t, Instance.PermissionStateManager.EnableGroupCommand(test.G1, ConfigCommand))
+
+	IConfigAtAllCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigAtAllCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigAtAllCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IConfigAtAllCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigAtAllCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+}
+
+func TestIConfigTitleNotifyCmd(t *testing.T) {
+	initLsp(t)
+	defer closeLsp(t)
+
+	testEventChan1 := make(chan concern.Event, 16)
+	testEventChan2 := make(chan concern.Event, 16)
+	testNotifyChan := make(chan concern.Notify, 1)
+	defer close(testNotifyChan)
+
+	var result *mmsg.MSG
+	var err error
+	msgChan := make(chan *mmsg.MSG, 10)
+	target := mmsg.NewGroupTarget(test.G1)
+	ctx := NewCtx(t, msgChan, test.Sender1, target)
+
+	tc1 := newTestConcern(t, testEventChan1, testNotifyChan, test.Site1, []concern_type.Type{test.T1})
+	concern.RegisterConcern(tc1)
+	defer tc1.Stop()
+
+	tc2 := newTestConcern(t, testEventChan2, testNotifyChan, test.Site2, []concern_type.Type{test.T2})
+	concern.RegisterConcern(tc2)
+
+	IConfigTitleNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), noPermission)
+
+	err = Instance.PermissionStateManager.GrantRole(test.Sender1.Uin, permission.Admin)
+	assert.Nil(t, err)
+	assert.Nil(t, Instance.PermissionStateManager.DisableGroupCommand(test.G1, ConfigCommand))
+
+	IConfigTitleNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), disabled)
+
+	assert.Nil(t, Instance.PermissionStateManager.EnableGroupCommand(test.G1, ConfigCommand))
+
+	IConfigTitleNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigTitleNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigTitleNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IConfigTitleNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigTitleNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+}
+
+func TestIConfigOfflineNotifyCmd(t *testing.T) {
+	initLsp(t)
+	defer closeLsp(t)
+
+	testEventChan1 := make(chan concern.Event, 16)
+	testEventChan2 := make(chan concern.Event, 16)
+	testNotifyChan := make(chan concern.Notify, 1)
+	defer close(testNotifyChan)
+
+	var result *mmsg.MSG
+	var err error
+	msgChan := make(chan *mmsg.MSG, 10)
+	target := mmsg.NewGroupTarget(test.G1)
+	ctx := NewCtx(t, msgChan, test.Sender1, target)
+
+	tc1 := newTestConcern(t, testEventChan1, testNotifyChan, test.Site1, []concern_type.Type{test.T1})
+	concern.RegisterConcern(tc1)
+	defer tc1.Stop()
+
+	tc2 := newTestConcern(t, testEventChan2, testNotifyChan, test.Site2, []concern_type.Type{test.T2})
+	concern.RegisterConcern(tc2)
+
+	IConfigOfflineNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), noPermission)
+
+	err = Instance.PermissionStateManager.GrantRole(test.Sender1.Uin, permission.Admin)
+	assert.Nil(t, err)
+	assert.Nil(t, Instance.PermissionStateManager.DisableGroupCommand(test.G1, ConfigCommand))
+
+	IConfigOfflineNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), disabled)
+
+	assert.Nil(t, Instance.PermissionStateManager.EnableGroupCommand(test.G1, ConfigCommand))
+
+	IConfigOfflineNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigOfflineNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigOfflineNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, true)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IConfigOfflineNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigOfflineNotifyCmd(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+}
+
+func TestIConfigFilterCmd(t *testing.T) {
+	initLsp(t)
+	defer closeLsp(t)
+
+	testEventChan1 := make(chan concern.Event, 16)
+	testEventChan2 := make(chan concern.Event, 16)
+	testNotifyChan := make(chan concern.Notify, 1)
+	defer close(testNotifyChan)
+
+	var result *mmsg.MSG
+	var err error
+	msgChan := make(chan *mmsg.MSG, 10)
+	target := mmsg.NewGroupTarget(test.G1)
+	ctx := NewCtx(t, msgChan, test.Sender1, target)
+
+	tc1 := newTestConcern(t, testEventChan1, testNotifyChan, test.Site1, []concern_type.Type{test.T1})
+	concern.RegisterConcern(tc1)
+	defer tc1.Stop()
+
+	tc2 := newTestConcern(t, testEventChan2, testNotifyChan, test.Site2, []concern_type.Type{test.T2})
+	concern.RegisterConcern(tc2)
+
+	IConfigFilterCmdType(ctx, test.G1, test.NAME1, test.Site1, test.T1, []string{test.Type1})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), noPermission)
+
+	err = Instance.PermissionStateManager.GrantRole(test.Sender1.Uin, permission.Admin)
+	assert.Nil(t, err)
+	assert.Nil(t, Instance.PermissionStateManager.DisableGroupCommand(test.G1, ConfigCommand))
+
+	IConfigFilterCmdType(ctx, test.G1, test.NAME1, test.Site1, test.T1, []string{test.Type1})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), disabled)
+
+	assert.Nil(t, Instance.PermissionStateManager.EnableGroupCommand(test.G1, ConfigCommand))
+
+	IConfigFilterCmdType(ctx, test.G1, test.NAME1, test.Site1, test.T1, []string{test.Type1})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigFilterCmdType(ctx, test.G1, test.NAME1, test.Site1, test.T1, []string{})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IConfigFilterCmdType(ctx, test.G1, test.NAME1, test.Site1, test.T1, []string{test.Type1})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IConfigFilterCmdNotType(ctx, test.G1, test.NAME1, test.Site1, test.T1, []string{})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IConfigFilterCmdNotType(ctx, test.G1, test.NAME1, test.Site1, test.T1, []string{test.Type1})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IConfigFilterCmdText(ctx, test.G1, test.NAME1, test.Site1, test.T1, []string{})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), failed)
+
+	IConfigFilterCmdText(ctx, test.G1, test.NAME1, test.Site1, test.T1, []string{test.NAME1, test.NAME2})
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigFilterCmdShow(ctx, test.G1, test.NAME1, test.Site1, test.T1)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "关键字过滤模式")
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), test.NAME1)
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), test.NAME2)
+
+	IConfigFilterCmdClear(ctx, test.G1, test.NAME1, test.Site1, test.T1)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+
+	IConfigFilterCmdShow(ctx, test.G1, test.NAME1, test.Site1, test.T1)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), "当前配置为空")
 }

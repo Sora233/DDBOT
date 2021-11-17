@@ -16,7 +16,8 @@ const (
 	ROOMID1    int64 = 1
 	ROOMID2    int64 = 2
 	UID1       int64 = 777
-	UID2       int64 = 888
+	UID2       int64 = 778
+	UID3       int64 = 779
 	DynamicID1 int64 = 1001
 	DynamicID2 int64 = 1002
 	MessageID1 int32 = 5001
@@ -43,6 +44,10 @@ const (
 	Site1 = "site1"
 	Site2 = "site2"
 	Site3 = "site3"
+
+	Type1 = "type1"
+	Type2 = "type2"
+	Type3 = "type3"
 )
 
 const (

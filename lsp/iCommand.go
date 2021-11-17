@@ -340,16 +340,17 @@ func ISilenceCmd(c *MessageContext, groupCode int64, delete bool) {
 func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, action string, QQ []int64) {
 	err := configCmdGroupCommonCheck(c, groupCode)
 	if err == nil {
-		g := utils.GetBot().FindGroup(groupCode)
-		if g == nil {
-			// 可能没找到吗
-			return
-		}
 		if action != "show" && action != "clear" && len(QQ) == 0 {
 			c.TextReply("失败 - 没有要操作的指定QQ号")
 			return
 		}
 		if action == "add" {
+			g := utils.GetBot().FindGroup(groupCode)
+			if g == nil {
+				c.TextReply("失败 - 无法找到这个群的信息，如果看到这个信息表示bot出现了一些问题")
+				// 可能没找到吗
+				return
+			}
 			var failed []int64
 			for _, qq := range QQ {
 				member := g.FindMember(qq)
@@ -644,6 +645,7 @@ func operateAtConcernConfig(c *MessageContext, ctype concern_type.Type, action s
 			return false
 		default:
 			c.Log.Errorf("unknown action")
+			c.TextReply("失败 - 未知操作")
 			return false
 		}
 	}
