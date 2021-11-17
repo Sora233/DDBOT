@@ -49,3 +49,25 @@ func DoMigration(name string, m MigrationMap) error {
 	})
 	return err
 }
+
+type simpleMigration struct {
+	targetVersion int64
+	f             MigrationFunc
+}
+
+func (s *simpleMigration) Func() MigrationFunc {
+	return s.f
+}
+
+func (s *simpleMigration) TargetVersion() int64 {
+	return s.targetVersion
+}
+
+// CreateSimpleMigration 可以用来快速创建一个 Migration 的helper
+// 如果逻辑较为复杂，需要其他更多信息，也可以自行实现 Migration
+func CreateSimpleMigration(targetVersion int64, f MigrationFunc) Migration {
+	return &simpleMigration{
+		targetVersion: targetVersion,
+		f:             f,
+	}
+}

@@ -39,7 +39,7 @@ func (o *option) getExpire() time.Duration {
 }
 
 func (o *option) getInnerExpire() *buntdb.SetOptions {
-	if o == nil || o.expire == 0 {
+	if o == nil || o.expire <= 0 {
 		return nil
 	}
 	return &buntdb.SetOptions{

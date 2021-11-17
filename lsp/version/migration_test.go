@@ -10,10 +10,7 @@ import (
 
 const testName = "test-mig"
 
-type testMigV1 struct {
-}
-
-func (t *testMigV1) Func() MigrationFunc {
+func v1() MigrationFunc {
 	return ChainMigration(
 		func() error {
 			return localdb.RWCoverTx(func(tx *buntdb.Tx) error {
@@ -31,15 +28,8 @@ func (t *testMigV1) Func() MigrationFunc {
 	)
 }
 
-func (t *testMigV1) TargetVersion() int64 {
-	return 1
-}
-
-type testMigV2 struct {
-}
-
-func (t *testMigV2) Func() MigrationFunc {
-	return MigrationByKey(localdb.BilibiliGroupConcernStateKey, func(key, value string) string {
+func v2() MigrationFunc {
+	return MigrationValueByPattern(localdb.BilibiliGroupConcernStateKey, func(key, value string) string {
 		if value == "1" {
 			return "live"
 		}
@@ -50,8 +40,23 @@ func (t *testMigV2) Func() MigrationFunc {
 	})
 }
 
-func (t *testMigV2) TargetVersion() int64 {
-	return 99
+func v3() MigrationFunc {
+	return ChainMigration(
+		MigrationKeyValueByPattern(localdb.BilibiliGroupConcernStateKey, func(key, value string) (string, string) {
+			groupCode, id, err := localdb.ParseConcernStateKeyWithString(key)
+			if err != nil {
+				return key, value
+			}
+			return localdb.DouyuGroupConcernStateKey(groupCode, id), value
+		}),
+		CopyKeyValueByPattern(localdb.DouyuGroupConcernStateKey, func(key, value string) (string, string) {
+			groupCode, id, err := localdb.ParseConcernStateKeyWithString(key)
+			if err != nil {
+				return key, value
+			}
+			return localdb.HuyaGroupConcernStateKey(groupCode, id), value
+		}),
+	)
 }
 
 func TestDoMigration(t *testing.T) {
@@ -59,12 +64,11 @@ func TestDoMigration(t *testing.T) {
 	defer test.CloseBuntdb(t)
 
 	assert.NotNil(t, DoMigration(testName, nil))
-
 	assert.Zero(t, GetCurrentVersion(testName))
 
 	var migMap = map[int64]Migration{
-		0: new(testMigV1),
-		1: new(testMigV2),
+		0: CreateSimpleMigration(1, v1()),
+		1: CreateSimpleMigration(99, v2()),
 	}
 	m := NewMigrationMapFromMap(migMap)
 	assert.Nil(t, DoMigration(testName, m))
@@ -86,4 +90,43 @@ func TestDoMigration(t *testing.T) {
 		return nil
 	})
 	assert.Nil(t, err)
+
+	migMap[99] = CreateSimpleMigration(100, v3())
+
+	m = NewMigrationMapFromMap(migMap)
+	assert.Nil(t, DoMigration(testName, m))
+
+	assert.EqualValues(t, 100, GetCurrentVersion(testName))
+
+	err = localdb.RCoverTx(func(tx *buntdb.Tx) error {
+		assert.False(t, localdb.Exist(localdb.BilibiliGroupConcernStateKey(test.G1, test.UID1)))
+		assert.False(t, localdb.Exist(localdb.BilibiliGroupConcernStateKey(test.G1, test.UID2)))
+
+		val, err := tx.Get(localdb.DouyuGroupConcernStateKey(test.G1, test.UID1))
+		if err != nil {
+			return err
+		}
+		assert.EqualValues(t, "live/news", val)
+
+		val, err = tx.Get(localdb.DouyuGroupConcernStateKey(test.G1, test.UID2))
+		if err != nil {
+			return err
+		}
+		assert.EqualValues(t, "live", val)
+
+		val, err = tx.Get(localdb.HuyaGroupConcernStateKey(test.G1, test.UID1))
+		if err != nil {
+			return err
+		}
+		assert.EqualValues(t, "live/news", val)
+
+		val, err = tx.Get(localdb.HuyaGroupConcernStateKey(test.G1, test.UID2))
+		if err != nil {
+			return err
+		}
+		assert.EqualValues(t, "live", val)
+
+		return nil
+
+	})
 }

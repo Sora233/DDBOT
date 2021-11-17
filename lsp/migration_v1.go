@@ -100,15 +100,15 @@ func (v *V1) concernMigrate(key, value string) string {
 
 func (v *V1) Func() version.MigrationFunc {
 	return version.ChainMigration(
-		version.MigrationByKey(localdb.BilibiliGroupConcernConfigKey, v.configMigrate),
-		version.MigrationByKey(localdb.DouyuGroupConcernConfigKey, v.configMigrate),
-		version.MigrationByKey(localdb.HuyaGroupConcernConfigKey, v.configMigrate),
-		version.MigrationByKey(localdb.YoutubeGroupConcernConfigKey, v.configMigrate),
+		version.MigrationValueByPattern(localdb.BilibiliGroupConcernConfigKey, v.configMigrate),
+		version.MigrationValueByPattern(localdb.DouyuGroupConcernConfigKey, v.configMigrate),
+		version.MigrationValueByPattern(localdb.HuyaGroupConcernConfigKey, v.configMigrate),
+		version.MigrationValueByPattern(localdb.YoutubeGroupConcernConfigKey, v.configMigrate),
 
-		version.MigrationByKey(localdb.BilibiliGroupConcernStateKey, v.concernMigrate),
-		version.MigrationByKey(localdb.DouyuGroupConcernStateKey, v.concernMigrate),
-		version.MigrationByKey(localdb.HuyaGroupConcernStateKey, v.concernMigrate),
-		version.MigrationByKey(localdb.YoutubeGroupConcernStateKey, v.concernMigrate),
+		version.MigrationValueByPattern(localdb.BilibiliGroupConcernStateKey, v.concernMigrate),
+		version.MigrationValueByPattern(localdb.DouyuGroupConcernStateKey, v.concernMigrate),
+		version.MigrationValueByPattern(localdb.HuyaGroupConcernStateKey, v.concernMigrate),
+		version.MigrationValueByPattern(localdb.YoutubeGroupConcernStateKey, v.concernMigrate),
 	)
 }
 func (v *V1) TargetVersion() int64 {
