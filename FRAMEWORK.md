@@ -41,7 +41,7 @@ import (
 
 在编写插件的过程中，第一步通常是创建新的`StateManager`，下面的示例均基于这个结构：
 
-```go
+```golang
 type StateManager struct {
     *concern.StateManager
 }
@@ -52,7 +52,7 @@ var s *StateManager = ... // 初始化
 
 在编写插件的过程中，总会遇到想要存储一些数据的需求，DDBOT默认提供了一个key-value数据库可以使用，支持串行事务，key ttl，并且已经包含在`StateManager`中：
 
-```go
+```golang
 s.SetInt64("myInt64", 123456) // 即可往数据库中设置kv对 "myInt64" - 123456 
 v, _ := s.GetInt64("myInt64") // 获取刚刚写入的值
 // v == 123456
@@ -61,5 +61,22 @@ v, _ := s.GetInt64("myInt64") // 获取刚刚写入的值
 ```
 
 还有更多方法请参考`buntdb/shortcut.go`
+
+
+### 轮询器
+
+当订阅网站暂时没有发现比较高效的爬虫方式时，我们只能选择不断地依次访问每一个订阅目标的特定页面来获取目标是否有新信息，这种方式叫做轮询。
+
+DDBOT内置了一个轮询器来满足这种方式：
+
+```golang
+// 首先需要启动 EmitQueue 轮询器
+s.UseEmitQueue()
+// 然后可以使用轮询器提供的helper创建一个 FreshFunc
+s.UseFreshFunc(s.EmitQueueFresher(func(p concern_type.Type, id interface{}) ([]concern.Event, error) { 
+    // id 是此时轮到的目标信息，此时可以刷新这个目标
+    // p是id所有订阅过的Type的集合
+}))
+```
 
 ### 更多文档正在施工中。
