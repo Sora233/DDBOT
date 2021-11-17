@@ -103,32 +103,7 @@ func (c *exampleConcern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{
 	return c.Get(id)
 }
 
-// List 实现查询所有订阅
-func (c *exampleConcern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
-	_, ids, ctypes, err := c.GetStateManager().ListConcernState(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
-		return groupCode == _groupCode && p.ContainAny(ctype)
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-	ids, ctypes, err = c.GetStateManager().GroupTypeById(ids, ctypes)
-	if err != nil {
-		return nil, nil, err
-	}
-	var result []concern.IdentityInfo
-	var resultType []concern_type.Type
-	for index, id := range ids {
-		info, err := c.Get(id)
-		if err != nil {
-			continue
-		}
-		result = append(result, info)
-		resultType = append(resultType, ctypes[index])
-	}
-	return result, resultType, nil
-}
-
-// Get 实现查询单个订阅
+// Get 实现查询单个订阅的信息
 func (c *exampleConcern) Get(id interface{}) (concern.IdentityInfo, error) {
 	return concern.NewIdentity(id, id.(string)), nil
 }

@@ -21,24 +21,29 @@ func IList(c *MessageContext, groupCode int64, site string) {
 		return
 	}
 
-	var first = true
-	var err error
-
 	listMsg := mmsg.NewMSG()
 
+	var first = true
+	var targetCM []concern.Concern
+	var info concern.IdentityInfo
+
 	if len(site) > 0 {
-		site, err = concern.ParseRawSite(site)
+		cm, err := concern.GetConcernManagerByParseSite(site)
 		if err != nil {
 			c.TextReply(fmt.Sprintf("失败 - %v", err))
 			return
 		}
+		targetCM = append(targetCM, cm)
+	} else {
+		targetCM = concern.ListConcernManager()
 	}
-
-	for _, c := range concern.ListConcernManager() {
-		if len(site) > 0 && site != c.Site() {
-			continue
+	for _, c := range targetCM {
+		_, ids, ctypes, err := c.GetStateManager().ListConcernState(func(_groupCode int64, _ interface{}, _ concern_type.Type) bool {
+			return groupCode == _groupCode
+		})
+		if err == nil {
+			ids, ctypes, err = c.GetStateManager().GroupTypeById(ids, ctypes)
 		}
-		infos, ctypes, err := c.List(groupCode, concern_type.Empty)
 		if err != nil {
 			if first {
 				first = false
@@ -47,14 +52,18 @@ func IList(c *MessageContext, groupCode int64, site string) {
 			}
 			listMsg.Textf("%v订阅查询失败 - %v", c.Site(), err)
 		} else {
-			if len(infos) > 0 {
+			if len(ids) > 0 {
 				if first {
 					first = false
 				} else {
 					listMsg.Text("\n")
 				}
 				listMsg.Textf("%v订阅：", c.Site())
-				for index, info := range infos {
+				for index, id := range ids {
+					info, err = c.Get(id)
+					if err != nil {
+						info = concern.NewIdentity(id, "unknown")
+					}
 					listMsg.Text("\n")
 					listMsg.Textf("%v %v %v", info.GetName(), info.GetUid(), ctypes[index].String())
 				}

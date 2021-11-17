@@ -16,12 +16,12 @@ type Concern struct {
 	*StateManager
 }
 
-func (c *Concern) Types() []concern_type.Type {
-	return []concern_type.Type{Live, Video}
-}
-
 func (c *Concern) Site() string {
 	return "youtube"
+}
+
+func (c *Concern) Types() []concern_type.Type {
+	return []concern_type.Type{Live, Video}
 }
 
 func (c *Concern) ParseId(s string) (interface{}, error) {
@@ -68,30 +68,6 @@ func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
 		return nil, err
 	}
 	return concern.NewIdentity(info.ChannelId, info.ChannelName), nil
-}
-
-func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
-	log := logger.WithFields(localutils.GroupLogFields(groupCode))
-
-	_, ids, ctypes, err := c.StateManager.ListConcernState(
-		func(_groupCode int64, id interface{}, p concern_type.Type) bool {
-			return groupCode == _groupCode && p.ContainAny(ctype)
-		})
-	if err != nil {
-		return nil, nil, err
-	}
-	var result = make([]concern.IdentityInfo, 0, len(ids))
-	var resultTypes = make([]concern_type.Type, 0, len(ids))
-	for index, id := range ids {
-		info, err := c.FindOrLoad(id.(string))
-		if err != nil {
-			log.WithField("id", id.(string)).Errorf("FindInfo failed %v", err)
-			continue
-		}
-		result = append(result, concern.NewIdentity(info.ChannelId, info.ChannelName))
-		resultTypes = append(resultTypes, ctypes[index])
-	}
-	return result, resultTypes, nil
 }
 
 func (c *Concern) Stop() {

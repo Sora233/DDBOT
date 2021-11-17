@@ -30,7 +30,6 @@ type Concern interface {
 
 	Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error)
 	Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error)
-	List(groupCode int64, ctype concern_type.Type) ([]IdentityInfo, []concern_type.Type, error)
 	Get(id interface{}) (IdentityInfo, error)
 
 	GetStateManager() IStateManager

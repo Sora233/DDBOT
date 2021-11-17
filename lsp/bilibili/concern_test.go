@@ -22,6 +22,13 @@ func TestNewConcern(t *testing.T) {
 	defer test.CloseBuntdb(t)
 
 	c := initConcern(t)
+	id, err := c.ParseId("uid:111")
+	assert.Nil(t, err)
+	assert.EqualValues(t, 111, id)
+
+	id, err = c.ParseId("uid:xxx")
+	assert.NotNil(t, err)
+	assert.Nil(t, c.GetStateManager())
 	c.Stop()
 }
 
@@ -38,39 +45,6 @@ func TestConcern_Remove(t *testing.T) {
 
 	_, err = c.Remove(nil, test.G1, test.UID1, test.BibiliLive)
 	assert.Nil(t, err)
-}
-
-func TestConcern_List(t *testing.T) {
-	test.InitBuntdb(t)
-	defer test.CloseBuntdb(t)
-
-	c := initConcern(t)
-
-	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
-	assert.NotNil(t, origUserInfo)
-	assert.Nil(t, c.AddUserInfo(origUserInfo))
-	_, err := c.AddGroupConcern(test.G1, test.UID1, test.BibiliLive)
-	assert.Nil(t, err)
-
-	_, err = c.AddGroupConcern(test.G1, test.UID1, test.BibiliLive)
-	assert.EqualValues(t, concern.ErrAlreadyExists, err)
-
-	userInfos, ctypes, err := c.List(test.G1, test.BibiliLive)
-	assert.Nil(t, err)
-	assert.Len(t, userInfos, 1)
-	assert.Len(t, ctypes, 1)
-	assert.Equal(t, concern.NewIdentity(origUserInfo.Mid, origUserInfo.Name), userInfos[0])
-	assert.Equal(t, test.BibiliLive, ctypes[0])
-
-	userInfos, ctypes, err = c.List(test.G1, test.BilibiliNews)
-	assert.Nil(t, err)
-	assert.Len(t, userInfos, 0)
-	assert.Len(t, ctypes, 0)
-
-	userInfos, ctypes, err = c.List(test.G2, test.BibiliLive)
-	assert.Nil(t, err)
-	assert.Len(t, userInfos, 0)
-	assert.Len(t, ctypes, 0)
 }
 
 func TestConcern_FindUserLiving(t *testing.T) {

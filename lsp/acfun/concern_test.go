@@ -106,12 +106,6 @@ func TestNewConcern(t *testing.T) {
 		}
 	}
 
-	infos, _, err := c.List(test.G2, Live)
-	assert.Nil(t, err)
-	assert.Len(t, infos, 2)
-
-	logger.Debug("GroupWatchNotify")
-
 	go c.GroupWatchNotify(test.G2, test.UID1)
 	select {
 	case notify := <-testNotifyChan:

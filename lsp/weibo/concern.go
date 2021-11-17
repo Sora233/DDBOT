@@ -27,6 +27,14 @@ func (c *Concern) Types() []concern_type.Type {
 	return []concern_type.Type{News}
 }
 
+func (c *Concern) ParseId(s string) (interface{}, error) {
+	return strconv.ParseInt(s, 10, 64)
+}
+
+func (c *Concern) GetStateManager() concern.IStateManager {
+	return c.StateManager
+}
+
 func (c *Concern) Start() error {
 	c.StateManager.UseFreshFunc(c.EmitQueueFresher(func(p concern_type.Type, id interface{}) ([]concern.Event, error) {
 		uid := id.(int64)
@@ -53,10 +61,6 @@ func (c *Concern) Stop() {
 	c.StateManager.Stop()
 	logger.Tracef("%v StateManager已停止", Site)
 	logger.Tracef("%v concern已停止", Site)
-}
-
-func (c *Concern) ParseId(s string) (interface{}, error) {
-	return strconv.ParseInt(s, 10, 64)
 }
 
 func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
@@ -98,36 +102,8 @@ func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, cty
 	return identity, err
 }
 
-func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
-	log := logger.WithFields(localutils.GroupLogFields(groupCode))
-
-	_, ids, ctypes, err := c.StateManager.ListConcernState(
-		func(_groupCode int64, id interface{}, p concern_type.Type) bool {
-			return groupCode == _groupCode && p.ContainAny(ctype)
-		})
-	if err != nil {
-		return nil, nil, err
-	}
-	var result = make([]concern.IdentityInfo, 0, len(ids))
-	var resultTypes = make([]concern_type.Type, 0, len(ids))
-	for index, id := range ids {
-		info, err := c.FindOrLoadUserInfo(id.(int64))
-		if err != nil {
-			log.WithField("id", id.(string)).Errorf("FindOrLoadUserInfo failed %v", err)
-			continue
-		}
-		result = append(result, info)
-		resultTypes = append(resultTypes, ctypes[index])
-	}
-	return result, resultTypes, nil
-}
-
 func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
 	return c.GetUserInfo(id.(int64))
-}
-
-func (c *Concern) GetStateManager() concern.IStateManager {
-	return c.StateManager
 }
 
 func (c *Concern) freshNews(uid int64) (*NewsInfo, error) {

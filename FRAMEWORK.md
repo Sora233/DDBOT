@@ -13,7 +13,7 @@
 ```golang
 // 引入刚刚编写的插件
 import (
-_ "github.com/Sora233/DDBOT/_example/concern"
+    _ "github.com/Sora233/DDBOT/_example/concern"
 )
 ```
 
@@ -43,7 +43,7 @@ _ "github.com/Sora233/DDBOT/_example/concern"
 
 ```go
 type StateManager struct {
-*concern.StateManager
+    *concern.StateManager
 }
 var s *StateManager = ... // 初始化
 ```

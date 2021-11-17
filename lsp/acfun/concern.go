@@ -260,31 +260,6 @@ func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctyp
 	return identityInfo, err
 }
 
-func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
-	log := logger.WithFields(localutils.GroupLogFields(groupCode))
-
-	_, ids, ctypes, err := c.StateManager.ListConcernState(
-		func(_groupCode int64, id interface{}, p concern_type.Type) bool {
-			return groupCode == _groupCode && p.ContainAny(ctype)
-		})
-	if err != nil {
-		return nil, nil, err
-	}
-	var resultTypes = make([]concern_type.Type, 0, len(ids))
-	var result = make([]concern.IdentityInfo, 0, len(ids))
-	for index, id := range ids {
-		userInfo, err := c.FindUserInfo(id.(int64), false)
-		if err != nil {
-			log.WithField("id", id).Errorf("get FindUserInfo err %v", err)
-			continue
-		}
-		result = append(result, userInfo)
-		resultTypes = append(resultTypes, ctypes[index])
-	}
-
-	return result, resultTypes, nil
-}
-
 func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
 	return c.FindUserInfo(id.(int64), false)
 }

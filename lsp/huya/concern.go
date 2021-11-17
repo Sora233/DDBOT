@@ -89,31 +89,6 @@ func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
 	return concern.NewIdentity(liveInfo.RoomId, liveInfo.GetName()), nil
 }
 
-func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
-	log := logger.WithFields(localutils.GroupLogFields(groupCode))
-
-	_, ids, ctypes, err := c.StateManager.ListConcernState(
-		func(_groupCode int64, id interface{}, p concern_type.Type) bool {
-			return groupCode == _groupCode && p.ContainAny(ctype)
-		})
-	if err != nil {
-		return nil, nil, err
-	}
-	var resultTypes = make([]concern_type.Type, 0, len(ids))
-	var result = make([]concern.IdentityInfo, 0, len(ids))
-	for index, id := range ids {
-		liveInfo, err := c.FindOrLoadRoom(id.(string))
-		if err != nil {
-			log.WithField("id", id).Errorf("get LiveInfo err %v", err)
-			continue
-		}
-		result = append(result, concern.NewIdentity(liveInfo.RoomId, liveInfo.GetName()))
-		resultTypes = append(resultTypes, ctypes[index])
-	}
-
-	return result, resultTypes, nil
-}
-
 func (c *Concern) FindRoom(roomId string, load bool) (*LiveInfo, error) {
 	var liveInfo *LiveInfo
 	if load {

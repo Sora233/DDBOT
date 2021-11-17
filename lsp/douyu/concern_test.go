@@ -60,16 +60,6 @@ func TestConcern(t *testing.T) {
 	assert.EqualValues(t, liveInfo.GetRoomId(), identityInfo.GetUid())
 	assert.EqualValues(t, liveInfo.GetNickname(), identityInfo.GetName())
 
-	identityInfos, ctypes, err := c.List(test.G1, Live)
-	assert.Nil(t, err)
-	assert.Len(t, identityInfos, 1)
-	assert.Len(t, ctypes, 1)
-	assert.Equal(t, Live, ctypes[0])
-
-	info := identityInfos[0]
-	assert.Equal(t, testRoom, info.GetUid())
-	assert.Equal(t, "斗鱼官方视频号", info.GetName())
-
 	liveInfo.ShowStatus = ShowStatus_Living
 	liveInfo.VideoLoop = VideoLoopStatus_Off
 

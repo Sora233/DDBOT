@@ -52,10 +52,8 @@ func TestConcern(t *testing.T) {
 	assert.Nil(t, err)
 	assert.EqualValues(t, testRoom, identityInfo.GetUid())
 
-	identityInfos, _, err := c.List(test.G1, Live)
+	info, err := c.Get(testRoom)
 	assert.Nil(t, err)
-	assert.Len(t, identityInfos, 1)
-	info := identityInfos[0]
 
 	liveInfo2, err := c.FindOrLoadRoom(testRoom)
 	assert.Nil(t, err)

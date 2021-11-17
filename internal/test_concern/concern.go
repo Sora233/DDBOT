@@ -78,17 +78,6 @@ func (t *TestConcern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, 
 	return concern.NewIdentity(id, id.(string)), err
 }
 
-func (t *TestConcern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
-	_, ids, ctypes, err := t.StateManager.ListConcernState(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
-		return groupCode == _groupCode
-	})
-	var infoes []concern.IdentityInfo
-	for _, id := range ids {
-		infoes = append(infoes, concern.NewIdentity(id, id.(string)))
-	}
-	return infoes, ctypes, err
-}
-
 func (t *TestConcern) Get(id interface{}) (concern.IdentityInfo, error) {
 	return concern.NewIdentity(id, id.(string)), nil
 }

@@ -266,34 +266,6 @@ func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
 	return concern.NewIdentity(id, userInfo.GetName()), nil
 }
 
-func (c *Concern) List(groupCode int64, ctype concern_type.Type) ([]concern.IdentityInfo, []concern_type.Type, error) {
-	log := logger.WithFields(localutils.GroupLogFields(groupCode))
-
-	_, mids, ctypes, err := c.StateManager.ListConcernState(
-		func(_groupCode int64, id interface{}, p concern_type.Type) bool {
-			return groupCode == _groupCode && p.ContainAny(ctype)
-		})
-	if err != nil {
-		return nil, nil, err
-	}
-	mids, ctypes, err = c.StateManager.GroupTypeById(mids, ctypes)
-	if err != nil {
-		return nil, nil, err
-	}
-	var result = make([]concern.IdentityInfo, 0, len(mids))
-	var resultTypes = make([]concern_type.Type, 0, len(mids))
-	for index, mid := range mids {
-		userInfo, err := c.StateManager.GetUserInfo(mid.(int64))
-		if err != nil {
-			log.WithField("mid", mid).Errorf("GetUserInfo error %v", err)
-			continue
-		}
-		result = append(result, concern.NewIdentity(userInfo.Mid, userInfo.GetName()))
-		resultTypes = append(resultTypes, ctypes[index])
-	}
-	return result, resultTypes, nil
-}
-
 func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 	return func(groupCode int64, ievent concern.Event) (result []concern.Notify) {
 		log := ievent.Logger()

@@ -31,10 +31,6 @@ func (t *testConcern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, 
 	return nil, nil
 }
 
-func (t *testConcern) List(groupCode int64, ctype concern_type.Type) ([]IdentityInfo, []concern_type.Type, error) {
-	return nil, nil, nil
-}
-
 func (t *testConcern) Get(id interface{}) (IdentityInfo, error) {
 	return nil, nil
 }

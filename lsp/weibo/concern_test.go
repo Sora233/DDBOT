@@ -52,16 +52,9 @@ func TestConcern(t *testing.T) {
 	assert.Nil(t, err)
 	assert.EqualValues(t, testId, identityInfo.GetUid())
 
-	identityInfos, _, err := c.List(test.G1, News)
-	assert.Nil(t, err)
-	assert.Len(t, identityInfos, 1)
-	info := identityInfos[0]
-
 	newsInfo, err := c.freshNews(testId)
 	assert.Nil(t, err)
 	assert.NotNil(t, newsInfo)
-	assert.EqualValues(t, info.GetUid(), newsInfo.GetUid())
-	assert.EqualValues(t, info.GetName(), newsInfo.GetName())
 	newsInfo.Cards = []*Card{
 		{CardType: CardType_Normal},
 	}

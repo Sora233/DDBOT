@@ -58,10 +58,6 @@ func TestConcern(t *testing.T) {
 
 	assert.NotNil(t, c.GetGroupConcernConfig(test.G1, test.NAME1))
 
-	identityInfos, _, err := c.List(test.G1, Live)
-	assert.Nil(t, err)
-	assert.Len(t, identityInfos, 1)
-
 	testEventChan <- &VideoInfo{
 		UserInfo: UserInfo{
 			ChannelId:   test.NAME1,
