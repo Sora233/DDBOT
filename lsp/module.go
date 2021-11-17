@@ -579,7 +579,7 @@ var Instance = &Lsp{
 	concernNotify: concern.ReadNotifyChan(),
 	stop:          make(chan interface{}),
 	status:        NewStatus(),
-	msgRateLimit:  ratelimit.New(10),
+	msgRateLimit:  ratelimit.New(5),
 }
 
 func init() {
