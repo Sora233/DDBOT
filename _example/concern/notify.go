@@ -31,7 +31,7 @@ func (e *Event) Logger() *logrus.Entry {
 // Notify 实现 concern.Notify 接口
 type Notify struct {
 	groupCode int64
-	*Event
+	Event
 }
 
 func (n *Notify) GetGroupCode() int64 {

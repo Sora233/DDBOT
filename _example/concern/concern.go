@@ -59,7 +59,7 @@ func (c *exampleConcern) exampleFresh() concern.FreshFunc {
 func (c *exampleConcern) exampleNotifyGenerator() concern.NotifyGeneratorFunc {
 	return func(groupCode int64, ievent concern.Event) []concern.Notify {
 		exampleEvent := ievent.(*Event)
-		exampleNotify := &Notify{groupCode: groupCode, Event: exampleEvent}
+		exampleNotify := &Notify{groupCode: groupCode, Event: *exampleEvent}
 		return []concern.Notify{exampleNotify}
 	}
 }
@@ -138,7 +138,9 @@ func (c *exampleConcern) GetStateManager() concern.IStateManager {
 	return c.StateManager
 }
 
-// NewConcern 返回一个新的 exampleConcern， 推荐像这样将 notify channel 通过参数穿进来，方便编写单元测试
+// NewConcern 返回一个新的 exampleConcern， 推荐像这样将 notify channel 通过参数传进来，方便编写单元测试
+// 此处使用的 concern.NewStateManagerWithStringID 适用于 string 类型的id
+// 如果 ParseId 中选择了int64类型， 则此处可以选择 concern.NewStateManagerWithInt64ID
 func NewConcern(notify chan<- concern.Notify) *exampleConcern {
 	sm := &exampleStateManager{concern.NewStateManagerWithStringID("example", notify)}
 	sm.UseEmitQueue()
