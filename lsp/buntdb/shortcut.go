@@ -103,16 +103,24 @@ func (*ShortCut) RCover(f func() error) error {
 	})
 }
 
-// SeqNext 通过key获取value，将value解析成int64，将其加1并保存，返回加1后的值。
+// SeqNext 将key上的int64值加上1并保存，返回保存后的值。
 // 如果key不存在，则会默认其为0，返回值为1
+// 等价于 s.IncInt64(key, 1)
 func (s *ShortCut) SeqNext(key string) (int64, error) {
+	return s.IncInt64(key, 1)
+}
+
+// IncInt64 将key上的int64值加上 value 并保存，返回保存后的值。
+// 如果key不存在，则会默认其为0，返回值为1
+// 如果key上的value不是一个int64，则会返回错误
+func (s *ShortCut) IncInt64(key string, value int64) (int64, error) {
 	var result int64
 	err := s.RWCover(func() error {
 		oldVal, err := s.GetInt64(key, IgnoreNotFoundOpt())
 		if err != nil {
 			return err
 		}
-		result = oldVal + 1
+		result = oldVal + value
 		return s.SetInt64(key, result)
 	})
 	if err != nil {
@@ -160,6 +168,26 @@ func (s *ShortCut) SetJson(key string, obj interface{}, opt ...OptionFunc) error
 	})
 }
 
+// DeleteInt64 删除key，解析key上的值到int64并返回
+// 支持 IgnoreNotFoundOpt
+func (s *ShortCut) DeleteInt64(key string, opt ...OptionFunc) (int64, error) {
+	return s.int64Wrapper(s.Delete(key, opt...))
+}
+
+// GetInt64 通过key获取value，并将value解析成int64
+// 支持 GetIgnoreExpireOpt IgnoreNotFoundOpt GetTTLOpt
+// 当设置了 IgnoreNotFoundOpt 时，key不存在时会直接返回0，不会返回错误
+func (s *ShortCut) GetInt64(key string, opt ...OptionFunc) (int64, error) {
+	return s.int64Wrapper(s.Get(key, opt...))
+}
+
+// SetInt64 通过key设置int64格式的value
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetIsOverwriteOpt
+// SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
+func (s *ShortCut) SetInt64(key string, value int64, opt ...OptionFunc) error {
+	return s.Set(key, strconv.FormatInt(value, 10), opt...)
+}
+
 // Delete 删除key，并返回key上的值
 // 支持 IgnoreNotFoundOpt
 func (s *ShortCut) Delete(key string, opt ...OptionFunc) (string, error) {
@@ -194,26 +222,6 @@ func (s *ShortCut) Set(key, value string, opt ...OptionFunc) error {
 	return s.RWCoverTx(func(tx *buntdb.Tx) error {
 		return s.setWithOpts(tx, key, value, opts)
 	})
-}
-
-// DeleteInt64 删除key，解析key上的值到int64并返回
-// 支持 IgnoreNotFoundOpt
-func (s *ShortCut) DeleteInt64(key string, opt ...OptionFunc) (int64, error) {
-	return s.int64Wrapper(s.Delete(key, opt...))
-}
-
-// GetInt64 通过key获取value，并将value解析成int64
-// 支持 GetIgnoreExpireOpt IgnoreNotFoundOpt GetTTLOpt
-// 当设置了 IgnoreNotFoundOpt 时，key不存在时会直接返回0，不会返回错误
-func (s *ShortCut) GetInt64(key string, opt ...OptionFunc) (int64, error) {
-	return s.int64Wrapper(s.Get(key, opt...))
-}
-
-// SetInt64 通过key设置int64格式的value
-// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetIsOverwriteOpt
-// SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
-func (s *ShortCut) SetInt64(key string, value int64, opt ...OptionFunc) error {
-	return s.Set(key, strconv.FormatInt(value, 10), opt...)
 }
 
 // Exist 查询key是否存在，key不存在或者发生任何错误时返回 false
@@ -346,10 +354,18 @@ func RCover(f func() error) error {
 	return shortCut.RCover(f)
 }
 
-// SeqNext 通过key获取value，将value解析成int64，将其加1并保存，返回加1后的值。
+// SeqNext 将key上的int64值加上1并保存，返回保存后的值。
 // 如果key不存在，则会默认其为0，返回值为1
+// 等价于 IncInt64(key, 1)
 func SeqNext(key string) (int64, error) {
 	return shortCut.SeqNext(key)
+}
+
+// IncInt64 将key上的int64值加上 value 并保存，返回保存后的值。
+// 如果key不存在，则会默认其为0，返回值为1
+// 如果key上的value不是一个int64，则会返回错误
+func IncInt64(key string, value int64) (int64, error) {
+	return shortCut.IncInt64(key, value)
 }
 
 // GetJson 获取key对应的value，并通过 json.Unmarshal 到obj上
@@ -363,6 +379,26 @@ func GetJson(key string, obj interface{}, opt ...OptionFunc) error {
 // SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
 func SetJson(key string, obj interface{}, opt ...OptionFunc) error {
 	return shortCut.SetJson(key, obj, opt...)
+}
+
+// DeleteInt64 删除key，解析key上的值到int64并返回
+// 支持 IgnoreNotFoundOpt
+func DeleteInt64(key string, opt ...OptionFunc) (int64, error) {
+	return shortCut.DeleteInt64(key, opt...)
+}
+
+// GetInt64 通过key获取value，并将value解析成int64
+// 支持 GetIgnoreExpireOpt IgnoreNotFoundOpt GetTTLOpt
+// 当设置了 IgnoreNotFoundOpt 时，key不存在时会直接返回0
+func GetInt64(key string, opt ...OptionFunc) (int64, error) {
+	return shortCut.GetInt64(key, opt...)
+}
+
+// SetInt64 通过key设置int64格式的value
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetIsOverwriteOpt
+// SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
+func SetInt64(key string, value int64, opt ...OptionFunc) error {
+	return shortCut.SetInt64(key, value, opt...)
 }
 
 // Delete 删除key，并返回key上的值
@@ -382,20 +418,6 @@ func Get(key string, opt ...OptionFunc) (string, error) {
 // SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
 func Set(key, value string, opt ...OptionFunc) error {
 	return shortCut.Set(key, value, opt...)
-}
-
-// GetInt64 通过key获取value，并将value解析成int64
-// 支持 GetIgnoreExpireOpt IgnoreNotFoundOpt GetTTLOpt
-// 当设置了 IgnoreNotFoundOpt 时，key不存在时会直接返回0
-func GetInt64(key string, opt ...OptionFunc) (int64, error) {
-	return shortCut.GetInt64(key, opt...)
-}
-
-// SetInt64 通过key设置int64格式的value
-// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetIsOverwriteOpt
-// SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
-func SetInt64(key string, value int64, opt ...OptionFunc) error {
-	return shortCut.SetInt64(key, value, opt...)
 }
 
 // Exist 查询key是否存在，key不存在或者发生任何错误时返回 false

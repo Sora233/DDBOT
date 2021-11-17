@@ -369,6 +369,25 @@ func TestSeqNext(t *testing.T) {
 
 	_, err = SeqNext(seq1)
 	assert.NotNil(t, err)
+
+	_, err = Delete(seq1)
+	assert.Nil(t, err)
+
+	s, err = IncInt64(seq1, 1001)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 1001, s)
+
+	s, err = IncInt64(seq1, 1001)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 2002, s)
+
+	s, err = DeleteInt64(seq1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, 2002, s)
+
+	s, err = GetInt64(seq1, IgnoreNotFoundOpt())
+	assert.Nil(t, err)
+	assert.EqualValues(t, 0, s)
 }
 
 type testJson struct {
