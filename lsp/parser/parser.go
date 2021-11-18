@@ -15,8 +15,14 @@ type Parser struct {
 
 func (p *Parser) Parse(e []message.IMessageElement) {
 	if len(e) > 0 {
-		if at, ok := e[0].(*message.AtElement); ok {
-			p.AtTarget = at.Target
+		var atElem *message.AtElement
+		if e[0].Type() == message.At {
+			atElem, _ = e[0].(*message.AtElement)
+		} else if e[0].Type() == message.Reply && len(e) > 1 && e[1].Type() == message.At {
+			atElem, _ = e[1].(*message.AtElement)
+		}
+		if atElem != nil {
+			p.AtTarget = atElem.Target
 		}
 	}
 	for _, element := range e {
