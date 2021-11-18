@@ -683,7 +683,15 @@ func (c *Concern) StatUserWithCache(mid int64, expire time.Duration) (*UserStat,
 }
 
 func (c *Concern) ModifyUserRelation(mid int64, act int) (*RelationModifyResponse, error) {
-	resp, err := RelationModify(mid, act)
+	var resp *RelationModifyResponse
+	var err error
+	// b站好像有新灰度，-111代表 csrf校验失败
+	// 只有shjd这个idc会返回这个错误
+	// 当返回-111的时候重试一下
+	localutils.Retry(3, time.Millisecond*300, func() bool {
+		resp, err = RelationModify(mid, act)
+		return err != nil || resp.GetCode() != -111
+	})
 	if err != nil {
 		return nil, err
 	}
