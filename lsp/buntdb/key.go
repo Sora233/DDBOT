@@ -2,6 +2,7 @@ package buntdb
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -13,6 +14,9 @@ func Key(keys ...interface{}) string {
 	var _keys []string
 	for _, ikey := range keys {
 		rk := reflect.ValueOf(ikey)
+		if !rk.IsValid() {
+			panic(fmt.Sprintf("invalid value %T %v", ikey, ikey))
+		}
 		if rk.Kind() == reflect.Ptr || rk.Kind() == reflect.Interface {
 			rk = rk.Elem()
 		}

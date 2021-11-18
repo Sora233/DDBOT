@@ -75,13 +75,12 @@ func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
 		var err error
 		key := s.GroupMuteKey(groupCode, uin)
 		if t == 0 {
-			_, err = tx.Delete(key)
-			return err
+			_, err = s.Delete(key)
 		} else if t < 0 {
 			// 开启全体禁言
-			_, _, err = tx.Set(key, "", nil)
+			err = s.Set(key, "")
 		} else { // t > 0
-			_, _, err = tx.Set(key, "", localdb.ExpireOption(time.Second*time.Duration(t)))
+			err = s.Set(key, "", localdb.SetExpireOpt(time.Second*time.Duration(t)))
 		}
 		return err
 	})

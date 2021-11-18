@@ -426,9 +426,10 @@ func Exist(key string, opt ...OptionFunc) bool {
 	return shortCut.Exist(key, opt...)
 }
 
-// ExpireOption 是一个创建expire的函数糖
+// ExpireOption 是一个创建 buntdb.SetOptions 的函数糖，当直接操作底层buntdb的时候可以使用。
+// 使用本package的时候请使用 SetExpireOpt
 func ExpireOption(duration time.Duration) *buntdb.SetOptions {
-	if duration == 0 {
+	if duration <= 0 {
 		return nil
 	}
 	return &buntdb.SetOptions{

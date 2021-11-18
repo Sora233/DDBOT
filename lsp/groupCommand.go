@@ -13,11 +13,6 @@ import (
 
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/sliceutil"
-	"github.com/alecthomas/kong"
-	"github.com/sirupsen/logrus"
-	"github.com/tidwall/buntdb"
-
 	"github.com/Sora233/DDBOT/image_pool"
 	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
@@ -26,6 +21,9 @@ import (
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/utils"
+	"github.com/Sora233/sliceutil"
+	"github.com/alecthomas/kong"
+	"github.com/sirupsen/logrus"
 )
 
 type LspGroupCommand struct {
@@ -506,46 +504,40 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 
 	date := time.Now().Format("20060102")
 
-	err := localdb.RWCoverTx(func(tx *buntdb.Tx) error {
-		var score int64
-		key := localdb.Key("Score", lgc.groupCode(), lgc.uin())
+	var score int64
+	var resultMsg = mmsg.NewMSG()
+	err := localdb.RWCover(func() error {
+		var err error
+		scoreKey := localdb.Key("Score", lgc.groupCode(), lgc.uin())
 		dateMarker := localdb.Key("ScoreDate", lgc.groupCode(), lgc.uin(), date)
 
-		val, err := tx.Get(key)
-		if err == buntdb.ErrNotFound {
-			score = 0
-		} else {
-			score, err = strconv.ParseInt(val, 10, 64)
-			if err != nil {
-				log.WithField("value", val).Errorf("parse score failed %v", err)
-				return err
-			}
+		score, err = localdb.GetInt64(scoreKey, localdb.IgnoreNotFoundOpt())
+		if err != nil {
+			return err
 		}
-		_, err = tx.Get(dateMarker)
-		if err != buntdb.ErrNotFound {
-			lgc.textReplyF("明天再来吧，当前积分为%v", score)
+		if localdb.Exist(dateMarker) {
+			resultMsg.Textf("明天再来吧，当前积分为%v", score)
 			return nil
 		}
 
-		score += 1
-		_, _, err = tx.Set(key, strconv.FormatInt(score, 10), nil)
+		score, err = localdb.SeqNext(scoreKey)
 		if err != nil {
-			log.WithField("sender", lgc.uin()).Errorf("update score failed %v", err)
 			return err
 		}
 
-		_, _, err = tx.Set(dateMarker, "1", localdb.ExpireOption(time.Hour*24*3))
+		err = localdb.Set(dateMarker, "", localdb.SetExpireOpt(time.Hour*24*3))
 		if err != nil {
-			log.WithField("sender", lgc.uin()).Errorf("update score marker failed %v", err)
 			return err
 		}
 		log = log.WithField("new score", score)
-		lgc.textReplyF("签到成功！获得1积分，当前积分为%v", score)
+		resultMsg.Textf("签到成功！获得1积分，当前积分为%v", score)
 		return nil
 	})
 	if err != nil {
 		lgc.textSend("失败 - 内部错误")
 		log.Errorf("checkin error %v", err)
+	} else {
+		lgc.sendMSG(resultMsg)
 	}
 }
 
@@ -563,19 +555,19 @@ func (lgc *LspGroupCommand) ScoreCommand() {
 		return
 	}
 
-	var scoreS string
+	var score int64
 
-	localdb.RCoverTx(func(tx *buntdb.Tx) error {
+	err := localdb.RCover(func() error {
+		var err error
 		key := localdb.Key("Score", lgc.groupCode(), lgc.uin())
-		scoreS, _ = tx.Get(key)
-		return nil
+		score, err = localdb.GetInt64(key, localdb.IgnoreNotFoundOpt())
+		return err
 	})
-
-	if len(scoreS) == 0 {
-		scoreS = "0"
+	if err != nil {
+		lgc.textSend("失败 - 内部错误")
+	} else {
+		lgc.textReplyF("当前积分为%v", score)
 	}
-	score, _ := strconv.ParseInt(scoreS, 0, 64)
-	lgc.textReplyF("当前积分为%v", score)
 }
 
 func (lgc *LspGroupCommand) EnableCommand(disable bool) {
@@ -994,6 +986,10 @@ func (lgc *LspGroupCommand) reply(msg *message.SendingMessage) *message.GroupMes
 
 func (lgc *LspGroupCommand) send(msg *message.SendingMessage) *message.GroupMessage {
 	return lgc.l.sendGroupMessage(lgc.groupCode(), msg)
+}
+
+func (lgc *LspGroupCommand) sendMSG(msg *mmsg.MSG) *message.GroupMessage {
+	return lgc.l.sendGroupMessage(lgc.groupCode(), msg.ToMessage(mmsg.NewGroupTarget(lgc.groupCode())))
 }
 
 func (lgc *LspGroupCommand) sender() *message.Sender {

@@ -138,4 +138,7 @@ func TestKeys(t *testing.T) {
 	assert.Panics(t, func() {
 		BilibiliGroupConcernStateKey(&struct{}{})
 	})
+	assert.Panics(t, func() {
+		Key(nil)
+	})
 }

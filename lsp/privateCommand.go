@@ -16,7 +16,6 @@ import (
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
 	"github.com/sirupsen/logrus"
-	"github.com/tidwall/buntdb"
 	"io/ioutil"
 	"runtime/debug"
 	"strconv"
@@ -558,7 +557,7 @@ func (c *LspPrivateCommand) BlockCommand() {
 		if err := c.l.PermissionStateManager.DeleteBlockList(blockCmd.Uin); err == nil {
 			log.Info("unblocked")
 			c.textReply("成功")
-		} else if err == buntdb.ErrNotFound {
+		} else if localdb.IsNotFound(err) {
 			log.Errorf("unblock failed - not exist")
 			c.textReply("失败 - 该id未被block")
 		} else {
@@ -854,7 +853,7 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 		c.textReply(sb.String())
 	} else {
 		request, err := c.l.LspStateManager.GetGroupInvitedRequest(groupRequestCmd.RequestId)
-		if err == buntdb.ErrNotFound {
+		if localdb.IsNotFound(err) {
 			log.Errorf("处理加群邀请失败 - 未找到该邀请")
 			c.textReply(fmt.Sprintf("失败 - 未找到该邀请【%v】", groupRequestCmd.RequestId))
 			return
@@ -975,7 +974,7 @@ func (c *LspPrivateCommand) FriendRequestCommand() {
 		c.textReply(sb.String())
 	} else {
 		request, err := c.l.LspStateManager.GetNewFriendRequest(friendRequestCmd.RequestId)
-		if err == buntdb.ErrNotFound {
+		if localdb.IsNotFound(err) {
 			log.Errorf("处理好友申请失败 - 未找到该好友申请")
 			c.textReply(fmt.Sprintf("失败 - 未找到该好友申请【%v】", friendRequestCmd.RequestId))
 			return
