@@ -73,7 +73,7 @@ func NewCtx(t *testing.T, receiver chan<- *mmsg.MSG, sender *message.Sender, tar
 }
 
 func getCM(site string) concern.Concern {
-	for _, cm := range concern.ListConcernManager() {
+	for _, cm := range concern.ListConcern() {
 		if cm.Site() == site {
 			return cm
 		}

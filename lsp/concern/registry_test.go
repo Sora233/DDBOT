@@ -58,7 +58,7 @@ func TestReadNotifyChan(t *testing.T) {
 }
 
 func TestConcernManager(t *testing.T) {
-	assert.Empty(t, ListConcernManager())
+	assert.Empty(t, ListConcern())
 
 	RegisterConcern(&testConcern{site: "test1", types: []concern_type.Type{
 		"1",
@@ -103,53 +103,53 @@ func TestConcernManager(t *testing.T) {
 	assert.Contains(t, ListSite(), "test1")
 	assert.Contains(t, ListSite(), "test2")
 
-	ctypes, err := GetConcernManagerTypes("test1")
+	ctypes, err := GetConcernTypes("test1")
 	assert.Nil(t, err)
 	assert.EqualValues(t, []concern_type.Type{"1", "2", "3"}, ctypes.Split())
-	ctypes, err = GetConcernManagerTypes("test2")
+	ctypes, err = GetConcernTypes("test2")
 	assert.Nil(t, err)
 	assert.EqualValues(t, []concern_type.Type{"4", "5", "6"}, ctypes.Split())
-	ctypes, err = GetConcernManagerTypes("test3")
+	ctypes, err = GetConcernTypes("test3")
 	assert.EqualValues(t, ErrSiteNotSupported, err)
 
-	cm, err := GetConcernManagerBySite("wrong")
+	cm, err := GetConcernBySite("wrong")
 	assert.EqualValues(t, ErrSiteNotSupported, err)
 	assert.Nil(t, cm)
-	cm, err = GetConcernManagerBySite("test1")
+	cm, err = GetConcernBySite("test1")
 	assert.Nil(t, err)
 	assert.NotNil(t, cm)
-	cm, err = GetConcernManagerBySiteAndType("test1", "1")
+	cm, err = GetConcernBySiteAndType("test1", "1")
 	assert.Nil(t, err)
 	assert.NotNil(t, cm)
-	cm, err = GetConcernManagerBySiteAndType("test1", "3")
+	cm, err = GetConcernBySiteAndType("test1", "3")
 	assert.Nil(t, err)
 	assert.NotNil(t, cm)
-	cm, err = GetConcernManagerBySiteAndType("test1", "4")
+	cm, err = GetConcernBySiteAndType("test1", "4")
 	assert.EqualValues(t, ErrTypeNotSupported, err)
 	assert.Nil(t, cm)
-	cm, err = GetConcernManagerBySiteAndType("test4", "10")
+	cm, err = GetConcernBySiteAndType("test4", "10")
 	assert.EqualValues(t, ErrSiteNotSupported, err)
 	assert.Nil(t, cm)
 
-	cm, err = GetConcernManagerByParseSite("wrong")
+	cm, err = GetConcernByParseSite("wrong")
 	assert.Nil(t, cm)
 	assert.EqualValues(t, ErrSiteNotSupported, err)
 
-	cm, err = GetConcernManagerByParseSite("test1")
+	cm, err = GetConcernByParseSite("test1")
 	assert.Nil(t, err)
 	assert.NotNil(t, cm)
 
-	cm, _, ctypes, err = GetConcernManagerByParseSiteAndType("test1", "1")
+	cm, _, ctypes, err = GetConcernByParseSiteAndType("test1", "1")
 	assert.Nil(t, err)
 	assert.NotNil(t, cm)
 	assert.EqualValues(t, "1", ctypes)
 
-	cm, _, ctypes, err = GetConcernManagerByParseSiteAndType("test2", "")
+	cm, _, ctypes, err = GetConcernByParseSiteAndType("test2", "")
 	assert.Nil(t, err)
 	assert.NotNil(t, cm)
 	assert.EqualValues(t, "4", ctypes)
 
-	cm, _, ctypes, err = GetConcernManagerByParseSiteAndType("test", "")
+	cm, _, ctypes, err = GetConcernByParseSiteAndType("test", "")
 	assert.Nil(t, cm)
 	assert.EqualValues(t, ErrSiteNotSupported, err)
 

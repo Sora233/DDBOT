@@ -92,19 +92,20 @@ type StateManager struct {
 	freshFunc           FreshFunc
 	dispatchFunc        DispatchFunc
 	notifyGeneratorFunc NotifyGeneratorFunc
+	logger              *logrus.Entry
 }
 
 func (c *StateManager) getGroupConcernConfig(groupCode int64, id interface{}) (concernConfig *GroupConcernConfig) {
 	val, err := c.Get(c.GroupConcernConfigKey(groupCode, id), localdb.IgnoreNotFoundOpt())
 	if err != nil {
-		logger.WithFields(localutils.GroupLogFields(groupCode)).
+		c.Logger().WithFields(localutils.GroupLogFields(groupCode)).
 			WithField("id", id).
 			Errorf("GetGroupConcernConfig error %v", err)
 	}
 	if len(val) > 0 {
 		concernConfig, err = NewGroupConcernConfigFromString(val)
 		if err != nil {
-			logger.WithFields(localutils.GroupLogFields(groupCode)).
+			c.Logger().WithFields(localutils.GroupLogFields(groupCode)).
 				WithFields(logrus.Fields{"id": id, "val": val}).Errorf("NewGroupConcernConfigFromString error %v", err)
 		}
 	}
@@ -185,7 +186,7 @@ func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype co
 	if c.useEmit {
 		allCtype, err := c.GetConcern(id)
 		if err != nil {
-			logger.WithField("id", id).Errorf("GetConcern error %v", err)
+			c.Logger().WithField("id", id).Errorf("GetConcern error %v", err)
 		} else {
 			c.emitQueue.Add(localutils.NewEmitE(id, allCtype))
 		}
@@ -216,7 +217,7 @@ func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype
 	if c.useEmit {
 		allCtype, err := c.GetConcern(id)
 		if err != nil {
-			logger.WithField("id", id).Errorf("GetConcern error %v", err)
+			c.Logger().WithField("id", id).Errorf("GetConcern error %v", err)
 		} else {
 			if allCtype.Empty() {
 				c.emitQueue.Delete(id)
@@ -283,6 +284,7 @@ func (c *StateManager) GetConcern(id interface{}) (result concern_type.Type, err
 	return
 }
 
+// ListConcernState 遍历所有订阅，并根据 filter 返回需要的订阅
 func (c *StateManager) ListConcernState(filter func(groupCode int64, id interface{}, p concern_type.Type) bool) (idGroups []int64, ids []interface{}, idTypes []concern_type.Type, err error) {
 	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		var iterErr error
@@ -318,6 +320,7 @@ func (c *StateManager) ListConcernState(filter func(groupCode int64, id interfac
 	return
 }
 
+// GroupTypeById 按id聚合ctype，通常是配合 ListConcernState 使用，把 ListConcernState 返回的订阅按id聚合
 func (c *StateManager) GroupTypeById(ids []interface{}, types []concern_type.Type) ([]interface{}, []concern_type.Type, error) {
 	if len(ids) != len(types) {
 		return nil, nil, ErrLengthMismatch
@@ -344,7 +347,7 @@ func (c *StateManager) GroupTypeById(ids []interface{}, types []concern_type.Typ
 	return result, resultType, nil
 }
 
-func (c *StateManager) CheckFresh(id interface{}, setTTL bool) bool {
+func (c *StateManager) checkFresh(id interface{}, setTTL bool) bool {
 	freshKey := c.FreshKey(id)
 	err := c.RWCover(func() error {
 		if c.Exist(freshKey) {
@@ -358,6 +361,8 @@ func (c *StateManager) CheckFresh(id interface{}, setTTL bool) bool {
 	return err == nil
 }
 
+// FreshIndex 刷新 group 的 index，通常不需要用户主动调用
+// 在单元测试中有时候需要主动刷新 index，否则遍历时会返回 buntdb.ErrNotFound
 func (c *StateManager) FreshIndex(groups ...int64) {
 	for _, pattern := range []localdb.KeyPatternFunc{
 		c.GroupConcernStateKey, c.GroupConcernConfigKey,
@@ -399,6 +404,7 @@ func (c *StateManager) upsertConcernType(key string, ctype concern_type.Type) (n
 	return
 }
 
+// Stop 停止 StateManager，别忘记在 Concern.Stop 中停止
 func (c *StateManager) Stop() {
 	if c.useEmit {
 		c.emitQueue.Stop()
@@ -413,6 +419,8 @@ func (c *StateManager) Stop() {
 	c.wg.Wait()
 }
 
+// Start 启动 StateManager，别忘记在 Concern.Start 中启动
+// 启动前需要指定 FreshFunc 与 NotifyGeneratorFunc，否则会panic
 func (c *StateManager) Start() error {
 	if c.freshFunc == nil {
 		panic(fmt.Sprintf("StateManager %v: freshFunc not set", c.name))
@@ -465,21 +473,21 @@ func (c *StateManager) EmitQueueFresher(doFresh func(p concern_type.Type, id int
 					return
 				}
 				id := emitItem.Id
-				if ok := c.CheckFresh(id, true); !ok {
-					logger.WithFields(logrus.Fields{
+				if ok := c.checkFresh(id, true); !ok {
+					c.Logger().WithFields(logrus.Fields{
 						"Id":     id,
 						"Type":   emitItem.Type.String(),
 						"Result": ok,
 					}).Trace("fresh check failed")
 					continue
 				}
-				logger.WithField("id", id).Trace("fresh")
+				c.Logger().WithField("id", id).Trace("fresh")
 				if events, err := doFresh(emitItem.Type, id); err == nil {
 					for _, event := range events {
 						c.eventChan <- event
 					}
 				} else {
-					logger.WithFields(logrus.Fields{
+					c.Logger().WithFields(logrus.Fields{
 						"Id":   id,
 						"Type": emitItem.Type.String(),
 						"Name": c.name,
@@ -495,7 +503,7 @@ func (c *StateManager) EmitQueueFresher(doFresh func(p concern_type.Type, id int
 func (c *StateManager) Fresh(wg *sync.WaitGroup, eventChan chan<- Event) {
 	defer func() {
 		if e := recover(); e != nil {
-			logger.WithField("stack", string(debug.Stack())).
+			c.Logger().WithField("stack", string(debug.Stack())).
 				Errorf("StateManager %v: Fresh panic recoved", c.name)
 			go c.Fresh(wg, eventChan)
 		}
@@ -508,7 +516,7 @@ func (c *StateManager) Fresh(wg *sync.WaitGroup, eventChan chan<- Event) {
 func (c *StateManager) Dispatch(wg *sync.WaitGroup, eventChan <-chan Event, notifyChan chan<- Notify) {
 	defer func() {
 		if e := recover(); e != nil {
-			logger.WithField("stack", string(debug.Stack())).
+			c.Logger().WithField("stack", string(debug.Stack())).
 				Errorf("StateManager %v: Dispatch panic recoved", c.name)
 			go c.Dispatch(wg, eventChan, notifyChan)
 		}
@@ -522,6 +530,8 @@ func (c *StateManager) NotifyGenerator(groupCode int64, event Event) []Notify {
 	return c.notifyGeneratorFunc(groupCode, event)
 }
 
+// DefaultDispatch 是 DispatchFunc 的默认实现。
+// 它查询所有订阅过此 Event.GetUid 与 Event.Type 的群，并为每个群生成 Notify 发送给框架
 func (c *StateManager) DefaultDispatch() DispatchFunc {
 	return func(eventChan <-chan Event, notifyChan chan<- Notify) {
 		for event := range eventChan {
@@ -543,14 +553,17 @@ func (c *StateManager) DefaultDispatch() DispatchFunc {
 	}
 }
 
+// UseFreshFunc 指定 FreshFunc，启动前必须指定，否则会panic
 func (c *StateManager) UseFreshFunc(freshFunc FreshFunc) {
 	c.freshFunc = freshFunc
 }
 
+// UseNotifyGeneratorFunc 指定 NotifyGeneratorFunc，启动前必须指定，否则会panic
 func (c *StateManager) UseNotifyGeneratorFunc(notifyGeneratorFunc NotifyGeneratorFunc) {
 	c.notifyGeneratorFunc = notifyGeneratorFunc
 }
 
+// UseDispatchFunc 指定 DispatchFunc，如果启动时没有指定，则会使用默认实现 DefaultDispatch
 func (c *StateManager) UseDispatchFunc(dispatchFunc DispatchFunc) {
 	c.dispatchFunc = dispatchFunc
 }
@@ -572,11 +585,12 @@ func (c *StateManager) UseEmitQueue() {
 }
 
 func (c *StateManager) Logger() *logrus.Entry {
-	return logger.WithFields(logrus.Fields{
-		"Name": c.name,
-	})
+	return c.logger
 }
 
+// NewStateManagerWithCustomKey 使用自定义的 KeySet 创建 StateManager，
+// 如果不关心 KeySet，推荐使用 NewStateManagerWithStringID 或者 NewStateManagerWithInt64ID
+// name 可以简单地使用 Concern.Site
 func NewStateManagerWithCustomKey(name string, keySet KeySet, notifyChan chan<- Notify) *StateManager {
 	ctx, cancel := context.WithCancel(context.Background())
 	sm := &StateManager{
@@ -586,14 +600,21 @@ func NewStateManagerWithCustomKey(name string, keySet KeySet, notifyChan chan<- 
 		KeySet:     keySet,
 		ctx:        ctx,
 		cancelCtx:  cancel,
+		logger:     logger.WithFields(logrus.Fields{"Name": name}),
 	}
 	return sm
 }
 
+// NewStateManagerWithStringID 创建新的 StateManager，会使用 NewPrefixKeySetWithStringID 创建 KeySet
+// ID的格式必须与 Concern.ParseId 返回的格式匹配
+// name 可以简单地使用 Concern.Site
 func NewStateManagerWithStringID(name string, notifyChan chan<- Notify) *StateManager {
 	return NewStateManagerWithCustomKey(name, NewPrefixKeySetWithStringID(name), notifyChan)
 }
 
+// NewStateManagerWithInt64ID 创建新的 StateManager，会使用 NewPrefixKeySetWithInt64ID 创建 KeySet
+// ID的格式必须与 Concern.ParseId 返回的格式匹配
+// name 可以简单地使用 Concern.Site
 func NewStateManagerWithInt64ID(name string, notifyChan chan<- Notify) *StateManager {
 	return NewStateManagerWithCustomKey(name, NewPrefixKeySetWithInt64ID(name), notifyChan)
 }

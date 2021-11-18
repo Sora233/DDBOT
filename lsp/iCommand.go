@@ -28,14 +28,14 @@ func IList(c *MessageContext, groupCode int64, site string) {
 	var info concern.IdentityInfo
 
 	if len(site) > 0 {
-		cm, err := concern.GetConcernManagerByParseSite(site)
+		cm, err := concern.GetConcernByParseSite(site)
 		if err != nil {
 			c.TextReply(fmt.Sprintf("失败 - %v", err))
 			return
 		}
 		targetCM = append(targetCM, cm)
 	} else {
-		targetCM = concern.ListConcernManager()
+		targetCM = concern.ListConcern()
 	}
 	for _, c := range targetCM {
 		_, ids, ctypes, err := c.GetStateManager().ListConcernState(func(_groupCode int64, _ interface{}, _ concern_type.Type) bool {
@@ -97,7 +97,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		return
 	}
 
-	cm, err := concern.GetConcernManagerBySiteAndType(site, watchType)
+	cm, err := concern.GetConcernBySiteAndType(site, watchType)
 	if err != nil {
 		log.Errorf("GetConcernManager error %v", err)
 		c.TextReply(fmt.Sprintf("失败 - %v", err))
@@ -568,7 +568,7 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 	if !sliceutil.Contains(concern.ListSite(), site) {
 		return concern.ErrSiteNotSupported
 	}
-	cm, err := concern.GetConcernManagerBySiteAndType(site, ctype)
+	cm, err := concern.GetConcernBySiteAndType(site, ctype)
 	if err != nil {
 		c.GetLog().Errorf("GetConcernManager error %v", err)
 		c.TextReply(fmt.Sprintf("失败 - %v", err))
@@ -592,7 +592,7 @@ func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctyp
 }
 
 func ReplyUserInfo(c *MessageContext, id string, site string, ctype concern_type.Type) {
-	cm, err := concern.GetConcernManagerBySiteAndType(site, ctype)
+	cm, err := concern.GetConcernBySiteAndType(site, ctype)
 	if err != nil {
 		c.GetLog().Errorf("GetConcernManager error %v", err)
 		c.TextReply(fmt.Sprintf("失败 - %v", err))

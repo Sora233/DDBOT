@@ -316,13 +316,13 @@ func TestStateManager_FreshCheck(t *testing.T) {
 
 	sm := newStateManager(t)
 
-	result := sm.CheckFresh(test.UID1, false)
+	result := sm.checkFresh(test.UID1, false)
 	assert.True(t, result)
-	result = sm.CheckFresh(test.UID1, false)
+	result = sm.checkFresh(test.UID1, false)
 	assert.True(t, result)
-	result = sm.CheckFresh(test.UID1, true)
+	result = sm.checkFresh(test.UID1, true)
 	assert.True(t, result)
-	result = sm.CheckFresh(test.UID1, true)
+	result = sm.checkFresh(test.UID1, true)
 	assert.False(t, result)
 }
 

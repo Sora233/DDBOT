@@ -33,20 +33,34 @@ type Concern interface {
 	Site() string
 	// Types 返回该 Concern 支持的 concern_type.Type，此处返回的每一项必须是单个type，并且第一个type为默认type
 	Types() []concern_type.Type
+	// Start 启动 Concern 模块，记得调用 StateManager.Start
 	Start() error
+	// Stop 停止 Concern 模块，记得调用 StateManager.Stop
 	Stop()
+	// ParseId 会解析一个id，此处返回的id类型，即是其他地方id interface{}的类型
+	// 其他所有地方的id都由此函数生成
+	// 推荐在string 或者 int64类型中选择其一
+	// 如果订阅源有uid等数字唯一标识，请选择int64，如 bilibili
+	// 如果订阅源有数字并且有字符，请选择string， 如 douyu
 	ParseId(string) (interface{}, error)
 
+	// Add 添加一个订阅
 	Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error)
+	// Remove 删除一个订阅
 	Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error)
+	// Get 获取一个订阅信息
 	Get(id interface{}) (IdentityInfo, error)
 
+	// GetStateManager 获取 IStateManager
 	GetStateManager() IStateManager
+	// FreshIndex 刷新 group 的 index，通常不需要用户主动调用，StateManager.FreshIndex 有默认实现。
 	FreshIndex(groupCode ...int64)
 }
 
 // IdentityInfo 表示订阅对象的信息，包括名字，ID
 type IdentityInfo interface {
+	// GetUid 返回订阅对象的id
 	GetUid() interface{}
+	// GetName 返回订阅对象的名字
 	GetName() string
 }

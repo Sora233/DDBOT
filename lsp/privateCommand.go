@@ -1148,7 +1148,7 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 	m := mmsg.NewMSG()
 	m.Textf("当前好友数：%v\n", len(c.bot.GetFriendList()))
 	m.Textf("当前群组数：%v\n", len(c.bot.GetGroupList()))
-	for index, cm := range concern.ListConcernManager() {
+	for index, cm := range concern.ListConcern() {
 		_, ids, ctypes, err := cm.GetStateManager().ListConcernState(
 			func(groupCode int64, id interface{}, p concern_type.Type) bool {
 				return true

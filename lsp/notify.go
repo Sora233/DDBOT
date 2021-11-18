@@ -35,9 +35,9 @@ func (l *Lsp) ConcernNotify() {
 				continue
 			}
 
-			c, err := concern.GetConcernManagerBySiteAndType(inotify.Site(), inotify.Type())
+			c, err := concern.GetConcernBySiteAndType(inotify.Site(), inotify.Type())
 			if err != nil {
-				nLogger.Errorf("GetConcernManagerBySiteAndType error %v", err)
+				nLogger.Errorf("GetConcernBySiteAndType error %v", err)
 				continue
 			}
 			cfg := c.GetStateManager().GetGroupConcernConfig(inotify.GetGroupCode(), inotify.GetUid())

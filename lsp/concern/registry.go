@@ -14,6 +14,7 @@ var notifyChan = make(chan Notify, 500)
 type option struct {
 }
 
+// OptFunc 预留的扩展字段，暂无用处
 type OptFunc func(opt *option) *option
 
 type center struct {
@@ -53,6 +54,7 @@ func newConcernCenter() *center {
 	}
 }
 
+// RegisterConcern 向DDBOT注册一个 Concern。
 func RegisterConcern(c Concern, opts ...OptFunc) {
 	if c == nil {
 		panic("Concern: Register <nil> concern")
@@ -80,8 +82,9 @@ func ClearConcern() {
 	globalCenter = newConcernCenter()
 }
 
+// StartAll 启动所有 Concern，正常情况下框架会负责启动。
 func StartAll() error {
-	all := ListConcernManager()
+	all := ListConcern()
 	errG := errgroup.Group{}
 	for _, c := range all {
 		c := c
@@ -98,52 +101,66 @@ func StartAll() error {
 	return errG.Wait()
 }
 
-// StopAll 停止所有Concern模块，会关闭notifyChan，所以停止后禁止再向notifyChan中写入数据
+// StopAll 停止所有Concern模块，正常情况下框架会负责停止。
+// 会关闭notifyChan，所以停止后禁止再向notifyChan中写入数据。
 func StopAll() {
-	all := ListConcernManager()
+	all := ListConcern()
 	for _, c := range all {
 		c.Stop()
 	}
 	close(notifyChan)
 }
 
-func ListConcernManager() []Concern {
+// ListConcern 返回所有注册过的 Concern。
+func ListConcern() []Concern {
 	return globalCenter.concernList
 }
 
-func GetConcernManagerBySite(site string) (Concern, error) {
+// GetConcernBySite 根据site返回 Concern。
+// 如果site没有注册过，则会返回 ErrSiteNotSupported。
+func GetConcernBySite(site string) (Concern, error) {
 	if err := checkSite(site); err != nil {
 		return nil, err
 	}
 	return globalCenter.concernMap[site], nil
 }
 
-func GetConcernManagerBySiteAndType(site string, ctype concern_type.Type) (Concern, error) {
+// GetConcernBySiteAndType 根据site和ctype返回 Concern。
+// 如果site没有注册过，则会返回 ErrSiteNotSupported；
+// 如果site注册过，但不支持指定的ctype，则会返回 ErrTypeNotSupported。
+func GetConcernBySiteAndType(site string, ctype concern_type.Type) (Concern, error) {
 	if err := checkSiteAndType(site, ctype); err != nil {
 		return nil, err
 	}
 	return globalCenter.concernMap[site], nil
 }
 
+// ListSite 返回所有注册的 Concern 支持的site。
 func ListSite() []string {
 	return globalCenter.concernSites
 }
 
+// GetNotifyChan 推送 channel，所有推送需要发送到这个channel中。
 func GetNotifyChan() chan<- Notify {
 	return notifyChan
 }
 
+// ReadNotifyChan 读取推送 channel，应该只由框架负责调用。
 func ReadNotifyChan() <-chan Notify {
 	return notifyChan
 }
 
-func GetConcernManagerTypes(site string) (concern_type.Type, error) {
+// GetConcernTypes 根据site查询 Concern，返回 Concern.Types。
+// 如果site没有注册过，则返回 ErrSiteNotSupported。
+func GetConcernTypes(site string) (concern_type.Type, error) {
 	if err := checkSite(site); err != nil {
 		return concern_type.Empty, err
 	}
 	return globalCenter.concernTypeMap[site], nil
 }
 
+// ParseRawSite 解析string格式的site，可以安全处理用户输入的site。
+// 返回匹配的site，如果没有匹配上，返回 ErrSiteNotSupported。
 func ParseRawSite(rawSite string) (string, error) {
 	var (
 		found bool
@@ -158,8 +175,9 @@ func ParseRawSite(rawSite string) (string, error) {
 	return site, nil
 }
 
-// ParseRawSiteAndType 尝试解析string格式的 site 和 concern_type.Type，可以安全处理用户输入的site和type
-// 如果site合法，rawType为空，则默认返回注册时的第一个type
+// ParseRawSiteAndType 尝试解析string格式的 site 和 ctype，可以安全处理用户输入的site和ctype。
+// 如果site合法，rawType为空，则默认返回注册时的第一个type。
+// rawSite 和 rawType 默认为前缀匹配模式，即bi可以匹配bilibili，n可以匹配news。
 func ParseRawSiteAndType(rawSite string, rawType string) (string, concern_type.Type, error) {
 	var (
 		site  string
@@ -174,7 +192,7 @@ func ParseRawSiteAndType(rawSite string, rawType string) (string, concern_type.T
 		return "", concern_type.Empty, err
 	}
 	var sTypes []string
-	ctypes, _ := GetConcernManagerTypes(site)
+	ctypes, _ := GetConcernTypes(site)
 	// 如果没有指定type，则默认注册时的第一个type
 	if rawType == "" {
 		return site, ctypes.Split()[0], nil
@@ -189,19 +207,23 @@ func ParseRawSiteAndType(rawSite string, rawType string) (string, concern_type.T
 	return site, concern_type.Type(_type), nil
 }
 
-func GetConcernManagerByParseSite(rawSite string) (Concern, error) {
+// GetConcernByParseSite 尝试解析string格式的 site，默认为前缀匹配模式。
+func GetConcernByParseSite(rawSite string) (Concern, error) {
 	site, err := ParseRawSite(rawSite)
 	if err != nil {
 		return nil, err
 	}
-	return GetConcernManagerBySite(site)
+	return GetConcernBySite(site)
 }
 
-func GetConcernManagerByParseSiteAndType(rawSite, rawType string) (Concern, string, concern_type.Type, error) {
+// GetConcernByParseSiteAndType 尝试解析string格式的 site 和 ctype，可以安全处理用户输入的site和ctype，
+// 并返回 Concern，site，ctype。
+// 默认为前缀匹配模式
+func GetConcernByParseSiteAndType(rawSite, rawType string) (Concern, string, concern_type.Type, error) {
 	site, ctypes, err := ParseRawSiteAndType(rawSite, rawType)
 	if err != nil {
 		return nil, "", concern_type.Empty, err
 	}
-	cm, _ := GetConcernManagerBySiteAndType(site, ctypes)
+	cm, _ := GetConcernBySiteAndType(site, ctypes)
 	return cm, site, ctypes, nil
 }
