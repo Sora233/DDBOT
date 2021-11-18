@@ -2,6 +2,9 @@
 
 *阅读这个内容需要一定的开发能力。*
 
+文档地址：
+[![GoDoc](http://img.shields.io/badge/go-documentation-blue.svg?style=flat-square)](https://pkg.go.dev/github.com/Sora233/DDBOT)
+
 为DDBOT编写插件的基本步骤为：
 
 - 通过`concern.StateManager`，实现`concern.Concern`接口
