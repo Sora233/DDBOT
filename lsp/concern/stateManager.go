@@ -462,7 +462,7 @@ func (c *StateManager) EmitQueueFresher(doFresh func(p concern_type.Type, id int
 			select {
 			case emitItem, received := <-c.emitChan:
 				if !received {
-					break
+					return
 				}
 				id := emitItem.Id
 				if ok := c.CheckFresh(id, true); !ok {
