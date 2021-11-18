@@ -5,7 +5,7 @@ go 1.16
 require (
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486
-	github.com/Mrs4s/MiraiGo v0.0.0-20211005153339-2cdb7407f907
+	github.com/Mrs4s/MiraiGo v0.0.0-20211114170854-511e8c41edd2
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/alecthomas/kong v0.2.17
@@ -24,7 +24,6 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/tidwall/buntdb v1.2.7
-	github.com/tidwall/gjson v1.11.0 // indirect
 	go.uber.org/atomic v1.9.0
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa // indirect

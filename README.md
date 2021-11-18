@@ -3,8 +3,7 @@
 [<img src="https://github.com/Sora233/DDBOT/actions/workflows/ci.yml/badge.svg"/>](https://github.com/Sora233/DDBOT/actions/workflows/ci.yml)
 [<img src="https://coveralls.io/repos/github/Sora233/DDBOT/badge.svg?branch=master"/>](https://coveralls.io/github/Sora233/DDBOT)
 
-DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送框架， 
-内置支持b站直播/动态，斗鱼直播，YTB直播/预约直播，虎牙直播，ACFUN直播，微博动态，
+DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送框架， 内置支持b站直播/动态，斗鱼直播，YTB直播/预约直播，虎牙直播，ACFUN直播，微博动态，
 也可以通过插件支持任何订阅源。
 
 *DDBOT不是一个聊天机器人。*
@@ -35,7 +34,8 @@ DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送�
 - **ACFUN直播推送**
   - 好像也有一些虚拟主播
 - **微博动态推送**
-- 支持自定义插件，可通过插件支持任意订阅来源。
+- 支持自定义**插件**，可通过插件支持任意订阅来源
+  - 需要写代码
 - 可配置的 **@全体成员**
   - 只建议单推群开启。
 - **倒放**
@@ -179,7 +179,7 @@ DDBOT提供一些可以使用的module：
 |饱受突击的3737民|爱发电|￥168.00|
 |刀光流水|爱发电|￥5.00|
 |爱发电用户_4QBx|爱发电|￥5.00|
-|XDMrSmile_鸟鸟|爱发电|￥30.00|
+|XDMrSmile_鸟鸟|爱发电|￥60.00|
 
 ## 鸣谢
 
