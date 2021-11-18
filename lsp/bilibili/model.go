@@ -24,10 +24,6 @@ func (n *NewsInfo) Site() string {
 	return Site
 }
 
-func (n *NewsInfo) GetUid() interface{} {
-	return n.Mid
-}
-
 func (n *NewsInfo) Type() concern_type.Type {
 	return News
 }
@@ -85,6 +81,10 @@ type UserInfo struct {
 	UserStat *UserStat `json:"-"`
 }
 
+func (ui *UserInfo) GetUid() interface{} {
+	return ui.Mid
+}
+
 func (ui *UserInfo) GetName() string {
 	if ui == nil {
 		return ""
@@ -116,10 +116,6 @@ func (l *LiveInfo) IsLive() bool {
 
 func (l *LiveInfo) Site() string {
 	return Site
-}
-
-func (l *LiveInfo) GetUid() interface{} {
-	return l.Mid
 }
 
 func (l *LiveInfo) Living() bool {

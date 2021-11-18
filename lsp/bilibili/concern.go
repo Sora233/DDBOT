@@ -111,6 +111,7 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 	groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := _id.(int64)
 	selfUid := accountUid.Load()
+	var watchSelf = selfUid != 0 && selfUid == mid
 	var err error
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("mid", mid)
 
@@ -151,13 +152,13 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 	if err != nil {
 		log.Errorf("get UserStat error %v\n", err)
 	} else if userStat != nil {
-		if userStat.Follower == 0 {
+		if !watchSelf && userStat.Follower == 0 {
 			return nil, fmt.Errorf("该用户粉丝数为0，请确认您的订阅目标是否正确，注意使用UID而非直播间ID")
 		}
 		userInfo.UserStat = userStat
 	}
 
-	if selfUid == 0 || mid != selfUid {
+	if !watchSelf {
 		oldCtype, err := c.StateManager.GetConcern(mid)
 		if err != nil {
 			log.Errorf("GetConcern error %v", err)
@@ -215,7 +216,7 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 			"请确认您的订阅目标是否正确，注意使用UID而非直播间ID", userInfo.Name, followerCap))
 	}
 
-	return concern.NewIdentity(mid, userInfo.GetName()), nil
+	return userInfo, nil
 }
 
 func (c *Concern) Remove(ctx mmsg.IMsgCtx,
@@ -259,11 +260,7 @@ func (c *Concern) Remove(ctx mmsg.IMsgCtx,
 }
 
 func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
-	userInfo, err := c.FindUser(id.(int64), false)
-	if err != nil {
-		return nil, err
-	}
-	return concern.NewIdentity(id, userInfo.GetName()), nil
+	return c.FindUser(id.(int64), false)
 }
 
 func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
