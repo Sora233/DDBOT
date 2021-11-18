@@ -1,23 +1,18 @@
 package lsp
 
 import (
-	"errors"
 	"fmt"
-	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
-	"github.com/Sora233/DDBOT/concern"
-	"github.com/Sora233/DDBOT/lsp/bilibili"
-	"github.com/Sora233/DDBOT/lsp/douyu"
-	"github.com/Sora233/DDBOT/lsp/huya"
+	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/parser"
-	"github.com/Sora233/DDBOT/lsp/youtube"
-	"github.com/Sora233/DDBOT/utils"
+	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/alecthomas/kong"
 	"io"
 	"strings"
 )
 
 type Runtime struct {
-	bot *miraiBot.Bot
+	bot *localutils.HackedBot
 	l   *Lsp
 	*parser.Parser
 
@@ -66,68 +61,17 @@ func (r *Runtime) parseCommandSyntax(ast interface{}, name string, options ...ko
 	return ctx, ""
 }
 
-func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, concern.Type, error) {
-	var (
-		site      string
-		_type     string
-		found     bool
-		watchType concern.Type
-		err       error
-	)
-	rawSite = strings.Trim(rawSite, `"`)
-	rawType = strings.Trim(rawType, `"`)
-	site, err = r.ParseRawSite(rawSite)
-	if err != nil {
-		return "", concern.Empty, err
-	}
-	_type, found = utils.PrefixMatch([]string{"live", "news"}, rawType)
-	if !found {
-		return "", concern.Empty, errors.New("不支持的类型参数")
-	}
-
-	switch _type {
-	case "live":
-		if site == bilibili.Site {
-			watchType = concern.BibiliLive
-		} else if site == douyu.Site {
-			watchType = concern.DouyuLive
-		} else if site == youtube.Site {
-			watchType = concern.YoutubeLive
-		} else if site == huya.Site {
-			watchType = concern.HuyaLive
-		} else {
-			return "", concern.Empty, errors.New("不支持的类型参数")
-		}
-	case "news":
-		if site == bilibili.Site {
-			watchType = concern.BilibiliNews
-		} else if site == youtube.Site {
-			watchType = concern.YoutubeVideo
-		} else {
-			return "", concern.Empty, errors.New("不支持的类型参数")
-		}
-	default:
-		return "", concern.Empty, errors.New("不支持的类型参数")
-	}
-	return site, watchType, nil
+func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, concern_type.Type, error) {
+	return concern.ParseRawSiteAndType(rawSite, rawType)
 }
 
 func (r *Runtime) ParseRawSite(rawSite string) (string, error) {
-	var (
-		found bool
-		site  string
-	)
-
-	site, found = utils.PrefixMatch([]string{bilibili.Site, douyu.Site, youtube.Site, huya.Site}, rawSite)
-	if !found {
-		return "", errors.New("不支持的网站参数")
-	}
-	return site, nil
+	return concern.ParseRawSite(rawSite)
 }
 
-func NewRuntime(bot *miraiBot.Bot, l *Lsp, silence ...bool) *Runtime {
+func NewRuntime(l *Lsp, silence ...bool) *Runtime {
 	r := &Runtime{
-		bot:    bot,
+		bot:    localutils.GetBot(),
 		l:      l,
 		Parser: parser.NewParser(),
 	}

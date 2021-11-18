@@ -29,6 +29,4 @@ jobs:
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           goversion: "https://golang.org/dl/go1.16.4.linux-amd64.tar.gz"
-          build_flags: "-tags nocv"
           ldflags: -w -s -X "main.BuildTime=${{ env.BUILD_TIME }}" -X main.CommitId=${{ github.sha }} -X main.Tags=${{ env.Tags }}
-          pre_command: "go mod edit -droprequire gocv.io/x/gocv"

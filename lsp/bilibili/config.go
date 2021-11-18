@@ -1,23 +1,39 @@
 package bilibili
 
 import (
+	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
-	"github.com/Sora233/DDBOT/utils"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"strconv"
 	"strings"
-	"sync/atomic"
 )
 
 type GroupConcernConfig struct {
-	concern_manager.GroupConcernConfig
-	Concern *Concern
+	concern.IConfig
+	concern *Concern
+}
+
+func (g *GroupConcernConfig) Validate() error {
+	if !g.GetGroupConcernFilter().Empty() {
+		switch g.GetGroupConcernFilter().Type {
+		case concern.FilterTypeNotType, concern.FilterTypeType:
+			filterByType, err := g.GetGroupConcernFilter().GetFilterByType()
+			if err != nil {
+				return err
+			}
+			var invalid = CheckTypeDefine(filterByType.Type)
+			if len(invalid) != 0 {
+				return fmt.Errorf("未定义的类型：\n%v", strings.Join(invalid, " "))
+			}
+			return nil
+		}
+	}
+	return g.IConfig.Validate()
 }
 
 func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
-	if inotify.Type() != concern.BilibiliNews {
+	if inotify.Type() != News {
 		return
 	}
 	notify := inotify.(*ConcernNewsNotify)
@@ -25,21 +41,21 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 	case DynamicDescType_WithVideo:
 		// 解决联合投稿的时候刷屏
 		notify.compactKey = notify.Card.GetDesc().GetBvid()
-		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
+		err := g.concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	case DynamicDescType_WithOrigin:
 		// 解决一起转发的时候刷屏
 		notify.compactKey = notify.Card.GetDesc().GetOrigDyIdStr()
-		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
+		err := g.concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	default:
 		// 其他动态也设置一下
 		notify.compactKey = notify.Card.GetDesc().GetDynamicIdStr()
-		err := g.Concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
+		err := g.concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
 		if err != nil && !localdb.IsRollback(err) {
 			logger.Errorf("SetGroupOriginMarkIfNotExist error %v", err)
 		}
@@ -47,74 +63,30 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 }
 
 func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, msg *message.GroupMessage) {
-	if inotify.Type() != concern.BilibiliNews || msg == nil || msg.Id == -1 {
+	if inotify.Type() != News || msg == nil || msg.Id == -1 {
 		return
 	}
 	notify := inotify.(*ConcernNewsNotify)
 	if notify.shouldCompact || len(notify.compactKey) == 0 {
 		return
 	}
-	err := g.Concern.SetNotifyMsg(notify.compactKey, msg)
+	err := g.concern.SetNotifyMsg(notify.compactKey, msg)
 	if err != nil && !localdb.IsRollback(err) {
 		notify.Logger().Errorf("set notify msg error %v", err)
 	}
 }
 
-func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern_manager.HookResult) {
-	hook = new(concern_manager.HookResult)
-	if g.Concern != nil && atomic.LoadInt32(&g.Concern.unsafeStart) != 0 {
-		hook.Reason = "unsafe start status"
+func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.HookResult) {
+	hook = new(concern.HookResult)
+	if g.concern != nil && g.concern.unsafeStart.Load() {
+		hook.Reason = "bilibili unsafe start status"
 		return
 	}
-	switch e := notify.(type) {
-	case *ConcernLiveNotify:
-		if !e.Living() {
-			hook.Reason = "Living() is false"
-		} else if !notify.(*ConcernLiveNotify).LiveStatusChanged {
-			hook.Reason = "Living() ok but LiveStatusChanged is false"
-		} else {
-			hook.Pass = true
-		}
-	case *ConcernNewsNotify:
-		hook.Pass = true
-	default:
-		hook.Reason = "default"
-	}
-	return
+	return g.IConfig.AtBeforeHook(notify)
 }
 
-func (g *GroupConcernConfig) ShouldSendHook(notify concern.Notify) (hook *concern_manager.HookResult) {
-	hook = new(concern_manager.HookResult)
-	switch e := notify.(type) {
-	case *ConcernLiveNotify:
-		if e.Living() {
-			if e.LiveStatusChanged {
-				// 上播了
-				hook.Pass = true
-				return
-			}
-			if e.LiveTitleChanged {
-				// 直播间标题改了，检查改标题推送配置
-				hook.PassOrReason(g.GroupConcernNotify.CheckTitleChangeNotify(notify.Type()), "CheckTitleChangeNotify is false")
-				return
-			}
-		} else {
-			if e.LiveStatusChanged {
-				// 下播了，检查下播推送配置
-				hook.PassOrReason(g.GroupConcernNotify.CheckOfflineNotify(notify.Type()), "CheckOfflineNotify is false")
-				return
-			}
-		}
-		return g.GroupConcernConfig.ShouldSendHook(notify)
-	case *ConcernNewsNotify:
-		hook.Pass = true
-		return
-	}
-	return g.GroupConcernConfig.ShouldSendHook(notify)
-}
-
-func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concern_manager.HookResult) {
-	hook = new(concern_manager.HookResult)
+func (g *GroupConcernConfig) FilterHook(notify concern.Notify) (hook *concern.HookResult) {
+	hook = new(concern.HookResult)
 	switch n := notify.(type) {
 	case *ConcernLiveNotify:
 		hook.Pass = true
@@ -127,38 +99,17 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 		}
 
 		// 没设置过滤，pass
-		if g.GroupConcernFilter.Empty() {
+		if g.GetGroupConcernFilter().Empty() {
 			hook.Pass = true
 			return
 		}
 
-		logger := notify.Logger().WithField("FilterType", g.GroupConcernFilter.Type)
-		switch g.GroupConcernFilter.Type {
-		case concern_manager.FilterTypeText:
-			textFilter, err := g.GroupConcernFilter.GetFilterByText()
+		logger := notify.Logger().WithField("FilterType", g.GetGroupConcernFilter().Type)
+		switch g.GetGroupConcernFilter().Type {
+		case concern.FilterTypeType, concern.FilterTypeNotType:
+			typeFilter, err := g.GetGroupConcernFilter().GetFilterByType()
 			if err != nil {
-				logger.WithField("GroupConcernTextFilter", g.GroupConcernFilter.Config).
-					Errorf("get text filter error %v", err)
-				hook.Pass = true
-			} else {
-				for _, text := range textFilter.Text {
-					if strings.Contains(utils.MsgToString(notify.ToMessage()), text) {
-						hook.Pass = true
-						break
-					}
-				}
-				if !hook.Pass {
-					logger.WithField("TextFilter", textFilter.Text).
-						Debug("news notify filtered by textFilter")
-					hook.Reason = "TextFilter All pattern match failed"
-				} else {
-					logger.Debugf("news notify NewsFilterHook pass")
-				}
-			}
-		case concern_manager.FilterTypeType, concern_manager.FilterTypeNotType:
-			typeFilter, err := g.GroupConcernFilter.GetFilterByType()
-			if err != nil {
-				logger.WithField("GroupConcernFilterConfig", g.GroupConcernFilter.Config).
+				logger.WithField("GroupConcernFilterConfig", g.GetGroupConcernFilter().Config).
 					Errorf("get type filter error %v", err)
 				hook.Pass = true
 			} else {
@@ -174,8 +125,8 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 				}
 
 				var ok bool
-				switch g.GroupConcernFilter.Type {
-				case concern_manager.FilterTypeType:
+				switch g.GetGroupConcernFilter().Type {
+				case concern.FilterTypeType:
 					ok = false
 					for _, tp := range convTypes {
 						if n.Card.GetDesc().GetType() == tp {
@@ -183,7 +134,7 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 							break
 						}
 					}
-				case concern_manager.FilterTypeNotType:
+				case concern.FilterTypeNotType:
 					ok = true
 					for _, tp := range convTypes {
 						if n.Card.GetDesc().GetType() == tp {
@@ -193,16 +144,16 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 					}
 				}
 				if ok {
-					logger.Debugf("news notify NewsFilterHook pass")
+					logger.Debugf("news notify FilterHook pass")
 					hook.Pass = true
 				} else {
 					logger.WithField("TypeFilter", convTypes).
-						Debug("news notify NewsFilterHook filtered")
+						Debug("news notify FilterHook filtered")
 					hook.Reason = "filtered by TypeFilter"
 				}
 			}
 		default:
-			hook.Reason = "unknown filter type"
+			hook = g.IConfig.FilterHook(notify)
 		}
 		return
 	default:
@@ -211,8 +162,8 @@ func (g *GroupConcernConfig) NewsFilterHook(notify concern.Notify) (hook *concer
 	}
 }
 
-func NewGroupConcernConfig(g *concern_manager.GroupConcernConfig, c *Concern) *GroupConcernConfig {
-	return &GroupConcernConfig{*g, c}
+func NewGroupConcernConfig(g concern.IConfig, c *Concern) *GroupConcernConfig {
+	return &GroupConcernConfig{g, c}
 }
 
 const (

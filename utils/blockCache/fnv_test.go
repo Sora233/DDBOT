@@ -10,4 +10,6 @@ func TestSum32(t *testing.T) {
 	_, err := s.Write([]byte("qwertyuio"))
 	assert.Nil(t, err)
 	s.Sum32()
+	s.Reset()
+	s.Size()
 }

@@ -1,7 +1,8 @@
 package douyu
 
 import (
-	"context"
+	"bytes"
+	"errors"
 	"fmt"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
@@ -15,29 +16,29 @@ const (
 )
 
 func Betard(id int64) (*BetardResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
 		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
 	url := DouyuPath(PathBetard) + fmt.Sprintf("/%v", id)
-	resp, err := requests.Get(ctx, url, nil, 3, requests.ProxyOption(proxy_pool.PreferNone))
+	var opts = []requests.Option{
+		requests.ProxyOption(proxy_pool.PreferNone),
+		requests.TimeoutOption(time.Second * 10),
+		requests.RetryOption(3),
+	}
+	var body = new(bytes.Buffer)
+	err := requests.Get(url, nil, body, opts...)
 	if err != nil {
 		return nil, err
 	}
 	betardResp := new(BetardResponse)
-	content, err := resp.Content()
+	err = json.Unmarshal(body.Bytes(), betardResp)
 	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(content, betardResp)
-	if err != nil {
-		if strings.Contains(string(content), "没有开放") {
-			return nil, ErrRoomNotExist
+		if strings.Contains(body.String(), "没有开放") {
+			return nil, errors.New("房间不存在")
 		}
-		if strings.Contains(string(content), "已被关闭") {
+		if strings.Contains(body.String(), "已被关闭") {
 			return nil, ErrRoomBanned
 		}
 		return nil, err

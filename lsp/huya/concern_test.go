@@ -1,8 +1,10 @@
 package huya
 
 import (
-	"github.com/Sora233/DDBOT/concern"
-	"github.com/Sora233/DDBOT/lsp/test"
+	"context"
+	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -11,40 +13,67 @@ import (
 const testRoom = "s"
 
 func TestConcern(t *testing.T) {
+	logrus.SetLevel(logrus.TraceLevel)
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 
-	testChan := make(chan concern.Notify)
+	testEventChan := make(chan concern.Event, 16)
+	testNotifyChan := make(chan concern.Notify)
 
-	c := NewConcern(testChan)
-	c.StateManager = initStateManager(t)
+	c := NewConcern(testNotifyChan)
+
+	assert.NotNil(t, c.GetStateManager())
+
+	_, err := c.ParseId(testRoom)
+	assert.Nil(t, err)
+
+	c.StateManager.UseNotifyGeneratorFunc(c.notifyGenerator())
+	c.StateManager.UseFreshFunc(func(ctx context.Context, eventChan chan<- concern.Event) {
+		for {
+			select {
+			case e := <-testEventChan:
+				if e != nil {
+					eventChan <- e
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	})
+
+	assert.Nil(t, c.StateManager.Start())
 	defer c.Stop()
+	defer close(testEventChan)
 
-	go c.notifyLoop()
-
-	_, err := c.Add(test.G1, testRoom, concern.HuyaLive)
+	_, err = c.Add(nil, test.G1, testRoom, Live)
 	assert.Nil(t, err)
 
-	liveInfoes, _, err := c.ListWatching(test.G1, concern.HuyaLive)
+	identityInfo, err := c.Get(testRoom)
 	assert.Nil(t, err)
-	assert.Len(t, liveInfoes, 1)
-	liveInfo := liveInfoes[0]
+	assert.EqualValues(t, testRoom, identityInfo.GetUid())
+
+	info, err := c.Get(testRoom)
+	assert.Nil(t, err)
 
 	liveInfo2, err := c.FindOrLoadRoom(testRoom)
 	assert.Nil(t, err)
 	assert.NotNil(t, liveInfo2)
-	assert.EqualValues(t, liveInfo, liveInfo2)
+	assert.EqualValues(t, info.GetUid(), liveInfo2.RoomId)
+	assert.EqualValues(t, info.GetName(), liveInfo2.GetName())
 
-	liveInfo.LiveStatusChanged = true
-	liveInfo.Living = true
+	liveInfo2.liveStatusChanged = true
+	liveInfo2.IsLiving = true
 
-	c.eventChan <- liveInfo
+	testEventChan <- liveInfo2
 
 	select {
-	case notify := <-testChan:
+	case notify := <-testNotifyChan:
 		assert.Equal(t, test.G1, notify.GetGroupCode())
 		assert.Equal(t, testRoom, notify.GetUid())
 	case <-time.After(time.Second):
 		assert.Fail(t, "no notify received")
 	}
+
+	_, err = c.Remove(nil, test.G1, testRoom, Live)
+	assert.Nil(t, err)
 }

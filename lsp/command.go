@@ -17,7 +17,6 @@ const (
 	HuangtuCommand = "黄图"
 	EnableCommand  = "enable"
 	DisableCommand = "disable"
-	FaceCommand    = "face"
 	ReverseCommand = "倒放"
 	HelpCommand    = "help"
 	ConfigCommand  = "config"
@@ -33,7 +32,7 @@ const (
 	QuitCommand          = "quit"
 	ModeCommand          = "mode"
 	GroupRequestCommand  = "群邀请"
-	FriendRequestCommand = "好友请求"
+	FriendRequestCommand = "好友申请"
 	AdminCommand         = "admin"
 	SilenceCommand       = "silence"
 )
@@ -43,7 +42,7 @@ var allGroupCommand = [...]string{
 	LspCommand, WatchCommand, UnwatchCommand,
 	ListCommand, SetuCommand, HuangtuCommand,
 	EnableCommand, DisableCommand,
-	FaceCommand, ReverseCommand, ConfigCommand,
+	ReverseCommand, ConfigCommand,
 	HelpCommand, ScoreCommand, AdminCommand,
 	SilenceCommand,
 }

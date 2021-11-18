@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/utils"
 	"strings"
@@ -16,8 +15,14 @@ type Parser struct {
 
 func (p *Parser) Parse(e []message.IMessageElement) {
 	if len(e) > 0 {
-		if at, ok := e[0].(*message.AtElement); ok {
-			p.AtTarget = at.Target
+		var atElem *message.AtElement
+		if e[0].Type() == message.At {
+			atElem, _ = e[0].(*message.AtElement)
+		} else if e[0].Type() == message.Reply && len(e) > 1 && e[1].Type() == message.At {
+			atElem, _ = e[1].(*message.AtElement)
+		}
+		if atElem != nil {
+			p.AtTarget = atElem.Target
 		}
 	}
 	for _, element := range e {
@@ -53,10 +58,10 @@ func (p *Parser) GetCmdArgs() []string {
 }
 
 func (p *Parser) AtCheck() bool {
-	if bot.Instance == nil || p.AtTarget == 0 {
+	if p.AtTarget == 0 {
 		return true
 	}
-	return p.AtTarget == bot.Instance.Uin
+	return p.AtTarget == utils.GetBot().GetUin()
 }
 
 func NewParser() *Parser {

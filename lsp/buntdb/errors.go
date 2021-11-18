@@ -1,6 +1,9 @@
 package buntdb
 
-import "errors"
+import (
+	"errors"
+	"github.com/tidwall/buntdb"
+)
 
 var (
 	ErrKeyExist       = errors.New("key exist")
@@ -10,4 +13,8 @@ var (
 
 func IsRollback(e error) bool {
 	return e != nil && e.Error() == ErrRollback.Error()
+}
+
+func IsNotFound(e error) bool {
+	return e == buntdb.ErrNotFound
 }

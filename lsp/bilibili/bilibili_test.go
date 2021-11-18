@@ -47,4 +47,14 @@ func TestCookieInfo(t *testing.T) {
 	SetAccount("a", "b")
 	assert.True(t, IsVerifyGiven())
 	SetAccount("", "")
+
+	_, err := freshAccountCookieInfo()
+	assert.NotNil(t, err)
+}
+
+func TestSetVerify(t *testing.T) {
+	defer atomicVerifyInfo.Store(new(VerifyInfo))
+
+	SetVerify("wrong", "wrong")
+	assert.EqualValues(t, "wrong", GetVerifyBiliJct())
 }

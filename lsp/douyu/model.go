@@ -1,8 +1,8 @@
 package douyu
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/concern"
+	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
@@ -17,8 +17,28 @@ type LiveInfo struct {
 	VideoLoop  VideoLoopStatus `json:"videoLoop"`
 	Avatar     *Avatar         `json:"avatar"`
 
-	LiveStatusChanged bool `json:"-"`
-	LiveTitleChanged  bool `json:"-"`
+	liveStatusChanged bool
+	liveTitleChanged  bool
+}
+
+func (m *LiveInfo) TitleChanged() bool {
+	return m.liveTitleChanged
+}
+
+func (m *LiveInfo) LiveStatusChanged() bool {
+	return m.liveStatusChanged
+}
+
+func (m *LiveInfo) IsLive() bool {
+	return true
+}
+
+func (m *LiveInfo) Site() string {
+	return Site
+}
+
+func (m *LiveInfo) GetUid() interface{} {
+	return m.RoomId
 }
 
 func (m *LiveInfo) ToString() string {
@@ -36,7 +56,7 @@ func (m *LiveInfo) Living() bool {
 	return m.ShowStatus == ShowStatus_Living && m.VideoLoop == VideoLoopStatus_Off
 }
 
-func (m *LiveInfo) Type() EventType {
+func (m *LiveInfo) Type() concern_type.Type {
 	return Live
 }
 
@@ -91,7 +111,7 @@ func (m *LiveInfo) GetAvatar() *Avatar {
 
 func (m *LiveInfo) GetLiveStatusChanged() bool {
 	if m != nil {
-		return m.LiveStatusChanged
+		return m.LiveStatusChanged()
 	}
 	return false
 }
@@ -111,32 +131,19 @@ type ConcernLiveNotify struct {
 	GroupCode int64 `json:"group_code"`
 }
 
-func (notify *ConcernLiveNotify) Type() concern.Type {
-	return concern.DouyuLive
-}
 func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 	return notify.GroupCode
 }
-func (notify *ConcernLiveNotify) GetUid() interface{} {
-	return notify.RoomId
-}
 
-func (notify *ConcernLiveNotify) ToMessage() []message.IMessageElement {
-	log := notify.Logger()
-	var result []message.IMessageElement
-	switch notify.ShowStatus {
-	case ShowStatus_Living:
-		result = append(result, localutils.MessageTextf("斗鱼-%s正在直播【%v】\n%v", notify.Nickname, notify.RoomName, notify.RoomUrl))
-	case ShowStatus_NoLiving:
-		result = append(result, localutils.MessageTextf("斗鱼-%s直播结束了", notify.Nickname))
-	}
-	cover, err := localutils.UploadGroupImageByUrl(notify.GroupCode, notify.GetAvatar().GetBig(), false, proxy_pool.PreferNone)
-	if err != nil {
-		log.WithField("Avatar", notify.GetAvatar().GetBig()).Errorf("upload avatar failed %v", err)
+func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
+	m = mmsg.NewMSG()
+	if notify.Living() {
+		m.Textf("斗鱼-%s正在直播【%v】\n%v", notify.Nickname, notify.RoomName, notify.RoomUrl)
 	} else {
-		result = append(result, cover)
+		m.Textf("斗鱼-%s直播结束了", notify.Nickname)
 	}
-	return result
+	m.ImageByUrl(notify.GetAvatar().GetBig(), "[封面]", proxy_pool.PreferNone)
+	return m
 }
 
 func (notify *ConcernLiveNotify) Logger() *logrus.Entry {

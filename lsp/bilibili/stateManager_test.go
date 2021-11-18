@@ -3,8 +3,8 @@ package bilibili
 import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/DDBOT/internal/test"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
 	"testing"
@@ -12,10 +12,9 @@ import (
 )
 
 func initStateManager(t *testing.T) *StateManager {
-	sm := NewStateManager()
+	sm := NewStateManager(NewConcern(nil))
 	assert.NotNil(t, sm)
 	sm.FreshIndex(test.G1, test.G2)
-	assert.Nil(t, sm.Start())
 	return sm
 }
 
@@ -25,6 +24,7 @@ func TestNewStateManager(t *testing.T) {
 
 	sm := initStateManager(t)
 	assert.NotNil(t, sm)
+	assert.NotNil(t, sm.GetGroupConcernConfig(test.G1, test.UID1))
 }
 
 func TestStateManager_GetUserInfo(t *testing.T) {
@@ -166,6 +166,12 @@ func TestStateManager_IncNotLiveCount(t *testing.T) {
 
 	c := initStateManager(t)
 
+	assert.Nil(t, c.Set(c.NotLiveKey(test.UID1), "wrong"))
+	assert.EqualValues(t, 0, c.IncNotLiveCount(test.UID1))
+
+	_, err := c.Delete(c.NotLiveKey(test.UID1))
+	assert.Nil(t, err)
+
 	assert.EqualValues(t, 1, c.IncNotLiveCount(test.UID1))
 	assert.EqualValues(t, 2, c.IncNotLiveCount(test.UID1))
 	assert.EqualValues(t, 3, c.IncNotLiveCount(test.UID1))
@@ -298,15 +304,15 @@ func TestStateManager_GetUserStat(t *testing.T) {
 	userStat, err := c.GetUserStat(test.UID1)
 	assert.NotNil(t, err)
 
-	assert.NotNil(t, c.AddUserStat(nil, nil))
+	assert.NotNil(t, c.AddUserStat(nil, 0))
 
 	userStat = NewUserStat(test.UID1, 1, 2)
 
-	assert.Nil(t, c.AddUserStat(userStat, localdb.ExpireOption(time.Hour)))
+	assert.Nil(t, c.AddUserStat(userStat, time.Hour))
 
 	userStat = NewUserStat(test.UID2, 3, 4)
 
-	assert.Nil(t, c.AddUserStat(userStat, localdb.ExpireOption(time.Hour)))
+	assert.Nil(t, c.AddUserStat(userStat, time.Hour))
 
 	userStat, err = c.GetUserStat(test.UID1)
 

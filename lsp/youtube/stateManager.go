@@ -2,27 +2,22 @@ package youtube
 
 import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
-	"github.com/tidwall/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"time"
 )
 
 type StateManager struct {
-	*concern_manager.StateManager
+	*concern.StateManager
 	*extraKey
 }
 
 func (s *StateManager) AddInfo(info *Info) error {
-	return s.RWCoverTx(func(tx *buntdb.Tx) error {
-		infoKey := s.InfoKey(info.ChannelId)
-		_, _, err := tx.Set(infoKey, info.ToString(), localdb.ExpireOption(time.Hour*24*7))
-		return err
-	})
+	return s.SetJson(s.InfoKey(info.ChannelId), info, localdb.SetExpireOpt(time.Hour*24*7))
 }
 
 func (s *StateManager) GetInfo(channelId string) (*Info, error) {
 	info := new(Info)
-	err := s.JsonGet(s.InfoKey(channelId), info)
+	err := s.GetJson(s.InfoKey(channelId), info)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +25,8 @@ func (s *StateManager) GetInfo(channelId string) (*Info, error) {
 }
 
 func (s *StateManager) GetVideo(channelId string, videoId string) (*VideoInfo, error) {
-	var v = new(VideoInfo)
-	err := s.JsonGet(s.VideoKey(channelId, videoId), v)
+	var v *VideoInfo
+	err := s.GetJson(s.VideoKey(channelId, videoId), &v)
 	if err != nil {
 		return nil, err
 	}
@@ -39,27 +34,17 @@ func (s *StateManager) GetVideo(channelId string, videoId string) (*VideoInfo, e
 }
 
 func (s *StateManager) AddVideo(v *VideoInfo) error {
-	return s.RWCoverTx(func(tx *buntdb.Tx) error {
-		key := s.VideoKey(v.ChannelId, v.VideoId)
-		b, err := json.Marshal(v)
-		if err != nil {
-			return err
-		}
-		_, _, err = tx.Set(key, string(b), localdb.ExpireOption(time.Hour*24))
-		return err
-	})
+	return s.SetJson(s.VideoKey(v.ChannelId, v.VideoId), v, localdb.SetExpireOpt(time.Hour*24))
 }
 
-func (s *StateManager) Start() error {
-	for _, pattern := range []localdb.KeyPatternFunc{s.GroupConcernStateKey, s.UserInfoKey, s.FreshKey} {
-		s.CreatePatternIndex(pattern, nil)
-	}
-	return s.StateManager.Start()
+func (s *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(s.StateManager.GetGroupConcernConfig(groupCode, id))
 }
 
-func NewStateManager() *StateManager {
+func NewStateManager(notify chan<- concern.Notify) *StateManager {
 	sm := new(StateManager)
 	sm.extraKey = NewExtraKey()
-	sm.StateManager = concern_manager.NewStateManager(NewKeySet(), true)
+	sm.StateManager = concern.NewStateManagerWithCustomKey(Site, NewKeySet(), notify)
+	sm.UseEmitQueue()
 	return sm
 }

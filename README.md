@@ -3,7 +3,8 @@
 [<img src="https://github.com/Sora233/DDBOT/actions/workflows/ci.yml/badge.svg"/>](https://github.com/Sora233/DDBOT/actions/workflows/ci.yml)
 [<img src="https://coveralls.io/repos/github/Sora233/DDBOT/badge.svg?branch=master"/>](https://coveralls.io/github/Sora233/DDBOT)
 
-DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送机器人，支持b站直播/动态，斗鱼直播，YTB直播/预约直播，虎牙直播。
+DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送框架， 内置支持b站直播/动态，斗鱼直播，YTB直播/预约直播，虎牙直播，ACFUN直播，微博动态，
+也可以通过插件支持任何订阅源。
 
 *DDBOT不是一个聊天机器人。*
 
@@ -21,29 +22,32 @@ DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送�
 ## **基本功能：**
 
 - **B站直播/动态推送**
-    - 让阁下在DD的时候不错过任何一场突击。
-    - 支持按关键字过滤，只推送有关键字的动态。
-    - 支持按动态类型过滤，例如：不推送转发的动态，只推送视频/专栏投稿，只推动带图片的动态等等。
+  - 让阁下在DD的时候不错过任何一场突击。
+  - 支持按关键字过滤，只推送有关键字的动态。
+  - 支持按动态类型过滤，例如：不推送转发的动态，只推送视频/专栏投稿，只推动带图片的动态等等。
 - **斗鱼直播推送**
-    - 没什么用，主要用来看爽哥。
+  - 没什么用，主要用来看爽哥。
 - **油管直播/视频推送**
-    - 支持推送预约直播信息及视频更新。
-- **虎牙直播推送** *新增*
-    - 不知道能看谁。
-- 可配置的 **@全体成员** *新增*
-    - 只建议单推群开启。
-- **人脸识别**
-    - 主要用来玩，支持二次元人脸。
+  - 支持推送预约直播信息及视频更新。
+- **虎牙直播推送**
+  - 不知道能看谁。
+- **ACFUN直播推送**
+  - 好像也有一些虚拟主播
+- **微博动态推送**
+- 支持自定义**插件**，可通过插件支持任意订阅来源
+  - 需要写代码
+- 可配置的 **@全体成员**
+  - 只建议单推群开启。
 - **倒放**
-    - 主要用来玩。
+  - 主要用来玩。
 - **Roll**
-    - 没什么用的roll点。
+  - 没什么用的roll点。
 - **签到**
-    - 没什么用的签到。
+  - 没什么用的签到。
 - **权限管理**
-    - 可配置整个命令的启用和禁用，也可对单个用户配置命令权限，防止滥用。
+  - 可配置整个命令的启用和禁用，也可对单个用户配置命令权限，防止滥用。
 - **帮助**
-    - 输出一些没什么帮助的信息。
+  - 输出一些没什么帮助的信息。
 
 <details>
   <summary>里命令</summary>
@@ -51,7 +55,7 @@ DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送�
 以下命令默认禁用，使用enable命令后才能使用
 
 - **随机图片**
-    - 由 [api.olicon.app](https://api.lolicon.app/#/) 提供
+  - 由 [api.olicon.app](https://api.lolicon.app/#/) 提供
 
 </details>
 
@@ -104,14 +108,17 @@ DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送�
 
 请参考[更新文档](/UPDATE.md)。
 
-NOTE：DDBOT正在进行重构，目前已经支持为DDBOT编写插件，来支持新的网站和订阅类型，如果您对此有兴趣，请查看[开发版本](https://github.com/Sora233/DDBOT/tree/refactor/concern#%E5%A2%9E%E5%8A%A0%E6%8E%A8%E9%80%81%E6%9D%A5%E6%BA%90)
-。
-
-**警告：开发版本目前尚处于实验阶段，无法兼容稳定版本，稳定版本下的订阅无法迁移到开发版本，如果您之前运行了稳定版本，请注意备份数据。**
-
 ## 常见问题FAQ
 
 提问前请先查看[FAQ文档](/FAQ.md)，如果仍然未能解决，请咨询唯一指定交流群。
+
+## 来增加推送来源 （为DDBOT编写插件）
+
+DDBOT可以作为一个通用的QQ推送框架来使用。
+
+您可以通过为DDBOT编写插件，DDBOT会为您完成大部分工作，您只需要实现少量代码，就能支持一个新的来源。
+
+如果您对此有兴趣，请参考[框架文档](/FRAMEWORK.md)。
 
 ## 注意事项
 

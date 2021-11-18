@@ -128,7 +128,17 @@ func TestKeys(t *testing.T) {
 	GroupInvitedKey()
 	VersionKey()
 	BilibiliLastFreshKey()
+	AcfunLiveInfoKey()
+	AcfunNotLiveKey()
+	AcfunUidFirstTimestampKey()
+	AcfunUserInfoKey()
+	WeiboMarkMblogIdKey()
+	WeiboNewsInfoKey()
+	WeiboUserInfoKey()
 	assert.Panics(t, func() {
 		BilibiliGroupConcernStateKey(&struct{}{})
+	})
+	assert.Panics(t, func() {
+		Key(nil)
 	})
 }

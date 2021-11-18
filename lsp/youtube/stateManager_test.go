@@ -1,15 +1,15 @@
 package youtube
 
 import (
-	"github.com/Sora233/DDBOT/lsp/test"
+	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func initStateManager(t *testing.T) *StateManager {
-	sm := NewStateManager()
+	sm := NewStateManager(nil)
 	assert.NotNil(t, sm)
-	assert.Nil(t, sm.Start())
+	sm.FreshIndex(test.G1, test.G2)
 	return sm
 }
 
@@ -27,6 +27,9 @@ func TestStateManager_GetInfo(t *testing.T) {
 
 	sm := initStateManager(t)
 	assert.NotNil(t, sm)
+
+	_, err := sm.GetInfo(test.NAME1)
+	assert.NotNil(t, err)
 
 	expected := &Info{
 		UserInfo: UserInfo{

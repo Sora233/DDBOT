@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/requests"
+	"github.com/Sora233/DDBOT/requests"
+	"net/http"
 )
 
-// https://github.com/jhao104/proxy_pool
+// ProxyPool is https://github.com/jhao104/proxy_pool
 type ProxyPool struct {
 	Host string
 }
@@ -35,12 +36,8 @@ func (pool *ProxyPool) Get(prefer proxy_pool.Prefer) (proxy_pool.IProxy, error) 
 	if pool == nil {
 		return nil, errors.New("<nil>")
 	}
-	resp, err := requests.Get(fmt.Sprintf("%v/get", pool.Host))
-	if err != nil {
-		return nil, err
-	}
 	getResp := new(GetResponse)
-	err = resp.Json(getResp)
+	err := requests.Get(fmt.Sprintf("%v/get", pool.Host), nil, getResp)
 	if err != nil {
 		return nil, err
 	}
@@ -60,12 +57,8 @@ func (pool *ProxyPool) Delete(proxy string) bool {
 	if pool == nil {
 		return false
 	}
-	resp, err := requests.Get(fmt.Sprintf("%v/delete?proxy=%v", pool.Host, proxy))
-	if err != nil {
-		return false
-	}
 	deleteResp := new(DeleteResponse)
-	err = resp.Json(deleteResp)
+	err := requests.Get(fmt.Sprintf("%v/delete?proxy=%v", pool.Host, proxy), nil, deleteResp)
 	if err != nil {
 		return false
 	}
@@ -78,13 +71,13 @@ func (pool *ProxyPool) Stop() error {
 
 func NewPYProxyPool(host string) (*ProxyPool, error) {
 	pool := &ProxyPool{Host: host}
-	resp, err := requests.Get(pool.Host)
+	var code int
+	err := requests.Get(pool.Host, nil, requests.HttpCodeOption(&code))
 	if err != nil {
 		return nil, err
 	}
-	resp.Content()
-	if resp.R.StatusCode != 200 {
-		return nil, errors.New(resp.R.Status)
+	if code != 200 {
+		return nil, errors.New(http.StatusText(code))
 	}
 	return pool, nil
 }

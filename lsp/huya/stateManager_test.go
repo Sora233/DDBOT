@@ -1,16 +1,15 @@
 package huya
 
 import (
-	"github.com/Sora233/DDBOT/lsp/test"
+	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func initStateManager(t *testing.T) *StateManager {
-	sm := NewStateManager()
+	sm := NewStateManager(nil)
 	assert.NotNil(t, sm)
 	sm.FreshIndex(test.G1, test.G2)
-	assert.Nil(t, sm.Start())
 	return sm
 }
 
@@ -28,6 +27,8 @@ func TestStateManager_GetLiveInfo(t *testing.T) {
 
 	sm := initStateManager(t)
 	assert.NotNil(t, sm)
+
+	assert.NotNil(t, sm.GetGroupConcernConfig(test.G1, test.NAME1))
 
 	expected := &LiveInfo{
 		RoomId:   test.NAME1,

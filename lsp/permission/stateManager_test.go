@@ -1,7 +1,7 @@
 package permission
 
 import (
-	"github.com/Sora233/DDBOT/lsp/test"
+	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -52,21 +52,14 @@ func TestStateManager_CheckGroupCommandFunc(t *testing.T) {
 	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
 	assert.True(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
 
-	assert.Nil(t, c.EnableGroupCommand(test.G1, test.CMD1, ExpireOption(time.Millisecond*100)))
+	assert.Nil(t, c.EnableGroupCommand(test.G1, test.CMD1))
 	assert.True(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
 	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
 
-	time.Sleep(time.Millisecond * 150)
-	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
-	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
-
-	assert.Nil(t, c.DisableGroupCommand(test.G1, test.CMD1, ExpireOption(time.Millisecond*100)))
+	assert.Nil(t, c.DisableGroupCommand(test.G1, test.CMD1))
 	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
 	assert.True(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
 
-	time.Sleep(time.Millisecond * 150)
-	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
-	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
 }
 
 func TestStateManager_CheckGlobalCommandFunc(t *testing.T) {
@@ -84,10 +77,7 @@ func TestStateManager_CheckGlobalCommandFunc(t *testing.T) {
 	assert.False(t, c.CheckGlobalCommandDisabled(test.CMD1))
 	assert.Nil(t, c.GlobalDisableGroupCommand(test.CMD1))
 
-	assert.Nil(t, c.GlobalEnableGroupCommand(test.CMD1, ExpireOption(time.Millisecond*100)))
-
-	time.Sleep(time.Millisecond * 150)
-	assert.False(t, c.CheckGlobalCommandDisabled(test.CMD1))
+	assert.Nil(t, c.GlobalEnableGroupCommand(test.CMD1))
 
 	assert.Nil(t, c.GlobalDisableGroupCommand(test.CMD1))
 	assert.Equal(t, ErrGlobalDisabled, c.EnableGroupCommand(test.G1, test.CMD1))
@@ -108,12 +98,16 @@ func TestStateManager_CheckRole(t *testing.T) {
 	defer test.CloseBuntdb(t)
 	c := initStateManager(t)
 
+	assert.False(t, c.CheckRole(test.UID1, RoleType(-1)))
+	assert.False(t, c.CheckGroupRole(test.UID1, test.G1, RoleType(-1)))
+
 	adminOpt1 := AdminRoleRequireOption(test.UID1)
 	adminOpt2 := AdminRoleRequireOption(test.UID2)
 	assert.False(t, adminOpt1.Validate(c))
 	assert.False(t, adminOpt2.Validate(c))
 	assert.False(t, c.RequireAny(adminOpt1, adminOpt2))
 
+	assert.NotNil(t, c.GrantRole(test.UID2, RoleType(-1)))
 	assert.Nil(t, c.GrantRole(test.UID2, Admin))
 	assert.False(t, adminOpt1.Validate(c))
 	assert.True(t, adminOpt2.Validate(c))
@@ -121,6 +115,7 @@ func TestStateManager_CheckRole(t *testing.T) {
 
 	assert.NotNil(t, c.GrantRole(test.UID2, Admin))
 
+	assert.NotNil(t, c.UngrantRole(test.UID2, RoleType(-1)))
 	assert.Nil(t, c.UngrantRole(test.UID2, Admin))
 
 	assert.False(t, adminOpt1.Validate(c))
@@ -141,11 +136,13 @@ func TestStateManager_CheckGroupRole(t *testing.T) {
 	assert.False(t, gadminOpt2.Validate(c))
 	assert.False(t, c.RequireAny(gadminOpt1, gadminOpt2))
 
+	assert.NotNil(t, c.GrantGroupRole(test.G2, test.UID1, RoleType(-1)))
 	assert.Nil(t, c.GrantGroupRole(test.G2, test.UID1, GroupAdmin))
 	assert.False(t, gadminOpt1.Validate(c))
 	assert.True(t, gadminOpt2.Validate(c))
 	assert.True(t, c.RequireAny(gadminOpt1, gadminOpt2))
 
+	assert.NotNil(t, c.GrantGroupRole(test.G2, test.UID1, RoleType(-1)))
 	assert.NotNil(t, c.GrantGroupRole(test.G2, test.UID1, GroupAdmin))
 
 	assert.Nil(t, c.UngrantGroupRole(test.G2, test.UID1, GroupAdmin))
@@ -153,6 +150,7 @@ func TestStateManager_CheckGroupRole(t *testing.T) {
 	assert.False(t, gadminOpt2.Validate(c))
 	assert.False(t, c.RequireAny(gadminOpt1, gadminOpt2))
 
+	assert.NotNil(t, c.UngrantGroupRole(test.G2, test.UID1, RoleType(-1)))
 	assert.NotNil(t, c.UngrantGroupRole(test.G2, test.UID1, GroupAdmin))
 }
 
@@ -286,4 +284,7 @@ func TestStateManager_CheckGroupSilence(t *testing.T) {
 	assert.Nil(t, c.GlobalSilence())
 	assert.True(t, c.CheckGroupSilence(test.G1))
 	assert.True(t, c.CheckGroupSilence(test.G2))
+
+	assert.NotNil(t, c.GroupSilence(test.G1))
+	assert.NotNil(t, c.UndoGroupSilence(test.G1))
 }

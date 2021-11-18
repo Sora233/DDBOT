@@ -3,19 +3,18 @@ package huya
 import (
 	"errors"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern_manager"
-	"github.com/tidwall/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"time"
 )
 
 type StateManager struct {
-	*concern_manager.StateManager
+	*concern.StateManager
 	*extraKey
 }
 
 func (c *StateManager) GetLiveInfo(id string) (*LiveInfo, error) {
 	var liveInfo = &LiveInfo{}
-	err := c.JsonGet(c.CurrentLiveKey(id), liveInfo)
+	err := c.GetJson(c.CurrentLiveKey(id), liveInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -26,26 +25,17 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	if liveInfo == nil {
 		return errors.New("nil LiveInfo")
 	}
-
-	return c.RWCoverTx(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(c.CurrentLiveKey(liveInfo.RoomId), liveInfo.ToString(), localdb.ExpireOption(time.Hour*24*7))
-		return err
-
-	})
+	return c.SetJson(c.CurrentLiveKey(liveInfo.RoomId), liveInfo, localdb.SetExpireOpt(time.Hour*24*7))
 }
 
-func (c *StateManager) Start() error {
-	for _, pattern := range []localdb.KeyPatternFunc{c.GroupConcernStateKey, c.CurrentLiveKey, c.FreshKey} {
-		c.CreatePatternIndex(pattern, nil)
-	}
-	return c.StateManager.Start()
+func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id))
 }
 
-// ?为什么没有泛型?
-
-func NewStateManager() *StateManager {
+func NewStateManager(notify chan<- concern.Notify) *StateManager {
 	sm := &StateManager{}
 	sm.extraKey = NewExtraKey()
-	sm.StateManager = concern_manager.NewStateManager(NewKeySet(), true)
+	sm.StateManager = concern.NewStateManagerWithCustomKey(Site, NewKeySet(), notify)
+	sm.UseEmitQueue()
 	return sm
 }

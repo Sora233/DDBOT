@@ -65,24 +65,6 @@ enum AddOnCardShowType {
   reserve = 6;
 }
 
-message RoomInitResponse {
-  int32 code = 1;
-  string message = 2;
-  message Data {
-    int64 room_id = 1;
-    int64 short_id = 2;
-    int64 uid = 3;
-    bool is_hidden = 5;
-    bool is_locked = 6;
-
-    LiveStatus live_status = 8;
-
-    int32 is_sp = 15;
-    int32 special_type = 16;
-  }
-  Data data = 3;
-}
-
 message XSpaceAccInfoResponse {
   int32 code = 1;
   string message = 2;
@@ -92,36 +74,19 @@ message XSpaceAccInfoResponse {
     string name = 2;
     int32 level = 7;
     message LiveRoom {
-      int32 roomStatus = 1;
-      int32 liveStatus = 2;
+      RoomStatus roomStatus = 1;
+      LiveStatus liveStatus = 2;
       string url = 3;
       string title = 4;
       string cover = 5;
       int64 roomid = 6;
-      int32 roundStatus = 7;
+      RoundStatus roundStatus = 7;
     }
     LiveRoom live_room = 17;
   }
   Data data = 3;
 }
 
-message GetRoomInfoOldResponse {
-  int32 code = 1;
-  string message = 2;
-  message Data {
-    RoomStatus roomStatus = 1;
-    RoundStatus roundStatus = 2;
-    LiveStatus liveStatus = 3;
-    string url = 4;
-    string title = 5;
-    string cover = 6;
-    int64 online = 7;
-    int64 roomid = 8;
-    int32 broadcast_type = 9;
-    int32 online_hidden = 10;
-  }
-  Data data = 3;
-}
 
 message FeedListResponse {
   int32 code = 1;
@@ -444,6 +409,17 @@ message DynamicSvrDynamicNewResponse {
   Data data = 3;
 }
 
+message DynamicSvrDynamicHistoryResponse {
+  int32 code = 1;
+  string message = 2;
+  message Data {
+    repeated Card cards = 1;
+    int32 has_more = 2;
+    int64 next_offset = 3;
+  }
+  Data data = 3;
+}
+
 message RelationModifyResponse {
   int32 code = 1;
   string message = 2;
@@ -457,6 +433,26 @@ message GetAttentionListResponse {
     repeated int64 list = 1;
   }
   Data data = 3;
+}
+
+message WebInterfaceNavResponse {
+  int32 code = 1;
+  string message = 2;
+  int64 ttl = 3;
+  message Data {
+    message LevelInfo {
+      int32 current_level = 1;
+    }
+    message VipLabel {
+      string text = 1;
+    }
+    bool isLogin = 1;
+    int64 mid = 2;
+    string uname = 3;
+    LevelInfo level_info = 4;
+    VipLabel vip_label = 5;
+  }
+  Data data = 4;
 }
 
 message CardWithImage {
@@ -614,7 +610,7 @@ message CardWithLive {
   string title = 5;
   string area_v2_name = 6;
   LiveStatus live_status = 7;
-  RoomStatus round_status = 8;
+  RoundStatus round_status = 8;
 }
 
 message CardWithMylist {

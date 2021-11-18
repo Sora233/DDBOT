@@ -8,17 +8,11 @@ COV := .coverage.out
 TARGET := DDBOT
 
 $(COV): $(SRC)
-	go test ./... -tags=nocv -coverprofile=$(COV)
+	go test ./... -coverprofile=$(COV)
 
 
 $(TARGET): $(SRC) go.mod go.sum
-ifdef NOCV
-	echo 'build without opencv'
-	go build -tags nocv -ldflags '$(LDFLAGS)' -o $(TARGET)
-else
-	echo 'build with opencv'
 	go build -ldflags '$(LDFLAGS)' -o $(TARGET)
-endif
 
 build: $(TARGET)
 

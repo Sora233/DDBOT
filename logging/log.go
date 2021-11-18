@@ -4,6 +4,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/Sora233/DDBOT/utils/msgstringer"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
@@ -95,7 +96,7 @@ func logGroupMessage(msg *message.GroupMessage) {
 			"MessageIID": msg.InternalId,
 			"SenderID":   msg.Sender.Uin,
 			"SenderName": msg.Sender.DisplayName(),
-		}).Info(localutils.MsgToString(msg.Elements))
+		}).Info(msgstringer.MsgToString(msg.Elements))
 }
 
 func logPrivateMessage(msg *message.PrivateMessage) {
@@ -106,7 +107,7 @@ func logPrivateMessage(msg *message.PrivateMessage) {
 		"SenderID":   msg.Sender.Uin,
 		"SenderName": msg.Sender.DisplayName(),
 		"Target":     msg.Target,
-	}).Info(localutils.MsgToString(msg.Elements))
+	}).Info(msgstringer.MsgToString(msg.Elements))
 }
 
 func logFriendMessageRecallEvent(event *client.FriendMessageRecalledEvent) {

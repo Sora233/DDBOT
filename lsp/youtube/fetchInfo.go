@@ -1,7 +1,8 @@
 package youtube
 
 import (
-	"context"
+	"bytes"
+	"container/list"
 	"errors"
 	"fmt"
 	"github.com/Jeffail/gabs/v2"
@@ -18,33 +19,39 @@ const VideoPath = "https://www.youtube.com/channel/%s/videos?view=57&flow=grid"
 
 type Searcher struct {
 	Sub []*gabs.Container
+	l   *list.List
 }
 
 func (r *Searcher) search(key string, j *gabs.Container) {
-	// TODO gabs: bad performance
-	if len(j.ChildrenMap()) != 0 {
-		for k, v := range j.ChildrenMap() {
-			if k == key {
-				r.Sub = append(r.Sub, v)
-				continue
+	if r.l == nil {
+		r.l = list.New()
+	}
+	r.l.PushBack(j)
+	for r.l.Len() != 0 {
+		head := r.l.Front()
+		r.l.Remove(head)
+		j := head.Value.(*gabs.Container)
+		if len(j.ChildrenMap()) != 0 {
+			for k, v := range j.ChildrenMap() {
+				if k == key {
+					r.Sub = append(r.Sub, v)
+					continue
+				}
+				r.l.PushBack(v)
 			}
-			r.search(key, v)
-		}
-	} else {
-		for _, c := range j.Children() {
-			if len(c.ChildrenMap()) != 0 {
-				r.search(key, c)
+		} else {
+			for _, c := range j.Children() {
+				if len(c.ChildrenMap()) != 0 {
+					r.l.PushBack(c)
+				}
 			}
 		}
 	}
 }
 
-// very sb
+// XFetchInfo very sb
 func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 	log := logger.WithField("channel_id", channelID)
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-	defer cancel()
 	st := time.Now()
 	defer func() {
 		ed := time.Now()
@@ -54,18 +61,19 @@ func XFetchInfo(channelID string) ([]*VideoInfo, error) {
 	var channelName string
 
 	path := fmt.Sprintf(VideoPath, channelID)
-	resp, err := requests.Get(ctx, path, nil, 3,
+	var opts = []requests.Option{
 		requests.HeaderOption("accept-language", "zh-CN"),
 		requests.AddUAOption(),
 		requests.ProxyOption(proxy_pool.PreferOversea),
-	)
+		requests.TimeoutOption(time.Second * 10),
+		requests.RetryOption(3),
+	}
+	var body = new(bytes.Buffer)
+	err := requests.Get(path, nil, body, opts...)
 	if err != nil {
 		return nil, err
 	}
-	content, err := resp.Content()
-	if err != nil {
-		return nil, err
-	}
+	content := body.Bytes()
 	var reg *regexp.Regexp
 	if strings.Contains(string(content), `window["ytInitialData"]`) {
 		reg = regexp.MustCompile("window\\[\"ytInitialData\"\\] = (?P<json>.*);")

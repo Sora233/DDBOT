@@ -3,6 +3,7 @@ package blockCache
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 func TestBlockCache(t *testing.T) {
@@ -47,4 +48,17 @@ func TestBlockCache(t *testing.T) {
 		assert.Fail(t, "should not run")
 		return nil
 	})
+
+	b3 := NewBlockCache(10, 10)
+	go b3.WithCacheDo("a", func() ActionResult {
+		time.Sleep(time.Second)
+		return NewResultWrapper("a", nil)
+	})
+	time.Sleep(time.Millisecond * 50)
+	result = b3.WithCacheDo("a", func() ActionResult {
+		return NewResultWrapper("b", nil)
+	})
+	assert.NotNil(t, result)
+	assert.EqualValues(t, "a", result.Result())
+	assert.Nil(t, result.Err())
 }
