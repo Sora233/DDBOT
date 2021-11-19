@@ -104,9 +104,7 @@ func main() {
 		}
 		defer localdb.Close()
 		c := bilibili.NewConcern(nil)
-		if err := c.StateManager.Start(); err != nil {
-			fmt.Printf("启动bilibili StateManager失败 %v\n", err)
-		}
+		c.StateManager.FreshIndex()
 		bilibili.Init()
 		c.SyncSub()
 		return
