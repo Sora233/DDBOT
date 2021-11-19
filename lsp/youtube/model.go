@@ -4,8 +4,10 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/proxy_pool"
+	"github.com/Sora233/DDBOT/requests"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 type UserInfo struct {
@@ -35,6 +37,8 @@ type VideoInfo struct {
 	VideoStatus    VideoStatus `json:"video_status"`
 	VideoTimestamp int64       `json:"video_timestamp"`
 
+	once              sync.Once
+	msgCache          *mmsg.MSG
 	liveStatusChanged bool
 	liveTitleChanged  bool
 }
@@ -107,6 +111,26 @@ func (v *VideoInfo) IsVideo() bool {
 	return v.VideoType == VideoType_Video
 }
 
+func (v *VideoInfo) GetMSG() *mmsg.MSG {
+	v.once.Do(func() {
+		m := mmsg.NewMSG()
+		if v.IsLive() {
+			if v.IsLiving() {
+				m.Textf("YTB-%v正在直播：\n%v\n", v.ChannelName, v.VideoTitle)
+			} else {
+				m.Textf("YTB-%v发布了直播预约：\n%v\n时间：%v\n",
+					v.ChannelName, v.VideoTitle, localutils.TimestampFormat(v.VideoTimestamp))
+			}
+		} else if v.IsVideo() {
+			m.Textf("YTB-%s发布了新视频：\n%v\n", v.ChannelName, v.VideoTitle)
+		}
+		m.ImageByUrl(v.Cover, "[封面]", requests.ProxyOption(proxy_pool.PreferOversea))
+		m.Text(VideoViewUrl(v.VideoId) + "\n")
+		v.msgCache = m
+	})
+	return v.msgCache
+}
+
 type Info struct {
 	VideoInfo []*VideoInfo `json:"video_info"`
 	UserInfo
@@ -131,7 +155,7 @@ func NewInfo(vinfo []*VideoInfo) *Info {
 }
 
 type ConcernNotify struct {
-	VideoInfo
+	*VideoInfo
 	GroupCode int64 `json:"group_code"`
 }
 
@@ -140,20 +164,7 @@ func (notify *ConcernNotify) GetGroupCode() int64 {
 }
 
 func (notify *ConcernNotify) ToMessage() (m *mmsg.MSG) {
-	m = mmsg.NewMSG()
-	if notify.IsLive() {
-		if notify.IsLiving() {
-			m.Textf("YTB-%v正在直播：\n%v\n", notify.ChannelName, notify.VideoTitle)
-		} else {
-			m.Textf("YTB-%v发布了直播预约：\n%v\n时间：%v\n",
-				notify.ChannelName, notify.VideoTitle, localutils.TimestampFormat(notify.VideoTimestamp))
-		}
-	} else if notify.IsVideo() {
-		m.Textf("YTB-%s发布了新视频：\n%v\n", notify.ChannelName, notify.VideoTitle)
-	}
-	m.ImageByUrl(notify.Cover, "[封面]", proxy_pool.PreferOversea)
-	m.Text(VideoViewUrl(notify.VideoId) + "\n")
-	return
+	return notify.VideoInfo.GetMSG()
 }
 
 func (notify *ConcernNotify) Logger() *logrus.Entry {
@@ -168,7 +179,7 @@ func NewConcernNotify(groupCode int64, info *VideoInfo) *ConcernNotify {
 		return nil
 	}
 	return &ConcernNotify{
-		VideoInfo: *info,
+		VideoInfo: info,
 		GroupCode: groupCode,
 	}
 }

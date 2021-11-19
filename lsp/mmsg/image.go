@@ -2,7 +2,6 @@ package mmsg
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
 )
@@ -16,11 +15,16 @@ func NewImage(buf []byte) *ImageBytesElement {
 	return &ImageBytesElement{Buf: buf, alternative: "[图片]"}
 }
 
-func NewImageByUrl(url string, prefer proxy_pool.Prefer, opts ...requests.Option) *ImageBytesElement {
+func NewImageWithNorm(buf []byte) *ImageBytesElement {
+	buf, _ = utils.ImageNormSize(buf)
+	return &ImageBytesElement{Buf: buf, alternative: "[图片]"}
+}
+
+func NewImageByUrl(url string, opts ...requests.Option) *ImageBytesElement {
 	var img = NewImage(nil)
 	var b []byte
 	var err error
-	b, err = utils.ImageGet(url, prefer, opts...)
+	b, err = utils.ImageGet(url, opts...)
 	if err == nil {
 		img.Buf = b
 	} else {
@@ -29,11 +33,11 @@ func NewImageByUrl(url string, prefer proxy_pool.Prefer, opts ...requests.Option
 	return img
 }
 
-func NewNormImageByUrl(url string, prefer proxy_pool.Prefer, opts ...requests.Option) *ImageBytesElement {
+func NewImageByUrlWithNorm(url string, opts ...requests.Option) *ImageBytesElement {
 	var img = NewImage(nil)
 	var b []byte
 	var err error
-	b, err = utils.ImageGetAndNorm(url, prefer, opts...)
+	b, err = utils.ImageGetAndNorm(url, opts...)
 	if err == nil {
 		img.Buf = b
 	} else {
@@ -78,6 +82,9 @@ func (i *ImageBytesElement) PackToElement(target Target) message.IMessageElement
 		}
 	default:
 		panic("ImageBytesElement PackToElement: unknown TargetType")
+	}
+	if i.alternative == "" {
+		return message.NewText("")
 	}
 	return message.NewText(i.alternative + "\n")
 }

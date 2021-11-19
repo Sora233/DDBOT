@@ -9,7 +9,7 @@ import (
 
 func newLiveInfo(channelId string, live bool, liveStatusChanged bool, liveTitleChanged bool) *ConcernNotify {
 	li := &ConcernNotify{
-		VideoInfo: VideoInfo{
+		VideoInfo: &VideoInfo{
 			UserInfo: UserInfo{
 				ChannelId: channelId,
 			},
@@ -28,7 +28,7 @@ func newLiveInfo(channelId string, live bool, liveStatusChanged bool, liveTitleC
 
 func newNewsInfo(channelId string) *ConcernNotify {
 	li := &ConcernNotify{
-		VideoInfo: VideoInfo{
+		VideoInfo: &VideoInfo{
 			UserInfo: UserInfo{
 				ChannelId: channelId,
 			},

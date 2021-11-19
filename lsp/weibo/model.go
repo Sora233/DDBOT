@@ -3,10 +3,10 @@ package weibo
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -61,7 +61,7 @@ func (n *NewsInfo) Logger() *logrus.Entry {
 type ConcernNewsNotify struct {
 	GroupCode int64 `json:"group_code"`
 	*UserInfo
-	Card *Card
+	Card *CacheCard
 }
 
 func (c *ConcernNewsNotify) Type() concern_type.Type {
@@ -77,7 +77,35 @@ func (c *ConcernNewsNotify) Logger() *logrus.Entry {
 }
 
 func (c *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
-	m = mmsg.NewMSG()
+	return c.Card.GetMSG()
+}
+
+func NewConcernNewsNotify(groupCode int64, info *NewsInfo) []*ConcernNewsNotify {
+	var result []*ConcernNewsNotify
+	for _, card := range info.Cards {
+		result = append(result, &ConcernNewsNotify{
+			GroupCode: groupCode,
+			UserInfo:  info.UserInfo,
+			Card:      NewCacheCard(card, info.GetName()),
+		})
+	}
+	return result
+}
+
+type CacheCard struct {
+	*Card
+	Name string
+
+	once     sync.Once
+	msgCache *mmsg.MSG
+}
+
+func NewCacheCard(card *Card, name string) *CacheCard {
+	return &CacheCard{Card: card, Name: name}
+}
+
+func (c *CacheCard) prepare() {
+	m := mmsg.NewMSG()
 	var createdTime string
 	newsTime, err := time.Parse(time.RubyDate, c.Card.GetMblog().GetCreatedAt())
 	if err == nil {
@@ -87,13 +115,13 @@ func (c *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
 	}
 	if c.Card.GetMblog().GetRetweetedStatus() != nil {
 		m.Textf("weibo-%v转发了%v的微博：\n%v",
-			c.GetName(),
+			c.Name,
 			c.Card.GetMblog().GetRetweetedStatus().GetUser().GetScreenName(),
 			createdTime,
 		)
 	} else {
 		m.Textf("weibo-%v发布了新微博：\n%v",
-			c.GetName(),
+			c.Name,
 			createdTime,
 		)
 	}
@@ -105,27 +133,20 @@ func (c *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
 			m.Textf("\n%v", localutils.RemoveHtmlTag(c.Card.GetMblog().GetText()))
 		}
 		for _, pic := range c.Card.GetMblog().GetPics() {
-			m.ImageByUrl(pic.GetUrl(), "", proxy_pool.PreferNone)
+			m.ImageByUrl(pic.GetUrl(), "")
 		}
 	default:
-		c.Logger().Debug("found new card_types")
+		logger.WithField("Type", c.CardType.String()).Debug("found new card_types")
 	}
 	if idx := strings.Index(c.Card.GetScheme(), "?"); idx > 0 {
 		m.Textf("\n%v", c.Card.GetScheme()[:idx])
 	} else {
 		m.Textf("\n%v", c.Card.GetScheme())
 	}
-	return
+	c.msgCache = m
 }
 
-func NewConcernNewsNotify(groupCode int64, info *NewsInfo) []*ConcernNewsNotify {
-	var result []*ConcernNewsNotify
-	for _, card := range info.Cards {
-		result = append(result, &ConcernNewsNotify{
-			GroupCode: groupCode,
-			UserInfo:  info.UserInfo,
-			Card:      card,
-		})
-	}
-	return result
+func (c *CacheCard) GetMSG() *mmsg.MSG {
+	c.once.Do(c.prepare)
+	return c.msgCache
 }

@@ -9,7 +9,7 @@ import (
 
 func newLiveInfo(roomId int64, live bool, liveStatusChanged bool, liveTitleChanged bool) *ConcernLiveNotify {
 	li := &ConcernLiveNotify{
-		LiveInfo: LiveInfo{
+		LiveInfo: &LiveInfo{
 			RoomId:            roomId,
 			liveStatusChanged: liveStatusChanged,
 			liveTitleChanged:  liveTitleChanged,

@@ -3,9 +3,9 @@ package acfun
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 type UserInfo struct {
@@ -32,6 +32,8 @@ type LiveInfo struct {
 	StartTs  int64  `json:"start_ts"`
 	IsLiving bool   `json:"living"`
 
+	once              sync.Once
+	msgCache          *mmsg.MSG
 	liveStatusChanged bool
 	liveTitleChanged  bool
 }
@@ -70,6 +72,20 @@ func (l *LiveInfo) Logger() *logrus.Entry {
 	})
 }
 
+func (l *LiveInfo) GetMSG() *mmsg.MSG {
+	l.once.Do(func() {
+		m := mmsg.NewMSG()
+		if l.Living() {
+			m.Textf("ACFUN-%s正在直播【%v】\n%v", l.Name, l.Title, l.LiveUrl)
+		} else {
+			m.Textf("ACFUN-%s直播结束了", l.Name)
+		}
+		m.ImageByUrl(l.Cover, "[封面]")
+		l.msgCache = m
+	})
+	return l.msgCache
+}
+
 type ConcernLiveNotify struct {
 	GroupCode int64
 	*LiveInfo
@@ -80,14 +96,7 @@ func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 }
 
 func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
-	m = mmsg.NewMSG()
-	if notify.Living() {
-		m.Textf("ACFUN-%s正在直播【%v】\n%v", notify.Name, notify.Title, notify.LiveUrl)
-	} else {
-		m.Textf("ACFUN-%s直播结束了", notify.Name)
-	}
-	m.ImageByUrl(notify.Cover, "[封面]", proxy_pool.PreferNone)
-	return
+	return notify.LiveInfo.GetMSG()
 }
 
 func (notify *ConcernLiveNotify) Logger() *logrus.Entry {

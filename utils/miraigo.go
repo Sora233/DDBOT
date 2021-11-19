@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/MiraiGo-Template/bot"
 )
 
@@ -23,8 +22,8 @@ func MessageTextf(format string, args ...interface{}) *message.TextElement {
 	return message.NewText(fmt.Sprintf(format, args...))
 }
 
-func UploadGroupImageByUrl(groupCode int64, url string, isNorm bool, prefer proxy_pool.Prefer) (*message.GroupImageElement, error) {
-	img, err := ImageGet(url, prefer)
+func UploadGroupImageByUrl(groupCode int64, url string, isNorm bool) (*message.GroupImageElement, error) {
+	img, err := ImageGet(url)
 	if err != nil {
 		return nil, err
 	}

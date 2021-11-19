@@ -18,7 +18,6 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/Sora233/sliceutil"
@@ -868,7 +867,7 @@ func (lgc *LspGroupCommand) DefaultLoggerWithCommand(command string) *logrus.Ent
 func (lgc *LspGroupCommand) reserveGif(url string) {
 	log := lgc.DefaultLoggerWithCommand(ReverseCommand)
 	log.WithField("reserve_url", url).Debug("reserve image")
-	img, err := utils.ImageGet(url, proxy_pool.PreferNone)
+	img, err := utils.ImageGet(url)
 	if err != nil {
 		log.Errorf("get image err %v", err)
 		lgc.textReply("获取图片失败")

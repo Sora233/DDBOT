@@ -3,9 +3,9 @@ package huya
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 type LiveInfo struct {
@@ -16,6 +16,8 @@ type LiveInfo struct {
 	RoomName string `json:"room_name"`
 	IsLiving bool   `json:"living"`
 
+	once              sync.Once
+	msgCache          *mmsg.MSG
 	liveStatusChanged bool
 	liveTitleChanged  bool
 }
@@ -76,8 +78,22 @@ func (m *LiveInfo) Site() string {
 	return Site
 }
 
+func (m *LiveInfo) GetMSG() *mmsg.MSG {
+	m.once.Do(func() {
+		msg := mmsg.NewMSG()
+		if m.Living() {
+			msg.Textf("虎牙-%s正在直播【%v】\n%v", m.Name, m.RoomName, m.RoomUrl)
+		} else {
+			msg.Textf("虎牙-%s直播结束了", m.Name)
+		}
+		msg.ImageByUrl(m.Avatar, "[封面]")
+		m.msgCache = msg
+	})
+	return m.msgCache
+}
+
 type ConcernLiveNotify struct {
-	LiveInfo
+	*LiveInfo
 	GroupCode int64 `json:"group_code"`
 }
 
@@ -86,14 +102,7 @@ func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 }
 
 func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
-	m = mmsg.NewMSG()
-	if notify.Living() {
-		m.Textf("虎牙-%s正在直播【%v】\n%v", notify.Name, notify.RoomName, notify.RoomUrl)
-	} else {
-		m.Textf("虎牙-%s直播结束了", notify.Name)
-	}
-	m.ImageByUrl(notify.Avatar, "[封面]", proxy_pool.PreferNone)
-	return
+	return notify.LiveInfo.GetMSG()
 }
 
 func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
@@ -108,7 +117,7 @@ func NewConcernLiveNotify(groupCode int64, l *LiveInfo) *ConcernLiveNotify {
 		return nil
 	}
 	return &ConcernLiveNotify{
-		*l,
+		l,
 		groupCode,
 	}
 }

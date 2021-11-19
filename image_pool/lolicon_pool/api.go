@@ -54,7 +54,7 @@ type Setu struct {
 }
 
 func (s *Setu) Content() ([]byte, error) {
-	return utils.ImageGet(s.Url, proxy_pool.PreferOversea, requests.HeaderOption("referer", "https://www.pixiv.net"))
+	return utils.ImageGet(s.Url, requests.HeaderOption("referer", "https://www.pixiv.net"), requests.ProxyOption(proxy_pool.PreferOversea))
 }
 
 type Response struct {

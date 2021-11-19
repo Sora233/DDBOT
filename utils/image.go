@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils/blockCache"
 	"github.com/ericpauley/go-quantize/quantize"
@@ -21,13 +20,12 @@ import (
 
 var imageGetCache = blockCache.NewBlockCache(16, 25)
 
-func ImageGet(url string, prefer proxy_pool.Prefer, opt ...requests.Option) ([]byte, error) {
+func ImageGet(url string, opt ...requests.Option) ([]byte, error) {
 	if url == "" {
 		return nil, errors.New("empty url")
 	}
 	result := imageGetCache.WithCacheDo(url, func() blockCache.ActionResult {
 		opts := []requests.Option{
-			requests.ProxyOption(prefer),
 			requests.TimeoutOption(time.Second * 15),
 			requests.RetryOption(3),
 		}
@@ -72,8 +70,8 @@ func ImageNormSize(origImage []byte) ([]byte, error) {
 	return resizedImageBuffer.Bytes(), nil
 }
 
-func ImageGetAndNorm(url string, prefer proxy_pool.Prefer, opt ...requests.Option) ([]byte, error) {
-	img, err := ImageGet(url, prefer, opt...)
+func ImageGetAndNorm(url string, opt ...requests.Option) ([]byte, error) {
+	img, err := ImageGet(url, opt...)
 	if err != nil {
 		return nil, err
 	}

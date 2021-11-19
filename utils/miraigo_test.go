@@ -3,7 +3,6 @@ package utils
 import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -60,7 +59,7 @@ func TestUploadGroupImage(t *testing.T) {
 	e, err := UploadGroupImage(test.G1, []byte("asdsad"), true)
 	assert.NotNil(t, err)
 	assert.Nil(t, e)
-	e, err = UploadGroupImageByUrl(test.G1, test.FakeImage(10), true, proxy_pool.PreferNone)
+	e, err = UploadGroupImageByUrl(test.G1, test.FakeImage(10), true)
 	assert.NotNil(t, err)
 }
 
@@ -68,7 +67,7 @@ func TestUploadPrivateImage(t *testing.T) {
 	test.InitMirai()
 	defer test.CloseMirai()
 	e, err := UploadPrivateImage(1, []byte("asdsad"), true)
-	img, err := ImageGet(test.FakeImage(10), proxy_pool.PreferNone)
+	img, err := ImageGet(test.FakeImage(10))
 	assert.Nil(t, err)
 	e, err = UploadPrivateImage(1, img, true)
 	assert.NotNil(t, err)

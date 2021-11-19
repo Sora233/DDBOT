@@ -3,7 +3,6 @@ package mmsg
 import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"strings"
 )
@@ -70,8 +69,8 @@ func (m *MSG) Image(buf []byte, alternative string) *MSG {
 	return m
 }
 
-func (m *MSG) ImageByUrl(url string, alternative string, prefer proxy_pool.Prefer, opts ...requests.Option) *MSG {
-	img := NewImageByUrl(url, prefer, opts...)
+func (m *MSG) ImageWithNorm(buf []byte, alternative string) *MSG {
+	img := NewImageWithNorm(buf)
 	if len(alternative) > 0 {
 		img.Alternative(alternative)
 	}
@@ -79,8 +78,17 @@ func (m *MSG) ImageByUrl(url string, alternative string, prefer proxy_pool.Prefe
 	return m
 }
 
-func (m *MSG) NormImageByUrl(url string, alternative string, prefer proxy_pool.Prefer, opts ...requests.Option) *MSG {
-	img := NewNormImageByUrl(url, prefer, opts...)
+func (m *MSG) ImageByUrl(url string, alternative string, opts ...requests.Option) *MSG {
+	img := NewImageByUrl(url, opts...)
+	if len(alternative) > 0 {
+		img.Alternative(alternative)
+	}
+	m.Append(img)
+	return m
+}
+
+func (m *MSG) ImageByUrlWithNorm(url string, alternative string, opts ...requests.Option) *MSG {
+	img := NewImageByUrlWithNorm(url, opts...)
 	if len(alternative) > 0 {
 		img.Alternative(alternative)
 	}

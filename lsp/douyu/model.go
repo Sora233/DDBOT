@@ -3,9 +3,9 @@ package douyu
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
+	"sync"
 )
 
 type LiveInfo struct {
@@ -17,6 +17,8 @@ type LiveInfo struct {
 	VideoLoop  VideoLoopStatus `json:"videoLoop"`
 	Avatar     *Avatar         `json:"avatar"`
 
+	once              sync.Once
+	msgCache          *mmsg.MSG
 	liveStatusChanged bool
 	liveTitleChanged  bool
 }
@@ -58,6 +60,20 @@ func (m *LiveInfo) Living() bool {
 
 func (m *LiveInfo) Type() concern_type.Type {
 	return Live
+}
+
+func (m *LiveInfo) GetMSG() *mmsg.MSG {
+	m.once.Do(func() {
+		msg := mmsg.NewMSG()
+		if m.Living() {
+			msg.Textf("斗鱼-%s正在直播【%v】\n%v", m.Nickname, m.RoomName, m.RoomUrl)
+		} else {
+			msg.Textf("斗鱼-%s直播结束了", m.Nickname)
+		}
+		msg.ImageByUrl(m.GetAvatar().GetBig(), "[封面]")
+		m.msgCache = msg
+	})
+	return m.msgCache
 }
 
 func (m *LiveInfo) GetNickname() string {
@@ -127,7 +143,7 @@ func (m *LiveInfo) Logger() *logrus.Entry {
 }
 
 type ConcernLiveNotify struct {
-	LiveInfo
+	*LiveInfo
 	GroupCode int64 `json:"group_code"`
 }
 
@@ -136,14 +152,7 @@ func (notify *ConcernLiveNotify) GetGroupCode() int64 {
 }
 
 func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
-	m = mmsg.NewMSG()
-	if notify.Living() {
-		m.Textf("斗鱼-%s正在直播【%v】\n%v", notify.Nickname, notify.RoomName, notify.RoomUrl)
-	} else {
-		m.Textf("斗鱼-%s直播结束了", notify.Nickname)
-	}
-	m.ImageByUrl(notify.GetAvatar().GetBig(), "[封面]", proxy_pool.PreferNone)
-	return m
+	return notify.LiveInfo.GetMSG()
 }
 
 func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
@@ -158,7 +167,7 @@ func NewConcernLiveNotify(groupCode int64, l *LiveInfo) *ConcernLiveNotify {
 		return nil
 	}
 	return &ConcernLiveNotify{
-		LiveInfo:  *l,
+		LiveInfo:  l,
 		GroupCode: groupCode,
 	}
 }

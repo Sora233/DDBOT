@@ -3,7 +3,6 @@ package mmsg
 import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -25,8 +24,8 @@ func TestMSG(t *testing.T) {
 	m.Append(nil)
 	m.Image(nil, "")
 	m.Image(nil, "[image]")
-	m.ImageByUrl(test.FakeImage(150), "[url]", proxy_pool.PreferAny)
-	m.NormImageByUrl(test.FakeImage(150), "[img]", proxy_pool.PreferAny)
+	m.ImageByUrl(test.FakeImage(150), "[url]")
+	m.ImageByUrlWithNorm(test.FakeImage(150), "[img]")
 	m.Append(NewTypedElement().OnPrivate(message.NewText("test")))
 	m.Append(NewTypedElement())
 	m.Append(NewTypedElement().OnGroup(NewImage(nil)))

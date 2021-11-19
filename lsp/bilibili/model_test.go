@@ -46,7 +46,7 @@ func TestModelNotify(t *testing.T) {
 		notify.GroupCode = test.G2
 		m = notify.ToMessage()
 		assert.NotNil(t, m)
-		notify.Card.Card = "{}"
+		notify.Card.Card.Card = "{}"
 		m = notify.ToMessage()
 		assert.NotNil(t, m)
 	}

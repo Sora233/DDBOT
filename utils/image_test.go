@@ -3,7 +3,6 @@ package utils
 import (
 	"bytes"
 	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/stretchr/testify/assert"
 	"image"
 	"testing"
@@ -13,7 +12,7 @@ var imageUrl = test.FakeImage(1500)
 
 func TestImageNormSize(t *testing.T) {
 	test.FakeImage(0)
-	b, err := ImageGet(imageUrl, proxy_pool.PreferAny)
+	b, err := ImageGet(imageUrl)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, b)
 	cfg, _, err := image.DecodeConfig(bytes.NewReader(b))
@@ -30,7 +29,7 @@ func TestImageNormSize(t *testing.T) {
 }
 
 func TestImageGetAndNorm(t *testing.T) {
-	b, err := ImageGetAndNorm(imageUrl, proxy_pool.PreferAny)
+	b, err := ImageGetAndNorm(imageUrl)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, b)
 	cfg, _, err := image.DecodeConfig(bytes.NewReader(b))

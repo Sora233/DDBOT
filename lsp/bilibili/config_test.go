@@ -13,7 +13,7 @@ import (
 
 func newLiveInfo(uid int64, living bool, liveStatusChanged bool, liveTitleChanged bool) *ConcernLiveNotify {
 	notify := &ConcernLiveNotify{
-		LiveInfo: LiveInfo{
+		LiveInfo: &LiveInfo{
 			UserInfo: UserInfo{
 				Mid: uid,
 			},
@@ -39,11 +39,11 @@ func newNewsInfo(uid int64, cardTypes ...DynamicDescType) []*ConcernNewsNotify {
 			},
 			concern: NewConcern(concern.GetNotifyChan()),
 		}
-		notify.Card = &Card{
+		notify.Card = NewCacheCard(&Card{
 			Desc: &Card_Desc{
 				Type: t,
 			},
-		}
+		})
 		result = append(result, notify)
 	}
 	return result
