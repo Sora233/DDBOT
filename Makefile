@@ -12,7 +12,7 @@ $(COV): $(SRC)
 
 
 $(TARGET): $(SRC) go.mod go.sum
-	go build -ldflags '$(LDFLAGS)' -o $(TARGET)
+	go build -ldflags '$(LDFLAGS)' -o $(TARGET) github.com/Sora233/DDBOT/cmd
 
 build: $(TARGET)
 

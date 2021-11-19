@@ -113,13 +113,13 @@ DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送�
 
 提问前请先查看[FAQ文档](/FAQ.md)，如果仍然未能解决，请咨询唯一指定交流群。
 
-## 来增加推送来源 （为DDBOT编写插件）
+## 增加推送来源 （为DDBOT编写插件）
 
 DDBOT可以作为一个通用的QQ推送框架来使用。
 
 您可以通过为DDBOT编写插件，DDBOT会为您完成大部分工作，您只需要实现少量代码，就能支持一个新的来源。
 
-如果您对此有兴趣，请参考[框架文档](/FRAMEWORK.md)。
+如果您对此有兴趣，请参考一个简单的插件[例子](https://github.com/Sora233/DDBOT/tree/master/_example) ，同时查看[框架文档](/FRAMEWORK.md) 。
 
 ## 注意事项
 
@@ -139,26 +139,6 @@ DDBOT可以作为一个通用的QQ推送框架来使用。
 ## 贡献
 
 *Feel free to make your first pull request.*
-
-DDBOT使用 [MiraiGO-Template](https://github.com/Logiase/MiraiGo-Template) 进行开发，如果您使用了该框架，您可以将DDBOT嵌入您的程序里。
-
-DDBOT提供一些可以使用的module：
-
-- github.com/Sora233/DDBOT/lsp
-
-该module即是DDBOT，嵌入DDBOT时需要引入这个module，同时需要在`bot.RefreshList()`这一行后面增加`lsp.Instance.PostStart(bot.Instance)`
-
-- github.com/Sora233/DDBOT/msg-marker
-
-该module可以自动把群聊和私聊消息标记为已读，go-cqhttp使用该机制来减少bot被识别。
-
-- github.com/Sora233/DDBOT/logging
-
-该module可以自动把消息内容打印到标准输出和`qq-logs`文件夹内。
-
-- github.com/Sora233/DDBOT/miraigo-logging
-
-该module可以自动把miraigo的日志打印到`miraigo-logs`内（用于帮助定位miraigo内部问题，所以不输出到标准输出）。
 
 想要为开源做一点微小的贡献？
 

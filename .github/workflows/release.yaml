@@ -30,3 +30,4 @@ jobs:
           goarch: ${{ matrix.goarch }}
           goversion: "https://golang.org/dl/go1.16.4.linux-amd64.tar.gz"
           ldflags: -w -s -X "main.BuildTime=${{ env.BUILD_TIME }}" -X main.CommitId=${{ github.sha }} -X main.Tags=${{ env.Tags }}
+          project_path: "./cmd"
