@@ -2,9 +2,6 @@ package lsp
 
 import (
 	"fmt"
-	"github.com/Logiase/MiraiGo-Template/bot"
-	"github.com/Logiase/MiraiGo-Template/config"
-	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/image_pool"
@@ -20,6 +17,9 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool/py"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
+	"github.com/Sora233/MiraiGo-Template/bot"
+	"github.com/Sora233/MiraiGo-Template/config"
+	"github.com/Sora233/MiraiGo-Template/utils"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/ratelimit"

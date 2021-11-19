@@ -1,10 +1,10 @@
 package lolicon_pool
 
 import (
-	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
+	"github.com/Sora233/MiraiGo-Template/config"
 	"time"
 )
 

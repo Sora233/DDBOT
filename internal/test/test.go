@@ -2,10 +2,10 @@ package test
 
 import (
 	"fmt"
-	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/MiraiGo-Template/bot"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

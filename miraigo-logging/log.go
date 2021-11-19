@@ -1,8 +1,8 @@
 package miraigo_logging
 
 import (
-	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/client"
+	"github.com/Sora233/MiraiGo-Template/bot"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/sirupsen/logrus"
 	"path"

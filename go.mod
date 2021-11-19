@@ -4,9 +4,9 @@ go 1.16
 
 require (
 	github.com/Jeffail/gabs/v2 v2.6.1
-	github.com/Logiase/MiraiGo-Template v0.0.0-20210228150851-29092d4d5486
 	github.com/Mrs4s/MiraiGo v0.0.0-20211114170854-511e8c41edd2
 	github.com/PuerkitoBio/goquery v1.8.0
+	github.com/Sora233/MiraiGo-Template v0.0.0-20210815095536-29373b391593
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/alecthomas/kong v0.2.17
 	github.com/davecgh/go-spew v1.1.1
@@ -31,10 +31,6 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20211109065445-02f5c0300f6e // indirect
 	golang.org/x/text v0.3.7 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace (
-	github.com/Logiase/MiraiGo-Template => github.com/Sora233/MiraiGo-Template v0.0.0-20210815095536-29373b391593
-	github.com/willf/bitset v1.2.0 => github.com/bits-and-blooms/bitset v1.2.0
-)
+replace github.com/willf/bitset v1.2.0 => github.com/bits-and-blooms/bitset v1.2.0

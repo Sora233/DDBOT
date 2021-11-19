@@ -1,13 +1,13 @@
 package bilibili
 
 import (
-	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/DDBOT/utils/blockCache"
+	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/sirupsen/logrus"
 	"strings"
 	"sync"

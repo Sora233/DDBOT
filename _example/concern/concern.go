@@ -1,10 +1,10 @@
 package example_concern
 
 import (
-	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/MiraiGo-Template/utils"
 )
 
 var logger = utils.GetModuleLogger("example-concern")

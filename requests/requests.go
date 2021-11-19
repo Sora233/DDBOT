@@ -1,8 +1,8 @@
 package requests
 
 import (
-	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Sora233/DDBOT/proxy_pool"
+	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/guonaihong/gout"
 	"github.com/guonaihong/gout/dataflow"
 	middleware "github.com/guonaihong/gout/interface"

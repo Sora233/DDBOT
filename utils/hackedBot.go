@@ -1,8 +1,8 @@
 package utils
 
 import (
-	miraiBot "github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Mrs4s/MiraiGo/client"
+	miraiBot "github.com/Sora233/MiraiGo-Template/bot"
 )
 
 // HackedBot 拦截一些方法方便测试

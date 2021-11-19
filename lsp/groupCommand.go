@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/image_pool"
 	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
@@ -21,6 +20,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/utils"
+	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
 	"github.com/sirupsen/logrus"

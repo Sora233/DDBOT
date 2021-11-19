@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Logiase/MiraiGo-Template/bot"
+	"github.com/Sora233/MiraiGo-Template/bot"
 )
 
 const moduleId = "ddbot.logging"

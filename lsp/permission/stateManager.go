@@ -2,10 +2,10 @@ package permission
 
 import (
 	"errors"
-	"github.com/Logiase/MiraiGo-Template/utils"
 	"github.com/Mrs4s/MiraiGo/client"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"strconv"
