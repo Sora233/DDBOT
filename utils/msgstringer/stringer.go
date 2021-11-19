@@ -64,6 +64,8 @@ func MsgToString(elements []message.IMessageElement) string {
 			res.WriteString("[Image]")
 		case *mmsg.TypedElement:
 			res.WriteString("[Typed]")
+		case *message.MarketFaceElement:
+			res.WriteString(e.Name)
 		default:
 			logger.WithField("content", spew.Sdump(elem)).Debug("found new element")
 		}
