@@ -26,6 +26,7 @@ func ApiContainerGetIndexProfile(uid int64) (*ApiContainerGetIndexProfileRespons
 		requests.AddUAOption(),
 		requests.TimeoutOption(time.Second*10),
 	)
+	opts = append(opts, CookieOption()...)
 	profileResp := new(ApiContainerGetIndexProfileResponse)
 	err := requests.Get(path, nil, &profileResp, opts...)
 	if err != nil {
@@ -47,6 +48,7 @@ func ApiContainerGetIndexCards(uid int64) (*ApiContainerGetIndexCardsResponse, e
 		requests.AddUAOption(),
 		requests.TimeoutOption(time.Second*10),
 	)
+	opts = append(opts, CookieOption()...)
 	profileResp := new(ApiContainerGetIndexCardsResponse)
 	err := requests.Get(path, nil, &profileResp, opts...)
 	if err != nil {
