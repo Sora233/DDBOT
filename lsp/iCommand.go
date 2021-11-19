@@ -123,12 +123,10 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 			}
 		} else {
 			if userInfo == nil {
-				c.TextReply("unwatch成功")
-			} else {
-				log = log.WithField("name", userInfo.GetName())
-				c.TextReply(fmt.Sprintf("unwatch成功 - %v用户 %v", site, userInfo.GetName()))
+				userInfo = concern.NewIdentity(mid, "未知")
 			}
-			log.Debugf("unwatch success")
+			log.WithField("name", userInfo.GetName()).Debugf("unwatch success")
+			c.TextReply(fmt.Sprintf("unwatch成功 - %v用户 %v", site, userInfo.GetName()))
 		}
 		return
 	}
@@ -144,6 +142,10 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 		}
 		return
 	}
+	if userInfo == nil {
+		userInfo = concern.NewIdentity(mid, "未知")
+	}
+	log.WithField("name", userInfo.GetName()).Debugf("watch success")
 	c.TextReply(fmt.Sprintf("watch成功 - %v用户 %v", site, userInfo.GetName()))
 	return
 }
