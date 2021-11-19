@@ -89,5 +89,7 @@ func main() {
 		return
 	}
 
+	DDBOT.SetUpLog()
+
 	DDBOT.Run()
 }
