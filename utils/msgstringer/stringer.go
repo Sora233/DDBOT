@@ -66,6 +66,9 @@ func MsgToString(elements []message.IMessageElement) string {
 			res.WriteString("[Typed]")
 		case *message.MarketFaceElement:
 			res.WriteString(e.Name)
+		case *message.DiceElement:
+			res.WriteString(e.Name)
+			res.WriteString(strconv.FormatInt(int64(e.Value), 10))
 		default:
 			logger.WithField("content", spew.Sdump(elem)).Debug("found new element")
 		}
