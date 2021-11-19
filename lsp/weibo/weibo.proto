@@ -26,6 +26,7 @@ message VisitorIncarnateResponse {
 
 message ApiContainerGetIndexProfileResponse {
   int32 ok = 1;
+  string msg = 3;
   message Data {
     message UserInfo {
       int64 id = 1;
@@ -46,6 +47,7 @@ enum CardType {
 
 message ApiContainerGetIndexCardsResponse {
   int32 ok = 1;
+  string msg = 3;
   message Data {
     message CardListInfo {
       string containerid = 1;

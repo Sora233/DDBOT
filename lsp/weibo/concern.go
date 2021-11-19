@@ -121,7 +121,9 @@ func (c *Concern) freshNews(uid int64) (*NewsInfo, error) {
 		return nil, err
 	}
 	if cardResp.GetOk() != 1 {
-		log.Errorf("ApiContainerGetIndexCards ok=%v ", cardResp.GetOk())
+		log.WithField("respOk", cardResp.GetOk()).
+			WithField("respMsg", cardResp.GetMsg()).
+			Errorf("ApiContainerGetIndexCards not ok")
 		return nil, errors.New("ApiContainerGetIndexCards not success")
 	}
 	var lastTs int64
@@ -184,6 +186,12 @@ func (c *Concern) FindUserInfo(uid int64, load bool) (*UserInfo, error) {
 		if err != nil {
 			logger.WithField("uid", uid).Errorf("ApiContainerGetIndexProfile error %v", err)
 			return nil, err
+		}
+		if profileResp.GetOk() != 1 {
+			logger.WithField("respOk", profileResp.GetOk()).
+				WithField("respMsg", profileResp.GetMsg()).
+				Errorf("ApiContainerGetIndexProfile not ok")
+			return nil, errors.New("接口请求失败")
 		}
 		err = c.AddUserInfo(&UserInfo{
 			Uid:             uid,
