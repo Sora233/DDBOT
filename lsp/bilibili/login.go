@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	Appkey                       = "aae92bc66f3edfab"
-	Salt                         = "af125a0d5279fd576c1b4418a3e8276d"
+	Appkey                       = "1d8b6e7d45233436"
+	Salt                         = "560c52ccd288fed045859ed18bffd973"
 	PathPassportLoginWebKey      = "/x/passport-login/web/key"
 	PathPassportLoginOAuth2Login = "/x/passport-login/oauth2/login"
 )
@@ -89,7 +89,7 @@ func Login(username string, password string) (*LoginResponse, error) {
 	)
 
 	var loginResp = new(LoginResponse)
-	err = requests.Post(BPath(PathPassportLoginOAuth2Login), form, loginResp, opts...)
+	err = requests.PostForm(BPath(PathPassportLoginOAuth2Login), form, loginResp, opts...)
 
 	return loginResp, err
 }

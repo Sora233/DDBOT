@@ -57,7 +57,7 @@ func RelationModify(fid int64, act int) (*RelationModifyResponse, error) {
 	)
 	opts = append(opts, GetVerifyOption()...)
 	rmr := new(RelationModifyResponse)
-	err = requests.Post(url, form, rmr, opts...)
+	err = requests.PostForm(url, form, rmr, opts...)
 	if err != nil {
 		return nil, err
 	}

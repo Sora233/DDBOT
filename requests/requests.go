@@ -198,7 +198,7 @@ func Get(url string, params gout.H, out interface{}, options ...Option) error {
 	}, out, options...)
 }
 
-func Post(url string, params gout.H, out interface{}, options ...Option) error {
+func PostForm(url string, params gout.H, out interface{}, options ...Option) error {
 	return Do(func(gcli *gout.Client) *dataflow.DataFlow {
 		return gcli.POST(url).SetForm(params)
 	}, out, options...)
@@ -207,5 +207,17 @@ func Post(url string, params gout.H, out interface{}, options ...Option) error {
 func PostJson(url string, params gout.H, out interface{}, options ...Option) error {
 	return Do(func(gcli *gout.Client) *dataflow.DataFlow {
 		return gcli.POST(url).SetJSON(params)
+	}, out, options...)
+}
+
+func PostWWWForm(url string, params gout.H, out interface{}, options ...Option) error {
+	return Do(func(gcli *gout.Client) *dataflow.DataFlow {
+		return gcli.POST(url).SetWWWForm(params)
+	}, out, options...)
+}
+
+func PostBody(url string, body []byte, out interface{}, options ...Option) error {
+	return Do(func(gcli *gout.Client) *dataflow.DataFlow {
+		return gcli.POST(url).SetBody(body)
 	}, out, options...)
 }
