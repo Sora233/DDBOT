@@ -76,14 +76,27 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype 
 		log.Errorf("FindOrLoadUserInfo error %v", err)
 		return nil, fmt.Errorf("查询用户信息失败 %v - %v", id, err)
 	}
-	// LatestNewsTs 第一次就手动塞一下时间戳，以此来过滤旧的微博
-	err = c.AddNewsInfo(&NewsInfo{
-		UserInfo:     info,
-		LatestNewsTs: time.Now().Unix(),
-	})
-	if err != nil {
-		log.Errorf("AddNewsInfo error %v", err)
-		return nil, fmt.Errorf("添加订阅失败 - 内部错误")
+	if r, _ := c.GetStateManager().GetConcern(id); r.Empty() {
+		cardResp, err := ApiContainerGetIndexCards(id)
+		if err != nil {
+			log.Errorf("ApiContainerGetIndexCards error %v", err)
+			return nil, fmt.Errorf("添加订阅失败 - 刷新用户微博失败")
+		}
+		if cardResp.GetOk() != 1 {
+			log.WithField("respOk", cardResp.GetOk()).
+				WithField("respMsg", cardResp.GetMsg()).
+				Errorf("ApiContainerGetIndexCards not ok")
+			return nil, fmt.Errorf("添加订阅失败 - 无法查看用户微博")
+		}
+		// LatestNewsTs 第一次就手动塞一下时间戳，以此来过滤旧的微博
+		err = c.AddNewsInfo(&NewsInfo{
+			UserInfo:     info,
+			LatestNewsTs: time.Now().Unix(),
+		})
+		if err != nil {
+			log.Errorf("AddNewsInfo error %v", err)
+			return nil, fmt.Errorf("添加订阅失败 - 内部错误")
+		}
 	}
 	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
 	if err != nil {
