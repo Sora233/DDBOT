@@ -109,7 +109,7 @@ func (l *LiveInfo) GetMSG() *mmsg.MSG {
 		m := mmsg.NewMSG()
 		switch l.Status {
 		case LiveStatus_Living:
-			m.Textf("%s正在直播【%v】\n%v", l.Name, l.liveTitleChanged, l.RoomUrl)
+			m.Textf("%s正在直播【%v】\n%v", l.Name, l.LiveTitle, l.RoomUrl)
 		case LiveStatus_NoLiving:
 			m.Textf("%s直播结束了", l.Name)
 		}
