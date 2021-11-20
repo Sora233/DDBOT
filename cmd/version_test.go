@@ -27,3 +27,8 @@ func TestCompareVersion(t *testing.T) {
 	assert.True(t, compareVersion("v0.0.19", "v0.0.19.1"))
 	assert.True(t, compareVersion("v0.0.19.1", "v0.0.20"))
 }
+
+func TestCheckUpdate(t *testing.T) {
+	Tags = "v0.0.1"
+	CheckUpdate()
+}

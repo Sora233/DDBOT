@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
 	"testing"
@@ -177,7 +178,7 @@ func TestConcernNotify(t *testing.T) {
 	assert.Nil(t, err)
 
 	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
-	origLiveInfo := NewLiveInfo(origUserInfo, "", "", LiveStatus_Living)
+	origLiveInfo := NewLiveInfo(origUserInfo, "mytitle", "", LiveStatus_Living)
 
 	select {
 	case testEventChan <- origLiveInfo:
@@ -190,6 +191,7 @@ func TestConcernNotify(t *testing.T) {
 		assert.NotNil(t, notify)
 		assert.EqualValues(t, test.UID1, notify.GetUid())
 		assert.EqualValues(t, test.G1, notify.GetGroupCode())
+		assert.Contains(t, msgstringer.MsgToString(notify.ToMessage().Elements()), "mytitle")
 	case <-time.After(time.Second):
 		assert.Fail(t, "no item received")
 	}

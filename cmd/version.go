@@ -30,8 +30,8 @@ func CheckUpdate() {
 		requests.ProxyOption(proxy_pool.PreferOversea),
 		requests.RetryOption(2),
 	}
-	var m = make(map[string]interface{})
-	err := requests.Get("https://api.github.com/repos/Sora233/DDBOT/releases/latest", nil, m, opts...)
+	var m map[string]interface{}
+	err := requests.Get("https://api.github.com/repos/Sora233/DDBOT/releases/latest", nil, &m, opts...)
 	if err != nil {
 		logrus.Errorf("更新检测失败：%v", err)
 		return
