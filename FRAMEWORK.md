@@ -11,12 +11,16 @@
 - 在`init()`函数中进行注册
 - 在`main`中引入刚刚编写的包
 
-请参考`_example/concern`目录，该目录为一个样例插件，展示了为DDBOT编写插件的方法。
+DDBOT提供了一个插件脚手架，可以快速创建一个插件模版：[DDBOT-template](https://github.com/Sora233/DDBOT-template)
+
+在编写插件前，请先阅读一个示例插件：[DDBOT-example](https://github.com/Sora233/DDBOT-example)
+
+示例插件展示了为DDBOT编写插件的方法。
 
 ```golang
 // 引入刚刚编写的插件
 import (
-    _ "github.com/Sora233/DDBOT/_example/concern"
+    _ "github.com/Sora233/DDBOT-example/concern"
 )
 ```
 

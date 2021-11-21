@@ -119,7 +119,7 @@ DDBOT可以作为一个通用的QQ推送框架来使用。
 
 您可以通过为DDBOT编写插件，DDBOT会为您完成大部分工作，您只需要实现少量代码，就能支持一个新的来源。
 
-如果您对此有兴趣，请参考一个简单的插件[例子](https://github.com/Sora233/DDBOT/tree/master/_example) ，同时查看[框架文档](/FRAMEWORK.md) 。
+如果您对此有兴趣，请查看[框架文档](/FRAMEWORK.md) 。
 
 ## 注意事项
 
