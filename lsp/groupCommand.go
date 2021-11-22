@@ -947,7 +947,7 @@ func (lgc *LspGroupCommand) textReply(text string) *message.GroupMessage {
 }
 
 func (lgc *LspGroupCommand) textReplyF(format string, args ...interface{}) *message.GroupMessage {
-	return lgc.reply(mmsg.NewTextf(format, args))
+	return lgc.reply(mmsg.NewTextf(format, args...))
 }
 
 func (lgc *LspGroupCommand) textSend(text string) *message.GroupMessage {
