@@ -22,9 +22,7 @@ func NewImageWithNorm(buf []byte) *ImageBytesElement {
 
 func NewImageByUrl(url string, opts ...requests.Option) *ImageBytesElement {
 	var img = NewImage(nil)
-	var b []byte
-	var err error
-	b, err = utils.ImageGet(url, opts...)
+	b, err := utils.ImageGet(url, opts...)
 	if err == nil {
 		img.Buf = b
 	} else {
@@ -35,13 +33,11 @@ func NewImageByUrl(url string, opts ...requests.Option) *ImageBytesElement {
 
 func NewImageByUrlWithNorm(url string, opts ...requests.Option) *ImageBytesElement {
 	var img = NewImage(nil)
-	var b []byte
-	var err error
-	b, err = utils.ImageGetAndNorm(url, opts...)
+	b, err := utils.ImageGetAndNorm(url, opts...)
 	if err == nil {
 		img.Buf = b
 	} else {
-		logger.WithField("url", url).Errorf("ImageGet error %v", err)
+		logger.WithField("url", url).Errorf("ImageGetAndNorm error %v", err)
 	}
 	return img
 }

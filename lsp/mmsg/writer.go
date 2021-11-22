@@ -30,16 +30,21 @@ func NewTextf(format string, args ...interface{}) *MSG {
 	return msg
 }
 
-func (m *MSG) Append(e message.IMessageElement) *MSG {
-	if e == nil {
+func (m *MSG) Append(elems ...message.IMessageElement) *MSG {
+	if len(elems) == 0 {
 		return m
 	}
-	if textE, ok := e.(*message.TextElement); ok {
-		m.textBuf.WriteString(textE.Content)
-		return m
+	for _, e := range elems {
+		if e == nil {
+			continue
+		}
+		if textE, ok := e.(*message.TextElement); ok {
+			m.textBuf.WriteString(textE.Content)
+			continue
+		}
+		m.flushText()
+		m.elements = append(m.elements, e)
 	}
-	m.flushText()
-	m.elements = append(m.elements, e)
 	return m
 }
 

@@ -10,6 +10,7 @@ import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/version"
 	"github.com/Sora233/DDBOT/proxy_pool"
@@ -226,9 +227,10 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		case PublicMode:
 			request.Accept()
 			log.Info("收到加群邀请，当前BOT处于公开模式，将接受加群邀请")
-			sendingMsg := message.NewSendingMessage()
-			sendingMsg.Append(message.NewText(fmt.Sprintf("阁下的群邀请已通过，基于对阁下的信任，阁下已获得本bot在群【%s】的控制权限，相信阁下不会滥用本bot。", request.GroupName)))
-			l.sendPrivateMessage(request.InvitorUin, sendingMsg)
+			l.SendMsg(
+				mmsg.NewTextf("阁下的群邀请已通过，基于对阁下的信任，阁下已获得本bot在群【%s】的控制权限，相信阁下不会滥用本bot。", request.GroupName),
+				mmsg.NewPrivateTarget(request.InvitorUin),
+			)
 			if err := l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
 				log.Errorf("设置群管理员权限失败 - %v", err)
 			}
@@ -292,9 +294,10 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			return nil
 		})
 
-		sendingMsg := message.NewSendingMessage()
-		sendingMsg.Append(message.NewText("阁下的好友请求已通过，请使用/help查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。"))
-		l.sendPrivateMessage(event.Friend.Uin, sendingMsg)
+		l.SendMsg(
+			mmsg.NewText("阁下的好友请求已通过，请使用/help查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。"),
+			mmsg.NewPrivateTarget(event.Friend.Uin),
+		)
 	})
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
@@ -474,6 +477,16 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 		return nil, image_pool.ErrNotInit
 	}
 	return l.pool.Get(options...)
+}
+
+func (l *Lsp) SendMsg(msg *mmsg.MSG, target mmsg.Target) (res interface{}) {
+	switch target.TargetType() {
+	case mmsg.TargetGroup:
+		return l.sendGroupMessage(target.TargetCode(), msg.ToMessage(target))
+	case mmsg.TargetPrivate:
+		return l.sendPrivateMessage(target.TargetCode(), msg.ToMessage(target))
+	}
+	return &message.GroupMessage{Id: -1}
 }
 
 func (l *Lsp) sendPrivateMessage(uin int64, msg *message.SendingMessage) (res *message.PrivateMessage) {

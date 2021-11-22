@@ -302,7 +302,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			sendingMsg := message.NewSendingMessage()
+			msg := mmsg.NewMSG()
 			var imgSubCount int32 = 0
 			for index, groupImage := range groupImages[i:last] {
 				if errs[i+index] != nil {
@@ -312,7 +312,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 				}
 				imgSubCount += 1
 				img := imgs[i+index]
-				sendingMsg.Append(groupImage)
+				msg.Append(groupImage)
 				if loliconImage, ok := img.(*lolicon_pool.Setu); ok {
 					log.WithFields(logrus.Fields{
 						"Author":    loliconImage.Author,
@@ -322,21 +322,21 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 						"Title":     loliconImage.Title,
 						"UploadUrl": groupImage.Url,
 					}).Debug("debug image")
-					sendingMsg.Append(utils.MessageTextf("标题：%v\n", loliconImage.Title))
-					sendingMsg.Append(utils.MessageTextf("作者：%v\n", loliconImage.Author))
-					sendingMsg.Append(utils.MessageTextf("PID：%v P%v\n", loliconImage.Pid, loliconImage.P))
+					msg.Append(utils.MessageTextf("标题：%v\n", loliconImage.Title))
+					msg.Append(utils.MessageTextf("作者：%v\n", loliconImage.Author))
+					msg.Append(utils.MessageTextf("PID：%v P%v\n", loliconImage.Pid, loliconImage.P))
 					tagCount := len(loliconImage.Tags)
 					if tagCount >= 2 {
 						tagCount = 2
 					}
-					sendingMsg.Append(utils.MessageTextf("TAG：%v\n", strings.Join(loliconImage.Tags[:tagCount], " ")))
-					sendingMsg.Append(utils.MessageTextf("R18：%v", loliconImage.R18))
+					msg.Append(utils.MessageTextf("TAG：%v\n", strings.Join(loliconImage.Tags[:tagCount], " ")))
+					msg.Append(utils.MessageTextf("R18：%v", loliconImage.R18))
 				}
 			}
-			if len(sendingMsg.Elements) == 0 {
+			if len(msg.Elements()) == 0 {
 				return
 			}
-			if lgc.reply(sendingMsg).Id == -1 {
+			if lgc.reply(msg).Id == -1 {
 				missCount.Add(imgSubCount)
 			}
 		}(i)
@@ -536,7 +536,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		lgc.textSend("失败 - 内部错误")
 		log.Errorf("checkin error %v", err)
 	} else {
-		lgc.sendMSG(resultMsg)
+		lgc.send(resultMsg)
 	}
 }
 
@@ -879,15 +879,7 @@ func (lgc *LspGroupCommand) reserveGif(url string) {
 		lgc.textReply(fmt.Sprintf("失败 - %v", err))
 		return
 	}
-	sendingMsg := message.NewSendingMessage()
-	groupImage, err := utils.UploadGroupImage(lgc.groupCode(), img, false)
-	if err != nil {
-		log.Errorf("upload group image failed %v", err)
-		lgc.textReply("上传失败")
-		return
-	}
-	sendingMsg.Append(groupImage)
-	lgc.reply(sendingMsg)
+	lgc.reply(mmsg.NewMSG().Image(img, ""))
 }
 
 func (lgc *LspGroupCommand) uin() int64 {
@@ -951,44 +943,30 @@ func (lgc *LspGroupCommand) groupDisabled(command string) bool {
 }
 
 func (lgc *LspGroupCommand) textReply(text string) *message.GroupMessage {
-	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(message.NewText(text))
-	return lgc.reply(sendingMsg)
+	return lgc.reply(mmsg.NewText(text))
 }
 
 func (lgc *LspGroupCommand) textReplyF(format string, args ...interface{}) *message.GroupMessage {
-	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(utils.MessageTextf(format, args...))
-	return lgc.reply(sendingMsg)
+	return lgc.reply(mmsg.NewTextf(format, args))
 }
 
 func (lgc *LspGroupCommand) textSend(text string) *message.GroupMessage {
-	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(message.NewText(text))
-	return lgc.send(sendingMsg)
+	return lgc.send(mmsg.NewText(text))
 }
 
 func (lgc *LspGroupCommand) textSendF(format string, args ...interface{}) *message.GroupMessage {
-	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(utils.MessageTextf(format, args...))
-	return lgc.send(sendingMsg)
+	return lgc.send(mmsg.NewTextf(format, args...))
 }
 
-func (lgc *LspGroupCommand) reply(msg *message.SendingMessage) *message.GroupMessage {
-	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(message.NewReply(lgc.msg))
-	for _, e := range msg.Elements {
-		sendingMsg.Append(e)
-	}
-	return lgc.send(sendingMsg)
+func (lgc *LspGroupCommand) reply(msg *mmsg.MSG) *message.GroupMessage {
+	m := mmsg.NewMSG()
+	m.Append(message.NewReply(lgc.msg))
+	m.Append(msg.Elements()...)
+	return lgc.send(m)
 }
 
-func (lgc *LspGroupCommand) send(msg *message.SendingMessage) *message.GroupMessage {
-	return lgc.l.sendGroupMessage(lgc.groupCode(), msg)
-}
-
-func (lgc *LspGroupCommand) sendMSG(msg *mmsg.MSG) *message.GroupMessage {
-	return lgc.l.sendGroupMessage(lgc.groupCode(), msg.ToMessage(mmsg.NewGroupTarget(lgc.groupCode())))
+func (lgc *LspGroupCommand) send(msg *mmsg.MSG) *message.GroupMessage {
+	return lgc.l.SendMsg(msg, mmsg.NewGroupTarget(lgc.groupCode())).(*message.GroupMessage)
 }
 
 func (lgc *LspGroupCommand) sender() *message.Sender {
@@ -1009,10 +987,10 @@ func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	ctx.Lsp = lgc.l
 	ctx.Log = log
 	ctx.SendFunc = func(m *mmsg.MSG) interface{} {
-		return lgc.send(m.ToMessage(ctx.Target))
+		return lgc.send(m)
 	}
 	ctx.ReplyFunc = func(m *mmsg.MSG) interface{} {
-		return lgc.reply(m.ToMessage(ctx.Target))
+		return lgc.reply(m)
 	}
 	ctx.NoPermissionReplyFunc = func() interface{} {
 		ctx.Log.Debugf("no permission")

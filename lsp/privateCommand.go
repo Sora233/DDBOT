@@ -1029,19 +1029,18 @@ func (c *LspPrivateCommand) AdminCommand() {
 		c.textReply("未查询到Admin，如果bot刚刚启动，请稍后重试。")
 		return
 	}
-	msg := message.NewSendingMessage()
-	msg.Append(message.NewText("当前Admin："))
+	m := mmsg.NewMSG()
+	//msg := message.NewSendingMessage()
+	m.Textf("当前Admin：")
 	var name string
-	var sb strings.Builder
 	for _, id := range ids {
 		fi := c.bot.FindFriend(id)
 		if fi != nil {
 			name = fi.Nickname
 		}
-		sb.WriteString(fmt.Sprintf("\n%v %v", id, name))
+		m.Textf("\n%v %v", id, name)
 	}
-	msg.Append(message.NewText(sb.String()))
-	c.send(msg)
+	c.send(m)
 }
 
 func (c *LspPrivateCommand) SilenceCommand() {
@@ -1163,7 +1162,7 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 			m.Textf("当前%v订阅数：%v", cm.Site(), len(ids))
 		}
 	}
-	c.send(m.ToMessage(mmsg.NewPrivateTarget(c.uin())))
+	c.send(m)
 }
 
 func (c *LspPrivateCommand) DebugCheck() bool {
@@ -1203,19 +1202,16 @@ func (c *LspPrivateCommand) notImplReply() *message.PrivateMessage {
 }
 
 func (c *LspPrivateCommand) textSend(text string) *message.PrivateMessage {
-	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(message.NewText(text))
-	return c.send(sendingMsg)
+	return c.send(mmsg.NewText(text))
 }
 
 func (c *LspPrivateCommand) textReply(text string) *message.PrivateMessage {
-	sendingMsg := message.NewSendingMessage()
-	sendingMsg.Append(message.NewText(text))
-	return c.send(sendingMsg)
+	// 私聊reply效果不好
+	return c.send(mmsg.NewText(text))
 }
 
-func (c *LspPrivateCommand) send(msg *message.SendingMessage) *message.PrivateMessage {
-	return c.l.sendPrivateMessage(c.uin(), msg)
+func (c *LspPrivateCommand) send(msg *mmsg.MSG) *message.PrivateMessage {
+	return c.l.SendMsg(msg, mmsg.NewPrivateTarget(c.uin())).(*message.PrivateMessage)
 }
 func (c *LspPrivateCommand) sender() *message.Sender {
 	return c.msg.Sender
@@ -1234,7 +1230,7 @@ func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	ctx.Lsp = c.l
 	ctx.Log = log
 	ctx.SendFunc = func(m *mmsg.MSG) interface{} {
-		return c.send(m.ToMessage(ctx.Target))
+		return c.send(m)
 	}
 	ctx.ReplyFunc = ctx.SendFunc
 	ctx.NoPermissionReplyFunc = func() interface{} {
