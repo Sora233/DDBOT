@@ -45,13 +45,13 @@ func TestNewGroupConcernConfig(t *testing.T) {
 
 func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 	var notify = []concern.Notify{
-		// 下播状态 什么也没变 不推
+		// 直播预告 推
 		newLiveInfo(test.NAME1, false, false, false),
-		// 下播状态 标题变了 不推
+		// 直播预告 标题变了 推
 		newLiveInfo(test.NAME1, false, false, true),
-		// 下播了 检查配置
+		// 可能吗
 		newLiveInfo(test.NAME1, false, true, false),
-		// 下播了 检查配置
+		// 可能吗
 		newLiveInfo(test.NAME1, false, true, true),
 		// 直播状态 什么也没变 不推
 		newLiveInfo(test.NAME1, true, false, false),
@@ -77,11 +77,11 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 	}
 	var expected = [][]bool{
 		{
-			false, false, false, false,
+			true, true, true, true,
 			false, false, true, true,
 		},
 		{
-			false, false, false, false,
+			true, true, true, true,
 			false, true, true, true,
 		},
 	}
