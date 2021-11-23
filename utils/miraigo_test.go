@@ -32,7 +32,7 @@ func TestSerializationGroupMsg(t *testing.T) {
 
 func TestMessageFilter(t *testing.T) {
 	var e = []message.IMessageElement{
-		MessageTextf("asd"),
+		message.NewText("asd"),
 		&message.GroupImageElement{},
 		&message.ServiceElement{},
 		&message.AtElement{},

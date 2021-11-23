@@ -322,15 +322,15 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 						"Title":     loliconImage.Title,
 						"UploadUrl": groupImage.Url,
 					}).Debug("debug image")
-					msg.Append(utils.MessageTextf("标题：%v\n", loliconImage.Title))
-					msg.Append(utils.MessageTextf("作者：%v\n", loliconImage.Author))
-					msg.Append(utils.MessageTextf("PID：%v P%v\n", loliconImage.Pid, loliconImage.P))
+					msg.Textf("标题：%v\n", loliconImage.Title)
+					msg.Textf("作者：%v\n", loliconImage.Author)
+					msg.Textf("PID：%v P%v\n", loliconImage.Pid, loliconImage.P)
 					tagCount := len(loliconImage.Tags)
 					if tagCount >= 2 {
 						tagCount = 2
 					}
-					msg.Append(utils.MessageTextf("TAG：%v\n", strings.Join(loliconImage.Tags[:tagCount], " ")))
-					msg.Append(utils.MessageTextf("R18：%v", loliconImage.R18))
+					msg.Textf("TAG：%v\n", strings.Join(loliconImage.Tags[:tagCount], " "))
+					msg.Textf("R18：%v", loliconImage.R18)
 				}
 			}
 			if len(msg.Elements()) == 0 {

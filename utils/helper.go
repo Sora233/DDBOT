@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"errors"
 	"fmt"
 	"github.com/guonaihong/gout"
 	jsoniter "github.com/json-iterator/go"
@@ -18,7 +17,6 @@ import (
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
-var ErrGoCvNotSetUp = errors.New("gocv not setup")
 
 func FilePathWalkDir(root string) ([]string, error) {
 	var files []string
