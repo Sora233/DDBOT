@@ -140,6 +140,9 @@ func (c *Concern) freshInfo(channelId string) (result []concern.Event, err error
 		// first load, just notify if living
 		for _, newV := range newInfo.VideoInfo {
 			if newV.IsLive() {
+				if newV.IsLiving() {
+					newV.liveStatusChanged = true
+				}
 				result = append(result, newV)
 				log.Debugf("first load live notify")
 			}
