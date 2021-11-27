@@ -596,7 +596,7 @@ func NewStateManagerWithCustomKey(name string, keySet KeySet, notifyChan chan<- 
 	sm := &StateManager{
 		name:       name,
 		notifyChan: notifyChan,
-		eventChan:  make(chan Event, 64),
+		eventChan:  make(chan Event, 4),
 		KeySet:     keySet,
 		ctx:        ctx,
 		cancelCtx:  cancel,
