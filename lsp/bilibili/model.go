@@ -105,11 +105,18 @@ func (l *LiveInfo) GetMSG() *mmsg.MSG {
 	if l == nil {
 		return nil
 	}
+	// 现在直播url会带一个`?broadcast_type=0`，好像删掉也行
+	cleanRoomUrl := func(url string) string {
+		if pos := strings.Index(url, "?"); pos > 0 {
+			return url[:pos]
+		}
+		return url
+	}
 	l.once.Do(func() {
 		m := mmsg.NewMSG()
 		switch l.Status {
 		case LiveStatus_Living:
-			m.Textf("%s正在直播【%v】\n%v", l.Name, l.LiveTitle, l.RoomUrl)
+			m.Textf("%s正在直播【%v】\n%v", l.Name, l.LiveTitle, cleanRoomUrl(l.RoomUrl))
 		case LiveStatus_NoLiving:
 			m.Textf("%s直播结束了", l.Name)
 		}
