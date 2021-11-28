@@ -107,7 +107,7 @@ func (c *LspPrivateCommand) Execute() {
 	case SilenceCommand:
 		c.SilenceCommand()
 	default:
-		c.textReply("阁下似乎输入了一个无法识别的命令，请使用/help命令查看帮助。")
+		c.textReplyF("阁下似乎输入了一个无法识别的命令，请使用<%v%v>命令查看帮助。", c.prefix, HelpCommand)
 		log.Debug("no command matched")
 	}
 }
@@ -1208,6 +1208,10 @@ func (c *LspPrivateCommand) textSend(text string) *message.PrivateMessage {
 func (c *LspPrivateCommand) textReply(text string) *message.PrivateMessage {
 	// 私聊reply效果不好
 	return c.send(mmsg.NewText(text))
+}
+
+func (c *LspPrivateCommand) textReplyF(format string, args ...interface{}) *message.PrivateMessage {
+	return c.send(mmsg.NewTextf(format, args...))
 }
 
 func (c *LspPrivateCommand) send(msg *mmsg.MSG) *message.PrivateMessage {

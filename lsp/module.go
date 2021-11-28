@@ -295,7 +295,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		})
 
 		l.SendMsg(
-			mmsg.NewText("阁下的好友请求已通过，请使用/help查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。"),
+			mmsg.NewTextf("阁下的好友请求已通过，请使用<%v%v>查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。", l.commandPrefix, HelpCommand),
 			mmsg.NewPrivateTarget(event.Friend.Uin),
 		)
 	})
