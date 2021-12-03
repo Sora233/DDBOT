@@ -62,7 +62,14 @@ func (r *Runtime) parseCommandSyntax(ast interface{}, name string, options ...ko
 }
 
 func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, concern_type.Type, error) {
-	return concern.ParseRawSiteAndType(rawSite, rawType)
+	site, ctype, err := concern.ParseRawSiteAndType(rawSite, rawType)
+	if err == concern.ErrSiteNotSupported {
+		err = fmt.Errorf("%v <%v>", err.Error(), rawSite)
+	}
+	if err == concern.ErrTypeNotSupported {
+		err = fmt.Errorf("%v <%v>", err.Error(), rawType)
+	}
+	return site, ctype, err
 }
 
 func (r *Runtime) ParseRawSite(rawSite string) (string, error) {
