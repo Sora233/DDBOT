@@ -1,8 +1,15 @@
-on: [ push, pull_request ]
+name: "CI"
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+    branches:
+      - '**'
 jobs:
-
+  # run unittest
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     strategy:
       fail-fast: false
       matrix:
@@ -23,6 +30,48 @@ jobs:
           path-to-profile: profile.cov
           flag-name: Go-${{ matrix.go }}
           parallel: true
+
+  # build binary
+  build:
+    needs: test
+    name: Build binary CI
+    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        goos: [ linux, windows, darwin ]
+        goarch: [ "386", amd64, arm, arm64 ]
+        exclude:
+          - goos: darwin
+            goarch: arm
+          - goos: darwin
+            goarch: "386"
+      fail-fast: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Go environment
+        uses: actions/setup-go@v2.1.3
+        with:
+          go-version: 1.17
+      - name: Set env
+        run: |
+          echo BUILD_TIME=$(date --rfc-3339=seconds) >> ${GITHUB_ENV}
+      - name: Build binary file
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          export BINARY_NAME="DDBOT"
+          if [ $GOOS = "windows" ]; then export BINARY_NAME="$BINARY_NAME.exe"; fi
+          go build -o "$BINARY_NAME" -ldflags '-w -s -X "main.BuildTime=${{ env.BUILD_TIME }}" -X main.CommitId=${{ github.sha }} -X main.Tags=${{ env.Tags }}' github.com/Sora233/DDBOT/cmd
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        if: ${{ !github.head_ref }}
+        with:
+          name: ${{ matrix.goos }}_${{ matrix.goarch }}
+          path: |
+            ./DDBOT
+            ./DDBOT.exe
+
 
   # notifies that all test jobs are finished.
   finish:
