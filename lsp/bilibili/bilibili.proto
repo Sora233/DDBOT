@@ -305,6 +305,7 @@ message Card {
           string desc = 3;
           int32 idx = 4;
           string title = 5;
+          string img_url = 6;
         }
         repeated TextVoteOption options = 7;
         int64 status = 8;
