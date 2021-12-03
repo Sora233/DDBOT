@@ -170,6 +170,7 @@ func (c *StateManager) CheckConcern(id interface{}, ctype concern_type.Type) err
 // AddGroupConcern 在group内添加id的ctype订阅，多次添加同样的订阅会返回 ErrAlreadyExists
 func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
 	err = c.RWCover(func() error {
+		var err error
 		if c.CheckGroupConcern(groupCode, id, ctype) == ErrAlreadyExists {
 			return ErrAlreadyExists
 		}
@@ -194,21 +195,15 @@ func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype co
 	return
 }
 
-// RemoveGroupConcern 在group内删除id的ctype订阅，并返回删除后当前id的综合ctype，删除不存在的订阅会返回 buntdb.ErrNotFound
+// RemoveGroupConcern 在group内删除id的ctype订阅，并返回删除后当前id的在群内的ctype，删除不存在的订阅会返回 buntdb.ErrNotFound
 func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
 	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
+		var err error
+		if c.CheckGroupConcern(groupCode, id, ctype) != ErrAlreadyExists {
+			return buntdb.ErrNotFound
+		}
 		groupStateKey := c.GroupConcernStateKey(groupCode, id)
-		val, err := tx.Get(groupStateKey)
-		if err != nil {
-			return err
-		}
-		oldState := concern_type.FromString(val)
-		newCtype = oldState.Remove(ctype)
-		if newCtype.Empty() {
-			_, err = tx.Delete(groupStateKey)
-		} else {
-			_, _, err = tx.Set(groupStateKey, newCtype.String(), nil)
-		}
+		newCtype, err = c.removeConcernType(groupStateKey, ctype)
 		return err
 	})
 	if err != nil {
@@ -400,6 +395,27 @@ func (c *StateManager) upsertConcernType(key string, ctype concern_type.Type) (n
 		}
 		newCtype = concern_type.FromString(val).Add(ctype)
 		return c.Set(key, newCtype.String())
+	})
+	return
+}
+
+func (c *StateManager) removeConcernType(key string, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
+	err = c.RWCover(func() error {
+		val, err := c.Get(key)
+		if err != nil {
+			return err
+		}
+		oldCtype := concern_type.FromString(val)
+		if !oldCtype.ContainAll(ctype) {
+			return buntdb.ErrNotFound
+		}
+		newCtype = oldCtype.Remove(ctype)
+		if newCtype.Empty() {
+			_, err = c.Delete(key)
+		} else {
+			err = c.Set(key, newCtype.String())
+		}
+		return err
 	})
 	return
 }

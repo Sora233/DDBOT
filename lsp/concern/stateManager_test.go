@@ -343,8 +343,18 @@ func TestStateManager_GroupConcern(t *testing.T) {
 
 	_, err = sm.AddGroupConcern(test.G1, test.UID1, test.BibiliLive.Add(test.YoutubeLive))
 	assert.Nil(t, err)
+
+	_, err = sm.RemoveGroupConcern(test.G1, test.UID1, test.BibiliLive)
+	assert.Nil(t, err)
+	_, err = sm.RemoveGroupConcern(test.G1, test.UID1, test.BibiliLive)
+	assert.EqualValues(t, buntdb.ErrNotFound, err)
+	_, err = sm.AddGroupConcern(test.G1, test.UID1, test.BibiliLive.Add(test.YoutubeLive))
+	assert.Nil(t, err)
+
 	_, err = sm.AddGroupConcern(test.G2, test.UID1, test.HuyaLive)
 	assert.Nil(t, err)
+	_, err = sm.AddGroupConcern(test.G2, test.UID1, test.HuyaLive)
+	assert.EqualValues(t, ErrAlreadyExists, err)
 
 	_, err = sm.AddGroupConcern(test.G1, test.UID2, test.DouyuLive)
 	assert.Nil(t, err)
