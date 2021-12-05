@@ -73,7 +73,11 @@ func (r *Runtime) ParseRawSiteAndType(rawSite string, rawType string) (string, c
 }
 
 func (r *Runtime) ParseRawSite(rawSite string) (string, error) {
-	return concern.ParseRawSite(rawSite)
+	site, err := concern.ParseRawSite(rawSite)
+	if err == concern.ErrSiteNotSupported {
+		err = fmt.Errorf("%v <%v>", err.Error(), rawSite)
+	}
+	return site, err
 }
 
 func NewRuntime(l *Lsp, silence ...bool) *Runtime {
