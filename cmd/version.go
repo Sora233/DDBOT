@@ -36,6 +36,12 @@ func CheckUpdate() {
 		logrus.Errorf("更新检测失败：%v", err)
 		return
 	}
+	if msg := m["message"]; msg != nil {
+		if s, ok := msg.(string); ok {
+			logrus.Errorf("更新检测失败：%v", s)
+			return
+		}
+	}
 	latestTagName := m["tag_name"].(string)
 
 	if compareVersion(Tags, latestTagName) {

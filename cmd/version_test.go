@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -29,6 +32,10 @@ func TestCompareVersion(t *testing.T) {
 }
 
 func TestCheckUpdate(t *testing.T) {
+	var w = new(bytes.Buffer)
+	logrus.SetOutput(w)
 	Tags = "v0.0.1"
 	CheckUpdate()
+	fmt.Println(w.String())
+	assert.Contains(t, w.String(), "更新检测完成")
 }
