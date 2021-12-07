@@ -91,19 +91,10 @@ func (c *Concern) fresh() concern.FreshFunc {
 			var start = time.Now()
 			err := func() error {
 				defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore live fresh done") }()
-				liveInfo, err := c.freshLiveInfo()
-				if err != nil {
-					return err
-				}
-				var liveInfoMap = make(map[int64]*LiveInfo)
-				for _, info := range liveInfo {
-					liveInfoMap[info.Uid] = info
-				}
 
 				_, ids, types, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
 					return p.ContainAny(Live)
 				})
-
 				if err != nil {
 					logger.Errorf("ListConcernState error %v", err)
 					return err
@@ -112,6 +103,20 @@ func (c *Concern) fresh() concern.FreshFunc {
 				if err != nil {
 					logger.Errorf("GroupTypeById error %v", err)
 					return err
+				}
+				if len(ids) == 0 {
+					// 没有订阅的话，就不要刷新了
+					logger.Trace("no concern, skip fresh")
+					return nil
+				}
+
+				liveInfo, err := c.freshLiveInfo()
+				if err != nil {
+					return err
+				}
+				var liveInfoMap = make(map[int64]*LiveInfo)
+				for _, info := range liveInfo {
+					liveInfoMap[info.Uid] = info
 				}
 
 				sendLiveInfo := func(info *LiveInfo) {
