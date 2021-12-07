@@ -1,6 +1,8 @@
-on:
-  - push
 name: Mirror GitHub Auto Queried Repos to Gitee
+on:
+  push:
+    branches:
+      - '**'
 jobs:
   run:
     name: Sync-GitHub-to-Gitee
