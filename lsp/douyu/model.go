@@ -23,6 +23,10 @@ type LiveInfo struct {
 	liveTitleChanged  bool
 }
 
+func (m *LiveInfo) GetName() string {
+	return m.Nickname
+}
+
 func (m *LiveInfo) TitleChanged() bool {
 	return m.liveTitleChanged
 }

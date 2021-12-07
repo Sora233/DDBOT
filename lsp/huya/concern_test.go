@@ -48,18 +48,9 @@ func TestConcern(t *testing.T) {
 	_, err = c.Add(nil, test.G1, testRoom, Live)
 	assert.Nil(t, err)
 
-	identityInfo, err := c.Get(testRoom)
-	assert.Nil(t, err)
-	assert.EqualValues(t, testRoom, identityInfo.GetUid())
-
-	info, err := c.Get(testRoom)
-	assert.Nil(t, err)
-
 	liveInfo2, err := c.FindOrLoadRoom(testRoom)
 	assert.Nil(t, err)
 	assert.NotNil(t, liveInfo2)
-	assert.EqualValues(t, info.GetUid(), liveInfo2.RoomId)
-	assert.EqualValues(t, info.GetName(), liveInfo2.GetName())
 
 	liveInfo2.liveStatusChanged = true
 	liveInfo2.IsLiving = true

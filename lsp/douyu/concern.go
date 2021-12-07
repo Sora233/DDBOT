@@ -7,6 +7,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/MiraiGo-Template/utils"
+	"github.com/tidwall/buntdb"
 	"reflect"
 )
 
@@ -59,22 +60,42 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype 
 	if err != nil {
 		return nil, err
 	}
-	liveInfo, err := c.FindOrLoadRoom(id)
+
+	betardResp, err := Betard(id)
 	if err != nil {
 		log.Error(err)
 		return nil, fmt.Errorf("查询房间信息失败 %v - %v", id, err)
+	}
+	liveInfo := &LiveInfo{
+		Nickname:   betardResp.GetRoom().GetNickname(),
+		RoomId:     betardResp.GetRoom().GetRoomId(),
+		RoomName:   betardResp.GetRoom().GetRoomName(),
+		RoomUrl:    betardResp.GetRoom().GetRoomUrl(),
+		ShowStatus: betardResp.GetRoom().GetShowStatus(),
+		VideoLoop:  betardResp.GetRoom().GetVideoLoop(),
+		Avatar:     betardResp.GetRoom().GetAvatar(),
 	}
 	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
 	if err != nil {
 		return nil, err
 	}
-	return concern.NewIdentity(id, liveInfo.Nickname), nil
+	return liveInfo, nil
 }
 
 func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	id := _id.(int64)
 	identity, _ := c.Get(id)
 	_, err := c.StateManager.RemoveGroupConcern(groupCode, id, ctype)
+	_ = c.RWCoverTx(func(tx *buntdb.Tx) error {
+		allCtype, err := c.GetConcern(id)
+		if err != nil {
+			return err
+		}
+		if allCtype.Empty() {
+			err = c.DeleteLiveInfo(id)
+		}
+		return err
+	})
 	return identity, err
 }
 

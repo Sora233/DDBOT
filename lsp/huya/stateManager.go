@@ -28,6 +28,11 @@ func (c *StateManager) AddLiveInfo(liveInfo *LiveInfo) error {
 	return c.SetJson(c.CurrentLiveKey(liveInfo.RoomId), liveInfo, localdb.SetExpireOpt(time.Hour*24*7))
 }
 
+func (c *StateManager) DeleteLiveInfo(id string) error {
+	_, err := c.Delete(c.CurrentLiveKey(id))
+	return err
+}
+
 func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
 	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id))
 }

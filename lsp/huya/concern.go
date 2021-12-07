@@ -9,6 +9,7 @@ import (
 	"github.com/Sora233/MiraiGo-Template/utils"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
+	"github.com/tidwall/buntdb"
 	"reflect"
 )
 
@@ -62,22 +63,32 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype c
 		return nil, err
 	}
 
-	liveInfo, err := c.FindOrLoadRoom(id.(string))
+	liveInfo, err := RoomPage(id.(string))
 	if err != nil {
-		log.Errorf("FindOrLoadRoom error %v", err)
+		log.Errorf("RoomPage error %v", err)
 		return nil, fmt.Errorf("查询房间信息失败 %v - %v", id, err)
 	}
 	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
 	if err != nil {
 		return nil, err
 	}
-	return concern.NewIdentity(liveInfo.RoomId, liveInfo.GetName()), nil
+	return liveInfo, nil
 }
 
 func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	id := _id.(string)
 	identity, _ := c.Get(id)
 	_, err := c.StateManager.RemoveGroupConcern(groupCode, id, ctype)
+	_ = c.RWCoverTx(func(tx *buntdb.Tx) error {
+		allCtype, err := c.GetConcern(id)
+		if err != nil {
+			return err
+		}
+		if allCtype.Empty() {
+			err = c.DeleteLiveInfo(id)
+		}
+		return err
+	})
 	return identity, err
 }
 
