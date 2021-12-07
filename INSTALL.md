@@ -136,7 +136,7 @@ bot:
 bilibili:
   account:  # 你的b站账号 
   password: # 你的b站密码
-  interval: 20s
+  interval: 25s
 
 concern:
   emitInterval: 5s
@@ -176,7 +176,7 @@ bilibili:
   bili_jct: ""
   account:  # 你的b站账号 
   password: # 你的b站密码
-  interval: 30s # 直播状态和动态检测间隔，过快可能导致ip被暂时封禁
+  interval: 25s # 直播状态和动态检测间隔，过快可能导致ip被暂时封禁
   imageMergeMode: "auto" # 设置图片合并模式，支持 "auto" / "only9" / "off"
                          # auto 为默认策略，存在比较刷屏的图片时会合并
                          # only9 表示仅当恰好是9张图片的时候合并

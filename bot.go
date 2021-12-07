@@ -134,7 +134,7 @@ bot:
 bilibili:
   account:  # 你的b站账号 
   password: # 你的b站密码
-  interval: 15s
+  interval: 25s
 
 concern:
   emitInterval: 5s
