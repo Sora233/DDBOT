@@ -8,7 +8,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/Sora233/MiraiGo-Template v0.0.0-20211208081904-bed1e0705c65
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
-	github.com/alecthomas/kong v0.2.17
+	github.com/alecthomas/kong v0.2.20
 	github.com/davecgh/go-spew v1.1.1
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
 	github.com/golang/protobuf v1.5.2
