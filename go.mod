@@ -4,9 +4,9 @@ go 1.16
 
 require (
 	github.com/Jeffail/gabs/v2 v2.6.1
-	github.com/Mrs4s/MiraiGo v0.0.0-20211114170854-511e8c41edd2
+	github.com/Mrs4s/MiraiGo v0.0.0-20211208080234-25c67a3ee1c1
 	github.com/PuerkitoBio/goquery v1.8.0
-	github.com/Sora233/MiraiGo-Template v0.0.0-20211208080439-ef7b394b3755
+	github.com/Sora233/MiraiGo-Template v0.0.0-20211208081904-bed1e0705c65
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/alecthomas/kong v0.2.17
 	github.com/davecgh/go-spew v1.1.1
@@ -27,7 +27,6 @@ require (
 	go.uber.org/atomic v1.9.0
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/crypto v0.0.0-20211108221036-ceb1ce70b4fa // indirect
-	golang.org/x/net v0.0.0-20211108170745-6635138e15ea // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20211109065445-02f5c0300f6e // indirect
 	golang.org/x/text v0.3.7 // indirect
