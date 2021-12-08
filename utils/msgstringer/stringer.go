@@ -69,6 +69,10 @@ func MsgToString(elements []message.IMessageElement) string {
 		case *message.DiceElement:
 			res.WriteString(e.Name)
 			res.WriteString(strconv.FormatInt(int64(e.Value), 10))
+		case *message.AnimatedSticker:
+			res.WriteString("[")
+			res.WriteString(e.Name)
+			res.WriteString("]")
 		default:
 			logger.WithField("content", spew.Sdump(elem)).Debug("found new element")
 		}
