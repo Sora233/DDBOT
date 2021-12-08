@@ -2,7 +2,7 @@ name: Mirror GitHub Auto Queried Repos to Gitee
 on:
   push:
     branches:
-      - '**'
+      - '!dependabot/**'
 jobs:
   run:
     name: Sync-GitHub-to-Gitee

@@ -1,6 +1,6 @@
 module github.com/Sora233/DDBOT
 
-go 1.16
+go 1.17
 
 require (
 	github.com/Jeffail/gabs/v2 v2.6.1
