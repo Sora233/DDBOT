@@ -68,10 +68,14 @@ func TestType_Remove(t *testing.T) {
 		{
 			bibiliLive.Add(bilibiliNews), youtubeVideo,
 		},
+		{
+			bibiliLive, bibiliLive,
+		},
 	}
 	var expected = []Type{
 		bibiliLive,
 		bilibiliNews.Add(bibiliLive),
+		Empty,
 	}
 
 	assert.Equal(t, len(expected), len(testCase))
@@ -117,9 +121,12 @@ func TestType_ContainAll(t *testing.T) {
 		{
 			Empty, Empty,
 		},
+		{
+			Empty.Add(bibiliLive), Empty,
+		},
 	}
 	var expected = []bool{
-		true, false, true, true, false, false,
+		true, false, true, true, false, false, true,
 	}
 	assert.Equal(t, len(expected), len(testCase))
 	for i := 0; i < len(expected); i++ {
@@ -147,9 +154,12 @@ func TestType_ContainAny(t *testing.T) {
 		{
 			Empty, Empty,
 		},
+		{
+			Empty.Add(bibiliLive), Empty,
+		},
 	}
 	var expected = []bool{
-		true, true, true, true, false, false,
+		true, true, true, true, false, false, true,
 	}
 	assert.Equal(t, len(expected), len(testCase))
 	for i := 0; i < len(expected); i++ {
