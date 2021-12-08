@@ -6,7 +6,7 @@ require (
 	github.com/Jeffail/gabs/v2 v2.6.1
 	github.com/Mrs4s/MiraiGo v0.0.0-20211114170854-511e8c41edd2
 	github.com/PuerkitoBio/goquery v1.8.0
-	github.com/Sora233/MiraiGo-Template v0.0.0-20211119083153-e8b7a8dc8f32
+	github.com/Sora233/MiraiGo-Template v0.0.0-20211208080439-ef7b394b3755
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/alecthomas/kong v0.2.17
 	github.com/davecgh/go-spew v1.1.1
