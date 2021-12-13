@@ -60,28 +60,30 @@ func (tc *TwitCastConcern) tcFresh() concern.FreshFunc {
 		if p.ContainAny(Live) {
 			var currentLive *cas.MovieContainer
 
+			if last, ok := lastStatus[userId]; ok && last == userInfo.User.Live {
+
+				logger.Tracef("%v 的直播状态与上次相同，已略过", userInfo.User.ScreenID)
+				return []concern.Event{}, nil
+
+			}
+
 			if userInfo.User.Live {
 
 				logger.Tracef("检测到 %v 正在直播", userInfo.User.ScreenID)
 
-				if last, ok := lastStatus[userId]; ok && last {
+				movie, err := tc.client.Movie(userInfo.User.LastMovieID)
 
-					logger.Tracef("%v 的直播状态与上次相同，已略过", userInfo.User.ScreenID)
-					return []concern.Event{}, nil
-
-				} else {
-
-					movie, err := tc.client.Movie(userInfo.User.LastMovieID)
-
-					if err != nil {
-						return nil, err
-					} else if !movie.Movie.Live { // 直播中，但上一次的视频资讯不是直播中
-						return nil, fmt.Errorf("无法获取 %v 的直播资讯", userInfo.User.Name)
-					}
-
-					currentLive = movie
-
+				if err != nil {
+					return nil, err
+				} else if !movie.Movie.Live { // 直播中，但上一次的视频资讯不是直播中
+					return nil, fmt.Errorf("无法获取 %v 的直播资讯", userInfo.User.Name)
 				}
+
+				currentLive = movie
+
+			} else {
+
+				logger.Tracef("检测到 %v 已停止直播", userInfo.User.ScreenID)
 
 			}
 

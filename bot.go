@@ -143,7 +143,7 @@ twitcasting:
   clientSecret: xyz
   # 为防止风控，可选择性广播以下元素
   broadcaster:
-	title: true
+	title: false
 	created: true
 	image: true
 
