@@ -21,6 +21,7 @@ import (
 	_ "github.com/Sora233/DDBOT/lsp/acfun"
 	_ "github.com/Sora233/DDBOT/lsp/douyu"
 	_ "github.com/Sora233/DDBOT/lsp/huya"
+	_ "github.com/Sora233/DDBOT/lsp/twitcasting"
 	_ "github.com/Sora233/DDBOT/lsp/weibo"
 	_ "github.com/Sora233/DDBOT/lsp/youtube"
 	_ "github.com/Sora233/DDBOT/miraigo-logging"
@@ -135,6 +136,16 @@ bilibili:
   account:  # 你的b站账号 
   password: # 你的b站密码
   interval: 25s
+
+# 参阅 https://apiv2-doc.twitcasting.tv/#registration
+twitcasting:
+  clientId:  abc
+  clientSecret: xyz
+  # 为防止风控，可选择性广播以下元素
+  broadcaster:
+	title: true
+	created: true
+	image: true
 
 concern:
   emitInterval: 5s
