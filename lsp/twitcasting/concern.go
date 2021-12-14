@@ -2,6 +2,7 @@ package twitcasting
 
 import (
 	"fmt"
+	"github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
@@ -90,9 +91,8 @@ func (tc *TwitCastConcern) removeLastStatus(id string) error {
 	// 转换
 	id = fmt.Sprintf("%v_%v", strings.ReplaceAll(id, ":", "%"), "lastStatus")
 
-	// 删除不成功？下次调用依然有状态
-	return tc.StateManager.RemoveAllById(id)
-
+	_, err := tc.Delete(id, buntdb.IgnoreNotFoundOpt())
+	return err
 }
 
 func (tc *TwitCastConcern) tcFresh() concern.FreshFunc {
@@ -170,7 +170,7 @@ func (tc *TwitCastConcern) tcFresh() concern.FreshFunc {
 			return []concern.Event{
 				&LiveEvent{
 					Live:  userInfo.User.Live,
-					User:  &userInfo.User,
+					User:  userInfo.User,
 					Movie: currentLive,
 					Id:    id.(string),
 				},
@@ -193,7 +193,7 @@ func (tc *TwitCastConcern) tcNotifyGenerator() concern.NotifyGeneratorFunc {
 			}
 		}
 
-		return []concern.Notify{}
+		return nil
 	}
 }
 
