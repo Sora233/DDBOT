@@ -137,18 +137,6 @@ bilibili:
   password: # 你的b站密码
   interval: 25s
 
-# 参阅 https://apiv2-doc.twitcasting.tv/#registration
-twitcasting:
-  clientId:  abc
-  clientSecret: xyz
-  # 为防止风控，可选择性广播以下元素
-  broadcaster:
-	title: false # 标题 (有风控机会)
-	created: true # 开播时间
-	image: true # 直播封面 
-  # 自定义名称显示，日文字太多很大机会风控
-  nameStrategy: "name" # 如何显示名称, name= 显示用户名称, userid= 显示用户ID, both= 显示 "用户名称 (用户ID)"
-
 concern:
   emitInterval: 5s
 

@@ -10,6 +10,7 @@ import (
 	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/nobuf/cas"
 	"strings"
+	"sync"
 )
 
 var logger = utils.GetModuleLogger("twitcasting-concern")
@@ -17,14 +18,16 @@ var logger = utils.GetModuleLogger("twitcasting-concern")
 var (
 	Site                        = "twitcasting"
 	Live      concern_type.Type = "live"
-	userCache                   = make(map[string]string)
+	userCache                   = sync.Map{}
 )
 
 func (tc *TwitCastConcern) getUserName(id string) (*string, error) {
 
-	if name, ok := userCache[id]; ok {
+	if data, ok := userCache.Load(id); ok {
+		name := data.(string)
 		return &name, nil
 	}
+
 	userInfo, err := tc.client.User(id)
 
 	if err != nil {
@@ -33,9 +36,26 @@ func (tc *TwitCastConcern) getUserName(id string) (*string, error) {
 
 	name := userInfo.User.Name
 
-	userCache[id] = name
+	userCache.Store(id, name)
 
 	return &name, nil
+
+}
+
+func (tc *TwitCastConcern) compareAndUpdateUsername(id string, name string) {
+
+	if data, ok := userCache.Load(id); ok {
+
+		cacheName := data.(string)
+
+		if name == cacheName { // 名字相同
+			return
+		}
+
+	}
+
+	// 否則更新
+	userCache.Store(id, name)
 
 }
 
@@ -161,6 +181,9 @@ func (tc *TwitCastConcern) tcFresh() concern.FreshFunc {
 
 				currentLive = movie
 
+				// 每次開播的時候比較快取的名稱和用戶名稱
+				tc.compareAndUpdateUsername(userId, userInfo.User.Name)
+
 			} else {
 
 				logger.Tracef("检测到 %v 已停止直播", userInfo.User.ScreenID)
@@ -198,6 +221,10 @@ func (tc *TwitCastConcern) tcNotifyGenerator() concern.NotifyGeneratorFunc {
 }
 
 func (tc *TwitCastConcern) Start() error {
+
+	if config.GlobalConfig.Get("twitcasting") == nil {
+		return fmt.Errorf("找不到 TwitCasting 配置， TC 订阅将不会启动。")
+	}
 
 	tc.client = cas.New(config.GlobalConfig.GetString("twitcasting.clientId"), config.GlobalConfig.GetString("twitcasting.clientSecret"))
 
