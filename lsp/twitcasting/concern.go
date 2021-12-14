@@ -170,6 +170,7 @@ func (tc *TwitCastConcern) tcFresh() concern.FreshFunc {
 			return []concern.Event{
 				&LiveEvent{
 					Live:  userInfo.User.Live,
+					User:  &userInfo.User,
 					Movie: currentLive,
 					Id:    id.(string),
 				},

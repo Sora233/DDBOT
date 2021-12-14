@@ -15,6 +15,7 @@ import (
 type LiveEvent struct {
 	Id    string
 	Live  bool
+	User  *cas.User
 	Movie *cas.MovieContainer
 }
 
@@ -46,19 +47,18 @@ func (n *LiveNotify) GetGroupCode() int64 {
 func (n *LiveNotify) ToMessage() *mmsg.MSG {
 
 	user := strings.ReplaceAll(n.Id, "%", ":")
+	name := n.User.Name
+
+	username := fmt.Sprintf("%v (%v)", name, user)
 
 	if !n.Live {
 
-		if n.Movie != nil {
-			user = n.Movie.Broadcaster.Name
-		}
-
-		return mmsg.NewTextf("%v 的 TwitCasting 直播已结束。", user)
+		return mmsg.NewTextf("%v 的 TwitCasting 直播已结束。", username)
 	}
 
 	// 无资讯
 	if n.Movie == nil {
-		return mmsg.NewTextf("%v 正在 TwitCasting 直播: https://twitcasting.tv/%v (直播资讯获取失败)", user, user)
+		return mmsg.NewTextf("%v 正在 TwitCasting 直播: https://twitcasting.tv/%v (直播资讯获取失败)", username, user)
 	}
 
 	enableTitle, enabledCreated, enabledImage :=
@@ -66,7 +66,7 @@ func (n *LiveNotify) ToMessage() *mmsg.MSG {
 		config.GlobalConfig.GetBool("twitcasting.broadcaster.created"),
 		config.GlobalConfig.GetBool("twitcasting.broadcaster.image")
 
-	message := fmt.Sprintf("%v 正在 TwitCasting 直播", n.Movie.Broadcaster.Name)
+	message := fmt.Sprintf("%v 正在 TwitCasting 直播", username)
 
 	if enableTitle {
 		message += fmt.Sprintf("\n标题: %v", n.Movie.Movie.Title)
@@ -87,7 +87,7 @@ func (n *LiveNotify) ToMessage() *mmsg.MSG {
 
 	msg := mmsg.NewText(message)
 
-	if enabledImage {
+	if enabledImage && n.Movie.Movie.LargeThumbnail != "" {
 		msg.Append(mmsg.NewImageByUrl(n.Movie.Movie.LargeThumbnail))
 	}
 
