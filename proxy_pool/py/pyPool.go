@@ -29,7 +29,7 @@ type PyProxy struct {
 }
 
 func (p *PyProxy) ProxyString() string {
-	return "http://" + p.proxy
+	return p.proxy
 }
 
 func (pool *ProxyPool) Get(prefer proxy_pool.Prefer) (proxy_pool.IProxy, error) {
