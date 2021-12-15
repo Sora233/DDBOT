@@ -217,7 +217,7 @@ twitcasting:
   broadcaster:
     title: false # 标题 (有风控机会)
     created: true # 开播时间
-    image: true # 直播封面 
+    image: false # 直播封面 (墙内无法获取TC直播封面，建议有代理才开启
   # 自定义名称显示，日文字太多很大机会风控
   # 例如 "(如何显示) 正在直播""
   nameStrategy: "name" # 如何显示名称, name= 显示用户名称, userid= 显示用户ID, both= 显示 "用户名称 (用户ID)"
