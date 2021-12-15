@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/proxy_pool"
+	"github.com/Sora233/DDBOT/requests"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/nobuf/cas"
@@ -99,7 +101,7 @@ func (n *LiveNotify) ToMessage() *mmsg.MSG {
 	message.Textf("\n直播间: %v", fmt.Sprintf("https://twitcasting.tv/%v", n.Movie.Broadcaster.ScreenID))
 
 	if enabledImage && n.Movie.Movie.LargeThumbnail != "" {
-		message.ImageByUrl(n.Movie.Movie.LargeThumbnail, n.Movie.Movie.SmallThumbnail)
+		message.ImageByUrl(n.Movie.Movie.LargeThumbnail, "\n[直播封面获取失败]", requests.ProxyOption(proxy_pool.PreferOversea))
 	}
 
 	return message
