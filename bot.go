@@ -21,6 +21,7 @@ import (
 	_ "github.com/Sora233/DDBOT/lsp/acfun"
 	_ "github.com/Sora233/DDBOT/lsp/douyu"
 	_ "github.com/Sora233/DDBOT/lsp/huya"
+	_ "github.com/Sora233/DDBOT/lsp/twitcasting"
 	_ "github.com/Sora233/DDBOT/lsp/weibo"
 	_ "github.com/Sora233/DDBOT/lsp/youtube"
 	_ "github.com/Sora233/DDBOT/miraigo-logging"

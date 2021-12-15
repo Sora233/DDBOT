@@ -122,6 +122,8 @@ DDBOT运行时的配置文件，可以用记事本打开修改，如果检测到
 
 如果要使用b站订阅功能，需要填入b站账号和密码。
 
+如果要使用 TwitCasting 订阅功能，请自行参考完整配置。
+
 ```yaml
 bot:
   account:  # 你的qq号，不填则使用扫码登陆
@@ -202,6 +204,23 @@ localProxyPool: # 代理池配置，固定代理
     - 127.0.0.1:8888
   mainland: # 不可翻墙的代理，用于直连国内网站
     - 127.0.0.1:8888
+
+# 加入 twitcasting 部分即启用 tc 订阅功能  
+# 参阅 https://apiv2-doc.twitcasting.tv/#registration
+# 你需要到 https://twitcasting.tv/developer.php 新增一个 App
+# 填入所需资料后就可以获取 clientId 和 clientSecret
+# 详细: https://www.codenong.com/7d930656a7499340f14a/
+twitcasting:
+  clientId:  abc
+  clientSecret: xyz
+  # 为防止风控，可选择性广播以下元素
+  broadcaster:
+    title: false # 标题 (有风控机会)
+    created: true # 开播时间
+    image: false # 直播封面 (墙内无法获取TC直播封面，建议有代理才开启
+  # 自定义名称显示，日文字太多很大机会风控
+  # 例如 "(如何显示) 正在直播""
+  nameStrategy: "name" # 如何显示名称, name= 显示用户名称, userid= 显示用户ID, both= 显示 "用户名称 (用户ID)"
 
 concern:
   emitInterval: 5s # 订阅的刷新频率，5s表示每5秒刷新一个ID，过快可能导致ip被暂时封禁
