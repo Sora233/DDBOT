@@ -262,7 +262,8 @@ func (tc *TwitCastConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}
 
 	userId := id.(string)
 
-	if _, err := tc.client.User(strings.ReplaceAll(userId, "%", ":")); err != nil {
+	// getUserName 以預先加載到快取
+	if _, err := tc.getUserName(strings.ReplaceAll(userId, "%", ":")); err != nil {
 		msg := err.Error()
 		switch {
 		case ifError(msg, "404"):
@@ -273,6 +274,8 @@ func (tc *TwitCastConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}
 			return nil, fmt.Errorf("无效请求")
 		case ifError(msg, "500"):
 			return nil, fmt.Errorf("API服务器错误")
+		default:
+			return nil, err
 		}
 	}
 
