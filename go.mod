@@ -18,6 +18,7 @@ require (
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/modern-go/gls v0.0.0-20190610040709-84558782a674
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
+	github.com/nobuf/cas v0.0.0-20170809142022-f1a96bc00438
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
@@ -49,7 +50,6 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/nobuf/cas v0.0.0-20170809142022-f1a96bc00438 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.11 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
