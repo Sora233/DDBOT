@@ -8,6 +8,7 @@ import (
 	middleware "github.com/guonaihong/gout/interface"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -172,7 +173,11 @@ func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Opt
 		df.SetHeader(opt.Header)
 	}
 	if len(opt.Proxy) > 0 {
-		df.SetProxy(opt.Proxy)
+		if strings.HasPrefix(opt.Proxy, "socks5:") {
+			df.SetSOCKS5(opt.Proxy)
+		} else {
+			df.SetProxy(opt.Proxy)
+		}
 	}
 	if opt.HttpCode != nil {
 		df.Code(opt.HttpCode)

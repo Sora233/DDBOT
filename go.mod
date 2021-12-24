@@ -4,9 +4,9 @@ go 1.17
 
 require (
 	github.com/Jeffail/gabs/v2 v2.6.1
-	github.com/Mrs4s/MiraiGo v0.0.0-20211208080234-25c67a3ee1c1
+	github.com/Mrs4s/MiraiGo v0.0.0-20211223150413-cf864799cbc8
 	github.com/PuerkitoBio/goquery v1.8.0
-	github.com/Sora233/MiraiGo-Template v0.0.0-20211208081904-bed1e0705c65
+	github.com/Sora233/MiraiGo-Template v0.0.0-20211224023117-391bac28857e
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/alecthomas/kong v0.2.17
 	github.com/davecgh/go-spew v1.1.1
@@ -18,6 +18,7 @@ require (
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/modern-go/gls v0.0.0-20190610040709-84558782a674
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
+	github.com/nobuf/cas v0.0.0-20170809142022-f1a96bc00438
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
@@ -29,13 +30,14 @@ require (
 
 require (
 	github.com/Baozisoftware/qrcode-terminal-go v0.0.0-20170407111555-c0650d8dff0f // indirect
-	github.com/RomiChan/protobuf v0.0.0-20211204042931-ff4f35848737 // indirect
+	github.com/RomiChan/protobuf v0.0.0-20211223055824-048df49a8956 // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/uuid v1.1.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
