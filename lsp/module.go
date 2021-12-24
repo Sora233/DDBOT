@@ -490,7 +490,7 @@ func (l *Lsp) SendMsg(msg *mmsg.MSG, target mmsg.Target) (res interface{}) {
 }
 
 func (l *Lsp) sendPrivateMessage(uin int64, msg *message.SendingMessage) (res *message.PrivateMessage) {
-	if bot.Instance == nil || !bot.Instance.Online {
+	if bot.Instance == nil || !bot.Instance.Online.Load() {
 		return &message.PrivateMessage{Id: -1, Elements: msg.Elements}
 	}
 	if msg == nil {
@@ -535,7 +535,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 		}
 	}()
 	l.msgRateLimit.Take()
-	if bot.Instance == nil || !bot.Instance.Online {
+	if bot.Instance == nil || !bot.Instance.Online.Load() {
 		return &message.GroupMessage{Id: -1, Elements: msg.Elements}
 	}
 	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {

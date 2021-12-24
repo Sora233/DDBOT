@@ -36,6 +36,6 @@ func TestGetBot(t *testing.T) {
 	defer test.CloseMirai()
 
 	assert.NotNil(t, hackedBot.Bot)
-	(*hackedBot.Bot).Online = true
+	(*hackedBot.Bot).Online.Store(true)
 	assert.True(t, hackedBot.IsOnline())
 }
