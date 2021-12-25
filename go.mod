@@ -22,7 +22,7 @@ require (
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
-	github.com/tidwall/buntdb v1.2.8
+	github.com/tidwall/buntdb v1.2.9
 	go.uber.org/atomic v1.9.0
 	go.uber.org/ratelimit v0.2.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
@@ -61,7 +61,7 @@ require (
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/spf13/viper v1.7.1 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	github.com/tidwall/btree v0.7.1 // indirect
+	github.com/tidwall/btree v1.1.0 // indirect
 	github.com/tidwall/gjson v1.12.1 // indirect
 	github.com/tidwall/grect v0.1.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
