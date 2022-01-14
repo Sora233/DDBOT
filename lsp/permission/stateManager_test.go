@@ -100,6 +100,7 @@ func TestStateManager_CheckRole(t *testing.T) {
 
 	assert.False(t, c.CheckRole(test.UID1, RoleType(-1)))
 	assert.False(t, c.CheckGroupRole(test.UID1, test.G1, RoleType(-1)))
+	assert.False(t, c.CheckAdmin(test.UID1))
 
 	adminOpt1 := AdminRoleRequireOption(test.UID1)
 	adminOpt2 := AdminRoleRequireOption(test.UID2)
@@ -112,6 +113,7 @@ func TestStateManager_CheckRole(t *testing.T) {
 	assert.False(t, adminOpt1.Validate(c))
 	assert.True(t, adminOpt2.Validate(c))
 	assert.True(t, c.RequireAny(adminOpt1, adminOpt2))
+	assert.True(t, c.CheckAdmin(test.UID2))
 
 	assert.NotNil(t, c.GrantRole(test.UID2, Admin))
 
@@ -121,6 +123,7 @@ func TestStateManager_CheckRole(t *testing.T) {
 	assert.False(t, adminOpt1.Validate(c))
 	assert.False(t, adminOpt2.Validate(c))
 	assert.False(t, c.RequireAny(adminOpt1, adminOpt2))
+	assert.False(t, c.CheckAdmin(test.UID2))
 
 	assert.NotNil(t, c.UngrantRole(test.UID2, Admin))
 }
@@ -135,12 +138,14 @@ func TestStateManager_CheckGroupRole(t *testing.T) {
 	assert.False(t, gadminOpt1.Validate(c))
 	assert.False(t, gadminOpt2.Validate(c))
 	assert.False(t, c.RequireAny(gadminOpt1, gadminOpt2))
+	assert.False(t, c.CheckGroupAdmin(test.G1, test.UID1))
 
 	assert.NotNil(t, c.GrantGroupRole(test.G2, test.UID1, RoleType(-1)))
 	assert.Nil(t, c.GrantGroupRole(test.G2, test.UID1, GroupAdmin))
 	assert.False(t, gadminOpt1.Validate(c))
 	assert.True(t, gadminOpt2.Validate(c))
 	assert.True(t, c.RequireAny(gadminOpt1, gadminOpt2))
+	assert.True(t, c.CheckGroupAdmin(test.G2, test.UID1))
 
 	assert.NotNil(t, c.GrantGroupRole(test.G2, test.UID1, RoleType(-1)))
 	assert.NotNil(t, c.GrantGroupRole(test.G2, test.UID1, GroupAdmin))
@@ -149,6 +154,7 @@ func TestStateManager_CheckGroupRole(t *testing.T) {
 	assert.False(t, gadminOpt1.Validate(c))
 	assert.False(t, gadminOpt2.Validate(c))
 	assert.False(t, c.RequireAny(gadminOpt1, gadminOpt2))
+	assert.False(t, c.CheckGroupAdmin(test.G2, test.UID1))
 
 	assert.NotNil(t, c.UngrantGroupRole(test.G2, test.UID1, RoleType(-1)))
 	assert.NotNil(t, c.UngrantGroupRole(test.G2, test.UID1, GroupAdmin))
@@ -188,8 +194,8 @@ func TestStateManager_RemoveAllByGroup(t *testing.T) {
 	defer test.CloseBuntdb(t)
 	c := initStateManager(t)
 
-	c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{test.G1})
-	c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{test.G2})
+	assert.Nil(t, c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{test.G1}))
+	assert.Nil(t, c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{test.G2}))
 
 	assert.Nil(t, c.GrantGroupRole(test.G1, test.UID1, GroupAdmin))
 	assert.Nil(t, c.GrantGroupRole(test.G2, test.UID1, GroupAdmin))

@@ -55,6 +55,10 @@ type Lsp struct {
 	started                bool
 }
 
+func (l *Lsp) CommandShowName(command string) string {
+	return l.commandPrefix + command
+}
+
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
 	return bot.ModuleInfo{
 		ID:       ModuleName,
@@ -301,7 +305,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		})
 
 		l.SendMsg(
-			mmsg.NewTextf("阁下的好友请求已通过，请使用<%v%v>查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。", l.commandPrefix, HelpCommand),
+			mmsg.NewTextf("阁下的好友请求已通过，请使用<%v>查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。", l.CommandShowName(HelpCommand)),
 			mmsg.NewPrivateTarget(event.Friend.Uin),
 		)
 	})
