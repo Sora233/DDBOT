@@ -5,9 +5,11 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
+	"github.com/Sora233/MiraiGo-Template/config"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
+	"io"
 	"path"
 	"sync"
 	"time"
@@ -48,6 +50,9 @@ func (m *logging) Init() {
 		return
 	}
 	qqlog := logrus.New()
+	if config.GlobalConfig.GetBool("qq-logs.disabled") {
+		qqlog.Out = io.Discard
+	}
 	qqlog.AddHook(lfshook.NewHook(writer, &logrus.TextFormatter{
 		FullTimestamp:    true,
 		PadLevelText:     true,
