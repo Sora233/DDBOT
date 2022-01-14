@@ -209,7 +209,13 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		fi := bot.FindFriend(request.InvitorUin)
 		if fi == nil {
 			request.Reject(false, "未找到阁下的好友信息，请添加好友进行操作")
-			log.Errorf("收到加群邀请，无法找到好友信息，将拒绝加群邀请")
+			log.Error("收到加群邀请，无法找到好友信息，将拒绝加群邀请")
+			return
+		}
+
+		if l.PermissionStateManager.CheckAdmin(request.InvitorUin) {
+			log.Info("收到管理员的加群邀请，将同意加群邀请")
+			request.Accept()
 			return
 		}
 
