@@ -76,9 +76,6 @@ func (l *Lsp) Init() {
 		logrus.SetLevel(lev)
 		log.Infof("设置logLevel为%v", lev.String())
 	}
-	if err := localdb.InitBuntDB(""); err != nil {
-		log.Fatalf("无法正常初始化数据库！请检查.lsp.db文件权限是否正确，如无问题则为数据库文件损坏，请阅读文档获得帮助。")
-	}
 
 	l.commandPrefix = strings.TrimSpace(config.GlobalConfig.GetString("bot.commandPrefix"))
 	if len(l.commandPrefix) == 0 {
@@ -462,9 +459,6 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 	logger.Debug("推送发送完毕")
 
 	proxy_pool.Stop()
-	if err := localdb.Close(); err != nil {
-		logger.Errorf("close db err %v", err)
-	}
 }
 
 func (l *Lsp) FreshIndex() {
