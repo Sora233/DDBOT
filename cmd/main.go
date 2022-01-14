@@ -3,25 +3,24 @@ package main
 import (
 	"fmt"
 	"github.com/Sora233/DDBOT"
+	_ "github.com/Sora233/DDBOT/logging"
 	"github.com/Sora233/DDBOT/lsp"
+	_ "github.com/Sora233/DDBOT/lsp/acfun"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/MiraiGo-Template/config"
-	"github.com/alecthomas/kong"
-	"net/http"
-	"os"
-	"runtime"
-
-	_ "github.com/Sora233/DDBOT/logging"
-	_ "github.com/Sora233/DDBOT/lsp/acfun"
 	_ "github.com/Sora233/DDBOT/lsp/douyu"
 	_ "github.com/Sora233/DDBOT/lsp/huya"
+	"github.com/Sora233/DDBOT/lsp/permission"
 	_ "github.com/Sora233/DDBOT/lsp/weibo"
 	_ "github.com/Sora233/DDBOT/lsp/youtube"
 	_ "github.com/Sora233/DDBOT/miraigo-logging"
 	_ "github.com/Sora233/DDBOT/msg-marker"
+	"github.com/Sora233/MiraiGo-Template/config"
+	"github.com/alecthomas/kong"
+	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"runtime"
 )
 
 func main() {

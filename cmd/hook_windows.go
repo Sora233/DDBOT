@@ -24,10 +24,10 @@ var (
 func exitHook(f func()) error {
 	n, _, err := procSetConsoleCtrlHandler.Call(
 		syscall.NewCallback(func(controlType uint32) uint {
+			f()
+			time.Sleep(time.Second * 1)
 			switch controlType {
-			case CTRL_CLOSE_EVENT, CTRL_LOGOFF_EVENT, CTRL_SHUTDOWN_EVENT:
-				f()
-				time.Sleep(time.Second * 1)
+			case CTRL_CLOSE_EVENT:
 				return 1
 			default:
 				return 0
