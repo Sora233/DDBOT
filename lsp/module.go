@@ -534,7 +534,6 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 			}
 		}
 	}()
-	l.msgRateLimit.Take()
 	if bot.Instance == nil || !bot.Instance.Online.Load() {
 		return &message.GroupMessage{Id: -1, Elements: msg.Elements}
 	}
@@ -555,6 +554,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 		logger.WithFields(localutils.GroupLogFields(groupCode)).Debug("send with empty message")
 		return &message.GroupMessage{Id: -1}
 	}
+	l.msgRateLimit.Take()
 	res = bot.Instance.SendGroupMessage(groupCode, msg)
 	if res == nil || res.Id == -1 {
 		if msg.Count(func(e message.IMessageElement) bool {
