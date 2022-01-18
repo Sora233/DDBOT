@@ -18,7 +18,7 @@ require (
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/modern-go/gls v0.0.0-20190610040709-84558782a674
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
-	github.com/nobuf/cas v0.0.0-20170809142022-f1a96bc00438
+	github.com/nobuf/cas v0.0.0-20211227073117-1f46a292d04a
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.0
