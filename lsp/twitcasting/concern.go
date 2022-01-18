@@ -206,6 +206,8 @@ func (tc *TwitCastConcern) tcFresh() concern.FreshFunc {
 						username = userId
 					} else {
 						username = user.User.Name
+
+						tc.compareAndUpdateUsername(userId, user.User.Name)
 					}
 
 				}
@@ -295,7 +297,11 @@ func (tc *TwitCastConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}
 				return nil, fmt.Errorf("API服务器错误")
 			case 404:
 				return nil, fmt.Errorf("找不到用户 %v", userId)
+			default:
+				return nil, err
 			}
+		} else {
+			return nil, err
 		}
 
 	}
