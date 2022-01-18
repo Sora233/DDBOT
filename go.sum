@@ -211,6 +211,8 @@ github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 h1:zYyBkD/k9seD2A7fsi6
 github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646/go.mod h1:jpp1/29i3P1S/RLdc7JQKbRpFeM1dOBd8T9ki5s+AY8=
 github.com/nobuf/cas v0.0.0-20170809142022-f1a96bc00438 h1:vq4F8HzXWhR43S1Sk1YRQLDLk0scLgjUQIGIM1qt5G8=
 github.com/nobuf/cas v0.0.0-20170809142022-f1a96bc00438/go.mod h1:W5Hd6kpo3rNvangshcCdZeAtaDs4SuWqbAOQlkHot8I=
+github.com/nobuf/cas v0.0.0-20211227073117-1f46a292d04a h1:SEVsEtQY+UmhWx43x8Tq+cAF9gURACftm8bOZgVaRzE=
+github.com/nobuf/cas v0.0.0-20211227073117-1f46a292d04a/go.mod h1:JQYYaswpPyZ6TVJkUJnDwIgWKYUmLiEDx6eknsLw1i4=
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
 github.com/pascaldekloe/goe v0.0.0-20180627143212-57f6aae5913c/go.mod h1:lzWF7FIEvWOWxwDKqyGYQf6ZUaNfKdP144TG7ZOy1lc=
 github.com/pelletier/go-toml v1.2.0 h1:T5zMGML61Wp+FlcbWjRDT7yAxhJNAiPPLOFECq181zc=
