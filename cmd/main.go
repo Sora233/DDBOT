@@ -3,24 +3,24 @@ package main
 import (
 	"fmt"
 	"github.com/Sora233/DDBOT"
+	_ "github.com/Sora233/DDBOT/logging"
 	"github.com/Sora233/DDBOT/lsp"
+	_ "github.com/Sora233/DDBOT/lsp/acfun"
 	"github.com/Sora233/DDBOT/lsp/bilibili"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/MiraiGo-Template/config"
-	"github.com/alecthomas/kong"
-	"net/http"
-	"os"
-
-	_ "github.com/Sora233/DDBOT/logging"
-	_ "github.com/Sora233/DDBOT/lsp/acfun"
 	_ "github.com/Sora233/DDBOT/lsp/douyu"
 	_ "github.com/Sora233/DDBOT/lsp/huya"
+	"github.com/Sora233/DDBOT/lsp/permission"
 	_ "github.com/Sora233/DDBOT/lsp/weibo"
 	_ "github.com/Sora233/DDBOT/lsp/youtube"
 	_ "github.com/Sora233/DDBOT/miraigo-logging"
 	_ "github.com/Sora233/DDBOT/msg-marker"
+	"github.com/Sora233/MiraiGo-Template/config"
+	"github.com/alecthomas/kong"
+	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"runtime"
 )
 
 func main() {
@@ -40,12 +40,24 @@ func main() {
 		os.Exit(0)
 	}
 
-	if cli.SetAdmin != 0 {
-		if err := localdb.InitBuntDB(""); err != nil {
-			fmt.Printf("初始化Buntdb失败 %v\n", err)
-			os.Exit(1)
+	if err := localdb.InitBuntDB(""); err != nil {
+		fmt.Println("无法正常初始化数据库！请检查.lsp.db文件权限是否正确，如无问题则为数据库文件损坏，请阅读文档获得帮助。")
+		return
+	}
+
+	if runtime.GOOS == "windows" {
+		if err := exitHook(func() {
+			localdb.Close()
+		}); err != nil {
+			localdb.Close()
+			fmt.Println("无法正常初始化Windows环境！")
+			return
 		}
+	} else {
 		defer localdb.Close()
+	}
+
+	if cli.SetAdmin != 0 {
 		sm := permission.NewStateManager()
 		err := sm.GrantRole(cli.SetAdmin, permission.Admin)
 		if err != nil {
@@ -56,11 +68,6 @@ func main() {
 
 	if cli.SyncBilibili {
 		config.Init()
-		if err := localdb.InitBuntDB(""); err != nil {
-			fmt.Printf("初始化buntdb失败 %v \n", err)
-			return
-		}
-		defer localdb.Close()
 		c := bilibili.NewConcern(nil)
 		c.StateManager.FreshIndex()
 		bilibili.Init()

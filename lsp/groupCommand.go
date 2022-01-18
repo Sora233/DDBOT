@@ -26,10 +26,23 @@ import (
 )
 
 type LspGroupCommand struct {
-	msg    *message.GroupMessage
-	prefix string
+	msg         *message.GroupMessage
+	prefix      string
+	commandName atomic.String
 
 	*Runtime
+}
+
+func (lgc *LspGroupCommand) CommandName() string {
+	if lgc == nil {
+		return ""
+	}
+	x := lgc.commandName.Load()
+	if x == "" {
+		x = strings.TrimPrefix(lgc.GetCmd(), lgc.prefix)
+		lgc.commandName.Store(x)
+	}
+	return x
 }
 
 func NewLspGroupCommand(l *Lsp, msg *message.GroupMessage) *LspGroupCommand {
@@ -89,7 +102,7 @@ func (lgc *LspGroupCommand) Execute() {
 
 	log.Debug("execute command")
 
-	switch strings.TrimPrefix(lgc.GetCmd(), lgc.prefix) {
+	switch lgc.CommandName() {
 	case LspCommand:
 		if lgc.requireNotDisable(LspCommand) {
 			lgc.LspCommand()
@@ -158,12 +171,12 @@ func (lgc *LspGroupCommand) Execute() {
 }
 
 func (lgc *LspGroupCommand) LspCommand() {
-	log := lgc.DefaultLoggerWithCommand(LspCommand)
-	log.Infof("run lsp command")
-	defer func() { log.Info("lsp command end") }()
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 
 	var lspCmd struct{}
-	_, output := lgc.parseCommandSyntax(&lspCmd, LspCommand)
+	_, output := lgc.parseCommandSyntax(&lspCmd, lgc.CommandName())
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -175,9 +188,9 @@ func (lgc *LspGroupCommand) LspCommand() {
 }
 
 func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
-	log := lgc.DefaultLoggerWithCommand(SetuCommand)
-	log.Info("run setu command")
-	defer func() { log.Info("setu command end") }()
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 
 	if !lgc.l.status.ImagePoolEnable {
 		log.Debug("image pool not setup")
@@ -188,13 +201,8 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		Num int    `arg:"" optional:"" help:"image number"`
 		Tag string `optional:"" short:"t" help:"image tag"`
 	}
-	var name string
-	if r18 {
-		name = "黄图"
-	} else {
-		name = "色图"
-	}
-	_, output := lgc.parseCommandSyntax(&setuCmd, name)
+
+	_, output := lgc.parseCommandSyntax(&setuCmd, lgc.CommandName())
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -360,23 +368,17 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 		err       error
 	)
 
-	log := lgc.DefaultLoggerWithCommand(WatchCommand)
-	log.Info("run watch command")
-	defer func() { log.Info("watch command end") }()
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 
 	var watchCmd struct {
 		Site string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
 		Type string `optional:"" short:"t" default:"" help:"类型参数"`
 		Id   string `arg:""`
 	}
-	var name string
-	if remove {
-		name = "unwatch"
-	} else {
-		name = "watch"
-	}
 
-	_, output := lgc.parseCommandSyntax(&watchCmd, name, kong.Description(
+	_, output := lgc.parseCommandSyntax(&watchCmd, lgc.CommandName(), kong.Description(
 		fmt.Sprintf("当前支持的网站：%v", strings.Join(concern.ListSite(), "/"))),
 	)
 	if output != "" {
@@ -403,14 +405,14 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 func (lgc *LspGroupCommand) ListCommand() {
 	groupCode := lgc.groupCode()
 
-	log := lgc.DefaultLoggerWithCommand(ListCommand)
-	log.Info("run list command")
-	defer func() { log.Info("list command end") }()
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 
 	var listCmd struct {
 		Site string `optional:"" short:"s" help:"网站参数"`
 	}
-	_, output := lgc.parseCommandSyntax(&listCmd, ListCommand)
+	_, output := lgc.parseCommandSyntax(&listCmd, lgc.CommandName())
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -422,14 +424,14 @@ func (lgc *LspGroupCommand) ListCommand() {
 }
 
 func (lgc *LspGroupCommand) RollCommand() {
-	log := lgc.DefaultLoggerWithCommand(RollCommand)
-	log.Info("run roll command")
-	defer func() { log.Info("roll command end") }()
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 
 	var rollCmd struct {
 		RangeArg []string `arg:"" optional:"" help:"roll range, eg. 100 / 50-100 / opt1 opt2 opt3"`
 	}
-	_, output := lgc.parseCommandSyntax(&rollCmd, RollCommand)
+	_, output := lgc.parseCommandSyntax(&rollCmd, lgc.CommandName())
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -488,12 +490,12 @@ func (lgc *LspGroupCommand) RollCommand() {
 }
 
 func (lgc *LspGroupCommand) CheckinCommand() {
-	log := lgc.DefaultLoggerWithCommand(CheckinCommand)
-	log.Infof("run checkin command")
-	defer func() { log.Info("checkin command end") }()
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 
 	var checkinCmd struct{}
-	_, output := lgc.parseCommandSyntax(&checkinCmd, CheckinCommand)
+	_, output := lgc.parseCommandSyntax(&checkinCmd, lgc.CommandName())
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -541,12 +543,12 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 }
 
 func (lgc *LspGroupCommand) ScoreCommand() {
-	log := lgc.DefaultLoggerWithCommand(ScoreCommand)
-	log.Infof("run score command")
-	defer func() { log.Info("score command end") }()
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 
 	var scoreCmd struct{}
-	_, output := lgc.parseCommandSyntax(&scoreCmd, ScoreCommand)
+	_, output := lgc.parseCommandSyntax(&scoreCmd, lgc.CommandName())
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -570,20 +572,15 @@ func (lgc *LspGroupCommand) ScoreCommand() {
 }
 
 func (lgc *LspGroupCommand) EnableCommand(disable bool) {
-	groupCode := lgc.groupCode()
-	log := lgc.DefaultLoggerWithCommand(EnableCommand).WithField("disable", disable)
-	log.Infof("run enable command")
-	defer func() { log.Info("enable command end") }()
 
-	name := "enable"
-	if disable {
-		name = "disable"
-	}
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 
 	var enableCmd struct {
 		Command string `arg:"" optional:"" help:"command name"`
 	}
-	_, output := lgc.parseCommandSyntax(&enableCmd, name)
+	_, output := lgc.parseCommandSyntax(&enableCmd, lgc.CommandName())
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -593,13 +590,13 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 
 	log = log.WithField("targetCommand", enableCmd.Command)
 
-	IEnable(lgc.NewMessageContext(log), groupCode, enableCmd.Command, disable)
+	IEnable(lgc.NewMessageContext(log), lgc.groupCode(), enableCmd.Command, disable)
 }
 
 func (lgc *LspGroupCommand) GrantCommand() {
-	log := lgc.DefaultLoggerWithCommand(GrantCommand)
-	log.Infof("run grant command")
-	defer func() { log.Info("grant command end") }()
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 
 	var grantCmd struct {
 		Command string `optional:"" short:"c" xor:"1" help:"命令名"`
@@ -607,7 +604,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 		Delete  bool   `short:"d" help:"删除模式，执行删除权限操作"`
 		Target  int64  `arg:"" help:"目标qq号"`
 	}
-	_, output := lgc.parseCommandSyntax(&grantCmd, GrantCommand)
+	_, output := lgc.parseCommandSyntax(&grantCmd, lgc.CommandName())
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -633,15 +630,15 @@ func (lgc *LspGroupCommand) GrantCommand() {
 }
 
 func (lgc *LspGroupCommand) SilenceCommand() {
-	log := lgc.DefaultLoggerWithCommand(SilenceCommand)
-	log.Info("run silence command")
-	defer func() { log.Info("silence command end") }()
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 
 	var silenceCmd struct {
 		Delete bool `optional:"" short:"d" help:"取消设置"`
 	}
 
-	_, output := lgc.parseCommandSyntax(&silenceCmd, SilenceCommand, kong.Description("设置沉默模式"), kong.UsageOnError())
+	_, output := lgc.parseCommandSyntax(&silenceCmd, lgc.CommandName(), kong.Description("设置沉默模式"), kong.UsageOnError())
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -653,9 +650,9 @@ func (lgc *LspGroupCommand) SilenceCommand() {
 }
 
 func (lgc *LspGroupCommand) ConfigCommand() {
-	log := lgc.DefaultLoggerWithCommand(ConfigCommand)
-	log.Infof("run config command")
-	defer func() { log.Info("config command end") }()
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 
 	var configCmd struct {
 		At struct {
@@ -702,7 +699,7 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		} `cmd:"" help:"配置动态过滤器" name:"filter"`
 	}
 
-	kongCtx, output := lgc.parseCommandSyntax(&configCmd, ConfigCommand,
+	kongCtx, output := lgc.parseCommandSyntax(&configCmd, lgc.CommandName(),
 		kong.Description("管理BOT的配置，目前支持配置@成员、@全体成员、开启下播推送、开启标题推送、推送过滤"),
 	)
 	if output != "" {
@@ -786,11 +783,11 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 }
 
 func (lgc *LspGroupCommand) ReverseCommand() {
-	log := lgc.DefaultLoggerWithCommand(ReverseCommand)
-	log.Info("run reverse command")
-	defer func() { log.Info("reverse command end") }()
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 
-	_, output := lgc.parseCommandSyntax(&struct{}{}, ReverseCommand, kong.Description("电脑使用/倒放 [图片] 或者 回复图片消息+/倒放触发"))
+	_, output := lgc.parseCommandSyntax(&struct{}{}, lgc.CommandName(), kong.Description("电脑使用/倒放 [图片] 或者 回复图片消息+/倒放触发"))
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -828,11 +825,11 @@ func (lgc *LspGroupCommand) ReverseCommand() {
 }
 
 func (lgc *LspGroupCommand) HelpCommand() {
-	log := lgc.DefaultLoggerWithCommand(HelpCommand)
-	log.Info("run help command")
-	defer func() { log.Info("help command end") }()
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 
-	_, output := lgc.parseCommandSyntax(&struct{}{}, HelpCommand, kong.Description("print help message"))
+	_, output := lgc.parseCommandSyntax(&struct{}{}, lgc.CommandName(), kong.Description("print help message"))
 	if output != "" {
 		lgc.textReply(output)
 	}
@@ -865,7 +862,7 @@ func (lgc *LspGroupCommand) DefaultLoggerWithCommand(command string) *logrus.Ent
 }
 
 func (lgc *LspGroupCommand) reserveGif(url string) {
-	log := lgc.DefaultLoggerWithCommand(ReverseCommand)
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
 	log.WithField("reserve_url", url).Debug("reserve image")
 	img, err := utils.ImageGet(url)
 	if err != nil {

@@ -1,5 +1,15 @@
 ## DDBOT最近更新日志
-
+- v1.0.3
+  - 支持配置不在命令行内显示qq聊天记录
+  - 现在admin邀请bot加群时会自动同意，不论bot设置成什么mode
+  - 更好的自适应命令名称
+  - 在windows平台增加了额外退出机制保证在点击console ×的时候可以正常退出
+- 2021-12-24 v1.0.2
+  - 新增订阅源`twitcasting` ( by [@eric2788](https://github.com/eric2788) )
+  - 支持socks5代理
+  - 增加miraigo `AnimatedSticker` 支持
+  - 更新miraigo解决SSO frame panic问题
+  - *merry Christmas*
 - 2021-12-08 v1.0.1.1
   - 由于发现登陆出现问题，快速更新miraigo版本发现似乎可以解决
   - 修复douyu/huya一些情况下在订阅的时刻会立即错误推送的问题

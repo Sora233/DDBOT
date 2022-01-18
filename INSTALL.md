@@ -237,7 +237,10 @@ debug: # debug模式，只有以下群或qq号可以触发命令
   uin:
     - 0
 
-message-marker: # 是否禁用自动已读功能，true为禁用，false为不禁用
+message-marker: # 是否禁用自动已读功能，true为禁用，false为不禁用，默认为不禁用
+  disable: false
+  
+qq-logs: # 是否禁用在命令行内展示qq聊天内容，true为禁用，false为不禁用，默认为不禁用
   disable: false
 
 logLevel: info # 日志等级

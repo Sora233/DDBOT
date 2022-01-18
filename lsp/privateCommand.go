@@ -16,6 +16,7 @@ import (
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/atomic"
 	"io/ioutil"
 	"runtime/debug"
 	"strconv"
@@ -24,10 +25,23 @@ import (
 )
 
 type LspPrivateCommand struct {
-	msg    *message.PrivateMessage
-	prefix string
+	msg         *message.PrivateMessage
+	prefix      string
+	commandName atomic.String
 
 	*Runtime
+}
+
+func (c *LspPrivateCommand) CommandName() string {
+	if c == nil {
+		return ""
+	}
+	x := c.commandName.Load()
+	if x == "" {
+		x = strings.TrimPrefix(c.GetCmd(), c.prefix)
+		c.commandName.Store(x)
+	}
+	return x
 }
 
 func NewLspPrivateCommand(l *Lsp, msg *message.PrivateMessage) *LspPrivateCommand {
@@ -67,7 +81,7 @@ func (c *LspPrivateCommand) Execute() {
 	log.Debug("execute command")
 
 	// all permission will be checked later
-	switch strings.TrimPrefix(c.GetCmd(), c.prefix) {
+	switch c.CommandName() {
 	case PingCommand:
 		c.PingCommand()
 	case HelpCommand:
@@ -107,17 +121,17 @@ func (c *LspPrivateCommand) Execute() {
 	case SilenceCommand:
 		c.SilenceCommand()
 	default:
-		c.textReplyF("阁下似乎输入了一个无法识别的命令，请使用<%v%v>命令查看帮助。", c.prefix, HelpCommand)
+		c.textReplyF("阁下似乎输入了一个无法识别的命令，请使用<%v>命令查看帮助。", c.l.CommandShowName(HelpCommand))
 		log.Debug("no command matched")
 	}
 }
 
 func (c *LspPrivateCommand) WhosyourdaddyCommand() {
-	log := c.DefaultLoggerWithCommand(WhosyourdaddyCommand)
-	log.Info("run whosyourdaddy command")
-	defer func() { log.Info("whosyourdaddy command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
-	_, output := c.parseCommandSyntax(&struct{}{}, WhosyourdaddyCommand)
+	_, output := c.parseCommandSyntax(&struct{}{}, c.CommandName())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -146,15 +160,15 @@ func (c *LspPrivateCommand) WhosyourdaddyCommand() {
 }
 
 func (c *LspPrivateCommand) ListCommand() {
-	log := c.DefaultLoggerWithCommand(ListCommand)
-	log.Info("run list command")
-	defer func() { log.Info("list command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	var listCmd struct {
 		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
 		Site  string `optional:"" short:"s" help:"网站参数"`
 	}
-	_, output := c.parseCommandSyntax(&listCmd, ListCommand)
+	_, output := c.parseCommandSyntax(&listCmd, c.CommandName())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -172,9 +186,9 @@ func (c *LspPrivateCommand) ListCommand() {
 }
 
 func (c *LspPrivateCommand) ConfigCommand() {
-	log := c.DefaultLoggerWithCommand(ConfigCommand)
-	log.Info("run config command")
-	defer func() { log.Info("config command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	var configCmd struct {
 		At struct {
@@ -222,7 +236,7 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		Group int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
 	}
 
-	kongCtx, output := c.parseCommandSyntax(&configCmd, ConfigCommand,
+	kongCtx, output := c.parseCommandSyntax(&configCmd, c.CommandName(),
 		kong.Description("管理BOT的配置，目前支持配置@成员、@全体成员、开启下播推送、开启标题推送、推送过滤"),
 	)
 	if output != "" {
@@ -313,22 +327,15 @@ func (c *LspPrivateCommand) ConfigCommand() {
 }
 
 func (c *LspPrivateCommand) WatchCommand(remove bool) {
-	log := c.DefaultLoggerWithCommand(WatchCommand).WithField("unwatch", remove)
-	log.Info("run watch command")
-	defer func() { log.Info("watch command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	var (
 		site      string
 		watchType concern_type.Type
 		err       error
 	)
-
-	var name string
-	if remove {
-		name = "unwatch"
-	} else {
-		name = "watch"
-	}
 
 	var watchCmd struct {
 		Site  string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
@@ -337,7 +344,7 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 		Id    string `arg:""`
 	}
 
-	_, output := c.parseCommandSyntax(&watchCmd, name)
+	_, output := c.parseCommandSyntax(&watchCmd, c.CommandName())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -368,16 +375,9 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 }
 
 func (c *LspPrivateCommand) EnableCommand(disable bool) {
-	log := c.DefaultLoggerWithCommand(EnableCommand).WithField("disable", disable)
-	log.Info("run enable command")
-	defer func() { log.Info("enable command end") }()
-
-	var name string
-	if disable {
-		name = "disable"
-	} else {
-		name = "enable"
-	}
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	var enableCmd struct {
 		Group   int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
@@ -385,7 +385,7 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 		Global  bool   `optional:"" help:"系统级操作，对所有群生效"`
 	}
 
-	_, output := c.parseCommandSyntax(&enableCmd, name)
+	_, output := c.parseCommandSyntax(&enableCmd, c.CommandName())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -452,9 +452,9 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 }
 
 func (c *LspPrivateCommand) GrantCommand() {
-	log := c.DefaultLoggerWithCommand(GrantCommand)
-	log.Info("run grant command")
-	defer func() { log.Info("grant command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	var grantCmd struct {
 		Group   int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
@@ -463,7 +463,7 @@ func (c *LspPrivateCommand) GrantCommand() {
 		Delete  bool   `short:"d" help:"删除模式，执行删除权限操作"`
 		Target  int64  `arg:"" help:"目标qq号"`
 	}
-	_, output := c.parseCommandSyntax(&grantCmd, GrantCommand)
+	_, output := c.parseCommandSyntax(&grantCmd, c.CommandName())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -505,9 +505,9 @@ func (c *LspPrivateCommand) GrantCommand() {
 }
 
 func (c *LspPrivateCommand) BlockCommand() {
-	log := c.DefaultLoggerWithCommand(BlockCommand)
-	log.Info("run block command")
-	defer func() { log.Info("block command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	if !c.l.PermissionStateManager.RequireAny(
 		permission.AdminRoleRequireOption(c.uin()),
@@ -522,7 +522,7 @@ func (c *LspPrivateCommand) BlockCommand() {
 		Delete bool  `optional:"" short:"d"`
 	}
 
-	_, output := c.parseCommandSyntax(&blockCmd, BlockCommand)
+	_, output := c.parseCommandSyntax(&blockCmd, c.CommandName())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -568,9 +568,9 @@ func (c *LspPrivateCommand) BlockCommand() {
 }
 
 func (c *LspPrivateCommand) LogCommand() {
-	log := c.DefaultLoggerWithCommand(LogCommand)
-	log.Info("run log command")
-	defer func() { log.Info("log command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	if !c.l.PermissionStateManager.RequireAny(
 		permission.AdminRoleRequireOption(c.uin()),
@@ -585,7 +585,7 @@ func (c *LspPrivateCommand) LogCommand() {
 		Keyword string    `optional:"" short:"k" help:"要包含的关键字"`
 	}
 
-	_, output := c.parseCommandSyntax(&logCmd, LogCommand)
+	_, output := c.parseCommandSyntax(&logCmd, c.CommandName())
 	if output != "" {
 		c.textSend(output)
 	}
@@ -635,9 +635,9 @@ func (c *LspPrivateCommand) LogCommand() {
 }
 
 func (c *LspPrivateCommand) QuitCommand() {
-	log := c.DefaultLoggerWithCommand(QuitCommand)
-	log.Info("run quit command")
-	defer func() { log.Info("quit command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	if !c.l.PermissionStateManager.RequireAny(
 		permission.AdminRoleRequireOption(c.uin()),
@@ -651,7 +651,7 @@ func (c *LspPrivateCommand) QuitCommand() {
 		Force     bool  `optional:"" short:"f" help:"强制清除"`
 	}
 
-	_, output := c.parseCommandSyntax(&quitCmd, QuitCommand)
+	_, output := c.parseCommandSyntax(&quitCmd, c.CommandName())
 	if output != "" {
 		c.textSend(output)
 	}
@@ -694,9 +694,9 @@ func (c *LspPrivateCommand) QuitCommand() {
 }
 
 func (c *LspPrivateCommand) ModeCommand() {
-	log := c.DefaultLoggerWithCommand(ModeCommand)
-	log.Info("run mode command")
-	defer func() { log.Info("mode command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	if !c.l.PermissionStateManager.RequireAny(
 		permission.AdminRoleRequireOption(c.uin()),
@@ -709,7 +709,7 @@ func (c *LspPrivateCommand) ModeCommand() {
 		Mode string `arg:"" optional:"" help:"指定切换模式，支持<公开> <私人> <审核>，默认为公开"`
 	}
 
-	_, output := c.parseCommandSyntax(&modeCmd, ModeCommand, kong.Description("切换BOT模式"), kong.UsageOnError())
+	_, output := c.parseCommandSyntax(&modeCmd, c.CommandName(), kong.Description("切换BOT模式"), kong.UsageOnError())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -757,9 +757,9 @@ func (c *LspPrivateCommand) ModeCommand() {
 }
 
 func (c *LspPrivateCommand) GroupRequestCommand() {
-	log := c.DefaultLoggerWithCommand(GroupRequestCommand)
-	log.Info("run GroupRequest command")
-	defer func() { log.Info("GroupRequest command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	if !c.l.PermissionStateManager.RequireAny(
 		permission.AdminRoleRequireOption(c.uin()),
@@ -775,7 +775,7 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 		Message   []string `arg:"" optional:"" help:"拒绝理由"`
 	}
 
-	_, output := c.parseCommandSyntax(&groupRequestCmd, GroupRequestCommand, kong.Description("处理群邀请"), kong.UsageOnError())
+	_, output := c.parseCommandSyntax(&groupRequestCmd, c.CommandName(), kong.Description("处理群邀请"), kong.UsageOnError())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -887,9 +887,9 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 }
 
 func (c *LspPrivateCommand) FriendRequestCommand() {
-	log := c.DefaultLoggerWithCommand(FriendRequestCommand)
-	log.Info("run FriendRequestCommand command")
-	defer func() { log.Info("FriendRequestCommand command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	if !c.l.PermissionStateManager.RequireAny(
 		permission.AdminRoleRequireOption(c.uin()),
@@ -904,7 +904,7 @@ func (c *LspPrivateCommand) FriendRequestCommand() {
 		All       bool  `optional:"" short:"a" help:"处理全部"`
 	}
 
-	_, output := c.parseCommandSyntax(&friendRequestCmd, FriendRequestCommand, kong.Description("处理好友请求"), kong.UsageOnError())
+	_, output := c.parseCommandSyntax(&friendRequestCmd, c.CommandName(), kong.Description("处理好友请求"), kong.UsageOnError())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -1005,9 +1005,9 @@ func (c *LspPrivateCommand) FriendRequestCommand() {
 }
 
 func (c *LspPrivateCommand) AdminCommand() {
-	log := c.DefaultLoggerWithCommand(AdminCommand)
-	log.Info("run admin command")
-	defer func() { log.Info("admin command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	if !c.l.PermissionStateManager.RequireAny(
 		permission.AdminRoleRequireOption(c.uin()),
@@ -1016,7 +1016,7 @@ func (c *LspPrivateCommand) AdminCommand() {
 		return
 	}
 
-	_, output := c.parseCommandSyntax(&struct{}{}, AdminCommand, kong.Description("查看当前Admin权限"), kong.UsageOnError())
+	_, output := c.parseCommandSyntax(&struct{}{}, c.CommandName(), kong.Description("查看当前Admin权限"), kong.UsageOnError())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -1044,9 +1044,9 @@ func (c *LspPrivateCommand) AdminCommand() {
 }
 
 func (c *LspPrivateCommand) SilenceCommand() {
-	log := c.DefaultLoggerWithCommand(SilenceCommand)
-	log.Info("run silence command")
-	defer func() { log.Info("silence command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	if !c.l.PermissionStateManager.RequireAny(
 		permission.AdminRoleRequireOption(c.uin()),
@@ -1060,7 +1060,7 @@ func (c *LspPrivateCommand) SilenceCommand() {
 		Delete bool  `optional:"" short:"d" help:"取消设置"`
 	}
 
-	_, output := c.parseCommandSyntax(&silenceCmd, SilenceCommand, kong.Description("设置沉默模式"), kong.UsageOnError())
+	_, output := c.parseCommandSyntax(&silenceCmd, c.CommandName(), kong.Description("设置沉默模式"), kong.UsageOnError())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -1072,11 +1072,11 @@ func (c *LspPrivateCommand) SilenceCommand() {
 }
 
 func (c *LspPrivateCommand) PingCommand() {
-	log := c.DefaultLoggerWithCommand(PingCommand)
-	log.Info("run ping command")
-	defer func() { log.Info("ping command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
-	_, output := c.parseCommandSyntax(&struct{}{}, PingCommand, kong.Description("返回pong"), kong.UsageOnError())
+	_, output := c.parseCommandSyntax(&struct{}{}, c.CommandName(), kong.Description("返回pong"), kong.UsageOnError())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -1087,11 +1087,11 @@ func (c *LspPrivateCommand) PingCommand() {
 }
 
 func (c *LspPrivateCommand) HelpCommand() {
-	log := c.DefaultLoggerWithCommand(HelpCommand)
-	log.Info("run help command")
-	defer func() { log.Info("help command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
-	_, output := c.parseCommandSyntax(&struct{}{}, HelpCommand, kong.Description("显示帮助信息"))
+	_, output := c.parseCommandSyntax(&struct{}{}, c.CommandName(), kong.Description("显示帮助信息"))
 	if output != "" {
 		c.textReply(output)
 	}
@@ -1122,11 +1122,11 @@ func (c *LspPrivateCommand) HelpCommand() {
 }
 
 func (c *LspPrivateCommand) SysinfoCommand() {
-	log := c.DefaultLoggerWithCommand(SysinfoCommand)
-	log.Info("run sysinfo command")
-	defer func() { log.Info("sysinfo command end") }()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
-	_, output := c.parseCommandSyntax(&struct{}{}, SysinfoCommand)
+	_, output := c.parseCommandSyntax(&struct{}{}, c.CommandName())
 	if output != "" {
 		c.textReply(output)
 	}

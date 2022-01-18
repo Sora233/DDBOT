@@ -3,7 +3,6 @@ package lsp
 import (
 	"errors"
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
@@ -73,7 +72,7 @@ func IList(c *MessageContext, groupCode int64, site string) {
 	}
 
 	if len(listMsg.Elements()) == 0 {
-		listMsg.Append(message.NewText("暂无订阅，可以使用/watch命令订阅"))
+		listMsg.Textf("暂无订阅，可以使用%v命令订阅", c.Lsp.CommandShowName(WatchCommand))
 	}
 	c.Send(listMsg)
 }

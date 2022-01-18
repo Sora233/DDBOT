@@ -55,6 +55,10 @@ type Lsp struct {
 	started                bool
 }
 
+func (l *Lsp) CommandShowName(command string) string {
+	return l.commandPrefix + command
+}
+
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
 	return bot.ModuleInfo{
 		ID:       ModuleName,
@@ -71,9 +75,6 @@ func (l *Lsp) Init() {
 	} else {
 		logrus.SetLevel(lev)
 		log.Infof("设置logLevel为%v", lev.String())
-	}
-	if err := localdb.InitBuntDB(""); err != nil {
-		log.Fatalf("无法正常初始化数据库！请检查.lsp.db文件权限是否正确，如无问题则为数据库文件损坏，请阅读文档获得帮助。")
 	}
 
 	l.commandPrefix = strings.TrimSpace(config.GlobalConfig.GetString("bot.commandPrefix"))
@@ -209,7 +210,13 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		fi := bot.FindFriend(request.InvitorUin)
 		if fi == nil {
 			request.Reject(false, "未找到阁下的好友信息，请添加好友进行操作")
-			log.Errorf("收到加群邀请，无法找到好友信息，将拒绝加群邀请")
+			log.Error("收到加群邀请，无法找到好友信息，将拒绝加群邀请")
+			return
+		}
+
+		if l.PermissionStateManager.CheckAdmin(request.InvitorUin) {
+			log.Info("收到管理员的加群邀请，将同意加群邀请")
+			request.Accept()
 			return
 		}
 
@@ -295,7 +302,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		})
 
 		l.SendMsg(
-			mmsg.NewTextf("阁下的好友请求已通过，请使用<%v%v>查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。", l.commandPrefix, HelpCommand),
+			mmsg.NewTextf("阁下的好友请求已通过，请使用<%v>查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。", l.CommandShowName(HelpCommand)),
 			mmsg.NewPrivateTarget(event.Friend.Uin),
 		)
 	})
@@ -452,9 +459,6 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 	logger.Debug("推送发送完毕")
 
 	proxy_pool.Stop()
-	if err := localdb.Close(); err != nil {
-		logger.Errorf("close db err %v", err)
-	}
 }
 
 func (l *Lsp) FreshIndex() {
@@ -490,7 +494,7 @@ func (l *Lsp) SendMsg(msg *mmsg.MSG, target mmsg.Target) (res interface{}) {
 }
 
 func (l *Lsp) sendPrivateMessage(uin int64, msg *message.SendingMessage) (res *message.PrivateMessage) {
-	if bot.Instance == nil || !bot.Instance.Online {
+	if bot.Instance == nil || !bot.Instance.Online.Load() {
 		return &message.PrivateMessage{Id: -1, Elements: msg.Elements}
 	}
 	if msg == nil {
@@ -534,8 +538,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 			}
 		}
 	}()
-	l.msgRateLimit.Take()
-	if bot.Instance == nil || !bot.Instance.Online {
+	if bot.Instance == nil || !bot.Instance.Online.Load() {
 		return &message.GroupMessage{Id: -1, Elements: msg.Elements}
 	}
 	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
@@ -555,6 +558,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 		logger.WithFields(localutils.GroupLogFields(groupCode)).Debug("send with empty message")
 		return &message.GroupMessage{Id: -1}
 	}
+	l.msgRateLimit.Take()
 	res = bot.Instance.SendGroupMessage(groupCode, msg)
 	if res == nil || res.Id == -1 {
 		if msg.Count(func(e message.IMessageElement) bool {

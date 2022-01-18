@@ -44,6 +44,15 @@ func (c *StateManager) CheckRole(caller int64, role RoleType) bool {
 	}
 	return c.Exist(c.PermissionKey(caller, role.String()))
 }
+
+func (c *StateManager) CheckAdmin(caller int64) bool {
+	return c.CheckRole(caller, Admin)
+}
+
+func (c *StateManager) CheckGroupAdmin(groupCode int64, caller int64) bool {
+	return c.CheckGroupRole(groupCode, caller, GroupAdmin)
+}
+
 func (c *StateManager) CheckGroupRole(groupCode int64, caller int64, role RoleType) bool {
 	if role.String() == "" {
 		return false
