@@ -120,29 +120,29 @@ func TestNewConcern(t *testing.T) {
 
 }
 
-//func TestNewConcern2(t *testing.T) {
-//	test.InitBuntdb(t)
-//	defer test.CloseBuntdb(t)
-//
-//	testNotifyChan := make(chan concern.Notify)
-//	c := NewConcern(testNotifyChan)
-//	assert.Nil(t, c.Start())
-//	defer c.Stop()
-//
-//	timeup := time.After(time.Second * 5)
-//
-//	const testId int64 = 1
-//
-//	info, err := c.Add(nil, test.G1, testId, Live)
-//	assert.Nil(t, err)
-//	assert.EqualValues(t, "admin", info.GetName())
-//	assert.EqualValues(t, testId, info.GetUid())
-//
-//	info, err = c.Remove(nil, test.G1, testId, Live)
-//	assert.Nil(t, err)
-//	assert.EqualValues(t, "admin", info.GetName())
-//	assert.EqualValues(t, testId, info.GetUid())
-//
-//	<-timeup
-//
-//}
+func TestNewConcern2(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	testNotifyChan := make(chan concern.Notify)
+	c := NewConcern(testNotifyChan)
+	assert.Nil(t, c.Start())
+	defer c.Stop()
+
+	timeup := time.After(time.Second * 5)
+
+	const testId int64 = 1
+
+	info, err := c.Add(nil, test.G1, testId, Live)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "admin", info.GetName())
+	assert.EqualValues(t, testId, info.GetUid())
+
+	info, err = c.Remove(nil, test.G1, testId, Live)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "admin", info.GetName())
+	assert.EqualValues(t, testId, info.GetUid())
+
+	<-timeup
+
+}

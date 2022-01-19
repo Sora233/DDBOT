@@ -276,19 +276,16 @@ func (c *Concern) GetStateManager() concern.IStateManager {
 
 func (c *Concern) FindUserInfo(uid int64, load bool) (*UserInfo, error) {
 	if load {
-		resp, err := V2UserContentProfile(uid)
+		resp, err := LivePage(uid)
 		if err != nil {
 			return nil, err
 		}
-		if resp.GetErrorid() != 0 {
-			return nil, fmt.Errorf("code:%v", resp.GetErrorid())
-		}
 		userInfo := &UserInfo{
-			Uid:      resp.GetVdata().GetUserId(),
-			Name:     resp.GetVdata().GetUsername(),
-			Followed: int(resp.GetVdata().GetFollowed()),
-			UserImg:  resp.GetVdata().GetUserImg(),
-			LiveUrl:  LiveUrl(resp.GetVdata().GetUserId()),
+			Uid:      uid,
+			Name:     resp.GetLiveInfo().GetUser().GetName(),
+			Followed: int(resp.GetLiveInfo().GetUser().GetFanCountValue()),
+			UserImg:  resp.GetLiveInfo().GetUser().GetHeadUrl(),
+			LiveUrl:  LiveUrl(uid),
 		}
 		err = c.AddUserInfo(userInfo)
 		if err != nil {

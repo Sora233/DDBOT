@@ -37,14 +37,14 @@ message ApiChannelListResponse {
   ChannelListData channelListData = 1;
 }
 
-message V2UserContentProfileResponse {
-  message Vdata {
-    int64 userId = 1;
-    string userImg = 2;
-    int64 Followed = 3;
-    string username = 4;
+message LivePageResponse {
+  message LiveInfo {
+    message User {
+      string headUrl = 1;
+      int32 fanCountValue = 2;
+      string name = 3;
+    }
+    User user = 1;
   }
-  int32 errorid = 1;
-  string requestid = 2;
-  Vdata vdata = 3;
+  LiveInfo liveInfo = 1;
 }
