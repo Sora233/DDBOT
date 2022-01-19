@@ -125,7 +125,16 @@ func (tc *TwitCastConcern) tcFresh() concern.FreshFunc {
 
 		logger.Tracef("正在检测 Twitcasting 用户 (%v) 的直播状态..", userId)
 
-		userInfo, err := tc.client.User(userId)
+		liveStatus, err := tc.GetIsLive(userId)
+
+		var movieId int
+
+		// 有直播才有目前的直播录像ID
+		if liveStatus.Living {
+			movieId = liveStatus.Movie.Movie.ID.Int()
+		} else {
+			movieId = -1
+		}
 
 		if err != nil {
 			return nil, err
@@ -138,9 +147,9 @@ func (tc *TwitCastConcern) tcFresh() concern.FreshFunc {
 			last, ok := tc.getLastStatus(userId)
 
 			// LastMovieId 用来获取先前的直播资讯是否与现在相同
-			if ok && last.Live == userInfo.User.Live && last.LastMovie == userInfo.User.LastMovieID.Int() {
+			if ok && last.Live == liveStatus.Living && last.LastMovie == movieId {
 
-				logger.Tracef("%v 的直播状态与上次相同，已略过", userInfo.User.ScreenID)
+				logger.Tracef("%v 的直播状态与上次相同，已略过", userId)
 				return nil, nil
 
 			}
@@ -149,8 +158,8 @@ func (tc *TwitCastConcern) tcFresh() concern.FreshFunc {
 			defer func() {
 
 				err := tc.updateLastStatus(userId, &LastStatus{
-					userInfo.User.Live,
-					userInfo.User.LastMovieID.Int(),
+					liveStatus.Living,
+					movieId,
 				})
 
 				if err != nil {
@@ -162,38 +171,53 @@ func (tc *TwitCastConcern) tcFresh() concern.FreshFunc {
 
 			}()
 
-			if !ok && !userInfo.User.Live { // 沒有先前記錄 + 下播狀態
-				logger.Tracef("%v 的初始状态为下播，已略过。", userInfo.User.ScreenID)
+			if !ok && !liveStatus.Living { // 沒有先前記錄 + 下播狀態
+				logger.Tracef("%v 的初始状态为下播，已略过。", userId)
 				return nil, nil
 			}
 
-			if userInfo.User.Live {
+			var username string
 
-				logger.Tracef("检测到 %v 正在直播", userInfo.User.ScreenID)
+			if liveStatus.Living {
 
-				movie, err := tc.client.Movie(userInfo.User.LastMovieID)
+				logger.Tracef("检测到 %v 正在直播", userId)
 
-				if err != nil {
-					return nil, err
-				} else if !movie.Movie.Live { // 直播中，但上一次的视频资讯不是直播中
-					return nil, fmt.Errorf("无法获取 %v 的直播资讯", userInfo.User.Name)
-				}
+				movie := liveStatus.Movie
 
 				currentLive = movie
 
 				// 每次開播的時候比較快取的名稱和用戶名稱
-				tc.compareAndUpdateUsername(userId, userInfo.User.Name)
+				tc.compareAndUpdateUsername(userId, movie.Broadcaster.Name)
+
+				username = movie.Broadcaster.Name
 
 			} else {
 
-				logger.Tracef("检测到 %v 已停止直播", userInfo.User.ScreenID)
+				logger.Tracef("检测到 %v 已停止直播", userId)
+
+				if name, ok := userCache.Load(userId); ok {
+					username = name.(string)
+				} else {
+
+					user, err := tc.client.User(userId)
+
+					if err != nil {
+						logger.Warnf("刷新用户名时出现错误: %v", err)
+						username = userId
+					} else {
+						username = user.User.Name
+
+						tc.compareAndUpdateUsername(userId, user.User.Name)
+					}
+
+				}
 
 			}
 
 			return []concern.Event{
 				&LiveEvent{
-					Live:  userInfo.User.Live,
-					User:  userInfo.User,
+					Live:  liveStatus.Living,
+					Name:  username,
 					Movie: currentLive,
 					Id:    id.(string),
 				},
@@ -234,7 +258,7 @@ func (tc *TwitCastConcern) Start() error {
 	// 检查 config 中的 twitcasting token 是否有效
 	if _, err := tc.client.RecommendedLives(); err != nil {
 		// 无效 token
-		if ifError(err.Error(), "401") {
+		if tcErr, ok := err.(*cas.RequestError); ok && tcErr.Content.Code == 1000 {
 			return fmt.Errorf("无效的 TwitCasting API Token, 你请确保你填写了正确的 Twitcasting token 资料")
 		} else {
 			return err
@@ -253,30 +277,33 @@ func (tc *TwitCastConcern) ParseId(s string) (interface{}, error) {
 	return strings.ReplaceAll(s, ":", "%"), nil
 }
 
-// ifError 因为 cas api 写死用 resp.Status 作为错误传递 (懒得自己包装 tc api)
-func ifError(s, err string) bool {
-	return strings.HasPrefix(s, fmt.Sprintf("Error: %s", err))
-}
-
 func (tc *TwitCastConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 
 	userId := id.(string)
 
 	// getUserName 以預先加載到快取
 	if _, err := tc.getUserName(strings.ReplaceAll(userId, "%", ":")); err != nil {
-		msg := err.Error()
-		switch {
-		case ifError(msg, "404"):
-			return nil, fmt.Errorf("找不到用户 %v", userId)
-		case ifError(msg, "403"):
-			return nil, fmt.Errorf("无效token或者请求过度频繁")
-		case ifError(msg, "400"):
-			return nil, fmt.Errorf("无效请求")
-		case ifError(msg, "500"):
-			return nil, fmt.Errorf("API服务器错误")
-		default:
+
+		// 屬於 twitcasting 官方的 error response
+		if tcErr, ok := err.(*cas.RequestError); ok {
+			switch tcErr.Content.Code {
+			case 1000:
+				return nil, fmt.Errorf("无效的 TwitCasting API Token, 你请确保你填写了正确的 Twitcasting token 资料")
+			case 2000:
+				return nil, fmt.Errorf("请求过度频繁")
+			case 400:
+				return nil, fmt.Errorf("请求内容无效")
+			case 500:
+				return nil, fmt.Errorf("API服务器错误")
+			case 404:
+				return nil, fmt.Errorf("找不到用户 %v", userId)
+			default:
+				return nil, fmt.Errorf(tcErr.Content.Message)
+			}
+		} else {
 			return nil, err
 		}
+
 	}
 
 	_, err := tc.GetStateManager().AddGroupConcern(groupCode, userId, ctype)

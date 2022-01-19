@@ -17,7 +17,7 @@ import (
 type LiveEvent struct {
 	Id    string
 	Live  bool
-	User  cas.User
+	Name  string
 	Movie *cas.MovieContainer
 }
 
@@ -49,7 +49,7 @@ func (n *LiveNotify) GetGroupCode() int64 {
 func (n *LiveNotify) ToMessage() *mmsg.MSG {
 
 	user := strings.ReplaceAll(n.Id, "%", ":")
-	name := n.User.Name
+	name := n.Name
 
 	nameStrategy := config.GlobalConfig.GetString("twitcasting.nameStrategy")
 
