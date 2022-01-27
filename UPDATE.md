@@ -1,11 +1,13 @@
 ## DDBOT最近更新日志
 
-- v1.0.3
+- 2022-01-27 v1.0.3
   - 支持配置不在命令行内显示qq聊天记录
   - 现在admin邀请bot加群时会自动同意，不论bot设置成什么mode
   - 更好的自适应命令名称
   - 在windows平台增加了额外退出机制保证在点击console ×的时候可以正常退出
   - 修复acfun无法订阅的问题
+  - 修复b站订阅的账号异常问题
+  - 更好的`twitcasting`订阅 ( by [@eric2788](https://github.com/eric2788) )
 - 2021-12-24 v1.0.2
   - 新增订阅源`twitcasting` ( by [@eric2788](https://github.com/eric2788) )
   - 支持socks5代理
