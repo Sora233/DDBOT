@@ -21,10 +21,9 @@ const (
 )
 
 type RelationModifyRequest struct {
-	Fid   int64  `json:"fid"`
-	Act   int    `json:"act"`
-	ReSrc int    `json:"re_src"`
-	Csrf  string `json:"csrf"`
+	Fid  int64  `json:"fid"`
+	Act  int    `json:"act"`
+	Csrf string `json:"csrf"`
 }
 
 func RelationModify(fid int64, act int) (*RelationModifyResponse, error) {
@@ -39,10 +38,9 @@ func RelationModify(fid int64, act int) (*RelationModifyResponse, error) {
 	var err error
 	url := BPath(PathRelationModify)
 	formRequest := &RelationModifyRequest{
-		Fid:   fid,
-		Act:   act,
-		ReSrc: 11,
-		Csrf:  GetVerifyBiliJct(),
+		Fid:  fid,
+		Act:  act,
+		Csrf: GetVerifyBiliJct(),
 	}
 	form, err := utils.ToParams(formRequest)
 	if err != nil {
@@ -57,7 +55,7 @@ func RelationModify(fid int64, act int) (*RelationModifyResponse, error) {
 	)
 	opts = append(opts, GetVerifyOption()...)
 	rmr := new(RelationModifyResponse)
-	err = requests.PostForm(url, form, rmr, opts...)
+	err = requests.PostWWWForm(url, form, rmr, opts...)
 	if err != nil {
 		return nil, err
 	}
