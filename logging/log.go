@@ -50,7 +50,8 @@ func (m *logging) Init() {
 		return
 	}
 	qqlog := logrus.New()
-	if config.GlobalConfig.GetBool("qq-logs.disabled") {
+	// 不小心写错了，只能兼容一下
+	if config.GlobalConfig.GetBool("qq-logs.disabled") || config.GlobalConfig.GetBool("qq-logs.disable") {
 		qqlog.Out = io.Discard
 	}
 	qqlog.AddHook(lfshook.NewHook(writer, &logrus.TextFormatter{
