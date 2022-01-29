@@ -23,6 +23,7 @@ import (
 	"github.com/Sora233/MiraiGo-Template/utils"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
+	"go.uber.org/atomic"
 	"go.uber.org/ratelimit"
 	"os"
 	"runtime"
@@ -52,7 +53,7 @@ type Lsp struct {
 
 	PermissionStateManager *permission.StateManager
 	LspStateManager        *StateManager
-	started                bool
+	started                atomic.Bool
 }
 
 func (l *Lsp) CommandShowName(command string) string {
@@ -375,6 +376,9 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if err := l.LspStateManager.SaveMessageImageUrl(msg.GroupCode, msg.Id, msg.Elements); err != nil {
 			logger.Errorf("SaveMessageImageUrl failed %v", err)
 		}
+		if !l.started.Load() {
+			return
+		}
 		cmd := NewLspGroupCommand(l, msg)
 		if Debug {
 			cmd.Debug()
@@ -400,6 +404,9 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnPrivateMessage(func(qqClient *client.QQClient, msg *message.PrivateMessage) {
+		if !l.started.Load() {
+			return
+		}
 		if len(msg.Elements) == 0 {
 			return
 		}
@@ -429,7 +436,7 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 		}
 	}()
 	concern.StartAll()
-	l.started = true
+	l.started.Store(true)
 	logger.Infof("DDBOT启动完成")
 	logger.Infof("D宝，一款真正人性化的单推BOT")
 }

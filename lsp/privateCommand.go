@@ -1184,11 +1184,6 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 		return
 	}
 
-	if c.bot == nil || !c.l.started {
-		c.textReply("当前暂时无法查询")
-		return
-	}
-
 	m := mmsg.NewMSG()
 	m.Textf("当前好友数：%v\n", len(c.bot.GetFriendList()))
 	m.Textf("当前群组数：%v\n", len(c.bot.GetGroupList()))
