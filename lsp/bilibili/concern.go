@@ -746,12 +746,19 @@ func (c *Concern) SyncSub() {
 		}
 		if _, found := attentionMidSet[mid]; !found {
 			resp, err := c.ModifyUserRelation(mid, actType)
-			if err == nil && resp.Code == 22002 {
-				// 可能是被拉黑了
-				logger.WithField("ModifyUserRelation Code", 22002).
-					WithField("mid", mid).
-					Errorf("ModifyUserRelation failed, remove concern")
-				c.RemoveAllById(mid)
+			if err == nil {
+				switch resp.Code {
+				case 22002, 22003:
+					// 22002 可能是被拉黑了
+					// 22003 帐号注销
+					logger.WithField("ModifyUserRelation Code", resp.Code).
+						WithField("ModifyUserRelation Message", resp.Message).
+						WithField("mid", mid).
+						Errorf("ModifyUserRelation failed, remove concern")
+					c.RemoveAllById(mid)
+				}
+			} else {
+				logger.Errorf("ModifyUserRelation error %v", err)
 			}
 			time.Sleep(time.Second * 3)
 		}
