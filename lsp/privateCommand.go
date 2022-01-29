@@ -1009,14 +1009,11 @@ func (c *LspPrivateCommand) AdminCommand() {
 	log.Infof("run %v command", c.CommandName())
 	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
-	if !c.l.PermissionStateManager.RequireAny(
-		permission.AdminRoleRequireOption(c.uin()),
-	) {
-		c.noPermission()
-		return
+	var adminCmd struct {
+		Group int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
 	}
 
-	_, output := c.parseCommandSyntax(&struct{}{}, c.CommandName(), kong.Description("查看当前Admin权限"), kong.UsageOnError())
+	_, output := c.parseCommandSyntax(&adminCmd, c.CommandName(), kong.Description("查看当前Admin权限"), kong.UsageOnError())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -1024,21 +1021,69 @@ func (c *LspPrivateCommand) AdminCommand() {
 		return
 	}
 
-	ids := c.l.PermissionStateManager.ListAdmin()
-	if len(ids) == 0 {
-		c.textReply("未查询到Admin，如果bot刚刚启动，请稍后重试。")
-		return
-	}
-	m := mmsg.NewMSG()
-	//msg := message.NewSendingMessage()
-	m.Textf("当前Admin：")
-	var name string
-	for _, id := range ids {
-		fi := c.bot.FindFriend(id)
-		if fi != nil {
-			name = fi.Nickname
+	if adminCmd.Group == 0 {
+		if !c.l.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(c.uin()),
+		) {
+			c.noPermission()
+			return
 		}
-		m.Textf("\n%v %v", id, name)
+	} else {
+		if !c.l.PermissionStateManager.RequireAny(
+			permission.AdminRoleRequireOption(c.uin()),
+			permission.GroupAdminRoleRequireOption(adminCmd.Group, c.uin()),
+		) {
+			c.noPermission()
+			return
+		}
+	}
+
+	var m = mmsg.NewMSG()
+
+	if adminCmd.Group == 0 {
+		ids := c.l.PermissionStateManager.ListAdmin()
+		if len(ids) == 0 {
+			c.textReply("未查询到Admin，如果bot刚刚启动，请稍后重试。")
+			return
+		}
+		m.Textf("当前Admin：")
+		var name string
+		for _, id := range ids {
+			fi := c.bot.FindFriend(id)
+			if fi != nil {
+				name = fi.Nickname
+			} else {
+				name = "未知"
+			}
+			m.Textf("\n%v %v", id, name)
+		}
+	} else {
+		gi := c.bot.FindGroup(adminCmd.Group)
+		if gi == nil {
+			m.Textf("注意：没有找到这个群\n")
+		}
+		ids := c.l.PermissionStateManager.ListGroupAdmin(adminCmd.Group)
+		if len(ids) == 0 {
+			m.Text("未查询到GroupAdmin，如果bot刚刚启动，请稍后重试。")
+		} else {
+			m.Textf("当前GroupAdmin：")
+			if gi == nil {
+				for _, id := range ids {
+					m.Textf("\n%v", id)
+				}
+			} else {
+				var name string
+				for _, id := range ids {
+					fi := gi.FindMember(id)
+					if fi != nil {
+						name = fi.Nickname
+					} else {
+						name = "未知"
+					}
+					m.Textf("\n%v %v", id, name)
+				}
+			}
+		}
 	}
 	c.send(m)
 }

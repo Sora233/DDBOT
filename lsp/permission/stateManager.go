@@ -271,6 +271,32 @@ func (c *StateManager) ListAdmin() []int64 {
 	return result
 }
 
+func (c *StateManager) ListGroupAdmin(groupCode int64) []int64 {
+	var result []int64
+	err := c.RCoverTx(func(tx *buntdb.Tx) error {
+		return tx.Ascend(c.GroupPermissionKey(groupCode), func(key, value string) bool {
+			splits := strings.Split(key, ":")
+			if len(splits) != 4 {
+				return true
+			}
+			if NewRoleFromString(splits[3]) == GroupAdmin {
+				i, err := strconv.ParseInt(splits[2], 0, 64)
+				if err != nil {
+					logger.WithField("Key", key).Errorf("Parse GroupPermissionKey error %v", err)
+				} else {
+					result = append(result, i)
+				}
+			}
+			return true
+		})
+	})
+	if err != nil {
+		result = nil
+		logger.Errorf("ListGroupAdmin error %v", err)
+	}
+	return result
+}
+
 func (c *StateManager) GrantGroupRole(groupCode int64, target int64, role RoleType) error {
 	if role.String() == "" {
 		return errors.New("error role")
@@ -344,6 +370,7 @@ func (c *StateManager) FreshIndex() {
 	}
 	for _, group := range localutils.GetBot().GetGroupList() {
 		c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{group.Code})
+		c.CreatePatternIndex(c.GroupEnabledKey, []interface{}{group.Code})
 	}
 }
 

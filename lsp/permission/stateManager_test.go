@@ -2,6 +2,7 @@ package permission
 
 import (
 	"github.com/Sora233/DDBOT/internal/test"
+	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -132,6 +133,9 @@ func TestStateManager_CheckGroupRole(t *testing.T) {
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 	c := initStateManager(t)
+	localutils.GetBot().TESTAddGroup(test.G1)
+	localutils.GetBot().TESTAddGroup(test.G2)
+	c.FreshIndex()
 
 	gadminOpt1 := GroupAdminRoleRequireOption(test.G1, test.UID1)
 	gadminOpt2 := GroupAdminRoleRequireOption(test.G2, test.UID1)
@@ -147,6 +151,12 @@ func TestStateManager_CheckGroupRole(t *testing.T) {
 	assert.True(t, c.RequireAny(gadminOpt1, gadminOpt2))
 	assert.True(t, c.CheckGroupAdmin(test.G2, test.UID1))
 
+	ids := c.ListGroupAdmin(test.G1)
+	assert.Empty(t, ids)
+	ids = c.ListGroupAdmin(test.G2)
+	assert.Len(t, ids, 1)
+	assert.EqualValues(t, test.UID1, ids[0])
+
 	assert.NotNil(t, c.GrantGroupRole(test.G2, test.UID1, RoleType(-1)))
 	assert.NotNil(t, c.GrantGroupRole(test.G2, test.UID1, GroupAdmin))
 
@@ -158,6 +168,9 @@ func TestStateManager_CheckGroupRole(t *testing.T) {
 
 	assert.NotNil(t, c.UngrantGroupRole(test.G2, test.UID1, RoleType(-1)))
 	assert.NotNil(t, c.UngrantGroupRole(test.G2, test.UID1, GroupAdmin))
+
+	ids = c.ListGroupAdmin(test.G2)
+	assert.Empty(t, ids)
 }
 
 func TestStateManager_CheckGroupCommandPermission(t *testing.T) {
