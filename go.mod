@@ -4,9 +4,9 @@ go 1.17
 
 require (
 	github.com/Jeffail/gabs/v2 v2.6.1
-	github.com/Mrs4s/MiraiGo v0.0.0-20220117165008-3b461554b747
+	github.com/Mrs4s/MiraiGo v0.0.0-20211208080234-25c67a3ee1c1
 	github.com/PuerkitoBio/goquery v1.8.0
-	github.com/Sora233/MiraiGo-Template v0.0.0-20211224060116-a07afc9c1a04
+	github.com/Sora233/MiraiGo-Template v0.0.0-20211208081904-bed1e0705c65
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/alecthomas/kong v0.2.17
 	github.com/davecgh/go-spew v1.1.1
@@ -34,7 +34,6 @@ require (
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.7 // indirect
-	github.com/fumiama/imgsz v0.0.2 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
