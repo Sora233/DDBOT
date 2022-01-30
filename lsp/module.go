@@ -240,7 +240,9 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 				mmsg.NewPrivateTarget(request.InvitorUin),
 			)
 			if err := l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
-				log.Errorf("设置群管理员权限失败 - %v", err)
+				if err != permission.ErrPermissionExist {
+					log.Errorf("设置群管理员权限失败 - %v", err)
+				}
 			}
 		default:
 			// impossible
@@ -338,8 +340,14 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			}
 			for _, req := range requests {
 				if req.GroupCode == info.Code {
-					l.LspStateManager.DeleteGroupInvitedRequest(req.RequestId)
-					l.PermissionStateManager.GrantGroupRole(info.Code, req.InvitorUin, permission.GroupAdmin)
+					if err = l.LspStateManager.DeleteGroupInvitedRequest(req.RequestId); err != nil {
+						log.WithField("RequestId", req.RequestId).Errorf("DeleteGroupInvitedRequest error %v", err)
+					}
+					if err = l.PermissionStateManager.GrantGroupRole(info.Code, req.InvitorUin, permission.GroupAdmin); err != nil {
+						if err != permission.ErrPermissionExist {
+							log.WithField("target", req.InvitorUin).Errorf("设置群管理员权限失败 - %v", err)
+						}
+					}
 				}
 			}
 			return nil
