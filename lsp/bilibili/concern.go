@@ -763,6 +763,11 @@ func (c *Concern) SyncSub() {
 				logger.Errorf("ModifyUserRelation error %v", err)
 			}
 			time.Sleep(time.Second * 3)
+			select {
+			case <-c.stop:
+				return
+			default:
+			}
 		}
 	}
 }
