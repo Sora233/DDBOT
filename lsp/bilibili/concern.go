@@ -57,13 +57,6 @@ func NewConcern(notify chan<- concern.Notify) *Concern {
 		stop:   make(chan interface{}),
 	}
 	c.StateManager = NewStateManager(c)
-	lastFresh, _ := c.GetLastFreshTime()
-	if lastFresh > 0 && time.Now().Sub(time.Unix(lastFresh, 0)) > time.Minute*30 {
-		c.unsafeStart.Store(true)
-		time.AfterFunc(time.Minute*3, func() {
-			c.unsafeStart.Store(false)
-		})
-	}
 	return c
 }
 
@@ -81,6 +74,15 @@ func (c *Concern) Stop() {
 
 func (c *Concern) Start() error {
 	Init()
+
+	lastFresh, _ := c.GetLastFreshTime()
+	if lastFresh > 0 && time.Now().Sub(time.Unix(lastFresh, 0)) > time.Minute*30 {
+		logger.Debug("Unsafe Start Mode")
+		c.unsafeStart.Store(true)
+		time.AfterFunc(time.Minute*3, func() {
+			c.unsafeStart.Store(false)
+		})
+	}
 
 	if !IsVerifyGiven() {
 		logger.Errorf("注意：B站配置不完整，B站相关功能无法使用！")
