@@ -560,9 +560,23 @@ func (c *StateManager) DefaultDispatch() DispatchFunc {
 				continue
 			}
 			log.Debugf("new event - %v - %v notify for %v groups", event.Site(), event.Type().String(), len(groups))
-			for _, groupCode := range groups {
-				for _, n := range c.NotifyGenerator(groupCode, event) {
-					notifyChan <- n
+			if len(groups) >= 50 {
+				log.Warnf("警告：当前事件将推送至超过50个群，为保证帐号稳定，将增加此事件的推送间隔，防止短时间内发送大量消息")
+				go func() {
+					ticker := time.NewTicker(time.Second * 3)
+					for _, groupCode := range groups {
+						<-ticker.C
+						for _, n := range c.NotifyGenerator(groupCode, event) {
+							notifyChan <- n
+						}
+					}
+					ticker.Stop()
+				}()
+			} else {
+				for _, groupCode := range groups {
+					for _, n := range c.NotifyGenerator(groupCode, event) {
+						notifyChan <- n
+					}
 				}
 			}
 		}
