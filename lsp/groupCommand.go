@@ -505,9 +505,9 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 
 	date := time.Now().Format("20060102")
 
-	var score int64
-	var resultMsg = mmsg.NewMSG()
+	var result string
 	err := localdb.RWCover(func() error {
+		var score int64
 		var err error
 		scoreKey := localdb.Key("Score", lgc.groupCode(), lgc.uin())
 		dateMarker := localdb.Key("ScoreDate", lgc.groupCode(), lgc.uin(), date)
@@ -517,7 +517,8 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 			return err
 		}
 		if localdb.Exist(dateMarker) {
-			resultMsg.Textf("明天再来吧，当前积分为%v", score)
+			log = log.WithField("current_score", score)
+			result = fmt.Sprintf("明天再来吧，当前积分为%v", score)
 			return nil
 		}
 
@@ -530,15 +531,15 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		if err != nil {
 			return err
 		}
-		log = log.WithField("new score", score)
-		resultMsg.Textf("签到成功！获得1积分，当前积分为%v", score)
+		log = log.WithField("new_score", score)
+		result = fmt.Sprintf("签到成功！获得1积分，当前积分为%v", score)
 		return nil
 	})
 	if err != nil {
 		lgc.textSend("失败 - 内部错误")
 		log.Errorf("checkin error %v", err)
 	} else {
-		lgc.send(resultMsg)
+		lgc.textReply(result)
 	}
 }
 
