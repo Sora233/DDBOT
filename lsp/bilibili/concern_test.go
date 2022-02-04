@@ -259,3 +259,14 @@ func TestConcern_GroupWatchNotify(t *testing.T) {
 		assert.Fail(t, "no item received")
 	}
 }
+
+func TestConcern_CheckRelation(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	testNotifyChan := make(chan concern.Notify)
+
+	c := NewConcern(testNotifyChan)
+
+	assert.False(t, c.checkRelation(97505))
+}
