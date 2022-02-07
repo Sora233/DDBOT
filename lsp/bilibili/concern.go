@@ -202,9 +202,10 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 				}
 				if resp.Code != 0 {
 					if resp.Code == 22015 {
+						log.Errorf("关注用户失败 %v - %v | 如果您已手动关注该用户，请在20秒后重试", resp.GetCode(), resp.GetMessage())
 						return nil, fmt.Errorf("关注用户失败 - %v\n请尝试手动登陆b站账户关注该用户", resp.GetMessage())
 					}
-					log.Errorf("关注用户失败 %v - %v | 如果您已手动关注该用户，请在20秒后重试", resp.GetCode(), resp.GetMessage())
+					log.Errorf("关注用户失败 %v - %v", resp.GetCode(), resp.GetMessage())
 					return nil, fmt.Errorf("关注用户失败 - %v", resp.GetMessage())
 				}
 			}
