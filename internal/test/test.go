@@ -2,6 +2,7 @@ package test
 
 import (
 	"fmt"
+	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
@@ -89,7 +90,9 @@ func FakeImage(size int) string {
 }
 
 func InitMirai() {
-	bot.InitBot(123456, "fake")
+	bot.Instance = &bot.Bot{
+		QQClient: client.NewClient(123456, "fake"),
+	}
 }
 
 func CloseMirai() {
