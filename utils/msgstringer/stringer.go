@@ -73,6 +73,10 @@ func MsgToString(elements []message.IMessageElement) string {
 			res.WriteString("[")
 			res.WriteString(e.Name)
 			res.WriteString("]")
+		case *message.FingerGuessingElement:
+			res.WriteString("[")
+			res.WriteString(e.Name)
+			res.WriteString("]")
 		default:
 			logger.WithField("content", spew.Sdump(elem)).Debug("found new element")
 		}
