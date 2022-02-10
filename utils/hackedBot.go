@@ -13,7 +13,7 @@ type HackedBot struct {
 }
 
 func (h *HackedBot) valid() bool {
-	if h == nil || h.Bot == nil || *h.Bot == nil || !(*h.Bot).Online {
+	if h == nil || h.Bot == nil || *h.Bot == nil || !(*h.Bot).Online.Load() {
 		return false
 	}
 	return true

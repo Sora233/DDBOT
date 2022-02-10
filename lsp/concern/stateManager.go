@@ -19,6 +19,7 @@ import (
 
 var logger = utils.GetModuleLogger("concern")
 var ErrEmitQueueNotInit = errors.New("emit queue not init")
+var ErrMaxGroupConcernExceed = errors.New("已达到订阅上限")
 
 // NotifyGeneratorFunc 是 IStateManager.NotifyGenerator 函数的具体逻辑
 // 它针对一组 groupCode 把 Event 转变成一组 Notify
@@ -93,6 +94,7 @@ type StateManager struct {
 	dispatchFunc        DispatchFunc
 	notifyGeneratorFunc NotifyGeneratorFunc
 	logger              *logrus.Entry
+	maxGroupConcern     int
 }
 
 func (c *StateManager) getGroupConcernConfig(groupCode int64, id interface{}) (concernConfig *GroupConcernConfig) {
@@ -167,13 +169,28 @@ func (c *StateManager) CheckConcern(id interface{}, ctype concern_type.Type) err
 	return nil
 }
 
-// AddGroupConcern 在group内添加id的ctype订阅，多次添加同样的订阅会返回 ErrAlreadyExists
+// AddGroupConcern 在group内添加id的ctype订阅，多次添加同样的订阅会返回 ErrAlreadyExists，如果超过订阅上限，则会返回 ErrMaxGroupConcernExceed。
+// 订阅上限可以使用 SetMaxGroupConcern 设置。
 func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
 	err = c.RWCover(func() error {
 		var err error
 		if c.CheckGroupConcern(groupCode, id, ctype) == ErrAlreadyExists {
 			return ErrAlreadyExists
 		}
+
+		if c.maxGroupConcern > 0 {
+			_, ids, ctypes, err := c.ListConcernState(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
+				return _groupCode == groupCode
+			})
+			if err != nil {
+				return err
+			}
+			ids, ctypes, _ = c.GroupTypeById(ids, ctypes)
+			if len(ids) >= c.maxGroupConcern {
+				return ErrMaxGroupConcernExceed
+			}
+		}
+
 		groupStateKey := c.GroupConcernStateKey(groupCode, id)
 		newCtype, err = c.upsertConcernType(groupStateKey, ctype)
 		if err != nil {
@@ -280,7 +297,7 @@ func (c *StateManager) GetConcern(id interface{}) (result concern_type.Type, err
 }
 
 // ListConcernState 遍历所有订阅，并根据 filter 返回需要的订阅
-func (c *StateManager) ListConcernState(filter func(groupCode int64, id interface{}, p concern_type.Type) bool) (idGroups []int64, ids []interface{}, idTypes []concern_type.Type, err error) {
+func (c *StateManager) ListConcernState(filter func(groupCode int64, id interface{}, p concern_type.Type) bool) (groupCodes []int64, ids []interface{}, idTypes []concern_type.Type, err error) {
 	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		var iterErr error
 		err := tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
@@ -295,7 +312,7 @@ func (c *StateManager) ListConcernState(filter func(groupCode int64, id interfac
 				return true
 			}
 			if filter(groupCode, id, ctype) == true {
-				idGroups = append(idGroups, groupCode)
+				groupCodes = append(groupCodes, groupCode)
 				ids = append(ids, id)
 				idTypes = append(idTypes, ctype)
 			}
@@ -354,6 +371,14 @@ func (c *StateManager) checkFresh(id interface{}, setTTL bool) bool {
 		return nil
 	})
 	return err == nil
+}
+
+// SetMaxGroupConcern 设置单个群订阅的数量上限，当设置为0或者负数表示无限制。
+func (c *StateManager) SetMaxGroupConcern(maxGroupConcern int) {
+	if maxGroupConcern < 0 {
+		maxGroupConcern = 0
+	}
+	c.maxGroupConcern = maxGroupConcern
 }
 
 // FreshIndex 刷新 group 的 index，通常不需要用户主动调用
@@ -559,7 +584,7 @@ func (c *StateManager) DefaultDispatch() DispatchFunc {
 				log.Errorf("StateManager %v: ListConcernState error %v", c.name, err)
 				continue
 			}
-			log.Debugf("new event - %v - %v notify for %v groups", event.Site(), event.Type().String(), len(groups))
+			log.Infof("new event - %v - %v notify for %v groups", event.Site(), event.Type().String(), len(groups))
 			if len(groups) >= 50 {
 				log.Warnf("警告：当前事件将推送至超过50个群，为保证帐号稳定，将增加此事件的推送间隔，防止短时间内发送大量消息")
 				go func(groups []int64, event Event) {

@@ -8,6 +8,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
+	"github.com/Sora233/DDBOT/utils/expirable"
 	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/sirupsen/logrus"
@@ -29,10 +30,11 @@ const (
 
 type Concern struct {
 	*StateManager
-	unsafeStart atomic.Bool
-	notify      chan<- concern.Notify
-	stop        chan interface{}
-	wg          sync.WaitGroup
+	attentionListExpirable *expirable.Expirable
+	unsafeStart            atomic.Bool
+	notify                 chan<- concern.Notify
+	stop                   chan interface{}
+	wg                     sync.WaitGroup
 }
 
 func (c *Concern) Site() string {
@@ -55,6 +57,22 @@ func NewConcern(notify chan<- concern.Notify) *Concern {
 	c := &Concern{
 		notify: notify,
 		stop:   make(chan interface{}),
+		attentionListExpirable: expirable.NewExpirable(time.Second*20, func() interface{} {
+			var m = make(map[int64]interface{})
+			resp, err := GetAttentionList()
+			if err != nil {
+				logger.Errorf("GetAttentionList error %v", err)
+				return m
+			}
+			if resp.GetCode() != 0 {
+				logger.Errorf("GetAttentionList error %v - %v", resp.GetCode(), resp.GetMessage())
+				return m
+			}
+			for _, id := range resp.GetData().GetList() {
+				m[id] = struct{}{}
+			}
+			return m
+		}),
 	}
 	c.StateManager = NewStateManager(c)
 	return c
@@ -165,22 +183,31 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 		if err != nil {
 			log.Errorf("GetConcern error %v", err)
 		} else if oldCtype.Empty() {
-			var actType = ActSub
-			if config.GlobalConfig.GetBool("bilibili.hiddenSub") {
-				actType = ActHiddenSub
-			}
-			resp, err := c.ModifyUserRelation(mid, actType)
-			if err != nil {
-				if err == ErrVerifyRequired {
-					log.Errorf("ModifyUserRelation error %v", err)
-					return nil, fmt.Errorf("关注用户失败 - 未配置B站")
-				} else {
-					log.WithField("action", actType).Errorf("ModifyUserRelation error %v", err)
-					return nil, fmt.Errorf("关注用户失败 - 内部错误")
+			if c.checkRelation(mid) {
+				log.Infof("当前B站账户已关注该用户，跳过关注")
+			} else {
+				var actType = ActSub
+				if config.GlobalConfig.GetBool("bilibili.hiddenSub") {
+					actType = ActHiddenSub
 				}
-			}
-			if resp.Code != 0 {
-				return nil, fmt.Errorf("关注用户失败 - %v", resp.GetMessage())
+				resp, err := c.ModifyUserRelation(mid, actType)
+				if err != nil {
+					if err == ErrVerifyRequired {
+						log.Errorf("ModifyUserRelation error %v", err)
+						return nil, fmt.Errorf("关注用户失败 - 未配置B站")
+					} else {
+						log.WithField("action", actType).Errorf("ModifyUserRelation error %v", err)
+						return nil, fmt.Errorf("关注用户失败 - 内部错误")
+					}
+				}
+				if resp.Code != 0 {
+					if resp.Code == 22015 {
+						log.Errorf("关注用户失败 %v - %v | 如果您已手动关注该用户，请在20秒后重试", resp.GetCode(), resp.GetMessage())
+						return nil, fmt.Errorf("关注用户失败 - %v\n请尝试手动登陆b站账户关注该用户", resp.GetMessage())
+					}
+					log.Errorf("关注用户失败 %v - %v", resp.GetCode(), resp.GetMessage())
+					return nil, fmt.Errorf("关注用户失败 - %v", resp.GetMessage())
+				}
 			}
 		}
 	} else if selfUid != 0 {
@@ -707,6 +734,19 @@ func (c *Concern) ModifyUserRelation(mid int64, act int) (*RelationModifyRespons
 		logger.WithField("mid", mid).WithField("act", act).Debug("modify relation")
 	}
 	return resp, nil
+}
+
+func (c *Concern) checkRelation(mid int64) bool {
+	var atr = c.attentionListExpirable.Do()
+	if atr == nil {
+		return false
+	}
+	var matr = atr.(map[int64]interface{})
+	if _, found := matr[mid]; found {
+		return true
+	} else {
+		return false
+	}
 }
 
 func (c *Concern) SyncSub() {
