@@ -133,7 +133,7 @@ func (c *CacheCard) prepare() {
 			m.Textf("\n%v", localutils.RemoveHtmlTag(c.Card.GetMblog().GetText()))
 		}
 		for _, pic := range c.Card.GetMblog().GetPics() {
-			m.ImageByUrl(pic.GetUrl(), "")
+			m.ImageByUrl(pic.GetLarge().GetUrl(), "")
 		}
 	default:
 		logger.WithField("Type", c.CardType.String()).Debug("found new card_types")
