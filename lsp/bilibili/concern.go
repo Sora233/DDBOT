@@ -168,14 +168,17 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 		log.Debugf("UserInfo cache hit")
 	}
 
-	userStat, err := c.StatUserWithCache(mid, time.Hour)
-	if err != nil {
-		log.Errorf("get UserStat error %v\n", err)
-	} else if userStat != nil {
-		if !watchSelf && userStat.Follower == 0 {
-			return nil, fmt.Errorf("该用户粉丝数为0，请确认您的订阅目标是否正确，注意使用UID而非直播间ID")
+	if !c.checkRelation(mid) {
+		userStat, err := c.StatUserWithCache(mid, time.Hour)
+		if err != nil {
+			log.Errorf("get UserStat error %v\n", err)
+		} else if userStat != nil {
+			var minFollowerCap = minFollowerCap.Load()
+			if !watchSelf && userStat.Follower <= minFollowerCap {
+				return nil, fmt.Errorf("订阅目标粉丝数未超过%v无法订阅，请确认您的订阅目标是否正确，注意使用UID而非直播间ID", minFollowerCap)
+			}
+			userInfo.UserStat = userStat
 		}
-		userInfo.UserStat = userStat
 	}
 
 	if !watchSelf {
@@ -236,13 +239,12 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 			}
 		}
 	}
-	const followerCap = 50
 	if userInfo != nil &&
 		userInfo.UserStat != nil &&
 		ctype.ContainAny(Live) &&
-		userInfo.UserStat.Follower < followerCap {
+		userInfo.UserStat.Follower < followerNotifyCap {
 		ctx.Send(mmsg.NewTextf("注意：检测到用户【%v】粉丝数少于%v，"+
-			"请确认您的订阅目标是否正确，注意使用UID而非直播间ID", userInfo.Name, followerCap))
+			"请确认您的订阅目标是否正确，注意使用UID而非直播间ID", userInfo.Name, followerNotifyCap))
 	}
 
 	return userInfo, nil

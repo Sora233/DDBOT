@@ -183,10 +183,11 @@ bilibili:
                          # auto 为默认策略，存在比较刷屏的图片时会合并
                          # only9 表示仅当恰好是9张图片的时候合并
                          # off 表示不合并
-  hiddenSub: false  # 是否使用悄悄关注，默认不使用
-  unsub: false      # 是否自动取消关注，默认不取消
-                    # 如果您的b站账号有多个bot同时使用，取消可能导致推送丢失
-
+  hiddenSub: false    # 是否使用悄悄关注，默认不使用
+  unsub: false        # 是否自动取消关注，默认不取消
+                      # 如果您的b站账号有多个bot同时使用，取消可能导致推送丢失
+  minFollowerCap: 0 # 设置订阅的b站用户需要满足至少有多少个粉丝，默认为0，设为-1表示无限制
+  
 localPool: # 图片功能，使用本地图库
   imageDir: # 本地路径
 
