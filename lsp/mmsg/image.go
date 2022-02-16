@@ -4,6 +4,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
+	"io/ioutil"
 )
 
 type ImageBytesElement struct {
@@ -38,6 +39,17 @@ func NewImageByUrlWithNorm(url string, opts ...requests.Option) *ImageBytesEleme
 		img.Buf = b
 	} else {
 		logger.WithField("url", url).Errorf("ImageGetAndNorm error %v", err)
+	}
+	return img
+}
+
+func NewImageByLocal(filepath string) *ImageBytesElement {
+	var img = NewImage(nil)
+	b, err := ioutil.ReadFile(filepath)
+	if err == nil {
+		img.Buf = b
+	} else {
+		logger.WithField("filepath", filepath).Errorf("ReadFile error %v", err)
 	}
 	return img
 }

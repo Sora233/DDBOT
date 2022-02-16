@@ -19,7 +19,7 @@ import (
 
 var logger = utils.GetModuleLogger("concern")
 var ErrEmitQueueNotInit = errors.New("emit queue not init")
-var ErrMaxGroupConcernExceed = errors.New("已达到订阅上限")
+var ErrMaxGroupConcernExceed = errors.New("本群已达到订阅上限")
 
 // NotifyGeneratorFunc 是 IStateManager.NotifyGenerator 函数的具体逻辑
 // 它针对一组 groupCode 把 Event 转变成一组 Notify
