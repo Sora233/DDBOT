@@ -7,6 +7,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/MiraiGo-Template/utils"
+	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"reflect"
 )
@@ -134,6 +135,14 @@ func (c *Concern) fresh() concern.FreshFunc {
 		if ctype.ContainAll(Live) {
 			oldInfo, _ := c.FindRoom(roomid, false)
 			liveInfo, err := c.FindRoom(roomid, true)
+			if err == ErrRoomNotExist || err == ErrRoomBanned {
+				logger.WithFields(logrus.Fields{
+					"RoomId":   roomid,
+					"RoomName": oldInfo.GetName(),
+				}).Warn("直播间不存在或被封禁，订阅将失效")
+				c.RemoveAllById(id)
+				return nil, err
+			}
 			if err != nil {
 				return nil, fmt.Errorf("load liveinfo failed %v", err)
 			}

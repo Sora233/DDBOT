@@ -272,6 +272,9 @@ func (c *StateManager) RemoveAllById(_id interface{}) (err error) {
 		for _, key := range removeKey {
 			tx.Delete(key)
 		}
+		if c.useEmit {
+			c.emitQueue.Delete(_id)
+		}
 		return nil
 	})
 }

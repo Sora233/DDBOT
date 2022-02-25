@@ -155,7 +155,8 @@ func (c *Concern) fresh() concern.FreshFunc {
 				logger.WithFields(logrus.Fields{
 					"RoomId":   roomid,
 					"RoomName": oldInfo.GetName(),
-				}).Debugf("直播间不存在或被封禁")
+				}).Warn("直播间不存在或被封禁，订阅将失效")
+				c.RemoveAllById(id)
 				return nil, err
 			}
 			if err != nil {

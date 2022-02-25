@@ -792,8 +792,9 @@ func (c *Concern) SyncSub() {
 			resp, err := c.ModifyUserRelation(mid, actType)
 			if err == nil {
 				switch resp.Code {
-				case 22002, 22013:
+				case 22002, 22003, 22013:
 					// 22002 可能是被拉黑了
+					// 22003 主动拉黑对方
 					// 22003 帐号注销
 					logger.WithField("ModifyUserRelation Code", resp.Code).
 						WithField("ModifyUserRelation Message", resp.Message).
