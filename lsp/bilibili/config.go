@@ -92,12 +92,6 @@ func (g *GroupConcernConfig) FilterHook(notify concern.Notify) (hook *concern.Ho
 		hook.Pass = true
 		return
 	case *ConcernNewsNotify:
-		// 2021-08-15 发现好像是系统推荐的直播间，非人为操作，选择不推送
-		if n.Card.GetDesc().GetType() == DynamicDescType_WithLiveV2 {
-			hook.Reason = "WithLiveV2 news notify filtered"
-			return
-		}
-
 		// 没设置过滤，pass
 		if g.GetGroupConcernFilter().Empty() {
 			hook.Pass = true
