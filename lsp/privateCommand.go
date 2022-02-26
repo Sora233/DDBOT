@@ -3,7 +3,6 @@ package lsp
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
@@ -1299,15 +1298,15 @@ func (c *LspPrivateCommand) checkGroupCode(groupCode int64) error {
 	group := c.bot.FindGroup(groupCode)
 	if !c.l.PermissionStateManager.CheckRole(c.uin(), permission.Admin) {
 		if group == nil {
-			return errors.New("没有找到该QQ群，请确认bot是否在群内")
+			return fmt.Errorf("没有找到QQ群<%v>，请确认bot是否在群内", groupCode)
 		}
 		member := group.FindMember(c.uin())
 		if member == nil {
-			return errors.New("没有在该群内找到您，请确认您是否在群内")
+			return fmt.Errorf("没有在QQ群<%v>内找到您，请确认您是否在群内", groupCode)
 		}
 	} else {
 		if group == nil {
-			c.textReply("请注意未找到该群，如果bot刚刚启动，有可能是尚未刷新完毕，将继续查询数据")
+			c.textReplyF("请注意未找到QQ群<%v>，如果bot刚刚启动，有可能是尚未刷新完毕，将继续查询数据", groupCode)
 		}
 	}
 	return nil
