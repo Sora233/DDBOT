@@ -588,8 +588,12 @@ func (c *StateManager) DefaultDispatch() DispatchFunc {
 				continue
 			}
 			log.Infof("new event - %v - %v notify for %v groups", event.Site(), event.Type().String(), len(groups))
-			if len(groups) >= 50 {
-				log.Warnf("警告：当前事件将推送至超过50个群，为保证帐号稳定，将增加此事件的推送间隔，防止短时间内发送大量消息")
+			largeNotifyLimit := config.GlobalConfig.GetInt("dispatch.largeNotifyLimit")
+			if largeNotifyLimit <= 0 {
+				largeNotifyLimit = 50
+			}
+			if len(groups) >= largeNotifyLimit {
+				log.Warnf("警告：当前事件将推送至超过%v个群，为保证帐号稳定，将增加此事件的推送间隔，防止短时间内发送大量消息", largeNotifyLimit)
 				go func(groups []int64, event Event) {
 					ticker := time.NewTicker(time.Second * 3)
 					for _, groupCode := range groups {

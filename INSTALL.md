@@ -244,6 +244,9 @@ message-marker: # 是否禁用自动已读功能，true为禁用，false为不�
 qq-logs: # 是否禁用在命令行内展示qq聊天内容，true为禁用，false为不禁用，默认为不禁用
   disable: false
 
+dispatch:
+  largeNotifyLimit: 50 # 巨量推送的判定配置，默认为50，当大于这个配置时，将增大推送延迟保证账号稳定
+
 logLevel: info # 日志等级
 ```
 
