@@ -122,6 +122,12 @@ DDBOT的命令格式皆遵守这个规则。
 /watch -s huya xiaoleyan
 ```
 
+- 订阅作者的微博动态：https://weibo.com/u/5462373877
+
+```shell
+/watch -s weibo 5462373877
+```
+
 ### /watch （私聊版本）
 
 - 在QQ群123456内订阅b站UID为2的用户的动态信息
