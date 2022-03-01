@@ -45,6 +45,5 @@ func NewStateManager(notify chan<- concern.Notify) *StateManager {
 	sm := new(StateManager)
 	sm.extraKey = NewExtraKey()
 	sm.StateManager = concern.NewStateManagerWithCustomKey(Site, NewKeySet(), notify)
-	sm.UseEmitQueue()
 	return sm
 }

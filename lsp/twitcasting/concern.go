@@ -245,6 +245,7 @@ func (tc *TwitCastConcern) tcNotifyGenerator() concern.NotifyGeneratorFunc {
 }
 
 func (tc *TwitCastConcern) Start() error {
+	tc.UseEmitQueue()
 
 	if config.GlobalConfig.Get("twitcasting") == nil {
 		return fmt.Errorf("找不到 TwitCasting 配置， TC 订阅将不会启动。")
@@ -351,7 +352,6 @@ func (tc *TwitCastConcern) GetStateManager() concern.IStateManager {
 // 如果 ParseId 中选择了int64类型， 则此处可以选择 concern.NewStateManagerWithInt64ID
 func NewConcern(notify chan<- concern.Notify) *TwitCastConcern {
 	sm := &tcStateManager{concern.NewStateManagerWithStringID(Site, notify)}
-	sm.UseEmitQueue()
 	return &TwitCastConcern{sm, nil}
 }
 

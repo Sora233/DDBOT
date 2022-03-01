@@ -36,6 +36,7 @@ func (c *Concern) GetStateManager() concern.IStateManager {
 }
 
 func (c *Concern) Start() error {
+	c.UseEmitQueue()
 	c.StateManager.UseFreshFunc(c.EmitQueueFresher(func(p concern_type.Type, id interface{}) ([]concern.Event, error) {
 		uid := id.(int64)
 		if p.ContainAny(News) {
@@ -231,6 +232,5 @@ func NewConcern(notify chan<- concern.Notify) *Concern {
 	c := &Concern{
 		StateManager: NewStateManager(notify),
 	}
-	c.UseEmitQueue()
 	return c
 }

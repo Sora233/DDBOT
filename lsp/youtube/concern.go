@@ -79,6 +79,7 @@ func (c *Concern) Stop() {
 }
 
 func (c *Concern) Start() error {
+	c.UseEmitQueue()
 	c.UseFreshFunc(c.fresh())
 	c.UseNotifyGeneratorFunc(c.notifyGenerator())
 	return c.StateManager.Start()
