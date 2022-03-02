@@ -25,8 +25,8 @@ github.com/PuerkitoBio/goquery v1.8.0 h1:PJTF7AmFCFKk1N6V6jmKfrNH9tV5pNE6lZMkG0g
 github.com/PuerkitoBio/goquery v1.8.0/go.mod h1:ypIiRMtY7COPGk+I/YbZLbxsxn9g5ejnI2HSMtkjZvI=
 github.com/RomiChan/protobuf v0.0.0-20211223055824-048df49a8956 h1:hnaAkKz4t+xpSNVp5mnuloRMd3Rj2Lfg5biZ3emv//c=
 github.com/RomiChan/protobuf v0.0.0-20211223055824-048df49a8956/go.mod h1:CKKOWC7mBxd36zxsCB1V8DTrwlTNRQvkSVbYqyUiGEE=
-github.com/Sora233/MiraiGo-Template v0.0.0-20220210045012-a1230981cc44 h1:o+BbzaffjcanF6atpvd7WdJZ3CgTFxnNJ/+zRzBFlEs=
-github.com/Sora233/MiraiGo-Template v0.0.0-20220210045012-a1230981cc44/go.mod h1:PdHJe9XcbCb9eMiA4IvilI/IWY6/of+Dp9FdIsj8MeI=
+github.com/Sora233/MiraiGo-Template v0.0.0-20220302025209-18af16201a7f h1:kphSWz5OHpHYIWkxkh3BJayLTAhjRruOPlD3ZQsT7JU=
+github.com/Sora233/MiraiGo-Template v0.0.0-20220302025209-18af16201a7f/go.mod h1:PdHJe9XcbCb9eMiA4IvilI/IWY6/of+Dp9FdIsj8MeI=
 github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882 h1:WXXRCSYXZsFd3ETkh+imU6Gz/Xdm0lXgAQILgBau0XY=
 github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882/go.mod h1:Ne6TKi7A5rdDza+cg+7YpXK1wJx7XdFZsJDqGG3lszI=
 github.com/alecthomas/kong v0.2.17 h1:URDISCI96MIgcIlQyoCAlhOmrSw6pZScBNkctg8r0W0=

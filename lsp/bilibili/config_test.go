@@ -272,7 +272,7 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 	}
 
 	testFn := func(index int, tp string, expected []DynamicDescType) {
-		notifies := newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly, DynamicDescType_WithLiveV2)
+		notifies := newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
 		var g = NewGroupConcernConfig(&concern.GroupConcernConfig{
 			GroupConcernFilter: concern.GroupConcernFilterConfig{
 				Type:   tp,
