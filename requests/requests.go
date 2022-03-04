@@ -173,8 +173,8 @@ func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Opt
 		df.SetHeader(opt.Header)
 	}
 	if len(opt.Proxy) > 0 {
-		if strings.HasPrefix(opt.Proxy, "socks5:") {
-			df.SetSOCKS5(opt.Proxy)
+		if strings.HasPrefix(opt.Proxy, "socks5://") {
+			df.SetSOCKS5(strings.TrimPrefix(opt.Proxy, "socks5://"))
 		} else {
 			df.SetProxy(opt.Proxy)
 		}
