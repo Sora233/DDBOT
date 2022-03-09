@@ -312,11 +312,6 @@ func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 			log.WithFields(localutils.GroupLogFields(groupCode)).
 				WithField("Size", len(notifies)).Debug("news notify")
 			for _, notify := range notifies {
-				// 2021-08-15 发现好像是系统推荐的直播间，非人为操作
-				// 在event阶段过滤掉
-				if notify.Card.GetDesc().GetType() == DynamicDescType_WithLiveV2 {
-					continue
-				}
 				result = append(result, notify)
 			}
 		}
@@ -532,6 +527,11 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 
 	logger.WithField("cost", time.Now().Sub(start)).Trace("freshDynamicNew cost 1")
 	for _, card := range cards {
+		// 2021-08-15 发现好像是系统推荐的直播间，非人为操作
+		// 在event阶段过滤掉
+		if card.GetDesc().GetType() == DynamicDescType_WithLiveV2 {
+			continue
+		}
 		uid := card.GetDesc().GetUid()
 		// 应该用dynamic_id_str
 		// 但好像已经没法保持向后兼容同时改动了
