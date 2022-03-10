@@ -1,6 +1,7 @@
 package template
 
 import (
+	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -14,6 +15,8 @@ func TestParser(t *testing.T) {
 		`wrong template {{ }}, no`,
 		`wrong template }} no`,
 		`wrong template {{ .asd }} no`,
+		`problem {{{{keys}}}} can yes`,
+		``,
 	}
 
 	expected := [][]INode{
@@ -30,6 +33,12 @@ func TestParser(t *testing.T) {
 		nil,
 		nil,
 		nil,
+		{
+			&stringNode{s: `problem `},
+			&keyNode{key: `{{keys}}`},
+			&stringNode{s: ` can yes`},
+		},
+		{},
 	}
 
 	assertNode := func(t *testing.T, node1, node2 INode) {
@@ -63,9 +72,23 @@ func TestParser(t *testing.T) {
 		} else {
 			assert.Nil(t, err)
 		}
+		assert.EqualValues(t, len(e), len(p.nodes), idx)
 		for cnt := range e {
-			assert.True(t, p.Next())
+			assert.True(t, p.Next(), idx)
 			assertNode(t, e[cnt], p.Peek())
 		}
 	}
+}
+
+func TestStringNode(t *testing.T) {
+	s := &stringNode{s: `abc`}
+	assert.EqualValues(t, String, s.NodeType())
+	assert.EqualValues(t, message.NewText(`abc`), s.ToElement(nil))
+}
+
+func TestKeyNode(t *testing.T) {
+	k := &keyNode{key: `key`}
+	assert.EqualValues(t, Key, k.NodeType())
+	assert.Contains(t, k.ToElement(nil).(*message.TextElement).Content, "missing")
+	assert.EqualValues(t, k.ToElement(map[string]interface{}{"key": "abc"}).(*message.TextElement).Content, "abc")
 }

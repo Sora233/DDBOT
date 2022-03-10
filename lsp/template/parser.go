@@ -41,8 +41,10 @@ func (k *keyNode) NodeType() NodeType {
 }
 
 func (k *keyNode) ToElement(boilerplate map[string]interface{}) message.IMessageElement {
-	if content, found := boilerplate[k.key]; found {
-		return message.NewText(fmt.Sprintf("%v", content))
+	if boilerplate != nil {
+		if content, found := boilerplate[k.key]; found {
+			return message.NewText(fmt.Sprintf("%v", content))
+		}
 	}
 	return message.NewText(fmt.Sprintf("{!missing key: <%s>}", k.key))
 }
@@ -83,7 +85,12 @@ func (p *Parser) Peek() INode {
 	return node
 }
 
-func (p *Parser) Parse(format string) error {
+func (p *Parser) Parse(format string) (err error) {
+	defer func() {
+		if err != nil {
+			p.nodes = nil
+		}
+	}()
 	p.nodes = nil
 	p.cur = 0
 	isBegin := func(s string, cur int) bool {
