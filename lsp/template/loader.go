@@ -2,23 +2,34 @@ package template
 
 import (
 	"errors"
+	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
+	"strings"
 )
 
 var (
-	ErrTemplateNotFound = errors.New("template not found")
-	ErrNotInit          = errors.New("not init")
+	ErrTemplateNotFound         = errors.New("template not found")
+	ErrTemplateNotSupport       = errors.New("template not support")
+	ErrTemplateActionNotSupport = errors.New("template action not support")
 )
 
-//type Loader interface {
-//	LoadTemplate(key string) ([]string, error)
-//}
-
-var defaultTemplate = map[string][]string{
-	"test": {
-		"test",
-	},
+func init() {
+	yamlLoader.templateConfig = new(viper.Viper)
+	if err := yamlLoader.templateConfig.MergeConfig(strings.NewReader(defaultTemplate)); err != nil {
+		panic(err)
+	}
 }
+
+const defaultTemplate = `
+template.command.private.help:
+  content:
+    - |
+      999
+      888
+    - |
+      777
+      666
+`
 
 type YamlTemplateLoader struct {
 	templateConfig *viper.Viper
@@ -26,32 +37,46 @@ type YamlTemplateLoader struct {
 
 var yamlLoader = new(YamlTemplateLoader)
 
-func (y *YamlTemplateLoader) loadDefault(key string) ([]string, error) {
-	if formats, found := defaultTemplate[key]; found {
-		return formats, nil
-	}
-	return nil, ErrTemplateNotFound
+type Template struct {
+	Action  string   `yaml:"action"`
+	Content []string `yaml:"content"`
 }
 
-func (y *YamlTemplateLoader) LoadTemplate(key string) ([]string, error) {
-	if y.templateConfig == nil {
-		return y.loadDefault(key)
+func LoadTemplate(key string) (*Template, error) {
+	return yamlLoader.LoadTemplate(key)
+}
+
+func (y *YamlTemplateLoader) LoadTemplate(key string) (*Template, error) {
+	obj := y.templateConfig.Get(key)
+	if obj == nil {
+		return nil, ErrTemplateNotFound
 	}
-	formats := y.templateConfig.GetStringSlice(key)
-	if formats != nil {
-		return formats, nil
+	result := new(Template)
+	if err := y.templateConfig.UnmarshalKey(key, result); err != nil {
+		return nil, ErrTemplateNotSupport
 	}
-	return y.loadDefault(key)
+	return result, nil
 }
 
 func InitTemplateLoader() {
 	v := viper.New()
-	v.SetConfigName("template")
 	v.SetConfigType("yaml")
+	v.SetConfigName("template")
 	v.AddConfigPath(".")
 	v.WatchConfig()
-	if err := v.ReadInConfig(); err != nil {
-		logger.Infof("读取模板配置失败，将使用默认模板，如果您没有使用模板，请忽略本信息: %v", err)
+	v.OnConfigChange(func(in fsnotify.Event) {
+		if err := v.MergeConfig(strings.NewReader(defaultTemplate)); err != nil {
+			panic(err)
+		}
+		if err := v.MergeInConfig(); err != nil {
+			logger.Errorf("读取模板配置失败，将使用默认模板，如果您没有使用模板，请忽略本信息: %v", err)
+		}
+	})
+	if err := v.MergeConfig(strings.NewReader(defaultTemplate)); err != nil {
+		panic(err)
+	}
+	if err := v.MergeInConfig(); err != nil {
+		logger.Errorf("读取模板配置失败，将使用默认模板，如果您没有使用模板，请忽略本信息: %v", err)
 	}
 	yamlLoader.templateConfig = v
 }

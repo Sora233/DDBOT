@@ -12,6 +12,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
+	"github.com/Sora233/DDBOT/lsp/template"
 	"github.com/Sora233/DDBOT/lsp/version"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/local_proxy_pool"
@@ -187,6 +188,9 @@ func (l *Lsp) Init() {
 		log.Debug("proxy pool turn off")
 	default:
 		log.Errorf("unknown proxy type")
+	}
+	if config.GlobalConfig.GetBool("template.enable") {
+		template.InitTemplateLoader()
 	}
 }
 
