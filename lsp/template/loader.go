@@ -24,11 +24,23 @@ const defaultTemplate = `
 template.command.private.help:
   content:
     - |
-      999
-      888
+      常见订阅用法：
+      以作者UID:97505为例
+      首先订阅直播信息：/watch 97505
+      然后订阅动态信息：/watch -t news 97505
+      由于通常动态内容较多，可以选择不推送转发的动态
+      /config filter not_type 97505 转发
+      还可以选择开启直播推送时@全体成员：
+      /config at_all 97505 on
+      以及开启下播推送：
+      /config offline_notify 97505 on
+      BOT还支持更多功能，详细命令介绍请查看命令文档：
+      https://gitee.com/sora233/DDBOT/blob/master/EXAMPLE.md
+      使用时请把作者UID换成你需要的UID
+      当您完成所有配置后，可以使用/silence命令，让bot专注于推送，在群内发言更少
     - |
-      777
-      666
+      B站专栏介绍：https://www.bilibili.com/read/cv10602230
+      如果您有任何疑问或者建议，请反馈到唯一指定交流群：755612788
 `
 
 type YamlTemplateLoader struct {

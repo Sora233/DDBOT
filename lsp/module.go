@@ -27,6 +27,7 @@ import (
 	"go.uber.org/atomic"
 	"go.uber.org/ratelimit"
 	"os"
+	"reflect"
 	"runtime"
 	"runtime/debug"
 	"strings"
@@ -190,6 +191,7 @@ func (l *Lsp) Init() {
 		log.Errorf("unknown proxy type")
 	}
 	if config.GlobalConfig.GetBool("template.enable") {
+		log.Infof("已启用模板")
 		template.InitTemplateLoader()
 	}
 }
@@ -512,6 +514,17 @@ func (l *Lsp) SendMsg(msg *mmsg.MSG, target mmsg.Target) (res interface{}) {
 	return &message.GroupMessage{Id: -1}
 }
 
+func (l *Lsp) SendChainMsg(msgs []*mmsg.MSG, target mmsg.Target) (res []interface{}) {
+	for _, msg := range msgs {
+		r := l.SendMsg(msg, target)
+		res = append(res, r)
+		if reflect.ValueOf(r).FieldByName("Id").Int() == -1 {
+			break
+		}
+	}
+	return res
+}
+
 func (l *Lsp) sendPrivateMessage(uin int64, msg *message.SendingMessage) (res *message.PrivateMessage) {
 	if bot.Instance == nil || !bot.Instance.Online.Load() {
 		return &message.PrivateMessage{Id: -1, Elements: msg.Elements}
@@ -594,19 +607,6 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 	}
 	if res == nil {
 		res = &message.GroupMessage{Id: -1, Elements: msg.Elements}
-	}
-	return res
-}
-
-// sendChainGroupMessage 发送一串消息，要求前面消息成功才能发后面的消息
-func (l *Lsp) sendChainGroupMessage(groupCode int64, msgs []*message.SendingMessage) []*message.GroupMessage {
-	var res []*message.GroupMessage
-	for _, msg := range msgs {
-		r := l.sendGroupMessage(groupCode, msg)
-		res = append(res, r)
-		if r.Id == -1 {
-			break
-		}
 	}
 	return res
 }
