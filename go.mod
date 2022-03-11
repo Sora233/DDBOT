@@ -11,6 +11,7 @@ require (
 	github.com/alecthomas/kong v0.2.17
 	github.com/davecgh/go-spew v1.1.1
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
+	github.com/fsnotify/fsnotify v1.4.7
 	github.com/golang/protobuf v1.5.2
 	github.com/guonaihong/gout v0.2.11
 	github.com/hashicorp/golang-lru v0.5.4
@@ -34,7 +35,6 @@ require (
 	github.com/RomiChan/protobuf v0.0.0-20211223055824-048df49a8956 // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
-	github.com/fsnotify/fsnotify v1.4.7 // indirect
 	github.com/fumiama/imgsz v0.0.2 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect

@@ -10,6 +10,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
+	"github.com/Sora233/DDBOT/lsp/template"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/Sora233/sliceutil"
@@ -1143,26 +1144,14 @@ func (c *LspPrivateCommand) HelpCommand() {
 		return
 	}
 
-	help := "常见订阅用法：\n" +
-		"以作者UID:97505为例\n" +
-		"首先订阅直播信息：/watch 97505\n" +
-		"然后订阅动态信息：/watch -t news 97505\n" +
-		"由于通常动态内容较多，可以选择不推送转发的动态\n" +
-		"/config filter not_type 97505 转发\n" +
-		"还可以选择开启直播推送时@全体成员：\n" +
-		"/config at_all 97505 on\n" +
-		"以及开启下播推送：\n" +
-		"/config offline_notify 97505 on\n" +
-		"BOT还支持更多功能，详细命令介绍请查看命令文档：\n" +
-		"https://gitee.com/sora233/DDBOT/blob/master/EXAMPLE.md\n" +
-		"使用时请把作者UID换成你需要的UID\n" +
-		"当您完成所有配置后，可以使用/silence命令，让bot专注于推送，在群内发言更少"
-	help2 := "B站专栏介绍：https://www.bilibili.com/read/cv10602230\n" +
-		"如果您有任何疑问或者建议，请反馈到唯一指定交流群：755612788"
-	c.textSend(help)
-	time.AfterFunc(time.Millisecond*500, func() {
-		c.textReply(help2)
-	})
+	msgs, err := template.YAMLRenderByKey("template.command.private.help", nil)
+	if err != nil {
+		c.textReply(fmt.Sprintf("错误 - %v", err))
+		return
+	}
+	for _, m := range msgs {
+		c.send(m)
+	}
 }
 
 func (c *LspPrivateCommand) SysinfoCommand() {
