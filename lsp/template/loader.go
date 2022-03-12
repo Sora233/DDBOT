@@ -41,6 +41,11 @@ template.command.private.help:
     - |
       B站专栏介绍：https://www.bilibili.com/read/cv10602230
       如果您有任何疑问或者建议，请反馈到唯一指定交流群：755612788
+
+template.command.public.help:
+  content:
+    - |-
+      DDBOT是一个多功能单推专用推送机器人，支持b站、斗鱼、油管、虎牙推送
 `
 
 type YamlTemplateLoader struct {

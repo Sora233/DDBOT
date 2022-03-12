@@ -3,6 +3,7 @@ package lsp
 import (
 	"fmt"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/template"
 	"go.uber.org/atomic"
 	"math/rand"
 	"runtime/debug"
@@ -838,18 +839,11 @@ func (lgc *LspGroupCommand) HelpCommand() {
 		return
 	}
 
-	var sb strings.Builder
-	sb.WriteString("DDBOT是一个多功能单推专用推送机器人，支持b站、斗鱼、油管、虎牙推送\n")
-
-	switch lgc.l.LspStateManager.GetCurrentMode() {
-	case PublicMode:
-		sb.WriteString("当前BOT处于公开状态，添加BOT好友后即可让BOT为阁下的群服务\n详细介绍请添加好友后私聊发送/help")
-	case PrivateMode:
-		sb.WriteString("当前BOT处于私有状态，BOT会拒绝好友与加群邀请")
-	case ProtectMode:
-		sb.WriteString("当前BOT处于审核状态，添加BOT好友并由管理员审核后即可让BOT为阁下的群服务\n详细介绍请添加好友后私聊发送/help")
+	msgs, err := template.YAMLRenderByKey("template.command.public.help", nil)
+	if err != nil {
+		lgc.textReplyF("错误 - %v", err.Error())
 	}
-	lgc.textReply(sb.String())
+	lgc.sendChain(msgs)
 }
 
 func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {
@@ -965,6 +959,15 @@ func (lgc *LspGroupCommand) reply(msg *mmsg.MSG) *message.GroupMessage {
 
 func (lgc *LspGroupCommand) send(msg *mmsg.MSG) *message.GroupMessage {
 	return lgc.l.SendMsg(msg, mmsg.NewGroupTarget(lgc.groupCode())).(*message.GroupMessage)
+}
+
+func (lgc *LspGroupCommand) sendChain(msgs []*mmsg.MSG) []*message.GroupMessage {
+	var result []*message.GroupMessage
+	var target = mmsg.NewGroupTarget(lgc.groupCode())
+	for _, r := range lgc.l.SendChainMsg(msgs, target) {
+		result = append(result, r.(*message.GroupMessage))
+	}
+	return result
 }
 
 func (lgc *LspGroupCommand) sender() *message.Sender {

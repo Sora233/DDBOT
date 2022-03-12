@@ -1149,9 +1149,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 		c.textReply(fmt.Sprintf("错误 - %v", err))
 		return
 	}
-	for _, m := range msgs {
-		c.send(m)
-	}
+	c.sendChain(msgs)
 }
 
 func (c *LspPrivateCommand) SysinfoCommand() {
@@ -1245,6 +1243,16 @@ func (c *LspPrivateCommand) textReplyF(format string, args ...interface{}) *mess
 func (c *LspPrivateCommand) send(msg *mmsg.MSG) *message.PrivateMessage {
 	return c.l.SendMsg(msg, mmsg.NewPrivateTarget(c.uin())).(*message.PrivateMessage)
 }
+
+func (c *LspPrivateCommand) sendChain(msgs []*mmsg.MSG) []*message.PrivateMessage {
+	var result []*message.PrivateMessage
+	var target = mmsg.NewPrivateTarget(c.uin())
+	for _, r := range c.l.SendChainMsg(msgs, target) {
+		result = append(result, r.(*message.PrivateMessage))
+	}
+	return result
+}
+
 func (c *LspPrivateCommand) sender() *message.Sender {
 	return c.msg.Sender
 }

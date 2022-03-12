@@ -59,7 +59,7 @@ func (p *picNode) NodeType() NodeType {
 }
 
 func (p *picNode) ToElement(boilerplate map[string]interface{}) message.IMessageElement {
-	if strings.HasPrefix("http://", p.uri) || strings.HasPrefix("https://", p.uri) {
+	if strings.HasPrefix(p.uri, "http://") || strings.HasPrefix(p.uri, "https://") {
 		return mmsg.NewImageByUrl(p.uri)
 	}
 	return mmsg.NewImageByLocal(p.uri)

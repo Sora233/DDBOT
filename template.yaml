@@ -1,6 +1,6 @@
 template.command.private.help:
   content:
-    - |
+    - |-
       常见订阅用法：
       以作者UID:97505为例
       首先订阅直播信息：/watch 97505
@@ -15,6 +15,11 @@ template.command.private.help:
       https://gitee.com/sora233/DDBOT/blob/master/EXAMPLE.md
       使用时请把作者UID换成你需要的UID
       当您完成所有配置后，可以使用/silence命令，让bot专注于推送，在群内发言更少
-    - |
+    - |-
       B站专栏介绍：https://www.bilibili.com/read/cv10602230
       如果您有任何疑问或者建议，请反馈到唯一指定交流群：755612788
+
+template.command.public.help:
+  content:
+    - |-
+      DDBOT是一个多功能单推专用推送机器人，支持b站、斗鱼、油管、虎牙推送

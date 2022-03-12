@@ -518,8 +518,11 @@ func (l *Lsp) SendChainMsg(msgs []*mmsg.MSG, target mmsg.Target) (res []interfac
 	for _, msg := range msgs {
 		r := l.SendMsg(msg, target)
 		res = append(res, r)
-		if reflect.ValueOf(r).FieldByName("Id").Int() == -1 {
+		if reflect.ValueOf(r).Elem().FieldByName("Id").Int() == -1 {
 			break
+		}
+		if len(msgs) > 1 {
+			time.Sleep(time.Millisecond * 300)
 		}
 	}
 	return res
