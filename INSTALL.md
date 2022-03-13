@@ -187,6 +187,7 @@ bilibili:
   unsub: false        # 是否自动取消关注，默认不取消
                       # 如果您的b站账号有多个bot同时使用，取消可能导致推送丢失
   minFollowerCap: 0 # 设置订阅的b站用户需要满足至少有多少个粉丝，默认为0，设为-1表示无限制
+  disableSub: false # 禁止ddbot去b站关注帐号，这意味着只能订阅帐号已关注的用户，或者在b站手动关注
   
 localPool: # 图片功能，使用本地图库
   imageDir: # 本地路径

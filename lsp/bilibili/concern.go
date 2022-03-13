@@ -189,6 +189,9 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 			if c.checkRelation(mid) {
 				log.Infof("当前B站账户已关注该用户，跳过关注")
 			} else {
+				if config.GlobalConfig.GetBool("bilibili.disableSub") {
+					return nil, fmt.Errorf("关注用户失败 - 该用户未在关注列表内，请联系管理员")
+				}
 				var actType = ActSub
 				if config.GlobalConfig.GetBool("bilibili.hiddenSub") {
 					actType = ActHiddenSub
