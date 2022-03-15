@@ -787,6 +787,10 @@ func (c *Concern) SyncSub() {
 		attentionMidSet[attentionMid] = true
 	}
 
+	var disableSub = false
+	if config.GlobalConfig.GetBool("bilibili.disableSub") {
+		disableSub = true
+	}
 	var actType = ActSub
 	if config.GlobalConfig.GetBool("bilibili.hiddenSub") {
 		actType = ActHiddenSub
@@ -797,6 +801,10 @@ func (c *Concern) SyncSub() {
 			continue
 		}
 		if _, found := attentionMidSet[mid]; !found {
+			if disableSub {
+				logger.Warnf("检测到存在未关注的订阅目标 UID:%v，同时禁用了b站自动关注，将无法推送该用户", mid)
+				continue
+			}
 			resp, err := c.ModifyUserRelation(mid, actType)
 			if err == nil {
 				switch resp.Code {
