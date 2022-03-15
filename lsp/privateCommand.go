@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
@@ -26,7 +27,6 @@ import (
 
 type LspPrivateCommand struct {
 	msg         *message.PrivateMessage
-	prefix      string
 	commandName atomic.String
 
 	*Runtime
@@ -38,7 +38,7 @@ func (c *LspPrivateCommand) CommandName() string {
 	}
 	x := c.commandName.Load()
 	if x == "" {
-		x = strings.TrimPrefix(c.GetCmd(), c.prefix)
+		x = strings.TrimPrefix(c.GetCmd(), cfg.GetCommandPrefix())
 		c.commandName.Store(x)
 	}
 	return x
@@ -48,7 +48,6 @@ func NewLspPrivateCommand(l *Lsp, msg *message.PrivateMessage) *LspPrivateComman
 	c := &LspPrivateCommand{
 		msg:     msg,
 		Runtime: NewRuntime(l),
-		prefix:  l.commandPrefix,
 	}
 	c.Parse(c.msg.Elements)
 	return c
@@ -62,7 +61,7 @@ func (c *LspPrivateCommand) Execute() {
 			c.textSend("エラー発生：看到该信息表示BOT出了一些问题，该问题已记录")
 		}
 	}()
-	if !strings.HasPrefix(c.GetCmd(), c.prefix) {
+	if !strings.HasPrefix(c.GetCmd(), cfg.GetCommandPrefix()) {
 		return
 	}
 

@@ -8,6 +8,7 @@ import (
 	"github.com/Sora233/DDBOT/image_pool/local_pool"
 	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
@@ -30,7 +31,6 @@ import (
 	"reflect"
 	"runtime"
 	"runtime/debug"
-	"strings"
 	"sync"
 	"time"
 )
@@ -50,7 +50,6 @@ type Lsp struct {
 	wg            sync.WaitGroup
 	status        *Status
 	notifyWg      sync.WaitGroup
-	commandPrefix string
 	msgRateLimit  ratelimit.Limiter
 
 	PermissionStateManager *permission.StateManager
@@ -59,7 +58,7 @@ type Lsp struct {
 }
 
 func (l *Lsp) CommandShowName(command string) string {
-	return l.commandPrefix + command
+	return cfg.GetCommandPrefix() + command
 }
 
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
@@ -78,11 +77,6 @@ func (l *Lsp) Init() {
 	} else {
 		logrus.SetLevel(lev)
 		log.Infof("设置logLevel为%v", lev.String())
-	}
-
-	l.commandPrefix = strings.TrimSpace(config.GlobalConfig.GetString("bot.commandPrefix"))
-	if len(l.commandPrefix) == 0 {
-		l.commandPrefix = "/"
 	}
 
 	curVersion := version.GetCurrentVersion(LspVersionName)

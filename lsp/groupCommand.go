@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"fmt"
+	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/template"
 	"go.uber.org/atomic"
@@ -28,7 +29,6 @@ import (
 
 type LspGroupCommand struct {
 	msg         *message.GroupMessage
-	prefix      string
 	commandName atomic.String
 
 	*Runtime
@@ -40,7 +40,7 @@ func (lgc *LspGroupCommand) CommandName() string {
 	}
 	x := lgc.commandName.Load()
 	if x == "" {
-		x = strings.TrimPrefix(lgc.GetCmd(), lgc.prefix)
+		x = strings.TrimPrefix(lgc.GetCmd(), cfg.GetCommandPrefix())
 		lgc.commandName.Store(x)
 	}
 	return x
@@ -50,7 +50,6 @@ func NewLspGroupCommand(l *Lsp, msg *message.GroupMessage) *LspGroupCommand {
 	c := &LspGroupCommand{
 		Runtime: NewRuntime(l, l.PermissionStateManager.CheckGroupSilence(msg.GroupCode)),
 		msg:     msg,
-		prefix:  l.commandPrefix,
 	}
 	c.Parse(msg.Elements)
 	return c
@@ -80,7 +79,7 @@ func (lgc *LspGroupCommand) Execute() {
 		}
 	}()
 
-	if !strings.HasPrefix(lgc.GetCmd(), lgc.prefix) {
+	if !strings.HasPrefix(lgc.GetCmd(), cfg.GetCommandPrefix()) {
 		return
 	}
 
