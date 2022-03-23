@@ -242,8 +242,8 @@ debug: # debug模式，只有以下群或qq号可以触发命令
 message-marker: # 是否禁用自动已读功能，true为禁用，false为不禁用，默认为不禁用
   disable: false
   
-qq-logs: # 是否禁用在命令行内展示qq聊天内容，true为禁用，false为不禁用，默认为不禁用
-  disable: false
+qq-logs: # 是否启用在命令行内展示qq聊天内容，true为启用，false为禁用，默认为禁用
+  enable: false
 
 dispatch:
   largeNotifyLimit: 50 # 巨量推送的判定配置，默认为50，当大于这个配置时，将增大推送延迟保证账号稳定
