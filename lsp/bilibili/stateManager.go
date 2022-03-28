@@ -199,6 +199,24 @@ func (c *StateManager) GetLastFreshTime() (int64, error) {
 	return c.GetInt64(c.LastFreshKey())
 }
 
+func (c *StateManager) MarkLatestActive(mid int64, ts int64) error {
+	return c.RWCover(func() error {
+		var old int64
+		err := c.SetInt64(c.ActiveTimestampKey(mid), ts, localdb.SetGetPreviousValueInt64Opt(&old))
+		if err != nil {
+			return err
+		}
+		if old > ts {
+			return localdb.ErrRollback
+		}
+		return nil
+	})
+}
+
+func (c *StateManager) GetLatestActive(mid int64) (int64, error) {
+	return c.GetInt64(c.ActiveTimestampKey(mid), localdb.IgnoreNotFoundOpt())
+}
+
 func (c *StateManager) SetNotifyMsg(notifyKey string, msg *message.GroupMessage) error {
 	tmp := &message.GroupMessage{
 		Id:        msg.Id,

@@ -86,6 +86,9 @@ func BilibiliCompactMarkKey(keys ...interface{}) string {
 func BilibiliNotifyMsgKey(keys ...interface{}) string {
 	return NamedKey("NotifyMsg", keys)
 }
+func BilibiliActiveTimestampKey(keys ...interface{}) string {
+	return NamedKey("ActiveTimestamp", keys)
+}
 func BilibiliLastFreshKey(keys ...interface{}) string {
 	return NamedKey("BilibiliLastFresh", keys)
 }

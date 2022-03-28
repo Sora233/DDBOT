@@ -66,6 +66,10 @@ func (k *extraKey) NotifyMsgKey(keys ...interface{}) string {
 	return buntdb.BilibiliNotifyMsgKey(keys...)
 }
 
+func (k *extraKey) ActiveTimestampKey(keys ...interface{}) string {
+	return buntdb.BilibiliActiveTimestampKey(keys...)
+}
+
 func NewKeySet() *keySet {
 	return &keySet{}
 }

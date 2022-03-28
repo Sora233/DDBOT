@@ -577,6 +577,9 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 		}
 		result = append(result, NewNewsInfoWithDetail(userInfo, cards))
 	}
+	for _, news := range result {
+		_ = c.MarkLatestActive(news.Mid, news.Timestamp)
+	}
 	logger.WithField("cost", time.Now().Sub(start)).
 		WithField("NewsInfo Size", len(result)).
 		Trace("freshDynamicNew done")
@@ -663,6 +666,10 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 			}
 			break
 		}
+	}
+	ts := time.Now().Unix()
+	for _, info := range liveInfo {
+		_ = c.MarkLatestActive(info.Mid, ts)
 	}
 	logger.WithFields(logrus.Fields{
 		"cost":          time.Since(start),
