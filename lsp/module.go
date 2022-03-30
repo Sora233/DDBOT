@@ -498,28 +498,55 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 	return l.pool.Get(options...)
 }
 
-func (l *Lsp) SendMsg(msg *mmsg.MSG, target mmsg.Target) (res interface{}) {
+func (l *Lsp) send(msg *message.SendingMessage, target mmsg.Target) interface{} {
 	switch target.TargetType() {
 	case mmsg.TargetGroup:
-		return l.sendGroupMessage(target.TargetCode(), msg.ToMessage(target))
+		return l.sendGroupMessage(target.TargetCode(), msg)
 	case mmsg.TargetPrivate:
-		return l.sendPrivateMessage(target.TargetCode(), msg.ToMessage(target))
+		return l.sendPrivateMessage(target.TargetCode(), msg)
 	}
-	return &message.GroupMessage{Id: -1}
+	panic("unknown target type")
 }
 
-func (l *Lsp) SendChainMsg(msgs []*mmsg.MSG, target mmsg.Target) (res []interface{}) {
-	for _, msg := range msgs {
-		r := l.SendMsg(msg, target)
+// SendMsg 总是返回至少一个
+func (l *Lsp) SendMsg(m *mmsg.MSG, target mmsg.Target) (res []interface{}) {
+	msgs := m.ToMessage(target)
+	if len(msgs) == 0 {
+		switch target.TargetType() {
+		case mmsg.TargetPrivate:
+			res = append(res, &message.PrivateMessage{Id: -1})
+		case mmsg.TargetGroup:
+			res = append(res, &message.GroupMessage{Id: -1})
+		}
+		return
+	}
+	for idx, msg := range msgs {
+		r := l.send(msg, target)
 		res = append(res, r)
 		if reflect.ValueOf(r).Elem().FieldByName("Id").Int() == -1 {
 			break
 		}
-		if len(msgs) > 1 {
+		if idx > 1 {
 			time.Sleep(time.Millisecond * 300)
 		}
 	}
 	return res
+}
+
+func (l *Lsp) GM(res []interface{}) []*message.GroupMessage {
+	var result []*message.GroupMessage
+	for _, r := range res {
+		result = append(result, r.(*message.GroupMessage))
+	}
+	return result
+}
+
+func (l *Lsp) PM(res []interface{}) []*message.PrivateMessage {
+	var result []*message.PrivateMessage
+	for _, r := range res {
+		result = append(result, r.(*message.PrivateMessage))
+	}
+	return result
 }
 
 func (l *Lsp) sendPrivateMessage(uin int64, msg *message.SendingMessage) (res *message.PrivateMessage) {

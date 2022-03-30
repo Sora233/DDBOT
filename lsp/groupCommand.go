@@ -957,16 +957,11 @@ func (lgc *LspGroupCommand) reply(msg *mmsg.MSG) *message.GroupMessage {
 }
 
 func (lgc *LspGroupCommand) send(msg *mmsg.MSG) *message.GroupMessage {
-	return lgc.l.SendMsg(msg, mmsg.NewGroupTarget(lgc.groupCode())).(*message.GroupMessage)
+	return lgc.l.GM(lgc.l.SendMsg(msg, mmsg.NewGroupTarget(lgc.groupCode())))[0]
 }
 
-func (lgc *LspGroupCommand) sendChain(msgs []*mmsg.MSG) []*message.GroupMessage {
-	var result []*message.GroupMessage
-	var target = mmsg.NewGroupTarget(lgc.groupCode())
-	for _, r := range lgc.l.SendChainMsg(msgs, target) {
-		result = append(result, r.(*message.GroupMessage))
-	}
-	return result
+func (lgc *LspGroupCommand) sendChain(msg *mmsg.MSG) []*message.GroupMessage {
+	return lgc.l.GM(lgc.l.SendMsg(msg, mmsg.NewGroupTarget(lgc.groupCode())))
 }
 
 func (lgc *LspGroupCommand) sender() *message.Sender {

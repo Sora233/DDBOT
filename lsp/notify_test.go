@@ -42,11 +42,11 @@ func TestLsp_ConcernNotify(t *testing.T) {
 
 	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), success)
 
 	IWatch(ctx, test.G2, test.NAME1, test.Site1, test.T1, false)
 	result = <-msgChan
-	assert.Contains(t, msgstringer.MsgToString(result.ToMessage(target).Elements), success)
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), success)
 
 	testEventChan <- tc1.NewTestEvent(test.T1, 0, test.NAME1)
 
@@ -58,9 +58,10 @@ func TestLsp_ConcernNotify(t *testing.T) {
 }
 
 func TestNewAtAllMsg(t *testing.T) {
-	msg := newAtAllMsg()
+	var msg = mmsg.NewMSG()
+	newAtAllMsg(msg)
 	assert.NotNil(t, msg)
-	e := msg.FirstOrNil(func(e message.IMessageElement) bool {
+	e := msg.ToCombineMessage(mmsg.NewGroupTarget(test.G1)).FirstOrNil(func(e message.IMessageElement) bool {
 		return e.Type() == message.At
 	})
 	assert.NotNil(t, e)
@@ -68,7 +69,8 @@ func TestNewAtAllMsg(t *testing.T) {
 }
 
 func TestNewAtIdsMsg(t *testing.T) {
-	msg := newAtIdsMsg([]int64{test.UID1, test.UID2})
+	var msg = mmsg.NewMSG()
+	newAtIdsMsg(msg, []int64{test.UID1, test.UID2})
 	assert.NotNil(t, msg)
-	assert.Len(t, msg.Elements, 2)
+	assert.Len(t, msg.Elements(), 2)
 }

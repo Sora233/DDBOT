@@ -8,10 +8,10 @@ import (
 type YamlEngine struct {
 }
 
-func (t *YamlEngine) Render(template *Template, boilerplate map[string]interface{}) ([]*mmsg.MSG, error) {
+func (t *YamlEngine) Render(template *Template, boilerplate map[string]interface{}) (*mmsg.MSG, error) {
 	var (
-		p      = new(Parser)
-		result []*mmsg.MSG
+		p = new(Parser)
+		m = mmsg.NewMSG()
 	)
 	if template == nil || template.Content == nil {
 		return nil, nil
@@ -19,38 +19,36 @@ func (t *YamlEngine) Render(template *Template, boilerplate map[string]interface
 	switch template.Action {
 	case "", "text":
 		for _, format := range template.Content {
-			m := mmsg.NewMSG()
 			if err := p.Parse(format); err != nil {
 				return nil, err
 			}
 			for p.Next() {
 				m.Append(p.Peek().ToElement(boilerplate))
 			}
-			result = append(result, m)
+			m.Cut()
 		}
 	case "roll":
-		m := mmsg.NewMSG()
 		if err := p.Parse(template.Content[rand.Intn(len(template.Content))]); err != nil {
 			return nil, err
 		}
 		for p.Next() {
 			m.Append(p.Peek().ToElement(boilerplate))
 		}
-		result = append(result, m)
+		m.Cut()
 	default:
 		logger.WithField("template", template.Content).Errorf("unknown render action <%v>", template.Action)
 		return nil, ErrTemplateActionNotSupport
 	}
-	return result, nil
+	return m, nil
 }
 
 var yamlEngine = new(YamlEngine)
 
-func YAMLRender(template *Template, boilerplate map[string]interface{}) ([]*mmsg.MSG, error) {
+func YAMLRender(template *Template, boilerplate map[string]interface{}) (*mmsg.MSG, error) {
 	return yamlEngine.Render(template, boilerplate)
 }
 
-func YAMLRenderByKey(key string, boilerplate map[string]interface{}) ([]*mmsg.MSG, error) {
+func YAMLRenderByKey(key string, boilerplate map[string]interface{}) (*mmsg.MSG, error) {
 	formats, err := yamlLoader.LoadTemplate(key)
 	if err != nil {
 		return nil, err

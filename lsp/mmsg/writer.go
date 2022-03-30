@@ -9,9 +9,9 @@ import (
 
 // MSG 线程不安全
 type MSG struct {
-	elements []message.IMessageElement
-
-	textBuf strings.Builder
+	frozeElements [][]message.IMessageElement
+	elements      []message.IMessageElement
+	textBuf       strings.Builder
 }
 
 func NewMSG() *MSG {
@@ -101,24 +101,54 @@ func (m *MSG) ImageByUrlWithNorm(url string, alternative string, opts ...request
 	return m
 }
 
-// ToMessage 总是返回 non-nil
-func (m *MSG) ToMessage(target Target) *message.SendingMessage {
-	var sending = message.NewSendingMessage()
-	m.flushText()
-	for _, e := range m.elements {
-		if custom, ok := e.(CustomElement); ok {
-			packed := custom.PackToElement(target)
-			if packed != nil {
-				sending.Append(packed)
-			}
-			continue
+// ToCombineMessage 总是返回 non-nil
+func (m *MSG) ToCombineMessage(target Target) *message.SendingMessage {
+	var result = message.NewSendingMessage()
+	sms := m.ToMessage(target)
+	for _, sm := range sms {
+		for _, e := range sm.Elements {
+			result.Append(e)
 		}
-		sending.Append(e)
 	}
-	return sending
+	return result
+}
+
+// ToMessage 返回消息用于发送
+func (m *MSG) ToMessage(target Target) []*message.SendingMessage {
+	var result []*message.SendingMessage
+	m.Cut()
+	for _, elems := range m.frozeElements {
+		var sending = message.NewSendingMessage()
+		for _, e := range elems {
+			if custom, ok := e.(CustomElement); ok {
+				packed := custom.PackToElement(target)
+				if packed != nil {
+					sending.Append(packed)
+				}
+				continue
+			}
+			sending.Append(e)
+		}
+		result = append(result, sending)
+	}
+	return result
+}
+
+func (m *MSG) Cut() {
+	m.flushText()
+	if len(m.elements) > 0 {
+		m.frozeElements = append(m.frozeElements, m.elements)
+		m.elements = nil
+	}
 }
 
 func (m *MSG) Elements() []message.IMessageElement {
 	m.flushText()
-	return m.elements
+	var result []message.IMessageElement
+	for _, elems := range m.frozeElements {
+		for _, e := range elems {
+			result = append(result, e)
+		}
+	}
+	return result
 }
