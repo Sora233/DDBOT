@@ -9,9 +9,8 @@ import (
 
 // MSG 线程不安全
 type MSG struct {
-	frozeElements [][]message.IMessageElement
-	elements      []message.IMessageElement
-	textBuf       strings.Builder
+	elements []message.IMessageElement
+	textBuf  strings.Builder
 }
 
 func NewMSG() *MSG {
@@ -117,18 +116,25 @@ func (m *MSG) ToCombineMessage(target Target) *message.SendingMessage {
 func (m *MSG) ToMessage(target Target) []*message.SendingMessage {
 	var result []*message.SendingMessage
 	m.Cut()
-	for _, elems := range m.frozeElements {
-		var sending = message.NewSendingMessage()
-		for _, e := range elems {
-			if custom, ok := e.(CustomElement); ok {
+	var sending = message.NewSendingMessage()
+	for _, e := range m.elements {
+		if custom, ok := e.(CustomElement); ok {
+			if e.Type() == Cut {
+				if len(sending.Elements) > 0 {
+					result = append(result, sending)
+					sending = message.NewSendingMessage()
+				}
+			} else {
 				packed := custom.PackToElement(target)
 				if packed != nil {
 					sending.Append(packed)
 				}
-				continue
 			}
-			sending.Append(e)
+			continue
 		}
+		sending.Append(e)
+	}
+	if len(sending.Elements) > 0 {
 		result = append(result, sending)
 	}
 	return result
@@ -137,18 +143,11 @@ func (m *MSG) ToMessage(target Target) []*message.SendingMessage {
 func (m *MSG) Cut() {
 	m.flushText()
 	if len(m.elements) > 0 {
-		m.frozeElements = append(m.frozeElements, m.elements)
-		m.elements = nil
+		m.elements = append(m.elements, new(CutElement))
 	}
 }
 
 func (m *MSG) Elements() []message.IMessageElement {
 	m.flushText()
-	var result []message.IMessageElement
-	for _, elems := range m.frozeElements {
-		for _, e := range elems {
-			result = append(result, e)
-		}
-	}
-	return result
+	return m.elements
 }

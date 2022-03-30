@@ -837,12 +837,13 @@ func (lgc *LspGroupCommand) HelpCommand() {
 	if lgc.exit {
 		return
 	}
-
-	msgs, err := template.YAMLRenderByKey("template.command.public.help", nil)
+	m, err := template.LoadAndExec("command.group.help", nil)
 	if err != nil {
-		lgc.textReplyF("错误 - %v", err.Error())
+		logger.Errorf("LoadAndExec error %v", err)
+		lgc.textReply(fmt.Sprintf("错误 - %v", err))
+		return
 	}
-	lgc.sendChain(msgs)
+	lgc.sendChain(m)
 }
 
 func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {

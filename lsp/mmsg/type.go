@@ -7,6 +7,7 @@ import (
 const (
 	ImageBytes message.ElementType = 10000 + iota
 	Typed
+	Cut
 )
 
 type CustomElement interface {

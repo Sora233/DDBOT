@@ -1142,13 +1142,13 @@ func (c *LspPrivateCommand) HelpCommand() {
 	if c.exit {
 		return
 	}
-
-	msgs, err := template.YAMLRenderByKey("template.command.private.help", nil)
+	m, err := template.LoadAndExec("command.private.help", nil)
 	if err != nil {
+		logger.Errorf("LoadAndExec error %v", err)
 		c.textReply(fmt.Sprintf("错误 - %v", err))
 		return
 	}
-	c.sendChain(msgs)
+	c.sendChain(m)
 }
 
 func (c *LspPrivateCommand) SysinfoCommand() {

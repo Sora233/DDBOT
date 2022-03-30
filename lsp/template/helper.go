@@ -125,7 +125,7 @@ func parseGlob(t *Template, pattern string) (*Template, error) {
 		return nil, err
 	}
 	if len(filenames) == 0 {
-		return nil, fmt.Errorf("template: pattern matches no files: %#q", pattern)
+		return nil, ErrGlobNotMatch
 	}
 	return parseFiles(t, readFileOS, filenames...)
 }

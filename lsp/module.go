@@ -111,9 +111,6 @@ func (l *Lsp) Init() {
 		log.Debugf("数据库兼容性检查完毕，当前已为最新模式：%v", curVersion)
 	}
 
-	l.PermissionStateManager = permission.NewStateManager()
-	l.LspStateManager = NewStateManager()
-
 	imagePoolType := config.GlobalConfig.GetString("imagePool.type")
 	log = logger.WithField("image_pool_type", imagePoolType)
 
@@ -636,12 +633,18 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 }
 
 var Instance = &Lsp{
-	concernNotify: concern.ReadNotifyChan(),
-	stop:          make(chan interface{}),
-	status:        NewStatus(),
-	msgRateLimit:  ratelimit.New(5),
+	concernNotify:          concern.ReadNotifyChan(),
+	stop:                   make(chan interface{}),
+	status:                 NewStatus(),
+	msgRateLimit:           ratelimit.New(5),
+	PermissionStateManager: permission.NewStateManager(),
+	LspStateManager:        NewStateManager(),
 }
 
 func init() {
 	bot.RegisterModule(Instance)
+
+	template.RegisterExtFunc("currentMode", func() string {
+		return string(Instance.LspStateManager.GetCurrentMode())
+	})
 }

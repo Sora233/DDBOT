@@ -980,7 +980,7 @@ func printableValue(v reflect.Value) (interface{}, bool) {
 
 	if !v.Type().Implements(miraigoElementType) {
 		if v.CanAddr() && (reflect.PtrTo(v.Type())).Implements(miraigoElementType) {
-			v = v.Addr()
+			return v.Addr().Interface(), true
 		}
 	}
 

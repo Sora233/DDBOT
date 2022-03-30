@@ -7,7 +7,7 @@ import (
 
 func GetCommandPrefix() string {
 	if config.GlobalConfig == nil {
-		return ""
+		return "/"
 	}
 	prefix := strings.TrimSpace(config.GlobalConfig.GetString("bot.commandPrefix"))
 	if len(prefix) == 0 {
