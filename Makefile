@@ -3,7 +3,7 @@ COMMIT_ID := $(shell git rev-parse HEAD)
 
 LDFLAGS = -X "main.BuildTime='"$(BUILD_TIME)"'" -X "main.CommitId='"$(COMMIT_ID)"'"
 
-SRC := $(shell find . -type f -name '*.go')
+SRC := $(shell find . -type f -name '*.go') lsp/template/default/*
 COV := .coverage.out
 TARGET := DDBOT
 

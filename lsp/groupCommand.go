@@ -505,9 +505,9 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 
 	date := time.Now().Format("20060102")
 
-	var result string
+	var score int64
+	var success bool
 	err := localdb.RWCover(func() error {
-		var score int64
 		var err error
 		scoreKey := localdb.Key("Score", lgc.groupCode(), lgc.uin())
 		dateMarker := localdb.Key("ScoreDate", lgc.groupCode(), lgc.uin(), date)
@@ -518,7 +518,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		}
 		if localdb.Exist(dateMarker) {
 			log = log.WithField("current_score", score)
-			result = fmt.Sprintf("明天再来吧，当前积分为%v", score)
+			success = false
 			return nil
 		}
 
@@ -532,15 +532,24 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 			return err
 		}
 		log = log.WithField("new_score", score)
-		result = fmt.Sprintf("签到成功！获得1积分，当前积分为%v", score)
+		success = true
 		return nil
 	})
 	if err != nil {
 		lgc.textSend("失败 - 内部错误")
 		log.Errorf("checkin error %v", err)
-	} else {
-		lgc.textReply(result)
+		return
 	}
+	m, err := template.LoadAndExec("command.group.checkin.tmpl", map[string]interface{}{
+		"score":   score,
+		"success": success,
+	})
+	if err != nil {
+		logger.Errorf("LoadAndExec error %v", err)
+		lgc.textReply(fmt.Sprintf("错误 - %v", err))
+		return
+	}
+	lgc.sendChain(m)
 }
 
 func (lgc *LspGroupCommand) ScoreCommand() {
@@ -837,7 +846,7 @@ func (lgc *LspGroupCommand) HelpCommand() {
 	if lgc.exit {
 		return
 	}
-	m, err := template.LoadAndExec("command.group.help", nil)
+	m, err := template.LoadAndExec("command.group.help.tmpl", nil)
 	if err != nil {
 		logger.Errorf("LoadAndExec error %v", err)
 		lgc.textReply(fmt.Sprintf("错误 - %v", err))

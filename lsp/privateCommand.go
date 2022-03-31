@@ -1142,7 +1142,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 	if c.exit {
 		return
 	}
-	m, err := template.LoadAndExec("command.private.help", nil)
+	m, err := template.LoadAndExec("command.private.help.tmpl", nil)
 	if err != nil {
 		logger.Errorf("LoadAndExec error %v", err)
 		c.textReply(fmt.Sprintf("错误 - %v", err))

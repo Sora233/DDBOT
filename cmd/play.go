@@ -13,12 +13,15 @@ func play() {
 	logrus.SetLevel(logrus.DebugLevel)
 	template.InitTemplateLoader()
 	for {
-		t := template.LoadTemplate("command.private.help.tmpl")
+		t := template.LoadTemplate("command.group.checkin.tmpl")
 		if t == nil {
 			panic("t is nil")
 		}
 		m := mmsg.NewMSG()
-		if err := t.ExecuteTemplate(m, "command.private.help.tmpl", nil); err != nil {
+		if err := t.ExecuteTemplate(m, "command.group.checkin.tmpl", map[string]interface{}{
+			"score":   100,
+			"success": true,
+		}); err != nil {
 			panic(err)
 		}
 		fmt.Println(msgstringer.MsgToString(m.Elements()))
