@@ -20,6 +20,7 @@ var mu sync.RWMutex
 var tfs embed.FS
 
 var once sync.Once
+var watcher *fsnotify.Watcher
 
 func initRootT() {
 	once.Do(func() {
@@ -30,8 +31,9 @@ func initRootT() {
 }
 
 func InitTemplateLoader() {
+	var err error
 	initRootT()
-	w, err := fsnotify.NewWatcher()
+	watcher, err = fsnotify.NewWatcher()
 	if err != nil {
 		panic(err)
 	}
@@ -44,7 +46,7 @@ func InitTemplateLoader() {
 			return
 		}
 	}
-	if err := w.Add("template"); err != nil {
+	if err := watcher.Add("template"); err != nil {
 		logger.Errorf("监测<template>文件夹失败，自定义模板可能无法生效: %v", err)
 		return
 	}
@@ -61,7 +63,7 @@ func InitTemplateLoader() {
 	go func() {
 		for {
 			select {
-			case event, ok := <-w.Events:
+			case event, ok := <-watcher.Events:
 				if !ok {
 					return
 				}
@@ -73,7 +75,7 @@ func InitTemplateLoader() {
 				rootT = Must(rootT.ParseFS(tfs, "default/*.tmpl"))
 				parseExternalTemplate()
 				mu.Unlock()
-			case err, ok := <-w.Errors:
+			case err, ok := <-watcher.Errors:
 				if !ok {
 					return
 				}
@@ -81,6 +83,12 @@ func InitTemplateLoader() {
 			}
 		}
 	}()
+}
+
+func Close() {
+	if watcher != nil {
+		watcher.Close()
+	}
 }
 
 func LoadTemplate(name string) *Template {
