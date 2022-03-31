@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
@@ -588,10 +588,7 @@ func (c *StateManager) DefaultDispatch() DispatchFunc {
 				continue
 			}
 			log.Infof("new event - %v - %v notify for %v groups", event.Site(), event.Type().String(), len(groups))
-			largeNotifyLimit := config.GlobalConfig.GetInt("dispatch.largeNotifyLimit")
-			if largeNotifyLimit <= 0 {
-				largeNotifyLimit = 50
-			}
+			largeNotifyLimit := cfg.GetLargeNotifyLimit()
 			if len(groups) >= largeNotifyLimit {
 				log.Warnf("警告：当前事件将推送至%v个群（超过%v），为保证帐号稳定，将增加此事件的推送间隔，防止短时间内发送大量消息", len(groups), largeNotifyLimit)
 				go func(groups []int64, event Event) {
@@ -635,10 +632,7 @@ var defaultInterval = time.Second * 5
 // UseEmitQueue 启用EmitQueue
 func (c *StateManager) UseEmitQueue() {
 	c.useEmit = true
-	var interval time.Duration
-	if config.GlobalConfig != nil {
-		interval = config.GlobalConfig.GetDuration("concern.emitInterval")
-	}
+	var interval = cfg.GetEmitInterval()
 	if interval == 0 {
 		interval = defaultInterval
 	}

@@ -3,6 +3,7 @@ package cfg
 import (
 	"github.com/Sora233/MiraiGo-Template/config"
 	"strings"
+	"time"
 )
 
 func GetCommandPrefix() string {
@@ -14,4 +15,22 @@ func GetCommandPrefix() string {
 		prefix = "/"
 	}
 	return prefix
+}
+
+func GetEmitInterval() time.Duration {
+	if config.GlobalConfig == nil {
+		return 0
+	}
+	return config.GlobalConfig.GetDuration("concern.emitInterval")
+}
+
+func GetLargeNotifyLimit() int {
+	if config.GlobalConfig == nil {
+		return 50
+	}
+	var limit = config.GlobalConfig.GetInt("dispatch.largeNotifyLimit")
+	if limit <= 0 {
+		limit = 50
+	}
+	return limit
 }

@@ -3,6 +3,7 @@ package template
 import (
 	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"strings"
 )
 
 var funcsExt = make(FuncMap)
@@ -19,4 +20,11 @@ func cut() *mmsg.CutElement {
 
 func prefix() string {
 	return cfg.GetCommandPrefix()
+}
+
+func pic(uri string) *mmsg.ImageBytesElement {
+	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
+		return mmsg.NewImageByUrl(uri)
+	}
+	return mmsg.NewImageByLocal(uri)
 }

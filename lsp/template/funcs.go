@@ -44,8 +44,11 @@ func builtins() FuncMap {
 		"print":   fmt.Sprint,
 		"printf":  fmt.Sprintf,
 		"println": fmt.Sprintln,
-		"cut":     cut,
-		"prefix":  prefix,
+
+		// DDBOT template
+		"cut":    cut,
+		"prefix": prefix,
+		"pic":    pic,
 
 		// Comparisons
 		"eq": eq, // ==
