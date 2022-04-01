@@ -52,6 +52,9 @@ func TestConcern(t *testing.T) {
 	_, err = c.StateManager.AddGroupConcern(test.G1, test.NAME1, Live)
 	assert.Nil(t, err)
 
+	_, err = c.StateManager.AddGroupConcern(test.G2, test.NAME1, Live)
+	assert.Nil(t, err)
+
 	identityInfo, err := c.Get(test.NAME1)
 	assert.Nil(t, err)
 	assert.EqualValues(t, test.NAME1, identityInfo.GetUid())
@@ -70,23 +73,29 @@ func TestConcern(t *testing.T) {
 
 	time.Sleep(time.Millisecond * 500)
 
-	testEventChan <- &VideoInfo{
-		UserInfo: UserInfo{
-			ChannelId:   test.NAME1,
-			ChannelName: test.NAME1,
-		},
-		VideoType:         VideoType_Live,
-		VideoStatus:       VideoStatus_Living,
-		liveStatusChanged: true,
+	var g1 = false
+	var g2 = false
+
+	for i := 0; i < 2; i++ {
+		select {
+		case notify := <-testNotifyChan:
+			if notify.GetGroupCode() == test.G1 {
+				g1 = true
+				assert.Equal(t, test.G1, notify.GetGroupCode())
+				assert.Equal(t, test.NAME1, notify.GetUid())
+			}
+			if notify.GetGroupCode() == test.G2 {
+				g2 = true
+				assert.Equal(t, test.G2, notify.GetGroupCode())
+				assert.Equal(t, test.NAME1, notify.GetUid())
+			}
+		case <-time.After(time.Second):
+			assert.Fail(t, "no notify received")
+		}
 	}
 
-	select {
-	case notify := <-testNotifyChan:
-		assert.Equal(t, test.G1, notify.GetGroupCode())
-		assert.Equal(t, test.NAME1, notify.GetUid())
-	case <-time.After(time.Second):
-		assert.Fail(t, "no notify received")
-	}
+	assert.True(t, g1)
+	assert.True(t, g2)
 
 	select {
 	case <-testNotifyChan:
@@ -96,5 +105,7 @@ func TestConcern(t *testing.T) {
 	}
 
 	_, err = c.Remove(nil, test.G1, test.NAME1, Live)
+	assert.Nil(t, err)
+	_, err = c.Remove(nil, test.G2, test.NAME1, Live)
 	assert.Nil(t, err)
 }
