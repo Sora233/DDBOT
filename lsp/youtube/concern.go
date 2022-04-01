@@ -92,29 +92,35 @@ func (c *Concern) fresh() concern.FreshFunc {
 			if !ok {
 				return nil, errors.New("canst fresh id to string failed")
 			}
-			return c.freshInfo(channelId)
+			infos, err := c.freshInfo(channelId)
+			if err != nil {
+				return nil, err
+			}
+			var result []concern.Event
+			for _, event := range infos {
+				prev, getErr := c.StateManager.GetVideo(event.ChannelId, event.VideoId)
+				if err := c.StateManager.AddVideo(event); err != nil {
+					event.Logger().Errorf("add video err %v", err)
+				}
+				if getErr == nil {
+					if prev.VideoStatus == event.VideoStatus && prev.VideoType == event.VideoType &&
+						prev.VideoTimestamp == event.VideoTimestamp && prev.VideoTitle == event.VideoTitle {
+						continue
+					}
+				}
+				result = append(result, event)
+			}
+			return result, nil
 		}
 		return nil, fmt.Errorf("unknown concern_type %v", ctype.String())
 	})
 }
 
 func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
-	return func(groupCode int64, ievent concern.Event) (result []concern.Notify) {
+	return func(groupCode int64, ievent concern.Event) []concern.Notify {
 		switch event := ievent.(type) {
 		case *VideoInfo:
 			log := event.Logger()
-			if prev, err := c.StateManager.GetVideo(event.ChannelId, event.VideoId); err == nil {
-				if prev.VideoStatus == event.VideoStatus && prev.VideoType == event.VideoType &&
-					prev.VideoTimestamp == event.VideoTimestamp && prev.VideoTitle == event.VideoTitle {
-					log.Debugf("duplicate event")
-					return
-				}
-			}
-			if err := c.StateManager.AddVideo(event); err != nil {
-				log.Errorf("add video err %v", err)
-			}
-			notify := NewConcernNotify(groupCode, event)
-			result = append(result, notify)
 			if event.IsVideo() {
 				log.WithFields(localutils.GroupLogFields(groupCode)).Debugf("video notify")
 			} else if event.IsLive() {
@@ -124,12 +130,15 @@ func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 					log.WithFields(localutils.GroupLogFields(groupCode)).Debugf("living notify")
 				}
 			}
+			return []concern.Notify{NewConcernNotify(groupCode, event)}
+		default:
+			logger.Errorf("unknown EventType %+v", event)
+			return nil
 		}
-		return
 	}
 }
 
-func (c *Concern) freshInfo(channelId string) (result []concern.Event, err error) {
+func (c *Concern) freshInfo(channelId string) (result []*VideoInfo, err error) {
 	log := logger.WithField("channel_id", channelId)
 	oldInfo, _ := c.FindInfo(channelId, false)
 	newInfo, err := c.FindInfo(channelId, true)
