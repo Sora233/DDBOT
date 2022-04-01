@@ -4,6 +4,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/template"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/DDBOT/utils/blockCache"
 	"github.com/Sora233/MiraiGo-Template/config"
@@ -113,15 +114,18 @@ func (l *LiveInfo) GetMSG() *mmsg.MSG {
 		return url
 	}
 	l.once.Do(func() {
-		m := mmsg.NewMSG()
-		switch l.Status {
-		case LiveStatus_Living:
-			m.Textf("%s正在直播【%v】\n%v", l.Name, l.LiveTitle, cleanRoomUrl(l.RoomUrl))
-		case LiveStatus_NoLiving:
-			m.Textf("%s直播结束了", l.Name)
+		var data = map[string]interface{}{
+			"title":  l.LiveTitle,
+			"name":   l.Name,
+			"url":    cleanRoomUrl(l.RoomUrl),
+			"cover":  l.Cover,
+			"living": l.Living(),
 		}
-		m.ImageByUrl(l.Cover, "[封面]")
-		l.msgCache = m
+		var err error
+		l.msgCache, err = template.LoadAndExec("notify.group.bilibili.live.tmpl", data)
+		if err != nil {
+			logger.Errorf("bilibili: LiveInfo LoadAndExec error %v", err)
+		}
 		return
 	})
 	return l.msgCache
