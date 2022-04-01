@@ -539,16 +539,10 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		log.Errorf("checkin error %v", err)
 		return
 	}
-	m, err := template.LoadAndExec("command.group.checkin.tmpl", map[string]interface{}{
+	lgc.sendChain(lgc.templateMsg("command.group.checkin.tmpl", map[string]interface{}{
 		"score":   score,
 		"success": success,
-	})
-	if err != nil {
-		logger.Errorf("LoadAndExec error %v", err)
-		lgc.textReply(fmt.Sprintf("错误 - %v", err))
-		return
-	}
-	lgc.sendChain(m)
+	}))
 }
 
 func (lgc *LspGroupCommand) ScoreCommand() {
