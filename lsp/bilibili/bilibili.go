@@ -23,7 +23,7 @@ const (
 	DynamicView  = "https://t.bilibili.com"
 	PassportHost = "https://passport.bilibili.com"
 
-	CompactExpireTime = time.Minute * 15
+	CompactExpireTime = time.Minute * 60
 	// followerNotifyCap 提示粉丝数过少的阈值
 	followerNotifyCap = 50
 )

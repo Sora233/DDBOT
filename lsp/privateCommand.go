@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
+	"github.com/Sora233/DDBOT/lsp/template"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/Sora233/sliceutil"
@@ -25,7 +27,6 @@ import (
 
 type LspPrivateCommand struct {
 	msg         *message.PrivateMessage
-	prefix      string
 	commandName atomic.String
 
 	*Runtime
@@ -37,7 +38,7 @@ func (c *LspPrivateCommand) CommandName() string {
 	}
 	x := c.commandName.Load()
 	if x == "" {
-		x = strings.TrimPrefix(c.GetCmd(), c.prefix)
+		x = strings.TrimPrefix(c.GetCmd(), cfg.GetCommandPrefix())
 		c.commandName.Store(x)
 	}
 	return x
@@ -47,7 +48,6 @@ func NewLspPrivateCommand(l *Lsp, msg *message.PrivateMessage) *LspPrivateComman
 	c := &LspPrivateCommand{
 		msg:     msg,
 		Runtime: NewRuntime(l),
-		prefix:  l.commandPrefix,
 	}
 	c.Parse(c.msg.Elements)
 	return c
@@ -61,7 +61,7 @@ func (c *LspPrivateCommand) Execute() {
 			c.textSend("エラー発生：看到该信息表示BOT出了一些问题，该问题已记录")
 		}
 	}()
-	if !strings.HasPrefix(c.GetCmd(), c.prefix) {
+	if !strings.HasPrefix(c.GetCmd(), cfg.GetCommandPrefix()) {
 		return
 	}
 
@@ -1142,27 +1142,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 	if c.exit {
 		return
 	}
-
-	help := "常见订阅用法：\n" +
-		"以作者UID:97505为例\n" +
-		"首先订阅直播信息：/watch 97505\n" +
-		"然后订阅动态信息：/watch -t news 97505\n" +
-		"由于通常动态内容较多，可以选择不推送转发的动态\n" +
-		"/config filter not_type 97505 转发\n" +
-		"还可以选择开启直播推送时@全体成员：\n" +
-		"/config at_all 97505 on\n" +
-		"以及开启下播推送：\n" +
-		"/config offline_notify 97505 on\n" +
-		"BOT还支持更多功能，详细命令介绍请查看命令文档：\n" +
-		"https://gitee.com/sora233/DDBOT/blob/master/EXAMPLE.md\n" +
-		"使用时请把作者UID换成你需要的UID\n" +
-		"当您完成所有配置后，可以使用/silence命令，让bot专注于推送，在群内发言更少"
-	help2 := "B站专栏介绍：https://www.bilibili.com/read/cv10602230\n" +
-		"如果您有任何疑问或者建议，请反馈到唯一指定交流群：755612788"
-	c.textSend(help)
-	time.AfterFunc(time.Millisecond*500, func() {
-		c.textReply(help2)
-	})
+	c.sendChain(c.templateMsg("command.private.help.tmpl", nil))
 }
 
 func (c *LspPrivateCommand) SysinfoCommand() {
@@ -1254,8 +1234,33 @@ func (c *LspPrivateCommand) textReplyF(format string, args ...interface{}) *mess
 }
 
 func (c *LspPrivateCommand) send(msg *mmsg.MSG) *message.PrivateMessage {
-	return c.l.SendMsg(msg, mmsg.NewPrivateTarget(c.uin())).(*message.PrivateMessage)
+	return c.l.PM(c.l.SendMsg(msg, mmsg.NewPrivateTarget(c.uin())))[0]
 }
+
+func (c *LspPrivateCommand) sendChain(msg *mmsg.MSG) []*message.PrivateMessage {
+	return c.l.PM(c.l.SendMsg(msg, mmsg.NewPrivateTarget(c.uin())))
+}
+
+func (c *LspPrivateCommand) commonTemplateData() map[string]interface{} {
+	return map[string]interface{}{
+		"msg": c.msg,
+	}
+}
+
+func (c *LspPrivateCommand) templateMsg(name string, data map[string]interface{}) *mmsg.MSG {
+	commonData := c.commonTemplateData()
+	for k, v := range data {
+		commonData[k] = v
+	}
+	m, err := template.LoadAndExec(name, commonData)
+	if err != nil {
+		logger.Errorf("LoadAndExec error %v", err)
+		c.textReply(fmt.Sprintf("错误 - %v", err))
+		return nil
+	}
+	return m
+}
+
 func (c *LspPrivateCommand) sender() *message.Sender {
 	return c.msg.Sender
 }

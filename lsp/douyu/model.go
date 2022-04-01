@@ -3,6 +3,7 @@ package douyu
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/template"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"sync"
@@ -68,14 +69,19 @@ func (m *LiveInfo) Type() concern_type.Type {
 
 func (m *LiveInfo) GetMSG() *mmsg.MSG {
 	m.once.Do(func() {
-		msg := mmsg.NewMSG()
-		if m.Living() {
-			msg.Textf("斗鱼-%s正在直播【%v】\n%v", m.Nickname, m.RoomName, m.RoomUrl)
-		} else {
-			msg.Textf("斗鱼-%s直播结束了", m.Nickname)
+		var data = map[string]interface{}{
+			"title":  m.RoomName,
+			"name":   m.Nickname,
+			"url":    m.RoomUrl,
+			"cover":  m.GetAvatar().GetBig(),
+			"living": m.Living(),
 		}
-		msg.ImageByUrl(m.GetAvatar().GetBig(), "[封面]")
-		m.msgCache = msg
+		var err error
+		m.msgCache, err = template.LoadAndExec("notify.group.douyu.live.tmpl", data)
+		if err != nil {
+			logger.Errorf("douyu: LiveInfo LoadAndExec error %v", err)
+		}
+		return
 	})
 	return m.msgCache
 }

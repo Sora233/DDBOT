@@ -3,6 +3,7 @@ package acfun
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/template"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"sync"
@@ -74,14 +75,19 @@ func (l *LiveInfo) Logger() *logrus.Entry {
 
 func (l *LiveInfo) GetMSG() *mmsg.MSG {
 	l.once.Do(func() {
-		m := mmsg.NewMSG()
-		if l.Living() {
-			m.Textf("ACFUN-%s正在直播【%v】\n%v", l.Name, l.Title, l.LiveUrl)
-		} else {
-			m.Textf("ACFUN-%s直播结束了", l.Name)
+		var data = map[string]interface{}{
+			"title":  l.Title,
+			"name":   l.Name,
+			"url":    l.LiveUrl,
+			"cover":  l.Cover,
+			"living": l.Living(),
 		}
-		m.ImageByUrl(l.Cover, "[封面]")
-		l.msgCache = m
+		var err error
+		l.msgCache, err = template.LoadAndExec("notify.group.acfun.live.tmpl", data)
+		if err != nil {
+			logger.Errorf("acfun: LiveInfo LoadAndExec error %v", err)
+		}
+		return
 	})
 	return l.msgCache
 }
