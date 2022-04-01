@@ -33,7 +33,7 @@ DDBOT会**监控**该文件夹目录，这意味着对模板的创建/修改/删
 
 *该模板将发送为：*
 
-XXXXXXXXXXX
+<img src="https://user-images.githubusercontent.com/11474360/161202913-63f2064d-de49-4d54-b1d8-748b62b91294.jpg" width="300">
 
 ### 模板的高级功能
 
@@ -49,7 +49,7 @@ XXXXXXXXXXX
 
 *该模板将发送为：*
 
-XXXXXX
+<img src="https://user-images.githubusercontent.com/11474360/161203028-e53a4fe0-c8ca-4e3e-a098-45c1f7ea78c9.jpg" width="300">
 
 在这个例子中，使用了一个模板函数`pic`，它可以用来发送一张图片。
 
@@ -59,15 +59,17 @@ XXXXXX
 
 ```text
 一、啦啦啦
-{{ cut }}
+{{- cut -}}
 二、啦啦啦
 ```
 
 *该模板将发送为：*
 
-XXXXX
+<img src="https://user-images.githubusercontent.com/11474360/161203068-0d26024f-37e6-4a04-b88e-cfedd0235924.jpg" width="300">
 
 在这个例子中，使用了一个模板函数`cut`，它可以用来切分消息。
+
+*请注意括号内的短横线`-`符号，它的作用是控制前后换行符*。
 
 - 使用模板变量：
 
@@ -78,18 +80,19 @@ XXXXX
 *创建一个模板，编辑其内容为：*
 
 ```text
-{{ if .success }}
+{{- reply .msg -}}
+{{ if .success -}}
 签到大大大大大成功！获得1只萝莉，当前拥有{{.score}}只萝莉
-{{else}}
-明天再来吧，当前拥有{{.score}}
-{{end}}
+{{- else -}}
+明天再来吧，当前拥有{{.score}}只萝莉
+{{- end }}
 ```
 
 *该模板将发送为：*
 
-XXXXX
+<img src="https://user-images.githubusercontent.com/11474360/161203356-84f28ac5-a883-4213-92ed-3c03ad2e524e.jpg" width="300">
 
-这个例子同时展示了模板的条件控制语法：`if else end`
+这个例子还展示了**回复消息语法**：`{{- reply .msg -}}`以及模板的**条件控制语法**：`{{if}} {{else}} {{end}}`
 
 ## 当前支持的命令模板
 
@@ -106,7 +109,7 @@ XXXXX
   <summary>默认模板</summary>
 
 ```text
-{{if .success}}签到成功！获得1积分，当前积分为{{.score}}{{else}}明天再来吧，当前积分为{{.score}}{{end}}
+{{ reply .msg }}{{if .success}}签到成功！获得1积分，当前积分为{{.score}}{{else}}明天再来吧，当前积分为{{.score}}{{end}}
 ```
 
 </details>
@@ -137,7 +140,7 @@ BOT还支持更多功能，详细命令介绍请查看命令文档：
 https://gitee.com/sora233/DDBOT/blob/master/EXAMPLE.md
 使用时请把作者UID换成你需要的UID
 当您完成所有配置后，可以使用{{ prefix }}silence命令，让bot专注于推送，在群内发言更少
-{{ cut }}
+{{- cut -}}
 B站专栏介绍：https://www.bilibili.com/read/cv10602230
 如果您有任何疑问或者建议，请反馈到唯一指定交流群：755612788
 ```
@@ -157,6 +160,134 @@ B站专栏介绍：https://www.bilibili.com/read/cv10602230
 
 ```text
 DDBOT是一个多功能单推专用推送机器人，支持b站、斗鱼、油管、虎牙推送
+```
+
+</details>
+
+- /lsp
+
+模板名：`command.group.lsp.tmpl`
+
+| 模板变量 | 类型  | 含义  |
+|------|-----|-----|
+| 无    |     ||
+
+<details>
+  <summary>默认模板</summary>
+
+```text
+{{ reply .msg -}}
+LSP竟然是你
+```
+
+</details>
+
+## 当前支持的推送模板
+
+- b站直播推送
+
+模板名：`notify.group.bilibili.live.tmpl`
+
+| 模板变量   | 类型     | 含义          |
+|--------|--------|-------------|
+| living | bool   | 是否正在直播      |
+| name   | string | 主播昵称        |
+| title  | string | 直播标题        |
+| url    | string | 直播间链接       |
+| cover  | string | 直播间封面或者主播头像 |
+
+<details>
+  <summary>默认模板</summary>
+
+```text
+{{ if .living -}}
+{{ .name }}正在直播【{{ .title }}】
+{{ .url -}}
+{{ pic .cover "[封面]" }}
+{{- else -}}
+{{ .name }}直播结束了
+{{- end -}}
+```
+
+</details>
+
+- ACFUN站直播推送
+
+模板名：`notify.group.acfun.live.tmpl`
+
+| 模板变量   | 类型     | 含义          |
+|--------|--------|-------------|
+| living | bool   | 是否正在直播      |
+| name   | string | 主播昵称        |
+| title  | string | 直播标题        |
+| url    | string | 直播间链接       |
+| cover  | string | 直播间封面或者主播头像 |
+
+<details>
+  <summary>默认模板</summary>
+
+```text
+{{ if .living -}}
+ACFUN-{{ .name }}正在直播【{{ .title }}】
+{{ .url -}}
+{{ pic .cover "[封面]" }}
+{{- else -}}
+{{ .name }}直播结束了
+{{- end -}}
+```
+
+</details>
+
+- 斗鱼直播推送
+
+模板名：`notify.group.douyu.live.tmpl`
+
+| 模板变量   | 类型     | 含义          |
+|--------|--------|-------------|
+| living | bool   | 是否正在直播      |
+| name   | string | 主播昵称        |
+| title  | string | 直播标题        |
+| url    | string | 直播间链接       |
+| cover  | string | 直播间封面或者主播头像 |
+
+<details>
+  <summary>默认模板</summary>
+
+```text
+{{ if .living -}}
+斗鱼-{{ .name }}正在直播【{{ .title }}】
+{{ .url -}}
+{{ pic .cover "[封面]" }}
+{{- else -}}
+{{ .name }}直播结束了
+{{- end -}}
+```
+
+</details>
+
+- 虎牙直播推送
+
+模板名：`notify.group.huya.live.tmpl`
+
+| 模板变量   | 类型     | 含义          |
+|--------|--------|-------------|
+| living | bool   | 是否正在直播      |
+| name   | string | 主播昵称        |
+| title  | string | 直播标题        |
+| url    | string | 直播间链接       |
+| cover  | string | 直播间封面或者主播头像 |
+
+<details>
+  <summary>默认模板</summary>
+
+```text
+{{ if .living -}}
+虎牙-{{ .name }}正在直播【{{ .title }}】
+{{ .url -}}
+{{ pic .cover "[封面]" }}
+{{- else -}}
+{{ .name }}直播结束了
+{{- end -}}
 ```
 
 </details>
