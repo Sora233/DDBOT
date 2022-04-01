@@ -53,7 +53,7 @@ func InitTemplateLoader() {
 	parseExternalTemplate := func() {
 		if _, err := rootT.ParseGlob(filepath.Join(templateDir, "*.tmpl")); err != nil {
 			if err == ErrGlobNotMatch {
-				logger.Debugf(`没有发现模板文件，注意模板必须以".tmpl"结尾`)
+				logger.Infof(`没有发现模板文件，注意模板必须以".tmpl"结尾`)
 			} else {
 				logger.Errorf("解析模板错误：%v", err)
 			}

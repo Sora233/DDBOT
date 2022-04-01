@@ -114,6 +114,9 @@ func (m *MSG) ToCombineMessage(target Target) *message.SendingMessage {
 
 // ToMessage 返回消息用于发送
 func (m *MSG) ToMessage(target Target) []*message.SendingMessage {
+	if m == nil {
+		return nil
+	}
 	var result []*message.SendingMessage
 	m.Cut()
 	var sending = message.NewSendingMessage()

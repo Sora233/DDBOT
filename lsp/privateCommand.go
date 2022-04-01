@@ -1142,13 +1142,7 @@ func (c *LspPrivateCommand) HelpCommand() {
 	if c.exit {
 		return
 	}
-	m, err := template.LoadAndExec("command.private.help.tmpl", nil)
-	if err != nil {
-		logger.Errorf("LoadAndExec error %v", err)
-		c.textReply(fmt.Sprintf("错误 - %v", err))
-		return
-	}
-	c.sendChain(m)
+	c.sendChain(c.templateMsg("command.private.help.tmpl", nil))
 }
 
 func (c *LspPrivateCommand) SysinfoCommand() {
@@ -1240,11 +1234,31 @@ func (c *LspPrivateCommand) textReplyF(format string, args ...interface{}) *mess
 }
 
 func (c *LspPrivateCommand) send(msg *mmsg.MSG) *message.PrivateMessage {
-	return c.l.PM(c.l.SendMsg(msg, mmsg.NewGroupTarget(c.uin())))[0]
+	return c.l.PM(c.l.SendMsg(msg, mmsg.NewPrivateTarget(c.uin())))[0]
 }
 
 func (c *LspPrivateCommand) sendChain(msg *mmsg.MSG) []*message.PrivateMessage {
-	return c.l.PM(c.l.SendMsg(msg, mmsg.NewGroupTarget(c.uin())))
+	return c.l.PM(c.l.SendMsg(msg, mmsg.NewPrivateTarget(c.uin())))
+}
+
+func (c *LspPrivateCommand) commonTemplateData() map[string]interface{} {
+	return map[string]interface{}{
+		"msg": c.msg,
+	}
+}
+
+func (c *LspPrivateCommand) templateMsg(name string, data map[string]interface{}) *mmsg.MSG {
+	commonData := c.commonTemplateData()
+	for k, v := range data {
+		commonData[k] = v
+	}
+	m, err := template.LoadAndExec(name, commonData)
+	if err != nil {
+		logger.Errorf("LoadAndExec error %v", err)
+		c.textReply(fmt.Sprintf("错误 - %v", err))
+		return nil
+	}
+	return m
 }
 
 func (c *LspPrivateCommand) sender() *message.Sender {

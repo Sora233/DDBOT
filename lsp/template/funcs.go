@@ -48,6 +48,7 @@ func builtins() FuncMap {
 		// DDBOT template
 		"cut":    cut,
 		"prefix": prefix,
+		"reply":  reply,
 		"pic":    pic,
 
 		// Comparisons

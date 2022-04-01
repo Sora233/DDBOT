@@ -183,8 +183,7 @@ func (lgc *LspGroupCommand) LspCommand() {
 	if lgc.exit {
 		return
 	}
-	lgc.textReply("LSP竟然是你")
-	return
+	lgc.sendChain(lgc.templateMsg("command.group.lsp.tmpl", nil))
 }
 
 func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
@@ -846,13 +845,7 @@ func (lgc *LspGroupCommand) HelpCommand() {
 	if lgc.exit {
 		return
 	}
-	m, err := template.LoadAndExec("command.group.help.tmpl", nil)
-	if err != nil {
-		logger.Errorf("LoadAndExec error %v", err)
-		lgc.textReply(fmt.Sprintf("错误 - %v", err))
-		return
-	}
-	lgc.sendChain(m)
+	lgc.sendChain(lgc.templateMsg("command.group.help.tmpl", nil))
 }
 
 func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {
@@ -984,6 +977,26 @@ func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {
 
 func (lgc *LspGroupCommand) globalDisabledReply() *message.GroupMessage {
 	return lgc.textReply("无法操作该命令，该命令已被管理员禁用")
+}
+
+func (lgc *LspGroupCommand) commonTemplateData() map[string]interface{} {
+	return map[string]interface{}{
+		"msg": lgc.msg,
+	}
+}
+
+func (lgc *LspGroupCommand) templateMsg(name string, data map[string]interface{}) *mmsg.MSG {
+	commonData := lgc.commonTemplateData()
+	for k, v := range data {
+		commonData[k] = v
+	}
+	m, err := template.LoadAndExec(name, commonData)
+	if err != nil {
+		logger.Errorf("LoadAndExec error %v", err)
+		lgc.textReply(fmt.Sprintf("错误 - %v", err))
+		return nil
+	}
+	return m
 }
 
 func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
