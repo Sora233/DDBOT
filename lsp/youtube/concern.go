@@ -154,7 +154,6 @@ func (c *Concern) freshInfo(channelId string) (result []*VideoInfo, err error) {
 					newV.liveStatusChanged = true
 				}
 				result = append(result, newV)
-				log.Debugf("first load live notify")
 			}
 		}
 	} else {
@@ -166,19 +165,16 @@ func (c *Concern) freshInfo(channelId string) (result []*VideoInfo, err error) {
 					found = true
 					if newV.IsVideo() && oldV.IsLive() {
 						// 应该是下播了吧？
-						log.Debug("offline notify")
 						result = append(result, newV)
 					}
 					if newV.IsLive() && oldV.IsLive() {
 						if newV.IsWaiting() && oldV.IsWaiting() && newV.VideoTimestamp != oldV.VideoTimestamp {
 							// live time changed, notify
 							result = append(result, newV)
-							log.Debugf("live time change notify")
 						} else if newV.IsLiving() && oldV.IsWaiting() {
 							// live begin
 							newV.liveStatusChanged = true
 							result = append(result, newV)
-							log.Debugf("live begin notify")
 						} else if newV.VideoTitle != oldV.VideoTitle {
 							newV.liveTitleChanged = true
 							result = append(result, newV)
@@ -190,7 +186,6 @@ func (c *Concern) freshInfo(channelId string) (result []*VideoInfo, err error) {
 				// new video
 				if notifyCount == 0 {
 					result = append(result, newV)
-					log.Debugf("new video notify")
 					notifyCount += 1
 					// notify video most once
 				}
