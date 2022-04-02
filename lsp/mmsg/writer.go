@@ -29,6 +29,13 @@ func NewTextf(format string, args ...interface{}) *MSG {
 	return msg
 }
 
+func (m *MSG) Clone() *MSG {
+	m.flushText()
+	return &MSG{
+		elements: m.elements[:],
+	}
+}
+
 func (m *MSG) Append(elems ...message.IMessageElement) *MSG {
 	if len(elems) == 0 {
 		return m

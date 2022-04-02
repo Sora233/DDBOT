@@ -57,7 +57,8 @@ func (l *Lsp) ConcernNotify() {
 
 			cfg.NotifyBeforeCallback(inotify)
 
-			var m = l.NotifyMessage(inotify)
+			// 注意notify可能会缓存MSG
+			var m = l.NotifyMessage(inotify).Clone()
 
 			// atConfig
 			var atBeforeHook = cfg.AtBeforeHook(inotify)
