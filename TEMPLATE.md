@@ -291,3 +291,47 @@ ACFUN-{{ .name }}正在直播【{{ .title }}】
 ```
 
 </details>
+
+## 当前支持的事件模板
+
+- 有新成员加入群
+
+模板名：`trigger.group.member_in.tmpl`
+
+| 模板变量        | 类型     | 含义        |
+|-------------|--------|-----------|
+| group_code  | int64  | 群号码       |
+| group_name  | string | 群名称       |
+| member_code | int64  | 新加入的成员QQ号 |
+| member_name | string | 新加入的成员昵称  |
+
+<details>
+  <summary>默认模板</summary>
+
+*该模板默认为空，即不发送消息*
+
+```text
+```
+
+</details>
+
+- 有成员退出群
+
+模板名：`trigger.group.member_out.tmpl`
+
+| 模板变量        | 类型     | 含义       |
+|-------------|--------|----------|
+| group_code  | int64  | 群号码      |
+| group_name  | string | 群名称      |
+| member_code | int64  | 退出的成员QQ号 |
+| member_name | string | 退出的成员昵称  |
+
+<details>
+  <summary>默认模板</summary>
+
+*该模板默认为空，即不发送消息*
+
+```text
+```
+
+</details>

@@ -191,6 +191,28 @@ func (l *Lsp) PostInit() {
 }
 
 func (l *Lsp) Serve(bot *bot.Bot) {
+	bot.OnGroupMemberJoined(func(qqClient *client.QQClient, event *client.MemberJoinGroupEvent) {
+		m, _ := template.LoadAndExec("trigger.group.member_in.tmpl", map[string]interface{}{
+			"group_code":  event.Group.Code,
+			"group_name":  event.Group.Name,
+			"member_code": event.Member.Uin,
+			"member_name": event.Member.DisplayName(),
+		})
+		if m != nil {
+			l.SendMsg(m, mmsg.NewGroupTarget(event.Group.Code))
+		}
+	})
+	bot.OnGroupMemberLeaved(func(qqClient *client.QQClient, event *client.MemberLeaveGroupEvent) {
+		m, _ := template.LoadAndExec("trigger.group.member_out.tmpl", map[string]interface{}{
+			"group_code":  event.Group.Code,
+			"group_name":  event.Group.Name,
+			"member_code": event.Member.Uin,
+			"member_name": event.Member.DisplayName(),
+		})
+		if m != nil {
+			l.SendMsg(m, mmsg.NewGroupTarget(event.Group.Code))
+		}
+	})
 	bot.OnGroupInvited(func(qqClient *client.QQClient, request *client.GroupInvitedRequest) {
 		log := logger.WithFields(logrus.Fields{
 			"GroupCode":   request.GroupCode,
