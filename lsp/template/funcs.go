@@ -50,6 +50,8 @@ func builtins() FuncMap {
 		"prefix": prefix,
 		"reply":  reply,
 		"pic":    pic,
+		"roll":   roll,
+		"choose": choose,
 
 		// Comparisons
 		"eq": eq, // ==

@@ -5,6 +5,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"math/rand"
 	"strings"
 )
 
@@ -48,4 +49,12 @@ func pic(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 		e.Alternative(alternative[0])
 	}
 	return e
+}
+
+func roll(from, to int64) int64 {
+	return rand.Int63n(to-from+1) + from
+}
+
+func choose(items ...string) string {
+	return items[rand.Intn(len(items))]
 }
