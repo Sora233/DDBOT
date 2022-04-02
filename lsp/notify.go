@@ -20,13 +20,14 @@ func (l *Lsp) ConcernNotify() {
 	defer l.wg.Done()
 	for {
 		select {
-		case inotify, ok := <-l.concernNotify:
+		case _inotify, ok := <-l.concernNotify:
 			if !ok {
 				return
 			}
-			if inotify == nil {
+			if _inotify == nil {
 				continue
 			}
+			var inotify = _inotify
 			target := mmsg.NewGroupTarget(inotify.GetGroupCode())
 			nLogger := inotify.Logger()
 
