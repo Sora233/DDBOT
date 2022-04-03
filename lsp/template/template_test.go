@@ -6,6 +6,8 @@ import (
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"github.com/stretchr/testify/assert"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -73,4 +75,23 @@ func TestTemplate(t *testing.T) {
 		assert.Nil(t, tmpl.Execute(m, data[idx]))
 		assert.EqualValues(t, expected[idx], msgstringer.MsgToString(m.Elements()), "%v mismatched", idx)
 	}
+}
+
+func TestRoll(t *testing.T) {
+	var a = roll(0, 10)
+	assert.True(t, a >= 0)
+	assert.True(t, a < 10)
+}
+
+func TestPic(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "")
+	assert.Nil(t, err)
+	defer os.RemoveAll(tempDir)
+	f, err := os.Create(filepath.Join(tempDir, "test.jpg"))
+	assert.Nil(t, err)
+	f.Write([]byte{0, 1, 2, 3})
+	f.Close()
+	var e = pic(tempDir)
+	assert.NotNil(t, e)
+	assert.EqualValues(t, []byte{0, 1, 2, 3}, e.Buf)
 }

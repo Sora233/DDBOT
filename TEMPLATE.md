@@ -2,6 +2,8 @@
 
 DDBOT的模板大致与GO标准库`text/template`与相同，想深入了解请参考[官方文档](https://pkg.go.dev/text/template) 。
 
+**注：DDBOT模板从`v1.0.5`版本开始支持**
+
 ## 配置
 
 DDBOT默认不启用自定义模板，当需要使用时，需要修改配置文件`application.yaml`，在其中增加一段配置，并且重启bot：
@@ -93,6 +95,65 @@ DDBOT会**监控**该文件夹目录，这意味着对模板的创建/修改/删
 <img src="https://user-images.githubusercontent.com/11474360/161203356-84f28ac5-a883-4213-92ed-3c03ad2e524e.jpg" width="300">
 
 这个例子还展示了**回复消息语法**：`{{- reply .msg -}}`以及模板的**条件控制语法**：`{{if}} {{else}} {{end}}`
+
+## 通过模板创建自定义命令回复
+
+得益于模板的高度定制化能力，DDBOT现在支持通过模板发送消息的自定义命令：
+
+例如可以创建一个`/群主女装`命令，并让这个命令发送定义在模板内的群主女装照。
+
+首先需要在配置文件`application.yaml`中定义命令：
+
+```yaml
+autoreply:
+  group:
+    command: [ "群命令1", "群命令2" ]
+  private:
+    command: [ "私聊命令1", "私聊命令2" ]
+```
+
+在上面这段配置中，自定义了两个群命令`/群命令1`和`/群命令2`，两个私聊命令`/私聊命令1`和`/私聊命令2`。
+
+完成后需要创建对应的模板文件：
+
+- `custom.command.group.群命令1.tmpl`
+- `custom.command.group.群命令2.tmpl`
+- `custom.command.private.私聊命令1.tmpl`
+- `custom.command.private.私聊命令2.tmpl`
+
+当触发`/群命令1`的时候，则会自动发送模板消息`custom.command.group.群命令1.tmpl`。
+
+当触发`/私聊命令1`的时候，则会自动发送模板消息`custom.command.private.私聊命令1.tmpl`。
+
+其他命令也遵守这个规则。
+
+## DDBOT新增的模板函数
+
+- {{- cut -}}
+
+用于发送分段消息，上面已介绍过
+
+- {{ reply .msg }}
+
+用于回复消息，上面已介绍过
+
+- {{ prefix }}
+
+引用配置中的command prefix，默认为`/`
+
+- {{ pic "图片地址" }}
+
+用于发送图片，支持`http/https`链接，以及本地路径。
+
+*如果路径是一个文件夹，则会在文件夹内随机选择一张图片。*
+
+- {{ roll a b }}
+
+在a ~ b范围内中随机一个数字，a b 返回值均为int64类型。
+
+- {{ choose "a" "b" "c" }}
+
+从传入的参数中随机返回一个，参数类型为string，支持变长参数。
 
 ## 当前支持的命令模板
 

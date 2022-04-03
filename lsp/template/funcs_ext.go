@@ -6,6 +6,8 @@ import (
 	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -43,7 +45,26 @@ func pic(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
 		e = mmsg.NewImageByUrl(uri)
 	} else {
-		e = mmsg.NewImageByLocal(uri)
+		if f, _ := os.Open(uri); f != nil {
+			if dirs, _ := f.ReadDir(-1); dirs != nil {
+				var result []os.DirEntry
+				for _, file := range dirs {
+					if file.IsDir() || (!strings.HasSuffix(file.Name(), ".jpg") &&
+						!strings.HasSuffix(file.Name(), ".png")) {
+						continue
+					}
+					result = append(result, file)
+				}
+				if len(result) > 0 {
+					e = mmsg.NewImageByLocal(filepath.Join(uri, result[rand.Intn(len(result))].Name()))
+				} else {
+					logger.WithField("uri", uri).Errorf("template: pic uri can not find any images")
+				}
+			}
+		}
+		if e == nil {
+			e = mmsg.NewImageByLocal(uri)
+		}
 	}
 	if len(alternative) > 0 && len(alternative[0]) > 0 {
 		e.Alternative(alternative[0])
