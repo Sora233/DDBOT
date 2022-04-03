@@ -34,3 +34,17 @@ func GetLargeNotifyLimit() int {
 	}
 	return limit
 }
+
+func GetCustomGroupCommand() []string {
+	if config.GlobalConfig == nil {
+		return nil
+	}
+	return config.GlobalConfig.GetStringSlice("autoreply.group.command")
+}
+
+func GetCustomPrivateCommand() []string {
+	if config.GlobalConfig == nil {
+		return nil
+	}
+	return config.GlobalConfig.GetStringSlice("autoreply.private.command")
+}

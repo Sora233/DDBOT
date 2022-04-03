@@ -28,22 +28,9 @@ import (
 )
 
 type LspGroupCommand struct {
-	msg         *message.GroupMessage
-	commandName atomic.String
+	msg *message.GroupMessage
 
 	*Runtime
-}
-
-func (lgc *LspGroupCommand) CommandName() string {
-	if lgc == nil {
-		return ""
-	}
-	x := lgc.commandName.Load()
-	if x == "" {
-		x = strings.TrimPrefix(lgc.GetCmd(), cfg.GetCommandPrefix())
-		lgc.commandName.Store(x)
-	}
-	return x
 }
 
 func NewLspGroupCommand(l *Lsp, msg *message.GroupMessage) *LspGroupCommand {
@@ -165,7 +152,13 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.HelpCommand()
 		}
 	default:
-		log.Debug("no command matched")
+		if CheckCustomGroupCommand(lgc.CommandName()) {
+			if lgc.requireNotDisable(lgc.CommandName()) {
+				lgc.sendChain(lgc.templateMsg(fmt.Sprintf("custom.command.group.%s.tmpl", lgc.CommandName()), nil))
+			}
+		} else {
+			log.Debug("no command matched")
+		}
 	}
 	return
 }

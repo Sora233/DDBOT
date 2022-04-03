@@ -2,7 +2,9 @@ package parser
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/utils"
+	"go.uber.org/atomic"
 	"strings"
 )
 
@@ -11,6 +13,8 @@ type Parser struct {
 	Args    []string
 	// AtTarget 记录消息开头的@
 	AtTarget int64
+
+	commandName atomic.String
 }
 
 func (p *Parser) Parse(e []message.IMessageElement) {
@@ -43,6 +47,7 @@ func (p *Parser) Parse(e []message.IMessageElement) {
 	}
 }
 
+// GetCmd 返回包括commandPrefix在内的command字符串
 func (p *Parser) GetCmd() string {
 	return p.Command
 }
@@ -62,6 +67,19 @@ func (p *Parser) AtCheck() bool {
 		return true
 	}
 	return p.AtTarget == utils.GetBot().GetUin()
+}
+
+// CommandName 返回command本身的名字，不包括command prefix
+func (p *Parser) CommandName() string {
+	if p == nil {
+		return ""
+	}
+	x := p.commandName.Load()
+	if x == "" {
+		x = strings.TrimPrefix(p.GetCmd(), cfg.GetCommandPrefix())
+		p.commandName.Store(x)
+	}
+	return x
 }
 
 func NewParser() *Parser {

@@ -1,6 +1,9 @@
 package lsp
 
-import "github.com/Sora233/sliceutil"
+import (
+	"github.com/Sora233/DDBOT/lsp/cfg"
+	"github.com/Sora233/sliceutil"
+)
 
 // TODO command需要重构成注册模式，然后把这个文件废弃
 
@@ -69,8 +72,16 @@ func CheckValidCommand(command string) bool {
 	return sliceutil.Contains(allGroupCommand, command)
 }
 
+func CheckCustomGroupCommand(command string) bool {
+	return sliceutil.Contains(cfg.GetCustomGroupCommand(), command)
+}
+
+func CheckCustomPrivateCommand(command string) bool {
+	return sliceutil.Contains(cfg.GetCustomPrivateCommand(), command)
+}
+
 func CheckOperateableCommand(command string) bool {
-	return sliceutil.Contains(allGroupCommand, command) && !sliceutil.Contains(nonOprateable, command)
+	return (sliceutil.Contains(allGroupCommand, command) || CheckCustomGroupCommand(command)) && !sliceutil.Contains(nonOprateable, command)
 }
 
 func CombineCommand(command string) string {

@@ -17,7 +17,6 @@ import (
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
 	"github.com/sirupsen/logrus"
-	"go.uber.org/atomic"
 	"io/ioutil"
 	"runtime/debug"
 	"strconv"
@@ -26,22 +25,9 @@ import (
 )
 
 type LspPrivateCommand struct {
-	msg         *message.PrivateMessage
-	commandName atomic.String
+	msg *message.PrivateMessage
 
 	*Runtime
-}
-
-func (c *LspPrivateCommand) CommandName() string {
-	if c == nil {
-		return ""
-	}
-	x := c.commandName.Load()
-	if x == "" {
-		x = strings.TrimPrefix(c.GetCmd(), cfg.GetCommandPrefix())
-		c.commandName.Store(x)
-	}
-	return x
 }
 
 func NewLspPrivateCommand(l *Lsp, msg *message.PrivateMessage) *LspPrivateCommand {
@@ -120,8 +106,12 @@ func (c *LspPrivateCommand) Execute() {
 	case SilenceCommand:
 		c.SilenceCommand()
 	default:
-		c.textReplyF("阁下似乎输入了一个无法识别的命令，请使用<%v>命令查看帮助。", c.l.CommandShowName(HelpCommand))
-		log.Debug("no command matched")
+		if CheckCustomPrivateCommand(c.CommandName()) {
+			c.sendChain(c.templateMsg(fmt.Sprintf("custom.command.private.%s.tmpl", c.CommandName()), nil))
+		} else {
+			c.textReplyF("阁下似乎输入了一个无法识别的命令，请使用<%v>命令查看帮助。", c.l.CommandShowName(HelpCommand))
+			log.Debug("no command matched")
+		}
 	}
 }
 

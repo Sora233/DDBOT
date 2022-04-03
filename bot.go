@@ -93,6 +93,7 @@ func Run() {
 	}
 
 	config.Init()
+	config.GlobalConfig.WatchConfig()
 
 	// 快速初始化
 	bot.Init()
