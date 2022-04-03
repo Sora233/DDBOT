@@ -8,10 +8,12 @@ import (
 	"github.com/Sora233/DDBOT/image_pool/local_pool"
 	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/permission"
+	"github.com/Sora233/DDBOT/lsp/template"
 	"github.com/Sora233/DDBOT/lsp/version"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/proxy_pool/local_proxy_pool"
@@ -26,9 +28,9 @@ import (
 	"go.uber.org/atomic"
 	"go.uber.org/ratelimit"
 	"os"
+	"reflect"
 	"runtime"
 	"runtime/debug"
-	"strings"
 	"sync"
 	"time"
 )
@@ -48,7 +50,6 @@ type Lsp struct {
 	wg            sync.WaitGroup
 	status        *Status
 	notifyWg      sync.WaitGroup
-	commandPrefix string
 	msgRateLimit  ratelimit.Limiter
 
 	PermissionStateManager *permission.StateManager
@@ -57,7 +58,7 @@ type Lsp struct {
 }
 
 func (l *Lsp) CommandShowName(command string) string {
-	return l.commandPrefix + command
+	return cfg.GetCommandPrefix() + command
 }
 
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
@@ -76,11 +77,6 @@ func (l *Lsp) Init() {
 	} else {
 		logrus.SetLevel(lev)
 		log.Infof("设置logLevel为%v", lev.String())
-	}
-
-	l.commandPrefix = strings.TrimSpace(config.GlobalConfig.GetString("bot.commandPrefix"))
-	if len(l.commandPrefix) == 0 {
-		l.commandPrefix = "/"
 	}
 
 	curVersion := version.GetCurrentVersion(LspVersionName)
@@ -114,9 +110,6 @@ func (l *Lsp) Init() {
 	} else {
 		log.Debugf("数据库兼容性检查完毕，当前已为最新模式：%v", curVersion)
 	}
-
-	l.PermissionStateManager = permission.NewStateManager()
-	l.LspStateManager = NewStateManager()
 
 	imagePoolType := config.GlobalConfig.GetString("imagePool.type")
 	log = logger.WithField("image_pool_type", imagePoolType)
@@ -188,12 +181,38 @@ func (l *Lsp) Init() {
 	default:
 		log.Errorf("unknown proxy type")
 	}
+	if config.GlobalConfig.GetBool("template.enable") {
+		log.Infof("已启用模板")
+		template.InitTemplateLoader()
+	}
 }
 
 func (l *Lsp) PostInit() {
 }
 
 func (l *Lsp) Serve(bot *bot.Bot) {
+	bot.OnGroupMemberJoined(func(qqClient *client.QQClient, event *client.MemberJoinGroupEvent) {
+		m, _ := template.LoadAndExec("trigger.group.member_in.tmpl", map[string]interface{}{
+			"group_code":  event.Group.Code,
+			"group_name":  event.Group.Name,
+			"member_code": event.Member.Uin,
+			"member_name": event.Member.DisplayName(),
+		})
+		if m != nil {
+			l.SendMsg(m, mmsg.NewGroupTarget(event.Group.Code))
+		}
+	})
+	bot.OnGroupMemberLeaved(func(qqClient *client.QQClient, event *client.MemberLeaveGroupEvent) {
+		m, _ := template.LoadAndExec("trigger.group.member_out.tmpl", map[string]interface{}{
+			"group_code":  event.Group.Code,
+			"group_name":  event.Group.Name,
+			"member_code": event.Member.Uin,
+			"member_name": event.Member.DisplayName(),
+		})
+		if m != nil {
+			l.SendMsg(m, mmsg.NewGroupTarget(event.Group.Code))
+		}
+	})
 	bot.OnGroupInvited(func(qqClient *client.QQClient, request *client.GroupInvitedRequest) {
 		log := logger.WithFields(logrus.Fields{
 			"GroupCode":   request.GroupCode,
@@ -498,14 +517,55 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 	return l.pool.Get(options...)
 }
 
-func (l *Lsp) SendMsg(msg *mmsg.MSG, target mmsg.Target) (res interface{}) {
+func (l *Lsp) send(msg *message.SendingMessage, target mmsg.Target) interface{} {
 	switch target.TargetType() {
 	case mmsg.TargetGroup:
-		return l.sendGroupMessage(target.TargetCode(), msg.ToMessage(target))
+		return l.sendGroupMessage(target.TargetCode(), msg)
 	case mmsg.TargetPrivate:
-		return l.sendPrivateMessage(target.TargetCode(), msg.ToMessage(target))
+		return l.sendPrivateMessage(target.TargetCode(), msg)
 	}
-	return &message.GroupMessage{Id: -1}
+	panic("unknown target type")
+}
+
+// SendMsg 总是返回至少一个
+func (l *Lsp) SendMsg(m *mmsg.MSG, target mmsg.Target) (res []interface{}) {
+	msgs := m.ToMessage(target)
+	if len(msgs) == 0 {
+		switch target.TargetType() {
+		case mmsg.TargetPrivate:
+			res = append(res, &message.PrivateMessage{Id: -1})
+		case mmsg.TargetGroup:
+			res = append(res, &message.GroupMessage{Id: -1})
+		}
+		return
+	}
+	for idx, msg := range msgs {
+		r := l.send(msg, target)
+		res = append(res, r)
+		if reflect.ValueOf(r).Elem().FieldByName("Id").Int() == -1 {
+			break
+		}
+		if idx > 1 {
+			time.Sleep(time.Millisecond * 300)
+		}
+	}
+	return res
+}
+
+func (l *Lsp) GM(res []interface{}) []*message.GroupMessage {
+	var result []*message.GroupMessage
+	for _, r := range res {
+		result = append(result, r.(*message.GroupMessage))
+	}
+	return result
+}
+
+func (l *Lsp) PM(res []interface{}) []*message.PrivateMessage {
+	var result []*message.PrivateMessage
+	for _, r := range res {
+		result = append(result, r.(*message.PrivateMessage))
+	}
+	return result
 }
 
 func (l *Lsp) sendPrivateMessage(uin int64, msg *message.SendingMessage) (res *message.PrivateMessage) {
@@ -594,26 +654,19 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 	return res
 }
 
-// sendChainGroupMessage 发送一串消息，要求前面消息成功才能发后面的消息
-func (l *Lsp) sendChainGroupMessage(groupCode int64, msgs []*message.SendingMessage) []*message.GroupMessage {
-	var res []*message.GroupMessage
-	for _, msg := range msgs {
-		r := l.sendGroupMessage(groupCode, msg)
-		res = append(res, r)
-		if r.Id == -1 {
-			break
-		}
-	}
-	return res
-}
-
 var Instance = &Lsp{
-	concernNotify: concern.ReadNotifyChan(),
-	stop:          make(chan interface{}),
-	status:        NewStatus(),
-	msgRateLimit:  ratelimit.New(5),
+	concernNotify:          concern.ReadNotifyChan(),
+	stop:                   make(chan interface{}),
+	status:                 NewStatus(),
+	msgRateLimit:           ratelimit.New(5),
+	PermissionStateManager: permission.NewStateManager(),
+	LspStateManager:        NewStateManager(),
 }
 
 func init() {
 	bot.RegisterModule(Instance)
+
+	template.RegisterExtFunc("currentMode", func() string {
+		return string(Instance.LspStateManager.GetCurrentMode())
+	})
 }

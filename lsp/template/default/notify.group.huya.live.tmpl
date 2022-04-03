@@ -1,0 +1,8 @@
+{{ if .living -}}
+虎牙-{{ .name }}正在直播【{{ .title }}】
+{{ .url -}}
+{{ pic .cover "[封面]" }}
+{{- else -}}
+虎牙-{{ .name }}直播结束了
+{{ pic .cover "[封面]" }}
+{{- end -}}

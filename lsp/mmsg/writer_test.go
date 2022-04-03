@@ -33,8 +33,8 @@ func TestMSG(t *testing.T) {
 	m.Append(NewTypedElement().OnGroup(NewImage(nil)))
 	assert.Len(t, m.Elements(), 12)
 
-	m.ToMessage(NewGroupTarget(test.G1))
-	m.ToMessage(NewPrivateTarget(1))
+	m.ToCombineMessage(NewGroupTarget(test.G1))
+	m.ToCombineMessage(NewPrivateTarget(1))
 
 	m = NewText("1")
 	m = NewTextf("asd %v", "xxx")

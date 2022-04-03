@@ -64,6 +64,8 @@ func MsgToString(elements []message.IMessageElement) string {
 			res.WriteString("[Image]")
 		case *mmsg.TypedElement:
 			res.WriteString("[Typed]")
+		case *mmsg.CutElement:
+			res.WriteString("[CUT]")
 		case *message.MarketFaceElement:
 			res.WriteString(e.Name)
 		case *message.DiceElement:

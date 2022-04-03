@@ -375,3 +375,31 @@ func TestStateManager_GetLastFreshTime(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, ts, result)
 }
+
+func TestStateManager_GetLatestActiveTimestamp(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+
+	c := initStateManager(t)
+
+	ts, err := c.GetLatestActive(test.UID1)
+	assert.Nil(t, err)
+	assert.Zero(t, ts)
+
+	assert.Nil(t, c.MarkLatestActive(test.UID1, test.TIMESTAMP1))
+
+	ts, err = c.GetLatestActive(test.UID1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, test.TIMESTAMP1, ts)
+
+	assert.NotNil(t, c.MarkLatestActive(test.UID1, test.TIMESTAMP1-20))
+
+	ts, err = c.GetLatestActive(test.UID1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, test.TIMESTAMP1, ts)
+
+	assert.Nil(t, c.MarkLatestActive(test.UID1, test.TIMESTAMP1+20))
+	ts, err = c.GetLatestActive(test.UID1)
+	assert.Nil(t, err)
+	assert.EqualValues(t, test.TIMESTAMP1+20, ts)
+}

@@ -2,7 +2,9 @@ package lsp
 
 import (
 	"fmt"
+	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/template"
 	"go.uber.org/atomic"
 	"math/rand"
 	"runtime/debug"
@@ -26,30 +28,15 @@ import (
 )
 
 type LspGroupCommand struct {
-	msg         *message.GroupMessage
-	prefix      string
-	commandName atomic.String
+	msg *message.GroupMessage
 
 	*Runtime
-}
-
-func (lgc *LspGroupCommand) CommandName() string {
-	if lgc == nil {
-		return ""
-	}
-	x := lgc.commandName.Load()
-	if x == "" {
-		x = strings.TrimPrefix(lgc.GetCmd(), lgc.prefix)
-		lgc.commandName.Store(x)
-	}
-	return x
 }
 
 func NewLspGroupCommand(l *Lsp, msg *message.GroupMessage) *LspGroupCommand {
 	c := &LspGroupCommand{
 		Runtime: NewRuntime(l, l.PermissionStateManager.CheckGroupSilence(msg.GroupCode)),
 		msg:     msg,
-		prefix:  l.commandPrefix,
 	}
 	c.Parse(msg.Elements)
 	return c
@@ -79,7 +66,7 @@ func (lgc *LspGroupCommand) Execute() {
 		}
 	}()
 
-	if !strings.HasPrefix(lgc.GetCmd(), lgc.prefix) {
+	if !strings.HasPrefix(lgc.GetCmd(), cfg.GetCommandPrefix()) {
 		return
 	}
 
@@ -165,7 +152,13 @@ func (lgc *LspGroupCommand) Execute() {
 			lgc.HelpCommand()
 		}
 	default:
-		log.Debug("no command matched")
+		if CheckCustomGroupCommand(lgc.CommandName()) {
+			if lgc.requireNotDisable(lgc.CommandName()) {
+				lgc.sendChain(lgc.templateMsg(fmt.Sprintf("custom.command.group.%s.tmpl", lgc.CommandName()), nil))
+			}
+		} else {
+			log.Debug("no command matched")
+		}
 	}
 	return
 }
@@ -183,8 +176,7 @@ func (lgc *LspGroupCommand) LspCommand() {
 	if lgc.exit {
 		return
 	}
-	lgc.textReply("LSP竟然是你")
-	return
+	lgc.sendChain(lgc.templateMsg("command.group.lsp.tmpl", nil))
 }
 
 func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
@@ -505,9 +497,9 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 
 	date := time.Now().Format("20060102")
 
-	var result string
+	var score int64
+	var success bool
 	err := localdb.RWCover(func() error {
-		var score int64
 		var err error
 		scoreKey := localdb.Key("Score", lgc.groupCode(), lgc.uin())
 		dateMarker := localdb.Key("ScoreDate", lgc.groupCode(), lgc.uin(), date)
@@ -518,7 +510,7 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 		}
 		if localdb.Exist(dateMarker) {
 			log = log.WithField("current_score", score)
-			result = fmt.Sprintf("明天再来吧，当前积分为%v", score)
+			success = false
 			return nil
 		}
 
@@ -532,15 +524,18 @@ func (lgc *LspGroupCommand) CheckinCommand() {
 			return err
 		}
 		log = log.WithField("new_score", score)
-		result = fmt.Sprintf("签到成功！获得1积分，当前积分为%v", score)
+		success = true
 		return nil
 	})
 	if err != nil {
 		lgc.textSend("失败 - 内部错误")
 		log.Errorf("checkin error %v", err)
-	} else {
-		lgc.textReply(result)
+		return
 	}
+	lgc.sendChain(lgc.templateMsg("command.group.checkin.tmpl", map[string]interface{}{
+		"score":   score,
+		"success": success,
+	}))
 }
 
 func (lgc *LspGroupCommand) ScoreCommand() {
@@ -837,19 +832,7 @@ func (lgc *LspGroupCommand) HelpCommand() {
 	if lgc.exit {
 		return
 	}
-
-	var sb strings.Builder
-	sb.WriteString("DDBOT是一个多功能单推专用推送机器人，支持b站、斗鱼、油管、虎牙推送\n")
-
-	switch lgc.l.LspStateManager.GetCurrentMode() {
-	case PublicMode:
-		sb.WriteString("当前BOT处于公开状态，添加BOT好友后即可让BOT为阁下的群服务\n详细介绍请添加好友后私聊发送/help")
-	case PrivateMode:
-		sb.WriteString("当前BOT处于私有状态，BOT会拒绝好友与加群邀请")
-	case ProtectMode:
-		sb.WriteString("当前BOT处于审核状态，添加BOT好友并由管理员审核后即可让BOT为阁下的群服务\n详细介绍请添加好友后私聊发送/help")
-	}
-	lgc.textReply(sb.String())
+	lgc.sendChain(lgc.templateMsg("command.group.help.tmpl", nil))
 }
 
 func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {
@@ -964,7 +947,11 @@ func (lgc *LspGroupCommand) reply(msg *mmsg.MSG) *message.GroupMessage {
 }
 
 func (lgc *LspGroupCommand) send(msg *mmsg.MSG) *message.GroupMessage {
-	return lgc.l.SendMsg(msg, mmsg.NewGroupTarget(lgc.groupCode())).(*message.GroupMessage)
+	return lgc.l.GM(lgc.l.SendMsg(msg, mmsg.NewGroupTarget(lgc.groupCode())))[0]
+}
+
+func (lgc *LspGroupCommand) sendChain(msg *mmsg.MSG) []*message.GroupMessage {
+	return lgc.l.GM(lgc.l.SendMsg(msg, mmsg.NewGroupTarget(lgc.groupCode())))
 }
 
 func (lgc *LspGroupCommand) sender() *message.Sender {
@@ -977,6 +964,26 @@ func (lgc *LspGroupCommand) noPermissionReply() *message.GroupMessage {
 
 func (lgc *LspGroupCommand) globalDisabledReply() *message.GroupMessage {
 	return lgc.textReply("无法操作该命令，该命令已被管理员禁用")
+}
+
+func (lgc *LspGroupCommand) commonTemplateData() map[string]interface{} {
+	return map[string]interface{}{
+		"msg": lgc.msg,
+	}
+}
+
+func (lgc *LspGroupCommand) templateMsg(name string, data map[string]interface{}) *mmsg.MSG {
+	commonData := lgc.commonTemplateData()
+	for k, v := range data {
+		commonData[k] = v
+	}
+	m, err := template.LoadAndExec(name, commonData)
+	if err != nil {
+		logger.Errorf("LoadAndExec error %v", err)
+		lgc.textReply(fmt.Sprintf("错误 - %v", err))
+		return nil
+	}
+	return m
 }
 
 func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext {

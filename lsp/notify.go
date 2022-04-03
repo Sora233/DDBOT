@@ -19,15 +19,16 @@ func (l *Lsp) ConcernNotify() {
 	l.wg.Add(1)
 	defer l.wg.Done()
 	for {
-		var chainMsg []*message.SendingMessage
 		select {
-		case inotify, ok := <-l.concernNotify:
+		case _inotify, ok := <-l.concernNotify:
 			if !ok {
 				return
 			}
-			if inotify == nil {
+			if _inotify == nil {
 				continue
 			}
+			var inotify = _inotify
+			target := mmsg.NewGroupTarget(inotify.GetGroupCode())
 			nLogger := inotify.Logger()
 
 			if l.LspStateManager.IsMuted(inotify.GetGroupCode(), utils.GetBot().GetUin()) {
@@ -54,6 +55,11 @@ func (l *Lsp) ConcernNotify() {
 				continue
 			}
 
+			cfg.NotifyBeforeCallback(inotify)
+
+			// 注意notify可能会缓存MSG
+			var m = l.NotifyMessage(inotify).Clone()
+
 			// atConfig
 			var atBeforeHook = cfg.AtBeforeHook(inotify)
 			if !atBeforeHook.Pass {
@@ -73,19 +79,13 @@ func (l *Lsp) ConcernNotify() {
 				}).Trace("at_all condition")
 				if atBeforeHook.Pass && qqadmin && checkAtAll && atAllMark {
 					nLogger = nLogger.WithField("at_all", true)
-					chainMsg = append(chainMsg, newAtAllMsg())
+					newAtAllMsg(m)
 				} else {
 					ids := cfg.GetGroupConcernAt().GetAtSomeoneList(inotify.Type())
 					nLogger = nLogger.WithField("at_QQ", ids)
-					if len(ids) != 0 {
-						chainMsg = append(chainMsg, newAtIdsMsg(ids))
-					}
+					newAtIdsMsg(m, ids)
 				}
 			}
-
-			cfg.NotifyBeforeCallback(inotify)
-
-			chainMsg = append([]*message.SendingMessage{l.NotifyMessage(inotify)}, chainMsg...)
 
 			nLogger.Info("notify")
 
@@ -98,7 +98,7 @@ func (l *Lsp) ConcernNotify() {
 							Errorf("notify panic recovered: %v", e)
 					}
 				}()
-				msgs := l.sendChainGroupMessage(inotify.GetGroupCode(), chainMsg)
+				msgs := l.GM(l.SendMsg(m, target))
 				if len(msgs) > 0 {
 					cfg.NotifyAfterCallback(inotify, msgs[0])
 				} else {
@@ -119,7 +119,7 @@ func (l *Lsp) ConcernNotify() {
 							if len(ids) != 0 {
 								nLogger = nLogger.WithField("at_QQ", ids)
 								nLogger.Debug("notify atAll failed, try at someone")
-								l.sendGroupMessage(inotify.GetGroupCode(), newAtIdsMsg(ids))
+								l.SendMsg(newAtIdsMsg(mmsg.NewMSG(), ids), target)
 							} else {
 								nLogger.Debug("notify atAll failed, at someone not config")
 							}
@@ -131,20 +131,22 @@ func (l *Lsp) ConcernNotify() {
 	}
 }
 
-func (l *Lsp) NotifyMessage(inotify concern.Notify) *message.SendingMessage {
-	return inotify.ToMessage().ToMessage(mmsg.NewGroupTarget(inotify.GetGroupCode()))
+func (l *Lsp) NotifyMessage(inotify concern.Notify) *mmsg.MSG {
+	return inotify.ToMessage()
 }
 
-func newAtAllMsg() *message.SendingMessage {
-	msg := new(message.SendingMessage)
-	msg.Append(message.AtAll())
-	return msg
+func newAtAllMsg(m *mmsg.MSG) *mmsg.MSG {
+	m.Cut()
+	m.Append(message.AtAll())
+	return m
 }
 
-func newAtIdsMsg(ids []int64) *message.SendingMessage {
-	msg := new(message.SendingMessage)
-	for _, id := range ids {
-		msg.Append(message.NewAt(id))
+func newAtIdsMsg(m *mmsg.MSG, ids []int64) *mmsg.MSG {
+	if len(ids) > 0 {
+		m.Cut()
+		for _, id := range ids {
+			m.Append(message.NewAt(id))
+		}
 	}
-	return msg
+	return m
 }

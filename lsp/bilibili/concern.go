@@ -189,6 +189,9 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 			if c.checkRelation(mid) {
 				log.Infof("当前B站账户已关注该用户，跳过关注")
 			} else {
+				if config.GlobalConfig.GetBool("bilibili.disableSub") {
+					return nil, fmt.Errorf("关注用户失败 - 该用户未在关注列表内，请联系管理员")
+				}
 				var actType = ActSub
 				if config.GlobalConfig.GetBool("bilibili.hiddenSub") {
 					actType = ActHiddenSub
@@ -312,11 +315,6 @@ func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 			log.WithFields(localutils.GroupLogFields(groupCode)).
 				WithField("Size", len(notifies)).Debug("news notify")
 			for _, notify := range notifies {
-				// 2021-08-15 发现好像是系统推荐的直播间，非人为操作
-				// 在event阶段过滤掉
-				if notify.Card.GetDesc().GetType() == DynamicDescType_WithLiveV2 {
-					continue
-				}
 				result = append(result, notify)
 			}
 		}
@@ -532,6 +530,11 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 
 	logger.WithField("cost", time.Now().Sub(start)).Trace("freshDynamicNew cost 1")
 	for _, card := range cards {
+		// 2021-08-15 发现好像是系统推荐的直播间，非人为操作
+		// 在event阶段过滤掉
+		if card.GetDesc().GetType() == DynamicDescType_WithLiveV2 {
+			continue
+		}
 		uid := card.GetDesc().GetUid()
 		// 应该用dynamic_id_str
 		// 但好像已经没法保持向后兼容同时改动了
@@ -573,6 +576,9 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 			cards = cards[:3]
 		}
 		result = append(result, NewNewsInfoWithDetail(userInfo, cards))
+	}
+	for _, news := range result {
+		_ = c.MarkLatestActive(news.Mid, news.Timestamp)
 	}
 	logger.WithField("cost", time.Now().Sub(start)).
 		WithField("NewsInfo Size", len(result)).
@@ -660,6 +666,10 @@ func (c *Concern) freshLive() ([]*LiveInfo, error) {
 			}
 			break
 		}
+	}
+	ts := time.Now().Unix()
+	for _, info := range liveInfo {
+		_ = c.MarkLatestActive(info.Mid, ts)
 	}
 	logger.WithFields(logrus.Fields{
 		"cost":          time.Since(start),
@@ -784,6 +794,10 @@ func (c *Concern) SyncSub() {
 		attentionMidSet[attentionMid] = true
 	}
 
+	var disableSub = false
+	if config.GlobalConfig.GetBool("bilibili.disableSub") {
+		disableSub = true
+	}
 	var actType = ActSub
 	if config.GlobalConfig.GetBool("bilibili.hiddenSub") {
 		actType = ActHiddenSub
@@ -794,13 +808,17 @@ func (c *Concern) SyncSub() {
 			continue
 		}
 		if _, found := attentionMidSet[mid]; !found {
+			if disableSub {
+				logger.Warnf("检测到存在未关注的订阅目标 UID:%v，同时禁用了b站自动关注，将无法推送该用户", mid)
+				continue
+			}
 			resp, err := c.ModifyUserRelation(mid, actType)
 			if err == nil {
 				switch resp.Code {
 				case 22002, 22003, 22013:
 					// 22002 可能是被拉黑了
 					// 22003 主动拉黑对方
-					// 22003 帐号注销
+					// 22013 帐号注销
 					logger.WithField("ModifyUserRelation Code", resp.Code).
 						WithField("ModifyUserRelation Message", resp.Message).
 						WithField("mid", mid).

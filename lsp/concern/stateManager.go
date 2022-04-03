@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
@@ -19,7 +19,7 @@ import (
 
 var logger = utils.GetModuleLogger("concern")
 var ErrEmitQueueNotInit = errors.New("emit queue not init")
-var ErrMaxGroupConcernExceed = errors.New("已达到订阅上限")
+var ErrMaxGroupConcernExceed = errors.New("本群已达到订阅上限")
 
 // NotifyGeneratorFunc 是 IStateManager.NotifyGenerator 函数的具体逻辑
 // 它针对一组 groupCode 把 Event 转变成一组 Notify
@@ -588,12 +588,9 @@ func (c *StateManager) DefaultDispatch() DispatchFunc {
 				continue
 			}
 			log.Infof("new event - %v - %v notify for %v groups", event.Site(), event.Type().String(), len(groups))
-			largeNotifyLimit := config.GlobalConfig.GetInt("dispatch.largeNotifyLimit")
-			if largeNotifyLimit <= 0 {
-				largeNotifyLimit = 50
-			}
+			largeNotifyLimit := cfg.GetLargeNotifyLimit()
 			if len(groups) >= largeNotifyLimit {
-				log.Warnf("警告：当前事件将推送至超过%v个群，为保证帐号稳定，将增加此事件的推送间隔，防止短时间内发送大量消息", largeNotifyLimit)
+				log.Warnf("警告：当前事件将推送至%v个群（超过%v），为保证帐号稳定，将增加此事件的推送间隔，防止短时间内发送大量消息", len(groups), largeNotifyLimit)
 				go func(groups []int64, event Event) {
 					ticker := time.NewTicker(time.Second * 3)
 					for _, groupCode := range groups {
@@ -635,10 +632,7 @@ var defaultInterval = time.Second * 5
 // UseEmitQueue 启用EmitQueue
 func (c *StateManager) UseEmitQueue() {
 	c.useEmit = true
-	var interval time.Duration
-	if config.GlobalConfig != nil {
-		interval = config.GlobalConfig.GetDuration("concern.emitInterval")
-	}
+	var interval = cfg.GetEmitInterval()
 	if interval == 0 {
 		interval = defaultInterval
 	}

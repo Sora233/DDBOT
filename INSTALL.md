@@ -187,7 +187,8 @@ bilibili:
   unsub: false        # 是否自动取消关注，默认不取消
                       # 如果您的b站账号有多个bot同时使用，取消可能导致推送丢失
   minFollowerCap: 0 # 设置订阅的b站用户需要满足至少有多少个粉丝，默认为0，设为-1表示无限制
-  
+  disableSub: false # 禁止ddbot去b站关注帐号，这意味着只能订阅帐号已关注的用户，或者在b站手动关注
+
 localPool: # 图片功能，使用本地图库
   imageDir: # 本地路径
 
@@ -212,7 +213,7 @@ localProxyPool: # 代理池配置，固定代理
 # 填入所需资料后就可以获取 clientId 和 clientSecret
 # 详细: https://www.codenong.com/7d930656a7499340f14a/
 twitcasting:
-  clientId:  abc
+  clientId: abc
   clientSecret: xyz
   # 为防止风控，可选择性广播以下元素
   broadcaster:
@@ -240,12 +241,21 @@ debug: # debug模式，只有以下群或qq号可以触发命令
 
 message-marker: # 是否禁用自动已读功能，true为禁用，false为不禁用，默认为不禁用
   disable: false
-  
-qq-logs: # 是否禁用在命令行内展示qq聊天内容，true为禁用，false为不禁用，默认为不禁用
-  disable: false
+
+qq-logs: # 是否启用在命令行内展示qq聊天内容，true为启用，false为禁用，默认为禁用
+  enable: false
 
 dispatch:
   largeNotifyLimit: 50 # 巨量推送的判定配置，默认为50，当大于这个配置时，将增大推送延迟保证账号稳定
+
+template:       # 是否启用模板功能，true为启用，false为禁用，默认为禁用
+  enable: false # 需要了解模板请看模板文档
+  
+autoreply: # 自定义命令自动回复，自定义命令通过模板发送消息，且不支持任何参数，需要同时启用模板功能
+  group:   # 需要了解该功能请看模板文档
+    command: [ ]
+  private:
+    command: [ ]
 
 logLevel: info # 日志等级
 ```

@@ -3,6 +3,7 @@ package huya
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/template"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"sync"
@@ -80,14 +81,19 @@ func (m *LiveInfo) Site() string {
 
 func (m *LiveInfo) GetMSG() *mmsg.MSG {
 	m.once.Do(func() {
-		msg := mmsg.NewMSG()
-		if m.Living() {
-			msg.Textf("虎牙-%s正在直播【%v】\n%v", m.Name, m.RoomName, m.RoomUrl)
-		} else {
-			msg.Textf("虎牙-%s直播结束了", m.Name)
+		var data = map[string]interface{}{
+			"title":  m.RoomName,
+			"name":   m.Name,
+			"url":    m.RoomUrl,
+			"cover":  m.Avatar,
+			"living": m.Living(),
 		}
-		msg.ImageByUrl(m.Avatar, "[封面]")
-		m.msgCache = msg
+		var err error
+		m.msgCache, err = template.LoadAndExec("notify.group.huya.live.tmpl", data)
+		if err != nil {
+			logger.Errorf("huya: LiveInfo LoadAndExec error %v", err)
+		}
+		return
 	})
 	return m.msgCache
 }
