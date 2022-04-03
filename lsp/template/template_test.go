@@ -80,7 +80,7 @@ func TestTemplate(t *testing.T) {
 func TestRoll(t *testing.T) {
 	var a = roll(0, 10)
 	assert.True(t, a >= 0)
-	assert.True(t, a < 10)
+	assert.True(t, a <= 10)
 }
 
 func TestPic(t *testing.T) {
