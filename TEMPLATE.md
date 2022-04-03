@@ -267,6 +267,7 @@ LSP竟然是你
 {{ pic .cover "[封面]" }}
 {{- else -}}
 {{ .name }}直播结束了
+{{ pic .cover "[封面]" }}
 {{- end -}}
 ```
 
@@ -293,7 +294,8 @@ ACFUN-{{ .name }}正在直播【{{ .title }}】
 {{ .url -}}
 {{ pic .cover "[封面]" }}
 {{- else -}}
-{{ .name }}直播结束了
+ACFUN-{{ .name }}直播结束了
+{{ pic .cover "[封面]" }}
 {{- end -}}
 ```
 
@@ -320,7 +322,8 @@ ACFUN-{{ .name }}正在直播【{{ .title }}】
 {{ .url -}}
 {{ pic .cover "[封面]" }}
 {{- else -}}
-{{ .name }}直播结束了
+斗鱼-{{ .name }}直播结束了
+{{ pic .cover "[封面]" }}
 {{- end -}}
 ```
 
@@ -347,7 +350,8 @@ ACFUN-{{ .name }}正在直播【{{ .title }}】
 {{ .url -}}
 {{ pic .cover "[封面]" }}
 {{- else -}}
-{{ .name }}直播结束了
+虎牙-{{ .name }}直播结束了
+{{ pic .cover "[封面]" }}
 {{- end -}}
 ```
 
