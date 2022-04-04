@@ -17,19 +17,34 @@ type Parser struct {
 	commandName atomic.String
 }
 
-func (p *Parser) Parse(e []message.IMessageElement) {
-	if len(e) > 0 {
+func (p *Parser) Parse(elems []message.IMessageElement) {
+	if len(elems) > 0 {
+		var hasReply bool
 		var atElem *message.AtElement
-		if e[0].Type() == message.At {
-			atElem, _ = e[0].(*message.AtElement)
-		} else if e[0].Type() == message.Reply && len(e) > 1 && e[1].Type() == message.At {
-			atElem, _ = e[1].(*message.AtElement)
+		for _, e := range elems {
+			if e.Type() == message.Reply {
+				hasReply = true
+			}
+		}
+		ats := utils.MessageFilter(elems, func(element message.IMessageElement) bool {
+			return element.Type() == message.At
+		})
+		if hasReply {
+			if len(ats) >= 2 {
+				atElem = ats[len(ats)-1].(*message.AtElement)
+			} else if len(ats) <= 0 {
+				p.AtTarget = -1 // bot reply maybe
+			}
+		} else {
+			if len(ats) > 0 {
+				atElem = ats[0].(*message.AtElement)
+			}
 		}
 		if atElem != nil {
 			p.AtTarget = atElem.Target
 		}
 	}
-	for _, element := range e {
+	for _, element := range elems {
 		if te, ok := element.(*message.TextElement); ok {
 			text := strings.TrimSpace(strings.Replace(te.Content, " ", " ", -1))
 			if text == "" {
