@@ -48,3 +48,10 @@ func GetCustomPrivateCommand() []string {
 	}
 	return config.GlobalConfig.GetStringSlice("autoreply.private.command")
 }
+
+func GetFramMessage() bool {
+	if config.GlobalConfig == nil {
+		return false
+	}
+	return config.GlobalConfig.GetBool("bot.framMessage")
+}

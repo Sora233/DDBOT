@@ -634,7 +634,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 		return &message.GroupMessage{Id: -1}
 	}
 	l.msgRateLimit.Take()
-	res = bot.Instance.SendGroupMessage(groupCode, msg)
+	res = bot.Instance.SendGroupMessage(groupCode, msg, cfg.GetFramMessage())
 	if res == nil || res.Id == -1 {
 		if msg.Count(func(e message.IMessageElement) bool {
 			return e.Type() == message.At && e.(*message.AtElement).Target == 0
