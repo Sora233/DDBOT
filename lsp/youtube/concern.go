@@ -45,6 +45,9 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype 
 		log.Errorf("FindOrLoad error %v", err)
 		return nil, fmt.Errorf("查询channel信息失败 %v - %v", id, err)
 	}
+	for _, v := range info.VideoInfo {
+		c.StateManager.AddVideo(v)
+	}
 	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
 	if err != nil {
 		return nil, err
