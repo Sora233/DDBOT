@@ -154,7 +154,12 @@ func (lgc *LspGroupCommand) Execute() {
 	default:
 		if CheckCustomGroupCommand(lgc.CommandName()) {
 			if lgc.requireNotDisable(lgc.CommandName()) {
-				lgc.sendChain(lgc.templateMsg(fmt.Sprintf("custom.command.group.%s.tmpl", lgc.CommandName()), nil))
+				func() {
+					log := lgc.DefaultLoggerWithCommand(lgc.CommandName()).WithField("CustomCommand", true)
+					log.Infof("run %v command", lgc.CommandName())
+					defer func() { log.Infof("%v command end", lgc.CommandName()) }()
+					lgc.sendChain(lgc.templateMsg(fmt.Sprintf("custom.command.group.%s.tmpl", lgc.CommandName()), nil))
+				}()
 			}
 		} else {
 			log.Debug("no command matched")
