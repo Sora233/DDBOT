@@ -18,13 +18,13 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Jeffail/gabs/v2 v2.6.1 h1:wwbE6nTQTwIMsMxzi6XFQQYRZ6wDc1mSdxoAN+9U4Gk=
 github.com/Jeffail/gabs/v2 v2.6.1/go.mod h1:xCn81vdHKxFUuWWAaD5jCTQDNPBMh5pPs9IJ+NcziBI=
-github.com/Mrs4s/MiraiGo v0.0.0-20220209092529-5d071b034c17 h1:OQVnlWt5if0TOFoNGDjILazBjVTncSlPxGXabD+4MvE=
-github.com/Mrs4s/MiraiGo v0.0.0-20220209092529-5d071b034c17/go.mod h1:rtKLkhMEi2YjsrXaNztT4uagUOPBxf6a+TNREkG097I=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/PuerkitoBio/goquery v1.8.0 h1:PJTF7AmFCFKk1N6V6jmKfrNH9tV5pNE6lZMkG0gta/U=
 github.com/PuerkitoBio/goquery v1.8.0/go.mod h1:ypIiRMtY7COPGk+I/YbZLbxsxn9g5ejnI2HSMtkjZvI=
 github.com/RomiChan/protobuf v0.0.0-20211223055824-048df49a8956 h1:hnaAkKz4t+xpSNVp5mnuloRMd3Rj2Lfg5biZ3emv//c=
 github.com/RomiChan/protobuf v0.0.0-20211223055824-048df49a8956/go.mod h1:CKKOWC7mBxd36zxsCB1V8DTrwlTNRQvkSVbYqyUiGEE=
+github.com/Sora233/MiraiGo v0.0.0-20220405052825-4f598a80f67b h1:buMqXNEJbJGVZn9sN+LHkQZi+R7kdkFTvz1XaCyFZNg=
+github.com/Sora233/MiraiGo v0.0.0-20220405052825-4f598a80f67b/go.mod h1:rtKLkhMEi2YjsrXaNztT4uagUOPBxf6a+TNREkG097I=
 github.com/Sora233/MiraiGo-Template v0.0.0-20220302025209-18af16201a7f h1:kphSWz5OHpHYIWkxkh3BJayLTAhjRruOPlD3ZQsT7JU=
 github.com/Sora233/MiraiGo-Template v0.0.0-20220302025209-18af16201a7f/go.mod h1:PdHJe9XcbCb9eMiA4IvilI/IWY6/of+Dp9FdIsj8MeI=
 github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882 h1:WXXRCSYXZsFd3ETkh+imU6Gz/Xdm0lXgAQILgBau0XY=

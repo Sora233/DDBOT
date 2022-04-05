@@ -80,4 +80,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
-replace github.com/willf/bitset v1.2.0 => github.com/bits-and-blooms/bitset v1.2.0
+replace (
+	github.com/Mrs4s/MiraiGo => github.com/Sora233/MiraiGo v0.0.0-20220405052825-4f598a80f67b
+	github.com/willf/bitset v1.2.0 => github.com/bits-and-blooms/bitset v1.2.0
+)
