@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
@@ -169,12 +170,12 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 	}
 
 	if !c.checkRelation(mid) {
-		userStat, err := c.StatUserWithCache(mid, time.Hour)
+		userStat, err := c.StatUserWithCache(mid, time.Second*20)
 		if err != nil {
 			log.Errorf("get UserStat error %v\n", err)
 		} else if userStat != nil {
-			var minFollowerCap = minFollowerCap.Load()
-			if !watchSelf && userStat.Follower <= minFollowerCap {
+			var minFollowerCap = cfg.GetBilibiliMinFollowerCap()
+			if !watchSelf && userStat.Follower <= int64(minFollowerCap) {
 				return nil, fmt.Errorf("订阅目标粉丝数未超过%v无法订阅，请确认您的订阅目标是否正确，注意使用UID而非直播间ID", minFollowerCap)
 			}
 			userInfo.UserStat = userStat
@@ -189,11 +190,11 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 			if c.checkRelation(mid) {
 				log.Infof("当前B站账户已关注该用户，跳过关注")
 			} else {
-				if config.GlobalConfig.GetBool("bilibili.disableSub") {
+				if cfg.GetBilibiliDisableSub() {
 					return nil, fmt.Errorf("关注用户失败 - 该用户未在关注列表内，请联系管理员")
 				}
 				var actType = ActSub
-				if config.GlobalConfig.GetBool("bilibili.hiddenSub") {
+				if cfg.GetBilibiliHiddenSub() {
 					actType = ActHiddenSub
 				}
 				resp, err := c.ModifyUserRelation(mid, actType)
@@ -448,7 +449,10 @@ func (c *Concern) fresh() concern.FreshFunc {
 								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
 									Debug("notlive count done, notlive confirmed")
 							}
-							c.ClearNotLiveCount(mid)
+							if err := c.ClearNotLiveCount(mid); err != nil {
+								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
+									Errorf("clear notlive count error %v", err)
+							}
 							newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle,
 								oldInfo.Cover, LiveStatus_NoLiving)
 							newInfo.liveStatusChanged = true
@@ -457,7 +461,10 @@ func (c *Concern) fresh() concern.FreshFunc {
 							if newInfo.LiveTitle == "bilibili主播的直播间" {
 								newInfo.LiveTitle = oldInfo.LiveTitle
 							}
-							c.ClearNotLiveCount(mid)
+							if err := c.ClearNotLiveCount(mid); err != nil {
+								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
+									Errorf("clear notlive count error %v", err)
+							}
 							if newInfo.LiveTitle != oldInfo.LiveTitle {
 								// live title change
 								newInfo.liveTitleChanged = true

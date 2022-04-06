@@ -63,7 +63,6 @@ var (
 	username             string
 	password             string
 	accountUid           atomic.Int64
-	minFollowerCap       atomic.Int64
 	delete412ProxyOption = func() requests.Option {
 		return requests.ProxyCallbackOption(func(out interface{}, proxy string) {
 			if out == nil {
@@ -85,7 +84,6 @@ func Init() {
 		SetVerify(SESSDATA, biliJct)
 		FreshSelfInfo()
 	}
-	minFollowerCap.Store(config.GlobalConfig.GetInt64("bilibili.minFollowerCap"))
 	SetAccount(config.GlobalConfig.GetString("bilibili.account"), config.GlobalConfig.GetString("bilibili.password"))
 }
 

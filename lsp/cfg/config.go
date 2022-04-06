@@ -7,9 +7,6 @@ import (
 )
 
 func GetCommandPrefix() string {
-	if config.GlobalConfig == nil {
-		return "/"
-	}
 	prefix := strings.TrimSpace(config.GlobalConfig.GetString("bot.commandPrefix"))
 	if len(prefix) == 0 {
 		prefix = "/"
@@ -18,16 +15,10 @@ func GetCommandPrefix() string {
 }
 
 func GetEmitInterval() time.Duration {
-	if config.GlobalConfig == nil {
-		return 0
-	}
 	return config.GlobalConfig.GetDuration("concern.emitInterval")
 }
 
 func GetLargeNotifyLimit() int {
-	if config.GlobalConfig == nil {
-		return 50
-	}
 	var limit = config.GlobalConfig.GetInt("dispatch.largeNotifyLimit")
 	if limit <= 0 {
 		limit = 50
@@ -36,22 +27,25 @@ func GetLargeNotifyLimit() int {
 }
 
 func GetCustomGroupCommand() []string {
-	if config.GlobalConfig == nil {
-		return nil
-	}
 	return config.GlobalConfig.GetStringSlice("autoreply.group.command")
 }
 
 func GetCustomPrivateCommand() []string {
-	if config.GlobalConfig == nil {
-		return nil
-	}
 	return config.GlobalConfig.GetStringSlice("autoreply.private.command")
 }
 
 func GetFramMessage() bool {
-	if config.GlobalConfig == nil {
-		return false
-	}
 	return config.GlobalConfig.GetBool("bot.framMessage")
+}
+
+func GetBilibiliMinFollowerCap() int {
+	return config.GlobalConfig.GetInt("bilibili.minFollowerCap")
+}
+
+func GetBilibiliDisableSub() bool {
+	return config.GlobalConfig.GetBool("bilibili.disableSub")
+}
+
+func GetBilibiliHiddenSub() bool {
+	return config.GlobalConfig.GetBool("bilibili.hiddenSub")
 }
