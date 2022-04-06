@@ -49,8 +49,9 @@ func pic(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 			if dirs, _ := f.ReadDir(-1); dirs != nil {
 				var result []os.DirEntry
 				for _, file := range dirs {
-					if file.IsDir() || (!strings.HasSuffix(file.Name(), ".jpg") &&
-						!strings.HasSuffix(file.Name(), ".png")) {
+					if file.IsDir() || !(strings.HasSuffix(file.Name(), ".jpg") ||
+						strings.HasSuffix(file.Name(), ".png") ||
+						strings.HasSuffix(file.Name(), ".gif")) {
 						continue
 					}
 					result = append(result, file)
