@@ -34,7 +34,7 @@ func (s *StateManager) GetVideo(channelId string, videoId string) (*VideoInfo, e
 }
 
 func (s *StateManager) AddVideo(v *VideoInfo) error {
-	return s.SetJson(s.VideoKey(v.ChannelId, v.VideoId), v, localdb.SetExpireOpt(time.Hour*24))
+	return s.SetJson(s.VideoKey(v.ChannelId, v.VideoId), v)
 }
 
 func (s *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
