@@ -1238,7 +1238,9 @@ func (c *LspPrivateCommand) sendChain(msg *mmsg.MSG) []*message.PrivateMessage {
 
 func (c *LspPrivateCommand) commonTemplateData() map[string]interface{} {
 	return map[string]interface{}{
-		"msg": c.msg,
+		"msg":         c.msg,
+		"member_code": c.sender().Uin,
+		"member_name": c.sender().DisplayName(),
 	}
 }
 

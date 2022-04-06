@@ -46,8 +46,8 @@ func InitTemplateLoader() {
 			return
 		}
 	}
-	if err := watcher.Add("template"); err != nil {
-		logger.Errorf("监测<template>文件夹失败，自定义模板可能无法生效: %v", err)
+	if err := watcher.Add(templateDir); err != nil {
+		logger.Errorf("监测<%v>文件夹失败，自定义模板可能无法生效: %v", templateDir, err)
 		return
 	}
 	parseExternalTemplate := func() {
@@ -70,7 +70,7 @@ func InitTemplateLoader() {
 				if !strings.HasSuffix(event.Name, "tmpl") {
 					continue
 				}
-				logger.Infof("监测到template文件变动: %v", event.String())
+				logger.Infof("监测到%v文件变动: %v", templateDir, event.String())
 				mu.Lock()
 				rootT = Must(rootT.ParseFS(tfs, "default/*.tmpl"))
 				parseExternalTemplate()
