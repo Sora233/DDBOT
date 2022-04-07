@@ -976,8 +976,8 @@ func (lgc *LspGroupCommand) commonTemplateData() map[string]interface{} {
 		"msg":         lgc.msg,
 		"group_code":  lgc.groupCode(),
 		"group_name":  lgc.groupName(),
-		"member_code": lgc.sender().Uin,
-		"member_name": lgc.sender().DisplayName(),
+		"caller_code": lgc.sender().Uin,
+		"caller_name": lgc.sender().DisplayName(),
 	}
 }
 
