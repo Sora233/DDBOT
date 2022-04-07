@@ -466,6 +466,10 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 	l.started.Store(true)
 	logger.Infof("DDBOT启动完成")
 	logger.Infof("D宝，一款真正人性化的单推BOT")
+	if len(l.PermissionStateManager.ListAdmin()) == 0 {
+		logger.Infof("您似乎正在部署全新的BOT，请通过qq对bot私聊发送<%v>(不含括号)获取管理员权限，然后私聊发送<%v>(不含括号)开始使用您的bot",
+			l.CommandShowName(WhosyourdaddyCommand), l.CommandShowName(HelpCommand))
+	}
 }
 
 func (l *Lsp) Start(bot *bot.Bot) {
