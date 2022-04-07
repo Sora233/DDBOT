@@ -41,6 +41,10 @@ func reply(msg interface{}) *message.ReplyElement {
 	}
 }
 
+func at(uin int64) *message.AtElement {
+	return message.NewAt(uin)
+}
+
 func pic(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 	logger := logger.WithField("uri", uri)
 	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
