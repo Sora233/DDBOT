@@ -42,27 +42,46 @@ func reply(msg interface{}) *message.ReplyElement {
 }
 
 func pic(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
+	logger := logger.WithField("uri", uri)
 	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
 		e = mmsg.NewImageByUrl(uri)
 	} else {
-		if f, _ := os.Open(uri); f != nil {
-			if dirs, _ := f.ReadDir(-1); dirs != nil {
-				var result []os.DirEntry
-				for _, file := range dirs {
-					if file.IsDir() || !(strings.HasSuffix(file.Name(), ".jpg") ||
-						strings.HasSuffix(file.Name(), ".png") ||
-						strings.HasSuffix(file.Name(), ".gif")) {
-						continue
-					}
-					result = append(result, file)
+		fi, err := os.Stat(uri)
+		if err != nil {
+			if os.IsNotExist(err) {
+				logger.Errorf("template: pic uri doesn't exist")
+			} else {
+				logger.Errorf("template: pic uri Stat error %v", err)
+			}
+			goto END
+		}
+		if fi.IsDir() {
+			f, err := os.Open(uri)
+			if err != nil {
+				logger.Errorf("template: pic uri Open error %v", err)
+				goto END
+			}
+			dirs, err := f.ReadDir(-1)
+			if err != nil {
+				logger.Errorf("template: pic uri ReadDir error %v", err)
+				goto END
+			}
+			var result []os.DirEntry
+			for _, file := range dirs {
+				if file.IsDir() || !(strings.HasSuffix(file.Name(), ".jpg") ||
+					strings.HasSuffix(file.Name(), ".png") ||
+					strings.HasSuffix(file.Name(), ".gif")) {
+					continue
 				}
-				if len(result) > 0 {
-					e = mmsg.NewImageByLocal(filepath.Join(uri, result[rand.Intn(len(result))].Name()))
-				} else {
-					logger.WithField("uri", uri).Errorf("template: pic uri can not find any images")
-				}
+				result = append(result, file)
+			}
+			if len(result) > 0 {
+				e = mmsg.NewImageByLocal(filepath.Join(uri, result[rand.Intn(len(result))].Name()))
+			} else {
+				logger.Errorf("template: pic uri can not find any images")
 			}
 		}
+	END:
 		if e == nil {
 			e = mmsg.NewImageByLocal(uri)
 		}
