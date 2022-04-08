@@ -1,6 +1,7 @@
 package concern
 
 import (
+	"errors"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/stretchr/testify/assert"
@@ -8,12 +9,13 @@ import (
 )
 
 type testConcern struct {
-	site  string
-	types []concern_type.Type
+	site     string
+	types    []concern_type.Type
+	startErr error
 }
 
 func (t *testConcern) Start() error {
-	return nil
+	return t.startErr
 }
 
 func (t *testConcern) Stop() {
@@ -100,8 +102,17 @@ func TestConcernManager(t *testing.T) {
 		},
 	)
 
+	RegisterConcern(&testConcern{
+		site: "errSite",
+		types: []concern_type.Type{
+			"9",
+		},
+		startErr: errors.New("error"),
+	})
+
 	assert.Contains(t, ListSite(), "test1")
 	assert.Contains(t, ListSite(), "test2")
+	assert.Contains(t, ListSite(), "errSite")
 
 	ctypes, err := GetConcernTypes("test1")
 	assert.Nil(t, err)
@@ -153,7 +164,12 @@ func TestConcernManager(t *testing.T) {
 	assert.Nil(t, cm)
 	assert.EqualValues(t, ErrSiteNotSupported, err)
 
-	assert.Nil(t, StartAll())
+	StartAll()
+
+	assert.NotContains(t, ListSite(), "errSite")
+
+	_, err = GetConcernBySite("errSite")
+	assert.EqualValues(t, ErrSiteNotSupported, err)
 
 	StopAll()
 

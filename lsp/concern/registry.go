@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/utils"
-	"golang.org/x/sync/errgroup"
 	"strings"
+	"sync"
 )
 
 var globalCenter = newConcernCenter()
@@ -18,25 +18,52 @@ type option struct {
 type OptFunc func(opt *option) *option
 
 type center struct {
+	concernList []Concern
+	// for cache
 	concernMap     map[string]Concern
 	concernTypeMap map[string]concern_type.Type
 	concernSites   []string
-	concernList    []Concern
 }
 
-func checkSite(site string) error {
-	if _, found := globalCenter.concernMap[site]; found {
-		return nil
+func (gc *center) freshCache() {
+	var concernMap = make(map[string]Concern)
+	var concernSites []string
+	var concernTypeMap = make(map[string]concern_type.Type)
+	for _, c := range gc.concernList {
+		concernMap[c.Site()] = c
+		concernSites = append(concernSites, c.Site())
+		concernTypeMap[c.Site()] = concern_type.Empty.Add(c.Types()...)
 	}
-	return ErrSiteNotSupported
+	gc.concernMap = concernMap
+	gc.concernSites = concernSites
+	gc.concernTypeMap = concernTypeMap
 }
 
-func checkSiteAndType(site string, ctype concern_type.Type) error {
-	var err error
-	if err = checkSite(site); err != nil {
-		return err
+func (gc *center) GetConcernMap() map[string]Concern {
+	return gc.concernMap
+}
+
+func (gc *center) GetConcernSites() []string {
+	return gc.concernSites
+}
+
+func (gc *center) GetConcernTypeMap() map[string]concern_type.Type {
+	return gc.concernTypeMap
+}
+
+func (gc *center) GetConcernList() []Concern {
+	return gc.concernList
+}
+
+func (gc *center) GetConcernBySite(site string) (Concern, error) {
+	if c, found := gc.GetConcernMap()[site]; found {
+		return c, nil
 	}
-	if combineType, found := globalCenter.concernTypeMap[site]; found {
+	return nil, ErrSiteNotSupported
+}
+
+func (gc *center) CheckSiteAndType(site string, ctype concern_type.Type) error {
+	if combineType, found := gc.GetConcernTypeMap()[site]; found {
 		if combineType.ContainAll(ctype) {
 			return nil
 		}
@@ -45,24 +72,18 @@ func checkSiteAndType(site string, ctype concern_type.Type) error {
 	return ErrSiteNotSupported
 }
 
-func newConcernCenter() *center {
-	return &center{
-		concernMap:     make(map[string]Concern),
-		concernTypeMap: make(map[string]concern_type.Type),
-		concernList:    nil,
-		concernSites:   nil,
-	}
-}
-
-// RegisterConcern 向DDBOT注册一个 Concern。
-func RegisterConcern(c Concern, opts ...OptFunc) {
+func (gc *center) Register(c Concern, opts ...OptFunc) {
 	if c == nil {
 		panic("Concern: Register <nil> concern")
 	}
 	site := c.Site()
-	if _, found := globalCenter.concernMap[site]; found {
-		panic(fmt.Sprintf("Concern %v: is already registered", site))
+
+	for _, concern := range gc.GetConcernList() {
+		if concern.Site() == site {
+			panic(fmt.Sprintf("Concern %v: is already registered", site))
+		}
 	}
+
 	for _, ctype := range c.Types() {
 		if !ctype.IsTrivial() {
 			panic(fmt.Sprintf("Concern %v: Type %v IsTrivial() must be True", site, ctype.String()))
@@ -71,10 +92,52 @@ func RegisterConcern(c Concern, opts ...OptFunc) {
 	if concern_type.Empty.Add(c.Types()...).Empty() {
 		panic(fmt.Sprintf("Concern %v: register with empty types", site))
 	}
-	globalCenter.concernMap[site] = c
-	globalCenter.concernList = append(globalCenter.concernList, c)
-	globalCenter.concernSites = append(globalCenter.concernSites, c.Site())
-	globalCenter.concernTypeMap[site] = concern_type.Empty.Add(c.Types()...)
+	gc.concernList = append(gc.concernList, c)
+	gc.freshCache()
+}
+
+func (gc *center) StartAll() {
+	var wg sync.WaitGroup
+	var errConcern = make([]int, len(gc.GetConcernList()))
+	for idx, c := range gc.concernList {
+		wg.Add(1)
+		go func(idx int, c Concern) {
+			defer wg.Done()
+			c.FreshIndex()
+			logger.Debugf("启动Concern %v模块", c.Site())
+			err := c.Start()
+			if err != nil {
+				logger.Errorf("启动Concern %v 失败 - %v", c.Site(), err)
+				errConcern[idx] = 1
+			}
+		}(idx, c)
+	}
+	wg.Wait()
+	var newConcern []Concern
+	for idx, v := range errConcern {
+		if v == 0 {
+			newConcern = append(newConcern, gc.concernList[idx])
+		}
+	}
+	gc.concernList = newConcern
+	gc.freshCache()
+	return
+}
+
+func (gc *center) StopAll() {
+	for _, c := range gc.GetConcernList() {
+		c.Stop()
+	}
+	close(notifyChan)
+}
+
+func newConcernCenter() *center {
+	return &center{}
+}
+
+// RegisterConcern 向DDBOT注册一个 Concern。
+func RegisterConcern(c Concern, opts ...OptFunc) {
+	globalCenter.Register(c, opts...)
 }
 
 // ClearConcern 现阶段仅用于测试，如果用于其他目的将导致不可预料的后果。
@@ -84,60 +147,40 @@ func ClearConcern() {
 
 // StartAll 启动所有 Concern，正常情况下框架会负责启动。
 func StartAll() error {
-	all := ListConcern()
-	errG := errgroup.Group{}
-	for _, c := range all {
-		c := c
-		errG.Go(func() error {
-			c.FreshIndex()
-			logger.Debugf("启动Concern %v模块", c.Site())
-			err := c.Start()
-			if err != nil {
-				logger.Errorf("启动Concern %v 失败 - %v", c.Site(), err)
-			}
-			return err
-		})
-	}
-	return errG.Wait()
+	globalCenter.StartAll()
+	return nil
 }
 
 // StopAll 停止所有Concern模块，正常情况下框架会负责停止。
 // 会关闭notifyChan，所以停止后禁止再向notifyChan中写入数据。
 func StopAll() {
-	all := ListConcern()
-	for _, c := range all {
-		c.Stop()
-	}
-	close(notifyChan)
+	globalCenter.StopAll()
 }
 
 // ListConcern 返回所有注册过的 Concern。
 func ListConcern() []Concern {
-	return globalCenter.concernList
+	return globalCenter.GetConcernList()
 }
 
 // GetConcernBySite 根据site返回 Concern。
 // 如果site没有注册过，则会返回 ErrSiteNotSupported。
 func GetConcernBySite(site string) (Concern, error) {
-	if err := checkSite(site); err != nil {
-		return nil, err
-	}
-	return globalCenter.concernMap[site], nil
+	return globalCenter.GetConcernBySite(site)
 }
 
 // GetConcernBySiteAndType 根据site和ctype返回 Concern。
 // 如果site没有注册过，则会返回 ErrSiteNotSupported；
 // 如果site注册过，但不支持指定的ctype，则会返回 ErrTypeNotSupported。
 func GetConcernBySiteAndType(site string, ctype concern_type.Type) (Concern, error) {
-	if err := checkSiteAndType(site, ctype); err != nil {
+	if err := globalCenter.CheckSiteAndType(site, ctype); err != nil {
 		return nil, err
 	}
-	return globalCenter.concernMap[site], nil
+	return globalCenter.GetConcernBySite(site)
 }
 
 // ListSite 返回所有注册的 Concern 支持的site。
 func ListSite() []string {
-	return globalCenter.concernSites
+	return globalCenter.GetConcernSites()
 }
 
 // GetNotifyChan 推送 channel，所有推送需要发送到这个channel中。
@@ -153,10 +196,10 @@ func ReadNotifyChan() <-chan Notify {
 // GetConcernTypes 根据site查询 Concern，返回 Concern.Types。
 // 如果site没有注册过，则返回 ErrSiteNotSupported。
 func GetConcernTypes(site string) (concern_type.Type, error) {
-	if err := checkSite(site); err != nil {
+	if _, err := globalCenter.GetConcernBySite(site); err != nil {
 		return concern_type.Empty, err
 	}
-	return globalCenter.concernTypeMap[site], nil
+	return globalCenter.GetConcernTypeMap()[site], nil
 }
 
 // ParseRawSite 解析string格式的site，可以安全处理用户输入的site。
