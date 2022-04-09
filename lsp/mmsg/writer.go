@@ -5,6 +5,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/requests"
 	"strings"
+	"unicode"
 )
 
 // MSG 线程不安全
@@ -146,6 +147,20 @@ func (m *MSG) ToMessage(target Target) []*message.SendingMessage {
 	}
 	if len(sending.Elements) > 0 {
 		result = append(result, sending)
+	}
+	cleanText := func(m *message.SendingMessage) {
+		var lastText *message.TextElement
+		for _, e := range m.Elements {
+			if t, ok := e.(*message.TextElement); ok {
+				lastText = t
+			}
+		}
+		if lastText != nil {
+			lastText.Content = strings.TrimRightFunc(lastText.Content, unicode.IsSpace)
+		}
+	}
+	if len(result) > 0 {
+		cleanText(result[len(result)-1])
 	}
 	return result
 }
