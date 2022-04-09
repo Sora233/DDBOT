@@ -62,7 +62,7 @@ jobs:
         run: |
           export BINARY_NAME="DDBOT"
           if [ $GOOS = "windows" ]; then export BINARY_NAME="$BINARY_NAME.exe"; fi
-          go build -o "$BINARY_NAME" -ldflags '-w -s -X "main.BuildTime=${{ env.BUILD_TIME }}" -X main.CommitId=${{ github.sha }} -X main.Tags=${{ env.Tags }}' github.com/Sora233/DDBOT/cmd
+          go build -o "$BINARY_NAME" -ldflags '-w -s -X "github.com/Sora233/DDBOT/lsp.BuildTime=${{ env.BUILD_TIME }}" -X github.com/Sora233/DDBOT/lsp.CommitId=${{ github.sha }} -X github.com/Sora233/DDBOT/lsp.Tags=${{ env.Tags }}' github.com/Sora233/DDBOT/cmd
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         if: ${{ !github.head_ref }}

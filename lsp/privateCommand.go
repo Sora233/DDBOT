@@ -105,6 +105,8 @@ func (c *LspPrivateCommand) Execute() {
 		c.AdminCommand()
 	case SilenceCommand:
 		c.SilenceCommand()
+	case NoUpdateCommand:
+		c.NoUpdateCommand()
 	default:
 		if CheckCustomPrivateCommand(c.CommandName()) {
 			func() {
@@ -117,6 +119,48 @@ func (c *LspPrivateCommand) Execute() {
 			c.textReplyF("阁下似乎输入了一个无法识别的命令，请使用<%v>命令查看帮助。", c.l.CommandShowName(HelpCommand))
 			log.Debug("no command matched")
 		}
+	}
+}
+
+func (c *LspPrivateCommand) NoUpdateCommand() {
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
+
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
+	var noUpdateCmd struct {
+		Delete bool `optional:"" short:"d" help:"取消设置"`
+	}
+
+	_, output := c.parseCommandSyntax(&noUpdateCmd, c.CommandName())
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	var err error
+	key := localdb.DDBotNoUpdateKey(c.uin())
+	if noUpdateCmd.Delete {
+		_, err = localdb.Delete(key, localdb.IgnoreNotFoundOpt())
+		if err == nil {
+			c.textReply("成功 - 您将接收到更新消息")
+		}
+	} else {
+		err = localdb.Set(key, "")
+		if err == nil {
+			c.textReply("成功 - 您将不再接受更新消息")
+		}
+	}
+	if err != nil {
+		c.textReplyF("失败 - %v", err)
 	}
 }
 

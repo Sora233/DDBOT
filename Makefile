@@ -1,7 +1,7 @@
 BUILD_TIME := $(shell date --rfc-3339=seconds)
 COMMIT_ID := $(shell git rev-parse HEAD)
 
-LDFLAGS = -X "main.BuildTime='"$(BUILD_TIME)"'" -X "main.CommitId='"$(COMMIT_ID)"'"
+LDFLAGS = -X "github.com/Sora233/DDBOT/lsp.BuildTime='"$(BUILD_TIME)"'" -X "github.com/Sora233/DDBOT/lsp.CommitId='"$(COMMIT_ID)"'"
 
 SRC := $(shell find . -type f -name '*.go') lsp/template/default/*
 COV := .coverage.out

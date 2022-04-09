@@ -218,6 +218,14 @@ func VersionKey(keys ...interface{}) string {
 	return NamedKey("Version", keys)
 }
 
+func DDBotReleaseKey(keys ...interface{}) string {
+	return NamedKey("DDBotReleaseKey", keys)
+}
+
+func DDBotNoUpdateKey(keys ...interface{}) string {
+	return NamedKey("DDBotNoUpdateKey", keys)
+}
+
 func ParseConcernStateKeyWithInt64(key string) (groupCode int64, id int64, err error) {
 	keys := strings.Split(key, ":")
 	if len(keys) != 3 {

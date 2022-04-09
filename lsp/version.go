@@ -1,4 +1,4 @@
-package main
+package lsp
 
 import (
 	"github.com/Sora233/DDBOT/proxy_pool"
@@ -15,7 +15,7 @@ var (
 	Tags      = "UNKNOWN"
 )
 
-func CheckUpdate() {
+func CheckUpdate() string {
 	defer func() {
 		if e := recover(); e != nil {
 			logrus.Errorf("更新检测失败：%v", e)
@@ -23,7 +23,7 @@ func CheckUpdate() {
 	}()
 	if Tags == "UNKNOWN" {
 		logrus.Debug("自编译版本，跳过更新检测")
-		return
+		return ""
 	}
 	var opts = []requests.Option{
 		requests.TimeoutOption(time.Second * 3),
@@ -34,22 +34,23 @@ func CheckUpdate() {
 	err := requests.Get("https://api.github.com/repos/Sora233/DDBOT/releases/latest", nil, &m, opts...)
 	if err != nil {
 		logrus.Errorf("更新检测失败：%v", err)
-		return
+		return ""
 	}
 	if msg := m["message"]; msg != nil {
 		if s, ok := msg.(string); ok {
 			logrus.Errorf("更新检测失败：%v", s)
-			return
+			return ""
 		}
 	}
 	latestTagName := m["tag_name"].(string)
 
 	if compareVersion(Tags, latestTagName) {
-		logrus.Infof("更新检测完成：DDBOT有可用更新版本【%v】，请前往 https://github.com/Sora233/DDBOT/releases 查看详细信息", latestTagName)
+		logrus.Infof("更新检测完成：DDBOT有可用更新版本【%v】，请前往 https://github.com/Sora233/DDBOT/releases 查看详细信息\n", latestTagName)
+		return latestTagName
 	} else {
 		logrus.Debug("更新检测完成：当前为DDBOT最新版本")
 	}
-
+	return ""
 }
 
 // compareVersion return true if a < b

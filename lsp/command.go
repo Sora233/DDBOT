@@ -38,6 +38,7 @@ const (
 	FriendRequestCommand = "好友申请"
 	AdminCommand         = "admin"
 	SilenceCommand       = "silence"
+	NoUpdateCommand      = "退订更新"
 )
 
 var allGroupCommand = [...]string{
@@ -47,7 +48,7 @@ var allGroupCommand = [...]string{
 	EnableCommand, DisableCommand,
 	ReverseCommand, ConfigCommand,
 	HelpCommand, ScoreCommand, AdminCommand,
-	SilenceCommand,
+	SilenceCommand, NoUpdateCommand,
 }
 
 var allPrivateOperate = [...]string{
@@ -57,7 +58,7 @@ var allPrivateOperate = [...]string{
 	EnableCommand, GrantCommand, ConfigCommand,
 	WhosyourdaddyCommand, QuitCommand, ModeCommand,
 	GroupRequestCommand, FriendRequestCommand, AdminCommand,
-	SilenceCommand,
+	SilenceCommand, NoUpdateCommand,
 }
 
 var nonOprateable = [...]string{
@@ -65,7 +66,7 @@ var nonOprateable = [...]string{
 	BlockCommand, LogCommand, PingCommand,
 	WhosyourdaddyCommand, QuitCommand, ModeCommand,
 	GroupRequestCommand, FriendRequestCommand, AdminCommand,
-	SilenceCommand,
+	SilenceCommand, NoUpdateCommand,
 }
 
 func CheckValidCommand(command string) bool {

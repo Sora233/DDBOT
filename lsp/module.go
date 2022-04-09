@@ -29,7 +29,6 @@ import (
 	"go.uber.org/ratelimit"
 	"os"
 	"reflect"
-	"runtime"
 	"runtime/debug"
 	"sync"
 	"time"
@@ -77,6 +76,16 @@ func (l *Lsp) Init() {
 	} else {
 		logrus.SetLevel(lev)
 		log.Infof("设置logLevel为%v", lev.String())
+	}
+
+	if Tags != "UNKNOWN" {
+		logger.Infof("DDBOT版本：Release版本【%v】", Tags)
+	} else {
+		if CommitId == "UNKNOWN" {
+			logger.Infof("DDBOT版本：编译版本未知")
+		} else {
+			logger.Infof("DDBOT版本：编译版本【%v-%v】", BuildTime, CommitId)
+		}
 	}
 
 	curVersion := version.GetCurrentVersion(LspVersionName)
@@ -464,23 +473,27 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 	}()
 	concern.StartAll()
 	l.started.Store(true)
+
+	var newVersionChan = make(chan string, 1)
+	go func() {
+		newVersionChan <- CheckUpdate()
+		for range time.Tick(time.Hour * 24) {
+			newVersionChan <- CheckUpdate()
+		}
+	}()
+	go l.NewVersionNotify(newVersionChan)
+
 	logger.Infof("DDBOT启动完成")
 	logger.Infof("D宝，一款真正人性化的单推BOT")
 	if len(l.PermissionStateManager.ListAdmin()) == 0 {
 		logger.Infof("您似乎正在部署全新的BOT，请通过qq对bot私聊发送<%v>(不含括号)获取管理员权限，然后私聊发送<%v>(不含括号)开始使用您的bot",
 			l.CommandShowName(WhosyourdaddyCommand), l.CommandShowName(HelpCommand))
 	}
+
 }
 
 func (l *Lsp) Start(bot *bot.Bot) {
-	if runtime.NumCPU() >= 3 {
-		for i := 0; i < 3; i++ {
-			go l.ConcernNotify()
-		}
-	} else {
-		go l.ConcernNotify()
-	}
-
+	go l.ConcernNotify()
 }
 
 func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
@@ -497,6 +510,53 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 	logger.Debug("推送发送完毕")
 
 	proxy_pool.Stop()
+}
+
+func (l *Lsp) NewVersionNotify(newVersionChan <-chan string) {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.WithField("stack", string(debug.Stack())).
+				Errorf("new version notify recoverd %v", err)
+			go l.NewVersionNotify(newVersionChan)
+		}
+	}()
+	for newVersion := range newVersionChan {
+		if newVersion == "" {
+			continue
+		}
+		var newVersionNotify bool
+		err := localdb.RWCover(func() error {
+			key := localdb.DDBotReleaseKey()
+			releaseVersion, err := localdb.Get(key, localdb.IgnoreNotFoundOpt())
+			if err != nil {
+				return err
+			}
+			if releaseVersion != newVersion {
+				newVersionNotify = true
+			}
+			return localdb.Set(key, newVersion)
+		})
+		if err != nil {
+			logger.Errorf("NewVersionNotify error %v", err)
+			continue
+		}
+		if !newVersionNotify {
+			continue
+		}
+		m := mmsg.NewMSG()
+		m.Textf("DDBOT管理员您好，DDBOT有可用更新版本【%v】，请前往 https://github.com/Sora233/DDBOT/releases 查看详细信息\n\n", newVersion)
+		m.Textf("如果您不想接收更新消息，请输入<%v>(不含括号)", l.CommandShowName(NoUpdateCommand))
+		for _, admin := range l.PermissionStateManager.ListAdmin() {
+			if localdb.Exist(localdb.DDBotNoUpdateKey(admin)) {
+				continue
+			}
+			if localutils.GetBot().FindFriend(admin) == nil {
+				continue
+			}
+			logger.WithField("Target", admin).Infof("new ddbot version notify")
+			l.SendMsg(m, mmsg.NewPrivateTarget(admin))
+		}
+	}
 }
 
 func (l *Lsp) FreshIndex() {
