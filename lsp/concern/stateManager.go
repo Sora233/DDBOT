@@ -11,6 +11,7 @@ import (
 	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
+	"go.uber.org/atomic"
 	"runtime"
 	"runtime/debug"
 	"sync"
@@ -95,6 +96,7 @@ type StateManager struct {
 	notifyGeneratorFunc NotifyGeneratorFunc
 	logger              *logrus.Entry
 	maxGroupConcern     int
+	largeNotifyCount    atomic.Int32
 }
 
 func (c *StateManager) getGroupConcernConfig(groupCode int64, id interface{}) (concernConfig *GroupConcernConfig) {
@@ -592,7 +594,8 @@ func (c *StateManager) DefaultDispatch() DispatchFunc {
 			if len(groups) >= largeNotifyLimit {
 				log.Warnf("警告：当前事件将推送至%v个群（超过%v），为保证帐号稳定，将增加此事件的推送间隔，防止短时间内发送大量消息", len(groups), largeNotifyLimit)
 				go func(groups []int64, event Event) {
-					ticker := time.NewTicker(time.Second * 3)
+					cnt := c.largeNotifyCount.Inc()
+					ticker := time.NewTicker(time.Second*1 + time.Second*time.Duration(2*cnt))
 					for _, groupCode := range groups {
 						<-ticker.C
 						for _, n := range c.NotifyGenerator(groupCode, event) {
@@ -600,6 +603,7 @@ func (c *StateManager) DefaultDispatch() DispatchFunc {
 						}
 					}
 					ticker.Stop()
+					c.largeNotifyCount.Dec()
 				}(groups, event)
 			} else {
 				for _, groupCode := range groups {
