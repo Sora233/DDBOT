@@ -1,12 +1,15 @@
 package lsp
 
 import (
+	"context"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/utils"
+	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"github.com/sirupsen/logrus"
 	"runtime/debug"
+	"time"
 )
 
 func (l *Lsp) ConcernNotify() {
@@ -87,12 +90,20 @@ func (l *Lsp) ConcernNotify() {
 				}
 			}
 
-			nLogger.Info("notify")
-
+			ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+			if err := l.msgLimit.Acquire(ctx, 1); err != nil {
+				cancel()
+				nLogger.WithField("Content", msgstringer.MsgToString(m.Elements())).
+					Errorf("BOT负载过高，推送已积压超过一分钟，将舍弃本次推送。")
+				continue
+			}
+			cancel()
 			l.notifyWg.Add(1)
+			nLogger.Info("notify")
 			go func() {
 				defer l.notifyWg.Done()
 				defer func() {
+					l.msgLimit.Release(1)
 					if e := recover(); e != nil {
 						nLogger.WithField("stack", string(debug.Stack())).
 							Errorf("notify panic recovered: %v", e)

@@ -26,6 +26,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
+	"golang.org/x/sync/semaphore"
 	"os"
 	"reflect"
 	"runtime/debug"
@@ -48,7 +49,7 @@ type Lsp struct {
 	wg            sync.WaitGroup
 	status        *Status
 	notifyWg      sync.WaitGroup
-	msgLimit      chan interface{}
+	msgLimit      *semaphore.Weighted
 
 	PermissionStateManager *permission.StateManager
 	LspStateManager        *StateManager
@@ -661,10 +662,6 @@ func (l *Lsp) sendPrivateMessage(uin int64, msg *message.SendingMessage) (res *m
 // sendGroupMessage 发送一条消息，返回值总是非nil，Id为-1表示发送失败
 // miraigo偶尔发送消息会panic？！
 func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, recovered ...bool) (res *message.GroupMessage) {
-	l.msgLimit <- struct{}{}
-	defer func() {
-		<-l.msgLimit
-	}()
 	defer func() {
 		if e := recover(); e != nil {
 			if len(recovered) == 0 {
@@ -725,7 +722,7 @@ var Instance = &Lsp{
 	concernNotify:          concern.ReadNotifyChan(),
 	stop:                   make(chan interface{}),
 	status:                 NewStatus(),
-	msgLimit:               make(chan interface{}, 3),
+	msgLimit:               semaphore.NewWeighted(3),
 	PermissionStateManager: permission.NewStateManager(),
 	LspStateManager:        NewStateManager(),
 }
