@@ -53,6 +53,7 @@ func builtins() FuncMap {
 		"roll":   roll,
 		"choose": choose,
 		"at":     at,
+		"icon":   icon,
 
 		// Comparisons
 		"eq": eq, // ==

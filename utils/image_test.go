@@ -28,14 +28,24 @@ func TestImageNormSize(t *testing.T) {
 	assert.EqualValues(t, 1200, cfg.Height)
 }
 
-func TestImageGetAndNorm(t *testing.T) {
-	b, err := ImageGetAndNorm(imageUrl)
+func TestImageGet(t *testing.T) {
+	b, err := ImageGet(imageUrl)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, b)
+	b, err = ImageNormSize(b)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, b)
 	cfg, _, err := image.DecodeConfig(bytes.NewReader(b))
 	assert.Nil(t, err)
 	assert.EqualValues(t, 1200, cfg.Width)
 	assert.EqualValues(t, 1200, cfg.Height)
+
+	b, err = ImageResize(b, 500, 500)
+	assert.Nil(t, err)
+	cfg, _, err = image.DecodeConfig(bytes.NewReader(b))
+	assert.Nil(t, err)
+	assert.EqualValues(t, 500, cfg.Width)
+	assert.EqualValues(t, 500, cfg.Height)
 
 	format, err := ImageFormat(b)
 	assert.Nil(t, err)

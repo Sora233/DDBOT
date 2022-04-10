@@ -18,6 +18,22 @@ import (
 	"time"
 )
 
+func encodeImage(img image.Image, format string, resizedImageBuffer *bytes.Buffer) (err error) {
+	switch format {
+	case "jpeg":
+		err = jpeg.Encode(resizedImageBuffer, img, &jpeg.Options{Quality: 100})
+	case "gif":
+		err = gif.Encode(resizedImageBuffer, img, &gif.Options{
+			Quantizer: quantize.MedianCutQuantizer{},
+		})
+	case "png":
+		err = png.Encode(resizedImageBuffer, img)
+	default:
+		err = fmt.Errorf("unknown format %v", format)
+	}
+	return err
+}
+
 var imageGetCache = blockCache.NewBlockCache(16, 25)
 
 func ImageGet(url string, opt ...requests.Option) ([]byte, error) {
@@ -51,35 +67,26 @@ func ImageNormSize(origImage []byte) ([]byte, error) {
 		return nil, fmt.Errorf("image decode failed %v", err)
 	}
 	resizedImage := resize.Thumbnail(1200, 1200, dImage, resize.Lanczos3)
-	resizedImageBuffer := bytes.NewBuffer(make([]byte, 0))
-	switch format {
-	case "jpeg":
-		err = jpeg.Encode(resizedImageBuffer, resizedImage, &jpeg.Options{Quality: 100})
-	case "gif":
-		err = gif.Encode(resizedImageBuffer, resizedImage, &gif.Options{
-			Quantizer: quantize.MedianCutQuantizer{},
-		})
-	case "png":
-		err = png.Encode(resizedImageBuffer, resizedImage)
-	default:
-		err = fmt.Errorf("unknown format %v", format)
-	}
+	buf := bytes.NewBuffer(nil)
+	err = encodeImage(resizedImage, format, buf)
 	if err != nil {
 		return nil, err
 	}
-	return resizedImageBuffer.Bytes(), nil
+	return buf.Bytes(), nil
 }
 
-func ImageGetAndNorm(url string, opt ...requests.Option) ([]byte, error) {
-	img, err := ImageGet(url, opt...)
+func ImageResize(origImage []byte, width, height uint) ([]byte, error) {
+	dImage, format, err := image.Decode(bytes.NewReader(origImage))
+	if err != nil {
+		return nil, fmt.Errorf("image decode failed %v", err)
+	}
+	resizedImage := resize.Resize(width, height, dImage, resize.Lanczos3)
+	buf := bytes.NewBuffer(nil)
+	err = encodeImage(resizedImage, format, buf)
 	if err != nil {
 		return nil, err
 	}
-	img, err = ImageNormSize(img)
-	if err != nil {
-		return nil, err
-	}
-	return img, nil
+	return buf.Bytes(), nil
 }
 
 func ImageFormat(origImage []byte) (string, error) {

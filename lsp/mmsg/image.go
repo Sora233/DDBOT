@@ -16,11 +16,6 @@ func NewImage(buf []byte) *ImageBytesElement {
 	return &ImageBytesElement{Buf: buf, alternative: "[图片]"}
 }
 
-func NewImageWithNorm(buf []byte) *ImageBytesElement {
-	buf, _ = utils.ImageNormSize(buf)
-	return &ImageBytesElement{Buf: buf, alternative: "[图片]"}
-}
-
 func NewImageByUrl(url string, opts ...requests.Option) *ImageBytesElement {
 	var img = NewImage(nil)
 	b, err := utils.ImageGet(url, opts...)
@@ -28,17 +23,6 @@ func NewImageByUrl(url string, opts ...requests.Option) *ImageBytesElement {
 		img.Buf = b
 	} else {
 		logger.WithField("url", url).Errorf("ImageGet error %v", err)
-	}
-	return img
-}
-
-func NewImageByUrlWithNorm(url string, opts ...requests.Option) *ImageBytesElement {
-	var img = NewImage(nil)
-	b, err := utils.ImageGetAndNorm(url, opts...)
-	if err == nil {
-		img.Buf = b
-	} else {
-		logger.WithField("url", url).Errorf("ImageGetAndNorm error %v", err)
 	}
 	return img
 }
@@ -52,6 +36,32 @@ func NewImageByLocal(filepath string) *ImageBytesElement {
 		logger.WithField("filepath", filepath).Errorf("ReadFile error %v", err)
 	}
 	return img
+}
+
+func (i *ImageBytesElement) Norm() *ImageBytesElement {
+	if i == nil || i.Buf == nil {
+		return i
+	}
+	b, err := utils.ImageNormSize(i.Buf)
+	if err == nil {
+		i.Buf = b
+	} else {
+		logger.Errorf("mmsg: ImageBytesElement Norm error %v", err)
+	}
+	return i
+}
+
+func (i *ImageBytesElement) Resize(width, height uint) *ImageBytesElement {
+	if i == nil || i.Buf == nil {
+		return i
+	}
+	b, err := utils.ImageResize(i.Buf, width, height)
+	if err == nil {
+		i.Buf = b
+	} else {
+		logger.Errorf("mmsg: ImageBytesElement Resize error %v", err)
+	}
+	return i
 }
 
 func (i *ImageBytesElement) Alternative(s string) *ImageBytesElement {

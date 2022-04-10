@@ -96,6 +96,19 @@ func pic(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 	return e
 }
 
+func icon(uin int64, size ...uint) *mmsg.ImageBytesElement {
+	var width uint = 120
+	var height uint = 120
+	if len(size) > 0 && size[0] > 0 {
+		width = size[0]
+		height = size[0]
+		if len(size) > 1 && size[1] > 0 {
+			height = size[1]
+		}
+	}
+	return mmsg.NewImageByUrl(fmt.Sprintf("https://q1.qlogo.cn/g?b=qq&nk=%v&s=640", uin)).Resize(width, height)
+}
+
 func roll(from, to int64) int64 {
 	return rand.Int63n(to-from+1) + from
 }

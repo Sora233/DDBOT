@@ -16,4 +16,8 @@ func TestImage(t *testing.T) {
 	assert.EqualValues(t, ImageBytes, im.Type())
 	e = im.PackToElement(NewGroupTarget(0))
 	assert.Equal(t, e.(*message.TextElement).Content, "test\n")
+
+	assert.NotPanics(t, func() {
+		im.Norm().Resize(100, 100)
+	})
 }

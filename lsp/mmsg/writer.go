@@ -82,7 +82,15 @@ func (m *MSG) Image(buf []byte, alternative string) *MSG {
 }
 
 func (m *MSG) ImageWithNorm(buf []byte, alternative string) *MSG {
-	img := NewImageWithNorm(buf)
+	img := NewImage(buf).Norm()
+	if len(alternative) > 0 {
+		img.Alternative(alternative)
+	}
+	m.Append(img)
+	return m
+}
+func (m *MSG) ImageWithResize(buf []byte, alternative string, width, height uint) *MSG {
+	img := NewImage(buf).Resize(width, height)
 	if len(alternative) > 0 {
 		img.Alternative(alternative)
 	}
@@ -100,7 +108,43 @@ func (m *MSG) ImageByUrl(url string, alternative string, opts ...requests.Option
 }
 
 func (m *MSG) ImageByUrlWithNorm(url string, alternative string, opts ...requests.Option) *MSG {
-	img := NewImageByUrlWithNorm(url, opts...)
+	img := NewImageByUrl(url, opts...).Norm()
+	if len(alternative) > 0 {
+		img.Alternative(alternative)
+	}
+	m.Append(img)
+	return m
+}
+
+func (m *MSG) ImageByUrlWithResize(url string, alternative string, width, height uint, opts ...requests.Option) *MSG {
+	img := NewImageByUrl(url, opts...).Resize(width, height)
+	if len(alternative) > 0 {
+		img.Alternative(alternative)
+	}
+	m.Append(img)
+	return m
+}
+
+func (m *MSG) ImageByLocal(filepath, alternative string) *MSG {
+	img := NewImageByLocal(filepath)
+	if len(alternative) > 0 {
+		img.Alternative(alternative)
+	}
+	m.Append(img)
+	return m
+}
+
+func (m *MSG) ImageByLocalWithNorm(filepath, alternative string) *MSG {
+	img := NewImageByLocal(filepath).Norm()
+	if len(alternative) > 0 {
+		img.Alternative(alternative)
+	}
+	m.Append(img)
+	return m
+}
+
+func (m *MSG) ImageByLocalWithResize(filepath, alternative string, width, height uint) *MSG {
+	img := NewImageByLocal(filepath).Resize(width, height)
 	if len(alternative) > 0 {
 		img.Alternative(alternative)
 	}
