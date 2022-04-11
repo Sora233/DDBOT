@@ -4,12 +4,14 @@ import (
 	"context"
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 )
 
 func TestNewConcern(t *testing.T) {
+	logrus.SetLevel(logrus.TraceLevel)
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 
@@ -44,8 +46,9 @@ func TestNewConcern(t *testing.T) {
 		Name: test.NAME1,
 	}
 	origLiveInfo := &LiveInfo{
-		UserInfo: *origUserInfo,
-		IsLiving: true,
+		UserInfo:          *origUserInfo,
+		IsLiving:          true,
+		liveStatusChanged: true,
 	}
 
 	select {

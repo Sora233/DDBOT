@@ -62,6 +62,7 @@ func TestConcern(t *testing.T) {
 
 	liveInfo.ShowStatus = ShowStatus_Living
 	liveInfo.VideoLoop = VideoLoopStatus_Off
+	liveInfo.liveStatusChanged = true
 
 	testEventChan <- liveInfo
 

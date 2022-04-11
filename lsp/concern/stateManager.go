@@ -584,7 +584,7 @@ func (c *StateManager) filterNotify(inotify Notify) bool {
 	concern, err := GetConcernBySiteAndType(inotify.Site(), inotify.Type())
 	if err != nil {
 		nLogger.Errorf("filterNotify: GetConcernBySiteAndType error %v", err)
-		return false
+		return true
 	}
 	concernConfig := concern.GetStateManager().GetGroupConcernConfig(inotify.GetGroupCode(), inotify.GetUid())
 

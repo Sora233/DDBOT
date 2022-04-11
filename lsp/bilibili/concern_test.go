@@ -179,6 +179,7 @@ func TestConcernNotify(t *testing.T) {
 
 	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
 	origLiveInfo := NewLiveInfo(origUserInfo, "mytitle", "", LiveStatus_Living)
+	origLiveInfo.liveStatusChanged = true
 
 	select {
 	case testEventChan <- origLiveInfo:

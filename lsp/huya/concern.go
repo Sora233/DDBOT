@@ -10,7 +10,6 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
-	"reflect"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -145,10 +144,7 @@ func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 func (c *Concern) fresh() concern.FreshFunc {
 	return c.EmitQueueFresher(func(ctype concern_type.Type, id interface{}) ([]concern.Event, error) {
 		var result []concern.Event
-		roomid, ok := id.(string)
-		if !ok {
-			return nil, fmt.Errorf("cast fresh id type<%v> to string failed", reflect.ValueOf(id).Type().String())
-		}
+		roomid := id.(string)
 		if ctype.ContainAll(Live) {
 			oldInfo, _ := c.FindRoom(roomid, false)
 			liveInfo, err := c.FindRoom(roomid, true)
@@ -163,19 +159,17 @@ func (c *Concern) fresh() concern.FreshFunc {
 			if err != nil {
 				return nil, fmt.Errorf("load liveinfo failed %v", err)
 			}
-			// first load
 			if oldInfo == nil {
 				liveInfo.liveStatusChanged = true
+			} else {
+				if oldInfo.Living() != liveInfo.Living() {
+					liveInfo.liveStatusChanged = true
+				}
+				if oldInfo.RoomName != liveInfo.RoomName {
+					liveInfo.liveTitleChanged = true
+				}
 			}
-			if oldInfo != nil && oldInfo.Living() != liveInfo.Living() {
-				liveInfo.liveStatusChanged = true
-			}
-			if oldInfo != nil && oldInfo.RoomName != liveInfo.RoomName {
-				liveInfo.liveTitleChanged = true
-			}
-			if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {
-				result = append(result, liveInfo)
-			}
+			result = append(result, liveInfo)
 		}
 		return result, nil
 	})

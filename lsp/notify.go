@@ -45,19 +45,6 @@ func (l *Lsp) ConcernNotify() {
 				continue
 			}
 			cfg := c.GetStateManager().GetGroupConcernConfig(inotify.GetGroupCode(), inotify.GetUid())
-
-			sendHookResult := cfg.ShouldSendHook(inotify)
-			if !sendHookResult.Pass {
-				nLogger.WithField("Reason", sendHookResult.Reason).Info("notify filtered by hook ShouldSendHook")
-				continue
-			}
-
-			newsFilterHook := cfg.FilterHook(inotify)
-			if !newsFilterHook.Pass {
-				nLogger.WithField("Reason", newsFilterHook.Reason).Info("notify filtered by hook FilterHook")
-				continue
-			}
-
 			cfg.NotifyBeforeCallback(inotify)
 
 			// 注意notify可能会缓存MSG

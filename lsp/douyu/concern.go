@@ -9,7 +9,6 @@ import (
 	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
-	"reflect"
 )
 
 var logger = utils.GetModuleLogger("douyu-concern")
@@ -129,10 +128,7 @@ func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 func (c *Concern) fresh() concern.FreshFunc {
 	return c.EmitQueueFresher(func(ctype concern_type.Type, id interface{}) ([]concern.Event, error) {
 		var result []concern.Event
-		roomid, ok := id.(int64)
-		if !ok {
-			return nil, fmt.Errorf("cast fresh id type<%v> to int64 failed", reflect.ValueOf(id).Type().String())
-		}
+		roomid := id.(int64)
 		if ctype.ContainAll(Live) {
 			oldInfo, _ := c.FindRoom(roomid, false)
 			liveInfo, err := c.FindRoom(roomid, true)
@@ -149,16 +145,15 @@ func (c *Concern) fresh() concern.FreshFunc {
 			}
 			if oldInfo == nil {
 				liveInfo.liveStatusChanged = true
+			} else {
+				if oldInfo.Living() != liveInfo.Living() {
+					liveInfo.liveStatusChanged = true
+				}
+				if oldInfo.RoomName != liveInfo.RoomName {
+					liveInfo.liveTitleChanged = true
+				}
 			}
-			if oldInfo != nil && oldInfo.Living() != liveInfo.Living() {
-				liveInfo.liveStatusChanged = true
-			}
-			if oldInfo != nil && oldInfo.RoomName != liveInfo.RoomName {
-				liveInfo.liveTitleChanged = true
-			}
-			if oldInfo == nil || oldInfo.Living() != liveInfo.Living() || oldInfo.RoomName != liveInfo.RoomName {
-				result = append(result, liveInfo)
-			}
+			result = append(result, liveInfo)
 		}
 		return result, nil
 	})
