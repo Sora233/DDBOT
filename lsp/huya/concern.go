@@ -129,9 +129,9 @@ func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 		switch info := event.(type) {
 		case *LiveInfo:
 			if info.Living() {
-				info.Logger().WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
+				info.Logger().WithFields(localutils.GroupLogFields(groupCode)).Trace("living notify")
 			} else {
-				info.Logger().WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
+				info.Logger().WithFields(localutils.GroupLogFields(groupCode)).Trace("noliving notify")
 			}
 			return []concern.Notify{NewConcernLiveNotify(groupCode, info)}
 		default:

@@ -134,11 +134,11 @@ func (c *Concern) fresh() concern.FreshFunc {
 							if count := c.IncNotLiveCount(mid); count < 3 {
 								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
 									WithField("notlive_count", count).
-									Debug("notlive counting")
+									Trace("notlive counting")
 								continue
 							} else {
 								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
-									Debug("notlive count done, notlive confirmed")
+									Trace("notlive count done, notlive confirmed")
 							}
 							if err := c.ClearNotLiveCount(mid); err != nil {
 								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).

@@ -61,9 +61,9 @@ func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 			notify := NewConcernLiveNotify(groupCode, event)
 			result = append(result, notify)
 			if event.Living() {
-				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
+				log.WithFields(localutils.GroupLogFields(groupCode)).Trace("living notify")
 			} else {
-				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
+				log.WithFields(localutils.GroupLogFields(groupCode)).Trace("noliving notify")
 			}
 		default:
 			log.Errorf("unknown concern_type %v", ievent.Type().String())
