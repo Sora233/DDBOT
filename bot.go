@@ -124,13 +124,15 @@ bot:
   onJoinGroup: 
     rename: "【bot】"  # BOT进群后自动改名，默认改名为“【bot】”，如果留空则不自动改名
 
-# b站相关的功能需要一个b站账号，建议使用小号
+# 初次运行时将不使用b站帐号方便进行测试
+# 如果不使用b站帐号，则推荐订阅数不要超过5个，否则推送延迟将上升
+# b站相关的功能推荐配置一个b站账号，建议使用小号
 # bot将使用您b站帐号的以下功能：
 # 关注用户 / 取消关注用户 / 查看关注列表
 # 请注意，订阅一个账号后，此处使用的b站账号将自动关注该账号
 bilibili:
-  account:  # 你的b站账号 
-  password: # 你的b站密码
+  SESSDATA: # 你的b站cookie
+  bili_jct: # 你的b站cookie
   interval: 25s
 
 concern:
