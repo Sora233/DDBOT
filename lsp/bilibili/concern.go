@@ -1,7 +1,6 @@
 package bilibili
 
 import (
-	"context"
 	"fmt"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/cfg"
@@ -12,11 +11,8 @@ import (
 	"github.com/Sora233/DDBOT/utils/expirable"
 	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/Sora233/MiraiGo-Template/utils"
-	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"go.uber.org/atomic"
-	"golang.org/x/sync/errgroup"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -102,29 +98,28 @@ func (c *Concern) Start() error {
 			c.unsafeStart.Store(false)
 		})
 	}
-
+	c.UseNotifyGeneratorFunc(c.notifyGenerator())
 	if !IsVerifyGiven() {
-		logger.Errorf("注意：B站配置不完整，B站相关功能无法使用！")
-		return nil
-	}
-
-	c.StateManager.UseNotifyGeneratorFunc(c.notifyGenerator())
-	c.StateManager.UseFreshFunc(c.fresh())
-
-	go func() {
-		c.wg.Add(1)
-		defer c.wg.Done()
-		c.SyncSub()
-		tick := time.Tick(time.Hour)
-		for {
-			select {
-			case <-tick:
-				c.SyncSub()
-			case <-c.stop:
-				return
+		logger.Warnf("未设置B站账户，将使用慢速模式，推荐订阅数量不超过5个，否则推送将出现较长延迟，如需更多订阅，推荐您配置使用B站账号，最高可支持2000订阅。")
+		c.UseEmitQueue()
+		c.UseFreshFunc(c.emitQueueFresher())
+	} else {
+		c.UseFreshFunc(c.fresh())
+		go func() {
+			c.wg.Add(1)
+			defer c.wg.Done()
+			c.SyncSub()
+			tick := time.Tick(time.Hour)
+			for {
+				select {
+				case <-tick:
+					c.SyncSub()
+				case <-c.stop:
+					return
+				}
 			}
-		}
-	}()
+		}()
+	}
 	return c.StateManager.Start()
 }
 
@@ -169,56 +164,58 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 		log.Debugf("UserInfo cache hit")
 	}
 
-	if !c.checkRelation(mid) {
-		userStat, err := c.StatUserWithCache(mid, time.Second*20)
-		if err != nil {
-			log.Errorf("get UserStat error %v\n", err)
-		} else if userStat != nil {
-			var minFollowerCap = cfg.GetBilibiliMinFollowerCap()
-			if !watchSelf && userStat.Follower <= int64(minFollowerCap) {
-				return nil, fmt.Errorf("订阅目标粉丝数未超过%v无法订阅，请确认您的订阅目标是否正确，注意使用UID而非直播间ID", minFollowerCap)
+	if !c.EmitQueueEnabled() {
+		if !c.checkRelation(mid) {
+			userStat, err := c.StatUserWithCache(mid, time.Second*20)
+			if err != nil {
+				log.Errorf("get UserStat error %v\n", err)
+			} else if userStat != nil {
+				var minFollowerCap = cfg.GetBilibiliMinFollowerCap()
+				if !watchSelf && userStat.Follower <= int64(minFollowerCap) {
+					return nil, fmt.Errorf("订阅目标粉丝数未超过%v无法订阅，请确认您的订阅目标是否正确，注意使用UID而非直播间ID", minFollowerCap)
+				}
+				userInfo.UserStat = userStat
 			}
-			userInfo.UserStat = userStat
 		}
-	}
 
-	if !watchSelf {
-		oldCtype, err := c.StateManager.GetConcern(mid)
-		if err != nil {
-			log.Errorf("GetConcern error %v", err)
-		} else if oldCtype.Empty() {
-			if c.checkRelation(mid) {
-				log.Infof("当前B站账户已关注该用户，跳过关注")
-			} else {
-				if cfg.GetBilibiliDisableSub() {
-					return nil, fmt.Errorf("关注用户失败 - 该用户未在关注列表内，请联系管理员")
-				}
-				var actType = ActSub
-				if cfg.GetBilibiliHiddenSub() {
-					actType = ActHiddenSub
-				}
-				resp, err := c.ModifyUserRelation(mid, actType)
-				if err != nil {
-					if err == ErrVerifyRequired {
-						log.Errorf("ModifyUserRelation error %v", err)
-						return nil, fmt.Errorf("关注用户失败 - 未配置B站")
-					} else {
-						log.WithField("action", actType).Errorf("ModifyUserRelation error %v", err)
-						return nil, fmt.Errorf("关注用户失败 - 内部错误")
+		if !watchSelf {
+			oldCtype, err := c.StateManager.GetConcern(mid)
+			if err != nil {
+				log.Errorf("GetConcern error %v", err)
+			} else if oldCtype.Empty() {
+				if c.checkRelation(mid) {
+					log.Infof("当前B站账户已关注该用户，跳过关注")
+				} else {
+					if cfg.GetBilibiliDisableSub() {
+						return nil, fmt.Errorf("关注用户失败 - 该用户未在关注列表内，请联系管理员")
 					}
-				}
-				if resp.Code != 0 {
-					if resp.Code == 22015 {
-						log.Errorf("关注用户失败 %v - %v | 请尝试手动登陆b站账户关注该用户，如果您已手动关注该用户，请在20秒后重试", resp.GetCode(), resp.GetMessage())
+					var actType = ActSub
+					if cfg.GetBilibiliHiddenSub() {
+						actType = ActHiddenSub
+					}
+					resp, err := c.ModifyUserRelation(mid, actType)
+					if err != nil {
+						if err == ErrVerifyRequired {
+							log.Errorf("ModifyUserRelation error %v", err)
+							return nil, fmt.Errorf("关注用户失败 - 未配置B站")
+						} else {
+							log.WithField("action", actType).Errorf("ModifyUserRelation error %v", err)
+							return nil, fmt.Errorf("关注用户失败 - 内部错误")
+						}
+					}
+					if resp.Code != 0 {
+						if resp.Code == 22015 {
+							log.Errorf("关注用户失败 %v - %v | 请尝试手动登陆b站账户关注该用户，如果您已手动关注该用户，请在20秒后重试", resp.GetCode(), resp.GetMessage())
+							return nil, fmt.Errorf("关注用户失败 - %v", resp.GetMessage())
+						}
+						log.Errorf("关注用户失败 %v - %v", resp.GetCode(), resp.GetMessage())
 						return nil, fmt.Errorf("关注用户失败 - %v", resp.GetMessage())
 					}
-					log.Errorf("关注用户失败 %v - %v", resp.GetCode(), resp.GetMessage())
-					return nil, fmt.Errorf("关注用户失败 - %v", resp.GetMessage())
 				}
 			}
+		} else if selfUid != 0 {
+			log.Debug("正在订阅账号自己，跳过关注")
 		}
-	} else if selfUid != 0 {
-		log.Debug("正在订阅账号自己，跳过关注")
 	}
 
 	_, err = c.StateManager.AddGroupConcern(groupCode, mid, ctype)
@@ -304,9 +301,9 @@ func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 		switch event := ievent.(type) {
 		case *LiveInfo:
 			if event.Status == LiveStatus_Living {
-				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("living notify")
+				log.WithFields(localutils.GroupLogFields(groupCode)).Trace("living notify")
 			} else if event.Status == LiveStatus_NoLiving {
-				log.WithFields(localutils.GroupLogFields(groupCode)).Debug("noliving notify")
+				log.WithFields(localutils.GroupLogFields(groupCode)).Trace("noliving notify")
 			} else {
 				log.WithFields(localutils.GroupLogFields(groupCode)).Error("unknown live status")
 			}
@@ -314,377 +311,13 @@ func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
 		case *NewsInfo:
 			notifies := NewConcernNewsNotify(groupCode, event, c)
 			log.WithFields(localutils.GroupLogFields(groupCode)).
-				WithField("Size", len(notifies)).Debug("news notify")
+				WithField("Size", len(notifies)).Trace("news notify")
 			for _, notify := range notifies {
 				result = append(result, notify)
 			}
 		}
 		return
 	}
-}
-
-// fresh 这个fresh不能启动多个
-func (c *Concern) fresh() concern.FreshFunc {
-	return func(ctx context.Context, eventChan chan<- concern.Event) {
-		t := time.NewTimer(time.Second * 3)
-		var interval time.Duration
-		if config.GlobalConfig != nil {
-			interval = config.GlobalConfig.GetDuration("bilibili.interval")
-		}
-		if interval == 0 {
-			interval = time.Second * 20
-		}
-		for {
-			select {
-			case <-t.C:
-			case <-ctx.Done():
-				return
-			}
-			start := time.Now()
-			var errGroup errgroup.Group
-
-			errGroup.Go(func() error {
-				defer func() {
-					logger.WithField("cost", time.Now().Sub(start)).
-						Tracef("watchCore dynamic fresh done")
-				}()
-				newsList, err := c.freshDynamicNew()
-				if err != nil {
-					logger.Errorf("freshDynamicNew failed %v", err)
-					return err
-				} else {
-					for _, news := range newsList {
-						eventChan <- news
-					}
-				}
-				return nil
-			})
-
-			errGroup.Go(func() error {
-				defer func() {
-					logger.WithField("cost", time.Now().Sub(start)).
-						Tracef("watchCore live fresh done")
-				}()
-				liveInfo, err := c.freshLive()
-				if err != nil {
-					logger.Errorf("freshLive error %v", err)
-					return err
-				}
-				// liveInfoMap内是所有正在直播的列表，没有直播的不应该放进去
-				var liveInfoMap = make(map[int64]*LiveInfo)
-				for _, info := range liveInfo {
-					liveInfoMap[info.Mid] = info
-				}
-
-				_, ids, types, err := c.StateManager.ListConcernState(
-					func(groupCode int64, id interface{}, p concern_type.Type) bool {
-						return p.ContainAny(Live)
-					})
-				if err != nil {
-					logger.Errorf("ListConcernState error %v", err)
-					return err
-				}
-				ids, types, err = c.GroupTypeById(ids, types)
-				if err != nil {
-					logger.Errorf("GroupTypeById error %v", err)
-					return err
-				}
-
-				sendLiveInfo := func(info *LiveInfo) {
-					addLiveInfoErr := c.AddLiveInfo(info)
-					if addLiveInfoErr != nil {
-						// 如果因为系统原因add失败，会造成重复推送
-						// 按照ddbot的原则，选择不推送，而非重复推送
-						logger.WithField("mid", info.Mid).Errorf("add live info error %v", err)
-					} else {
-						eventChan <- info
-					}
-				}
-
-				selfUid := accountUid.Load()
-				for _, id := range ids {
-					mid := id.(int64)
-					if selfUid != 0 && selfUid == mid {
-						// 特殊处理下关注自己
-						accResp, err := XSpaceAccInfo(selfUid)
-						if err != nil {
-							logger.Errorf("freshLive self-fresh %v error %v", selfUid, err)
-							return err
-						}
-						liveRoom := accResp.GetData().GetLiveRoom()
-						selfLiveInfo := NewLiveInfo(
-							NewUserInfo(selfUid, liveRoom.GetRoomid(), accResp.GetData().GetName(), liveRoom.GetUrl()),
-							liveRoom.GetTitle(),
-							liveRoom.GetCover(),
-							liveRoom.GetLiveStatus(),
-						)
-						if selfLiveInfo.Living() {
-							liveInfoMap[selfUid] = selfLiveInfo
-						}
-					}
-					oldInfo, _ := c.GetLiveInfo(mid)
-					if oldInfo == nil {
-						// first live info
-						if newInfo, found := liveInfoMap[mid]; found {
-							newInfo.liveStatusChanged = true
-							sendLiveInfo(newInfo)
-						}
-						continue
-					}
-					if oldInfo.Status == LiveStatus_NoLiving {
-						if newInfo, found := liveInfoMap[mid]; found {
-							// notliving -> living
-							newInfo.liveStatusChanged = true
-							sendLiveInfo(newInfo)
-						}
-					} else if oldInfo.Status == LiveStatus_Living {
-						if newInfo, found := liveInfoMap[mid]; !found {
-							// living -> notliving
-							if count := c.IncNotLiveCount(mid); count < 3 {
-								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
-									WithField("notlive_count", count).
-									Debug("notlive counting")
-								continue
-							} else {
-								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
-									Debug("notlive count done, notlive confirmed")
-							}
-							if err := c.ClearNotLiveCount(mid); err != nil {
-								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
-									Errorf("clear notlive count error %v", err)
-							}
-							newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle,
-								oldInfo.Cover, LiveStatus_NoLiving)
-							newInfo.liveStatusChanged = true
-							sendLiveInfo(newInfo)
-						} else {
-							if newInfo.LiveTitle == "bilibili主播的直播间" {
-								newInfo.LiveTitle = oldInfo.LiveTitle
-							}
-							if err := c.ClearNotLiveCount(mid); err != nil {
-								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
-									Errorf("clear notlive count error %v", err)
-							}
-							if newInfo.LiveTitle != oldInfo.LiveTitle {
-								// live title change
-								newInfo.liveTitleChanged = true
-								sendLiveInfo(newInfo)
-							}
-						}
-					}
-				}
-				return nil
-			})
-			err := errGroup.Wait()
-			end := time.Now()
-			if err == nil {
-				logger.WithField("cost", end.Sub(start)).Tracef("watchCore loop done")
-				c.SetLastFreshTime(time.Now().Unix())
-			} else {
-				logger.WithField("cost", end.Sub(start)).Errorf("watchCore error %v", err)
-			}
-			t.Reset(interval)
-		}
-	}
-}
-
-func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
-	var start = time.Now()
-	resp, err := DynamicSvrDynamicNew()
-	if err != nil {
-		logger.Errorf("DynamicSvrDynamicNew error %v", err)
-		return nil, err
-	}
-	var newsMap = make(map[int64][]*Card)
-	if resp.GetCode() != 0 {
-		logger.WithField("RespCode", resp.GetCode()).
-			WithField("RespMsg", resp.GetMessage()).
-			Errorf("DynamicSvrDynamicNew failed")
-		return nil, fmt.Errorf("DynamicSvrDynamicNew failed %v - %v", resp.GetCode(), resp.GetMessage())
-	}
-	var cards []*Card
-	cards = append(cards, resp.GetData().GetCards()...)
-	// 尝试刷一下历史动态，看看能不能捞一下被审核的动态
-	if len(resp.GetData().GetCards()) > 0 {
-		var historyResp *DynamicSvrDynamicHistoryResponse
-		var lastDynamicId = resp.GetData().GetCards()[len(resp.GetData().GetCards())-1].GetDesc().GetDynamicIdStr()
-		for i := 0; i < 2; i++ {
-			if len(lastDynamicId) == 0 {
-				break
-			}
-			historyResp, err = DynamicSvrDynamicHistory(lastDynamicId)
-			if err != nil {
-				logger.WithField("lastDynamicId", lastDynamicId).
-					Errorf("DynamicSvrDynamicHistory error %v", err)
-				break
-			}
-			if historyResp.GetCode() != 0 {
-				logger.WithField("RespCode", resp.GetCode()).
-					WithField("RespMsg", resp.GetMessage()).
-					Errorf("DynamicSvrDynamicHistory failed")
-				return nil, fmt.Errorf("DynamicSvrDynamicHistory failed %v - %v",
-					historyResp.GetCode(), historyResp.GetMessage())
-			}
-			cards = append(cards, historyResp.GetData().GetCards()...)
-			if len(historyResp.GetData().GetCards()) > 0 {
-				cardSize := len(historyResp.GetData().GetCards())
-				lastDynamicId = historyResp.GetData().GetCards()[cardSize-1].GetDesc().GetDynamicIdStr()
-			} else {
-				lastDynamicId = ""
-			}
-		}
-	}
-
-	logger.WithField("cost", time.Now().Sub(start)).Trace("freshDynamicNew cost 1")
-	for _, card := range cards {
-		// 2021-08-15 发现好像是系统推荐的直播间，非人为操作
-		// 在event阶段过滤掉
-		if card.GetDesc().GetType() == DynamicDescType_WithLiveV2 {
-			continue
-		}
-		uid := card.GetDesc().GetUid()
-		// 应该用dynamic_id_str
-		// 但好像已经没法保持向后兼容同时改动了
-		// 只能相信概率论了，出问题的概率应该比较小，出问题会导致推送丢失
-		replaced, err := c.MarkDynamicId(card.GetDesc().GetDynamicId())
-		if err != nil || replaced {
-			if err != nil {
-				logger.WithField("uid", uid).
-					WithField("dynamicId", card.GetDesc().GetDynamicId()).
-					Errorf("MarkDynamicId error %v", err)
-			}
-			continue
-		}
-		ts, err := c.StateManager.GetUidFirstTimestamp(uid)
-		if err == nil && card.GetDesc().GetTimestamp() < ts {
-			logger.WithField("uid", uid).
-				WithField("dynamicId", card.GetDesc().GetDynamicId()).
-				Debugf("past news skip")
-			continue
-		}
-		newsMap[uid] = append(newsMap[uid], card)
-	}
-	logger.WithField("cost", time.Now().Sub(start)).Trace("freshDynamicNew cost 2")
-	var result []*NewsInfo
-	for uid, cards := range newsMap {
-		userInfo, err := c.StateManager.GetUserInfo(uid)
-		if err == buntdb.ErrNotFound {
-			continue
-		} else if err != nil {
-			logger.WithField("mid", uid).Debugf("find user info error %v", err)
-			continue
-		}
-		if len(cards) > 0 {
-			// 如果更新了名字，有机会在这里捞回来
-			userInfo.Name = cards[0].GetDesc().GetUserProfile().GetInfo().GetUname()
-		}
-		if len(cards) > 3 {
-			// 有时候b站抽风会刷屏
-			cards = cards[:3]
-		}
-		result = append(result, NewNewsInfoWithDetail(userInfo, cards))
-	}
-	for _, news := range result {
-		_ = c.MarkLatestActive(news.Mid, news.Timestamp)
-	}
-	logger.WithField("cost", time.Now().Sub(start)).
-		WithField("NewsInfo Size", len(result)).
-		Trace("freshDynamicNew done")
-	return result, nil
-}
-
-// return all LiveInfo in LiveStatus_Living
-func (c *Concern) freshLive() ([]*LiveInfo, error) {
-	var start = time.Now()
-	var liveInfo []*LiveInfo
-	var infoSet = make(map[int64]bool)
-	var page = 1
-	var maxPage int32 = 1
-	var zeroCount = 0
-	for {
-		resp, err := FeedList(FeedPageOpt(page))
-		if err != nil {
-			logger.Errorf("freshLive FeedList error %v", err)
-			return nil, err
-		} else if resp.GetCode() != 0 {
-			if resp.GetCode() == -101 && strings.Contains(resp.GetMessage(), "未登录") {
-				logger.Errorf("刷新直播列表失败，可能是cookie失效，将尝试重新获取cookie")
-				ClearCookieInfo(username)
-				atomicVerifyInfo.Store(new(VerifyInfo))
-			} else if resp.GetCode() == -400 {
-				logger.Errorf("刷新直播列表失败，可能是自动登陆失败，请查看文档尝试手动设置b站cookie")
-			} else {
-				logger.Errorf("freshLive FeedList code %v msg %v", resp.GetCode(), resp.GetMessage())
-			}
-			return nil, fmt.Errorf("freshLive FeedList error code %v msg %v", resp.GetCode(), resp.GetMessage())
-		}
-		var (
-			dataSize    = len(resp.GetData().GetList())
-			pageSize, _ = strconv.ParseInt(resp.GetData().GetPagesize(), 10, 32)
-			curTotal    = resp.GetData().GetResults()
-			curMaxPage  = (curTotal-1)/int32(pageSize) + 1
-		)
-		logger.WithFields(logrus.Fields{
-			"CurTotal":   curTotal,
-			"PageSize":   pageSize,
-			"CurMaxPage": curMaxPage,
-			"maxPage":    maxPage,
-			"page":       page,
-		}).Trace("freshLive debug")
-		if curMaxPage > maxPage {
-			maxPage = curMaxPage
-		}
-		for _, l := range resp.GetData().GetList() {
-			if infoSet[l.GetUid()] {
-				continue
-			}
-			infoSet[l.GetUid()] = true
-			info := NewLiveInfo(
-				NewUserInfo(l.GetUid(), l.GetRoomid(), l.GetUname(), l.GetLink()),
-				l.GetTitle(),
-				l.GetPic(),
-				LiveStatus_Living,
-			)
-			if info.Cover == "" {
-				info.Cover = l.GetCover()
-			}
-			if info.Cover == "" {
-				info.Cover = l.GetFace()
-			}
-			liveInfo = append(liveInfo, info)
-		}
-		if dataSize != 0 {
-			zeroCount = 0
-			page++
-		} else {
-			zeroCount += 1
-		}
-		if int32(page) > maxPage {
-			break
-		}
-		if zeroCount >= 3 {
-			// 认为是真的无人在直播，可能是关注比较少
-			if maxPage > 1 {
-				logger.WithFields(logrus.Fields{
-					"Page":          page,
-					"MaxPage":       maxPage,
-					"LiveInfo Size": len(liveInfo),
-				}).Errorf("直播信息刷新异常结束，如果该信息没有频繁出现，可以忽略。")
-			}
-			break
-		}
-	}
-	ts := time.Now().Unix()
-	for _, info := range liveInfo {
-		_ = c.MarkLatestActive(info.Mid, ts)
-	}
-	logger.WithFields(logrus.Fields{
-		"cost":          time.Since(start),
-		"Page":          page,
-		"MaxPage":       maxPage,
-		"LiveInfo Size": len(liveInfo),
-	}).Tracef("freshLive done")
-	return liveInfo, nil
 }
 
 func (c *Concern) FindUser(mid int64, load bool) (*UserInfo, error) {
@@ -758,19 +391,6 @@ func (c *Concern) ModifyUserRelation(mid int64, act int) (*RelationModifyRespons
 		logger.WithField("mid", mid).WithField("act", act).Debug("modify relation")
 	}
 	return resp, nil
-}
-
-func (c *Concern) checkRelation(mid int64) bool {
-	var atr = c.attentionListExpirable.Do()
-	if atr == nil {
-		return false
-	}
-	var matr = atr.(map[int64]interface{})
-	if _, found := matr[mid]; found {
-		return true
-	} else {
-		return false
-	}
 }
 
 func (c *Concern) SyncSub() {
@@ -863,7 +483,7 @@ func (c *Concern) FindUserLiving(mid int64, load bool) (*LiveInfo, error) {
 }
 
 func (c *Concern) FindUserNews(mid int64, load bool) (*NewsInfo, error) {
-	userInfo, err := c.FindUser(mid, load)
+	userInfo, err := c.FindOrLoadUser(mid)
 	if err != nil {
 		return nil, err
 	}
@@ -944,4 +564,47 @@ func (c *Concern) unsubUser(mid int64) {
 	} else {
 		logger.WithField("mid", mid).Info("取消关注成功")
 	}
+}
+
+func (c *Concern) checkRelation(mid int64) bool {
+	var atr = c.attentionListExpirable.Do()
+	if atr == nil {
+		return false
+	}
+	var matr = atr.(map[int64]interface{})
+	if _, found := matr[mid]; found {
+		return true
+	} else {
+		return false
+	}
+}
+
+func (c *Concern) filterCard(card *Card) bool {
+	// 2021-08-15 发现好像是系统推荐的直播间，非人为操作
+	// 在event阶段过滤掉
+	if card.GetDesc().GetType() == DynamicDescType_WithLiveV2 {
+		return false
+	}
+	uid := card.GetDesc().GetUid()
+	// 应该用dynamic_id_str
+	// 但好像已经没法保持向后兼容同时改动了
+	// 只能相信概率论了，出问题的概率应该比较小，出问题会导致推送丢失
+	replaced, err := c.MarkDynamicId(card.GetDesc().GetDynamicId())
+	if err != nil {
+		logger.WithField("uid", uid).
+			WithField("dynamicId", card.GetDesc().GetDynamicId()).
+			Errorf("MarkDynamicId error %v", err)
+		return false
+	}
+	if replaced {
+		return false
+	}
+	ts, err := c.StateManager.GetUidFirstTimestamp(uid)
+	if err == nil && card.GetDesc().GetTimestamp() < ts {
+		logger.WithField("uid", uid).
+			WithField("dynamicId", card.GetDesc().GetDynamicId()).
+			Trace("past news skip")
+		return false
+	}
+	return true
 }

@@ -563,7 +563,7 @@ func (c *StateManager) Dispatch(wg *sync.WaitGroup, eventChan <-chan Event, noti
 	defer func() {
 		if e := recover(); e != nil {
 			c.Logger().WithField("stack", string(debug.Stack())).
-				Errorf("StateManager %v: Dispatch panic recoved", c.name)
+				Errorf("StateManager %v: Dispatch panic <%v> recoved", c.name, e)
 			go c.Dispatch(wg, eventChan, notifyChan)
 		}
 	}()
@@ -574,6 +574,32 @@ func (c *StateManager) Dispatch(wg *sync.WaitGroup, eventChan <-chan Event, noti
 
 func (c *StateManager) NotifyGenerator(groupCode int64, event Event) []Notify {
 	return c.notifyGeneratorFunc(groupCode, event)
+}
+
+func (c *StateManager) filterNotify(inotify Notify) bool {
+	if inotify == nil {
+		return false
+	}
+	nLogger := inotify.Logger()
+	concern, err := GetConcernBySiteAndType(inotify.Site(), inotify.Type())
+	if err != nil {
+		nLogger.Errorf("filterNotify: GetConcernBySiteAndType error %v", err)
+		return false
+	}
+	concernConfig := concern.GetStateManager().GetGroupConcernConfig(inotify.GetGroupCode(), inotify.GetUid())
+
+	sendHookResult := concernConfig.ShouldSendHook(inotify)
+	if !sendHookResult.Pass {
+		nLogger.WithField("Reason", sendHookResult.Reason).Trace("notify filtered by hook ShouldSendHook")
+		return false
+	}
+
+	newsFilterHook := concernConfig.FilterHook(inotify)
+	if !newsFilterHook.Pass {
+		nLogger.WithField("Reason", newsFilterHook.Reason).Trace("notify filtered by hook FilterHook")
+		return false
+	}
+	return true
 }
 
 // DefaultDispatch 是 DispatchFunc 的默认实现。
@@ -589,27 +615,38 @@ func (c *StateManager) DefaultDispatch() DispatchFunc {
 				log.Errorf("StateManager %v: ListConcernState error %v", c.name, err)
 				continue
 			}
-			log.Infof("new event - %v - %v notify for %v groups", event.Site(), event.Type().String(), len(groups))
+			var notifies []Notify
+			var filteredGroups = make(map[int64]interface{})
+			for _, groupCode := range groups {
+				for _, n := range c.NotifyGenerator(groupCode, event) {
+					if c.filterNotify(n) {
+						notifies = append(notifies, n)
+						filteredGroups[n.GetGroupCode()] = true
+					}
+				}
+			}
+			if len(notifies) == 0 {
+				continue
+			}
+			log.Infof("new event - %v %v - %v notify for %v groups", event.Site(), event.Type().String(), len(notifies), len(filteredGroups))
 			largeNotifyLimit := cfg.GetLargeNotifyLimit()
-			if len(groups) >= largeNotifyLimit {
-				log.Warnf("警告：当前事件将推送至%v个群（超过%v），为保证帐号稳定，将增加此事件的推送间隔，防止短时间内发送大量消息", len(groups), largeNotifyLimit)
-				go func(groups []int64, event Event) {
+
+			if len(notifies) >= largeNotifyLimit {
+				log.Warnf("警告：当前事件将推送至%v条消息到%v个群（超过%v），为保证帐号稳定，将增加此事件的推送间隔，防止短时间内发送大量消息",
+					len(notifies), len(filteredGroups), largeNotifyLimit)
+				go func(notifies []Notify) {
 					cnt := c.largeNotifyCount.Inc()
 					ticker := time.NewTicker(time.Second*1 + time.Second*time.Duration(2*cnt))
-					for _, groupCode := range groups {
+					for _, n := range notifies {
 						<-ticker.C
-						for _, n := range c.NotifyGenerator(groupCode, event) {
-							notifyChan <- n
-						}
+						notifyChan <- n
 					}
 					ticker.Stop()
 					c.largeNotifyCount.Dec()
-				}(groups, event)
+				}(notifies)
 			} else {
-				for _, groupCode := range groups {
-					for _, n := range c.NotifyGenerator(groupCode, event) {
-						notifyChan <- n
-					}
+				for _, n := range notifies {
+					notifyChan <- n
 				}
 			}
 		}
@@ -642,6 +679,11 @@ func (c *StateManager) UseEmitQueue() {
 	}
 	c.emitChan = make(chan *localutils.EmitE)
 	c.emitQueue = localutils.NewEmitQueue(c.emitChan, interval)
+}
+
+// EmitQueueEnabled 返回是否使用了EmitQueue
+func (c *StateManager) EmitQueueEnabled() bool {
+	return c.useEmit
 }
 
 func (c *StateManager) Logger() *logrus.Entry {

@@ -149,7 +149,7 @@ func GetVerifyInfo() *VerifyInfo {
 	}
 
 	if !IsAccountGiven() {
-		logger.Errorf("GetVerifyInfo error - 未设置cookie和帐号")
+		logger.Trace("GetVerifyInfo error - 未设置cookie和帐号")
 		return nil
 	} else {
 		var (
