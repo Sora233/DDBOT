@@ -15,6 +15,7 @@ const (
 	ActSub            = 1
 	ActUnsub          = 2
 	ActHiddenSub      = 3
+	ActUnhiddenSub    = 4
 	ActBlock          = 5
 	ActUnblock        = 6
 	ActRemoveFollower = 7

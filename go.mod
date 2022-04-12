@@ -25,14 +25,12 @@ require (
 	github.com/stretchr/testify v1.7.1
 	github.com/tidwall/buntdb v1.2.9
 	go.uber.org/atomic v1.9.0
-	go.uber.org/ratelimit v0.2.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
 
 require (
 	github.com/Baozisoftware/qrcode-terminal-go v0.0.0-20170407111555-c0650d8dff0f // indirect
 	github.com/RomiChan/protobuf v0.0.0-20211223055824-048df49a8956 // indirect
-	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/fumiama/imgsz v0.0.2 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
@@ -81,6 +79,6 @@ require (
 )
 
 replace (
-	github.com/Mrs4s/MiraiGo => github.com/Sora233/MiraiGo v0.0.0-20220405052825-4f598a80f67b
+	github.com/Mrs4s/MiraiGo => github.com/Sora233/MiraiGo v0.0.0-20220412152111-44e180be2e8c
 	github.com/willf/bitset v1.2.0 => github.com/bits-and-blooms/bitset v1.2.0
 )
