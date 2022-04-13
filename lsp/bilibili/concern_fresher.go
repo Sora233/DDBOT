@@ -3,11 +3,13 @@ package bilibili
 import (
 	"context"
 	"fmt"
+	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
+	"go.uber.org/atomic"
 	"golang.org/x/sync/errgroup"
 	"strconv"
 	"strings"
@@ -24,6 +26,10 @@ func (c *Concern) fresh() concern.FreshFunc {
 		}
 		if interval == 0 {
 			interval = time.Second * 20
+		}
+		var freshCount atomic.Int32
+		if !cfg.GetBilibiliOnlyOnlineNotify() {
+			freshCount.Store(1000)
 		}
 		for {
 			select {
@@ -87,9 +93,12 @@ func (c *Concern) fresh() concern.FreshFunc {
 						// 如果因为系统原因add失败，会造成重复推送
 						// 按照ddbot的原则，选择不推送，而非重复推送
 						logger.WithField("mid", info.Mid).Errorf("add live info error %v", err)
-					} else {
-						eventChan <- info
+						return
 					}
+					if (info.Living() && freshCount.Load() < 1) || (!info.Living() && freshCount.Load() < 3) {
+						return
+					}
+					eventChan <- info
 				}
 
 				selfUid := accountUid.Load()
@@ -167,6 +176,7 @@ func (c *Concern) fresh() concern.FreshFunc {
 				return nil
 			})
 			err := errGroup.Wait()
+			freshCount.Inc()
 			end := time.Now()
 			if err == nil {
 				logger.WithField("cost", end.Sub(start)).Tracef("watchCore loop done")

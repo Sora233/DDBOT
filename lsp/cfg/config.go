@@ -57,3 +57,7 @@ func GetNotifyParallel() int {
 	}
 	return parallel
 }
+
+func GetBilibiliOnlyOnlineNotify() bool {
+	return config.GlobalConfig.GetBool("bilibili.onlyOnlineNotify")
+}

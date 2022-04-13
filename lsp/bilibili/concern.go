@@ -32,6 +32,7 @@ type Concern struct {
 	notify                 chan<- concern.Notify
 	stop                   chan interface{}
 	wg                     sync.WaitGroup
+	cacheStartTs           int64
 }
 
 func (c *Concern) Site() string {
@@ -52,8 +53,9 @@ func (c *Concern) GetStateManager() concern.IStateManager {
 
 func NewConcern(notify chan<- concern.Notify) *Concern {
 	c := &Concern{
-		notify: notify,
-		stop:   make(chan interface{}),
+		notify:       notify,
+		stop:         make(chan interface{}),
+		cacheStartTs: time.Now().Unix(),
 		attentionListExpirable: expirable.NewExpirable(time.Second*20, func() interface{} {
 			var m = make(map[int64]interface{})
 			resp, err := GetAttentionList()
@@ -89,7 +91,6 @@ func (c *Concern) Stop() {
 
 func (c *Concern) Start() error {
 	Init()
-
 	lastFresh, _ := c.GetLastFreshTime()
 	if lastFresh > 0 && time.Now().Sub(time.Unix(lastFresh, 0)) > time.Minute*30 {
 		logger.Debug("Unsafe Start Mode")
@@ -599,8 +600,16 @@ func (c *Concern) filterCard(card *Card) bool {
 	if replaced {
 		return false
 	}
-	ts, err := c.StateManager.GetUidFirstTimestamp(uid)
-	if err == nil && card.GetDesc().GetTimestamp() < ts {
+	var tsLimit int64
+	if cfg.GetBilibiliOnlyOnlineNotify() {
+		tsLimit = c.cacheStartTs
+	} else {
+		tsLimit, err = c.StateManager.GetUidFirstTimestamp(uid)
+		if err != nil {
+			return true
+		}
+	}
+	if card.GetDesc().GetTimestamp() < tsLimit {
 		logger.WithField("uid", uid).
 			WithField("dynamicId", card.GetDesc().GetDynamicId()).
 			Trace("past news skip")
