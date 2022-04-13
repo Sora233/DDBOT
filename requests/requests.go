@@ -93,7 +93,7 @@ func ProxyOption(prefer proxy_pool.Prefer) Option {
 	proxy, err := proxy_pool.Get(prefer)
 	if err != nil {
 		if err != proxy_pool.ErrNil {
-			logger.Errorf("get proxy failed")
+			logger.Errorf("get proxy failed: %v", err)
 		}
 		return empty
 	} else {

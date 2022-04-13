@@ -78,6 +78,8 @@ func (l *Lsp) Init() {
 		log.Infof("设置logLevel为%v", lev.String())
 	}
 
+	l.msgLimit = semaphore.NewWeighted(int64(cfg.GetNotifyParallel()))
+
 	if Tags != "UNKNOWN" {
 		logger.Infof("DDBOT版本：Release版本【%v】", Tags)
 	} else {

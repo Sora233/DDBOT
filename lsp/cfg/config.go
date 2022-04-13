@@ -49,3 +49,11 @@ func GetBilibiliDisableSub() bool {
 func GetBilibiliHiddenSub() bool {
 	return config.GlobalConfig.GetBool("bilibili.hiddenSub")
 }
+
+func GetNotifyParallel() int {
+	var parallel = config.GlobalConfig.GetInt("notify.parallel")
+	if parallel <= 0 {
+		parallel = 1
+	}
+	return parallel
+}

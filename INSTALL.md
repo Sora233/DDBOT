@@ -250,6 +250,8 @@ qq-logs: # 是否启用在命令行内展示qq聊天内容，true为启用，fal
 
 dispatch:
   largeNotifyLimit: 50 # 巨量推送的判定配置，默认为50，当大于这个配置时，将增大推送延迟保证账号稳定
+notify:
+  parallel: 1          # 增加推送消息的并发配置，默认为1以优先保证账号稳定，当出现推送堆积的时候可以尝试调高
 
 template:       # 是否启用模板功能，true为启用，false为禁用，默认为禁用
   enable: false # 需要了解模板请看模板文档
