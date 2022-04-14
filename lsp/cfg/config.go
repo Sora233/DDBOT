@@ -50,6 +50,10 @@ func GetBilibiliHiddenSub() bool {
 	return config.GlobalConfig.GetBool("bilibili.hiddenSub")
 }
 
+func GetBilibiliUnsub() bool {
+	return config.GlobalConfig.GetBool("bilibili.unsub")
+}
+
 func GetNotifyParallel() int {
 	var parallel = config.GlobalConfig.GetInt("notify.parallel")
 	if parallel <= 0 {

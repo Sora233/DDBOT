@@ -282,7 +282,7 @@ func (c *Concern) Remove(ctx mmsg.IMsgCtx,
 		return nil
 	})
 	if err == nil && config.GlobalConfig != nil {
-		if config.GlobalConfig.GetBool("bilibili.unsub") && allCtype.Empty() {
+		if cfg.GetBilibiliUnsub() && allCtype.Empty() {
 			c.unsubUser(mid)
 		}
 	}
@@ -518,7 +518,7 @@ func (c *Concern) GroupWatchNotify(groupCode, mid int64) {
 
 func (c *Concern) RemoveAllByGroupCode(groupCode int64) ([]string, error) {
 	keys, err := c.StateManager.RemoveAllByGroupCode(groupCode)
-	if config.GlobalConfig != nil && config.GlobalConfig.GetBool("bilibili.unsub") {
+	if cfg.GetBilibiliUnsub() {
 		var changedIdSet = make(map[int64]interface{})
 		if err == nil {
 			for _, key := range keys {
