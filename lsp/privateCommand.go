@@ -578,29 +578,42 @@ func (c *LspPrivateCommand) BlockCommand() {
 		blockCmd.Days = 7
 	}
 
-	log = log.WithField("target", blockCmd.Uin).WithField("days", blockCmd.Days).WithField("delete", blockCmd.Delete)
+	log = log.WithField("TargetUin", blockCmd.Uin).
+		WithField("Days", blockCmd.Days).
+		WithField("Delete", blockCmd.Delete)
+
+	var name string
+
+	if fi := localutils.GetBot().FindFriend(blockCmd.Uin); fi != nil {
+		name = fi.Nickname
+		log = log.WithField("TargetName", name)
+	}
+
+	if name == "" {
+		name = "未知用户"
+	}
 
 	if !blockCmd.Delete {
 		if err := c.l.PermissionStateManager.AddBlockList(blockCmd.Uin, time.Duration(blockCmd.Days)*time.Hour*24); err == nil {
 			log.Info("blocked")
-			c.textReply("成功")
+			c.textReplyF("成功 - %v", name)
 		} else if err == localdb.ErrKeyExist {
 			log.Errorf("block failed - duplicate")
 			c.textReply("失败 - 已经block过了")
 		} else {
 			log.Errorf("block failed err %v", err)
-			c.textReply("失败")
+			c.textReply("失败 - 内部错误")
 		}
 	} else {
 		if err := c.l.PermissionStateManager.DeleteBlockList(blockCmd.Uin); err == nil {
 			log.Info("unblocked")
-			c.textReply("成功")
+			c.textReplyF("成功 - %v", name)
 		} else if localdb.IsNotFound(err) {
 			log.Errorf("unblock failed - not exist")
-			c.textReply("失败 - 该id未被block")
+			c.textReply("失败 - 该用户未被block")
 		} else {
 			log.Errorf("unblock failed err %v", err)
-			c.textReply("失败")
+			c.textReply("失败 - 内部错误")
 		}
 	}
 }
