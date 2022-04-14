@@ -555,9 +555,9 @@ func (c *LspPrivateCommand) BlockCommand() {
 	}
 
 	var blockCmd struct {
-		Uin    int64 `arg:"" required:"" help:"the uin to block"`
-		Days   int   `optional:""`
-		Delete bool  `optional:"" short:"d"`
+		Uin    int64 `arg:"" required:"" help:"要block的qq号或者qq群"`
+		Days   int   `optional:"" help:"要block的天数，默认是永久"`
+		Delete bool  `optional:"" short:"d" help:"取消block"`
 	}
 
 	_, output := c.parseCommandSyntax(&blockCmd, c.CommandName())
@@ -574,10 +574,6 @@ func (c *LspPrivateCommand) BlockCommand() {
 		return
 	}
 
-	if blockCmd.Days == 0 {
-		blockCmd.Days = 7
-	}
-
 	log = log.WithField("TargetUin", blockCmd.Uin).
 		WithField("Days", blockCmd.Days).
 		WithField("Delete", blockCmd.Delete)
@@ -589,8 +585,13 @@ func (c *LspPrivateCommand) BlockCommand() {
 		log = log.WithField("TargetName", name)
 	}
 
+	if gi := localutils.GetBot().FindGroup(blockCmd.Uin); gi != nil {
+		name = gi.Name
+		log = log.WithField("TargetGroupName", name)
+	}
+
 	if name == "" {
-		name = "未知用户"
+		name = "未知目标"
 	}
 
 	if !blockCmd.Delete {
@@ -610,7 +611,7 @@ func (c *LspPrivateCommand) BlockCommand() {
 			c.textReplyF("成功 - %v", name)
 		} else if localdb.IsNotFound(err) {
 			log.Errorf("unblock failed - not exist")
-			c.textReply("失败 - 该用户未被block")
+			c.textReply("失败 - 该目标未被block")
 		} else {
 			log.Errorf("unblock failed err %v", err)
 			c.textReply("失败 - 内部错误")
@@ -1356,6 +1357,9 @@ func (c *LspPrivateCommand) checkGroupCode(groupCode int64) error {
 	}
 	group := c.bot.FindGroup(groupCode)
 	if !c.l.PermissionStateManager.CheckRole(c.uin(), permission.Admin) {
+		if c.l.PermissionStateManager.CheckBlockList(groupCode) {
+			return fmt.Errorf("")
+		}
 		if group == nil {
 			return fmt.Errorf("没有找到QQ群<%v>，请确认bot是否在群内", groupCode)
 		}
