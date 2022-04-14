@@ -234,19 +234,22 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 
 		if l.PermissionStateManager.CheckBlockList(request.InvitorUin) {
 			log.Debug("收到加群邀请，该用户在block列表中，将拒绝加群邀请")
+			l.PermissionStateManager.AddBlockList(request.GroupCode, 0)
 			request.Reject(false, "")
 			return
 		}
 
 		fi := bot.FindFriend(request.InvitorUin)
 		if fi == nil {
-			request.Reject(false, "未找到阁下的好友信息，请添加好友进行操作")
 			log.Error("收到加群邀请，无法找到好友信息，将拒绝加群邀请")
+			l.PermissionStateManager.AddBlockList(request.GroupCode, 0)
+			request.Reject(false, "未找到阁下的好友信息，请添加好友进行操作")
 			return
 		}
 
 		if l.PermissionStateManager.CheckAdmin(request.InvitorUin) {
 			log.Info("收到管理员的加群邀请，将同意加群邀请")
+			l.PermissionStateManager.DeleteBlockList(request.GroupCode)
 			request.Accept()
 			return
 		}
@@ -254,6 +257,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		switch l.LspStateManager.GetCurrentMode() {
 		case PrivateMode:
 			log.Info("收到加群邀请，当前BOT处于私有模式，将拒绝加群邀请")
+			l.PermissionStateManager.AddBlockList(request.GroupCode, 0)
 			request.Reject(false, "当前BOT处于私有模式")
 		case ProtectMode:
 			if err := l.LspStateManager.SaveGroupInvitedRequest(request); err != nil {
@@ -264,6 +268,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			}
 		case PublicMode:
 			request.Accept()
+			l.PermissionStateManager.DeleteBlockList(request.GroupCode)
 			log.Info("收到加群邀请，当前BOT处于公开模式，将接受加群邀请")
 			l.SendMsg(
 				mmsg.NewTextf("阁下的群邀请已通过，基于对阁下的信任，阁下已获得本bot在群【%s】的控制权限，相信阁下不会滥用本bot。", request.GroupName),
