@@ -68,26 +68,9 @@ DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送�
 
 详细介绍及示例请查看：[详细示例](/EXAMPLE.md)
 
-阁下可添加官方Demo机器人体验，QQ号：
+~~阁下可添加官方Demo机器人体验~~
 
-- ~~368236249 （二号机）~~
-- 1561991863 （初号机）
-
-<details>
-<summary>点此扫码二号机</summary>
-<img src="https://user-images.githubusercontent.com/11474360/122684719-a8afe280-d239-11eb-9089-b8ce6613c819.jpg" width="300" height="450">
-</details>
-
-<details>
-<summary>点此扫码初号机</summary>
-<img src="https://user-images.githubusercontent.com/11474360/108590360-150afa00-739e-11eb-86f7-77f68d845505.jpeg" width="300" height="450">
-</details>
-
-~~推荐您优先选择二号机，由于目前初号机负载较高。~~
-
-二号机暂时关闭，请选择初号机或者私人部署。
-
-**尝试同时使用多个官方Demo机器人会导致您被暂时加入黑名单**
+不再提供官方的公开BOT，你可以加入交流群申请使用群友搭建的BOT，也可以选择自己搭建。
 
 ## 使用与部署
 
