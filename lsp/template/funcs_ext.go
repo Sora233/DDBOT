@@ -41,8 +41,8 @@ func reply(msg interface{}) *message.ReplyElement {
 	}
 }
 
-func at(uin int64) *message.AtElement {
-	return message.NewAt(uin)
+func at(uin int64) *mmsg.AtElement {
+	return mmsg.NewAt(uin)
 }
 
 func pic(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {

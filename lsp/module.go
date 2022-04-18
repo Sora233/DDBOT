@@ -705,17 +705,6 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 		logger.WithFields(localutils.GroupLogFields(groupCode)).Debug("send with empty message")
 		return &message.GroupMessage{Id: -1}
 	}
-	if gi := localutils.GetBot().FindGroup(groupCode); gi != nil {
-		for _, e := range msg.Elements {
-			if at, ok := e.(*message.AtElement); ok && at.Target != 0 && at.Display == "" {
-				if gmi := gi.FindMember(at.Target); gmi != nil {
-					at.Display = fmt.Sprintf("@%v", gmi.DisplayName())
-				} else {
-					at.Display = fmt.Sprintf("@%v", at.Target)
-				}
-			}
-		}
-	}
 	res = bot.Instance.SendGroupMessage(groupCode, msg, cfg.GetFramMessage())
 	if res == nil || res.Id == -1 {
 		if msg.Count(func(e message.IMessageElement) bool {

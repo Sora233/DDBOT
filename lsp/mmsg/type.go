@@ -8,6 +8,7 @@ const (
 	ImageBytes message.ElementType = 10000 + iota
 	Typed
 	Cut
+	At
 )
 
 type CustomElement interface {
