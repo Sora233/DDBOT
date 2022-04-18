@@ -29,5 +29,5 @@ jobs:
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           goversion: "https://golang.org/dl/go1.17.3.linux-amd64.tar.gz"
-          ldflags: -w -s -X "main.BuildTime=${{ env.BUILD_TIME }}" -X main.CommitId=${{ github.sha }} -X main.Tags=${{ env.Tags }}
+          ldflags: -w -s -X "github.com/Sora233/DDBOT/lsp.BuildTime=${{ env.BUILD_TIME }}" -X github.com/Sora233/DDBOT/lsp.CommitId=${{ github.sha }} -X github.com/Sora233/DDBOT/lsp.Tags=${{ env.Tags }}
           project_path: "./cmd"
