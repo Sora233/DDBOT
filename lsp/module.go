@@ -203,6 +203,10 @@ func (l *Lsp) PostInit() {
 
 func (l *Lsp) Serve(bot *bot.Bot) {
 	bot.OnGroupMemberJoined(func(qqClient *client.QQClient, event *client.MemberJoinGroupEvent) {
+		if err := localdb.Set(localdb.Key("OnGroupMemberJoined", event.Group.Code, event.Member.Uin, event.Member.JoinTime), "",
+			localdb.SetExpireOpt(time.Minute*2), localdb.SetNoOverWriteOpt()); err != nil {
+			return
+		}
 		m, _ := template.LoadAndExec("trigger.group.member_in.tmpl", map[string]interface{}{
 			"group_code":  event.Group.Code,
 			"group_name":  event.Group.Name,
@@ -214,6 +218,10 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 	})
 	bot.OnGroupMemberLeaved(func(qqClient *client.QQClient, event *client.MemberLeaveGroupEvent) {
+		if err := localdb.Set(localdb.Key("OnGroupMemberLeaved", event.Group.Code, event.Member.Uin, event.Member.JoinTime), "",
+			localdb.SetExpireOpt(time.Minute*2), localdb.SetNoOverWriteOpt()); err != nil {
+			return
+		}
 		m, _ := template.LoadAndExec("trigger.group.member_out.tmpl", map[string]interface{}{
 			"group_code":  event.Group.Code,
 			"group_name":  event.Group.Name,
