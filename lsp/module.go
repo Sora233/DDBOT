@@ -278,10 +278,16 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			request.Accept()
 			l.PermissionStateManager.DeleteBlockList(request.GroupCode)
 			log.Info("收到加群邀请，当前BOT处于公开模式，将接受加群邀请")
-			l.SendMsg(
-				mmsg.NewTextf("阁下的群邀请已通过，基于对阁下的信任，阁下已获得本bot在群【%s】的控制权限，相信阁下不会滥用本bot。", request.GroupName),
-				mmsg.NewPrivateTarget(request.InvitorUin),
-			)
+			m, _ := template.LoadAndExec("trigger.private.group_invited.tmpl", map[string]interface{}{
+				"member_code": request.InvitorUin,
+				"member_name": request.InvitorNick,
+				"group_code":  request.GroupCode,
+				"group_name":  request.GroupName,
+				"command":     CommandMaps,
+			})
+			if m != nil {
+				l.SendMsg(m, mmsg.NewPrivateTarget(request.InvitorUin))
+			}
 			if err := l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
 				if err != permission.ErrPermissionExist {
 					log.Errorf("设置群管理员权限失败 - %v", err)
@@ -347,10 +353,14 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			return nil
 		})
 
-		l.SendMsg(
-			mmsg.NewTextf("阁下的好友请求已通过，请使用<%v>查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。", l.CommandShowName(HelpCommand)),
-			mmsg.NewPrivateTarget(event.Friend.Uin),
-		)
+		m, _ := template.LoadAndExec("trigger.private.new_friend_added.tmpl", map[string]interface{}{
+			"member_code": event.Friend.Uin,
+			"member_name": event.Friend.Nickname,
+			"command":     CommandMaps,
+		})
+		if m != nil {
+			l.SendMsg(m, mmsg.NewPrivateTarget(event.Friend.Uin))
+		}
 	})
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {

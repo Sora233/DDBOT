@@ -1299,6 +1299,7 @@ func (c *LspPrivateCommand) commonTemplateData() map[string]interface{} {
 		"msg":         c.msg,
 		"member_code": c.sender().Uin,
 		"member_name": c.sender().DisplayName(),
+		"command":     CommandMaps,
 	}
 }
 

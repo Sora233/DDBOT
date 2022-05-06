@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 var funcsExt = make(FuncMap)
@@ -23,8 +24,12 @@ func cut() *mmsg.CutElement {
 	return new(mmsg.CutElement)
 }
 
-func prefix() string {
-	return cfg.GetCommandPrefix()
+func prefix(commandName ...string) string {
+	if len(commandName) == 0 {
+		return cfg.GetCommandPrefix()
+	} else {
+		return cfg.GetCommandPrefix() + commandName[0]
+	}
 }
 
 func reply(msg interface{}) *message.ReplyElement {
@@ -115,4 +120,32 @@ func roll(from, to int64) int64 {
 
 func choose(items ...string) string {
 	return items[rand.Intn(len(items))]
+}
+
+func hour() int {
+	return time.Now().Hour()
+}
+
+func minute() int {
+	return time.Now().Minute()
+}
+
+func second() int {
+	return time.Now().Second()
+}
+
+func month() int {
+	return int(time.Now().Month())
+}
+
+func year() int {
+	return time.Now().Year()
+}
+
+func day() int {
+	return time.Now().Day()
+}
+
+func yearday() int {
+	return time.Now().YearDay()
 }

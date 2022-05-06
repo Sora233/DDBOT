@@ -55,6 +55,15 @@ func builtins() FuncMap {
 		"at":     at,
 		"icon":   icon,
 
+		// DDBOT common
+		"hour":    hour,
+		"minute":  minute,
+		"second":  second,
+		"month":   month,
+		"year":    year,
+		"day":     day,
+		"yearday": yearday,
+
 		// Comparisons
 		"eq": eq, // ==
 		"ge": ge, // >=

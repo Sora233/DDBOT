@@ -6,6 +6,9 @@
     - 修复release ci没有正确设置版本的问题
   - 模板：
     - 现在支持自定义命令传入文字参数，在模板中可以通过{{.cmd}}和{{.args}}变量获取命令名字和参数
+    - 增加`trigger.private.new_friend_added.tmpl`事件模板
+    - 增加`trigger.private.group_invited.tmpl`事件模板
+    - 增加`hour minute second month year day yearday`等时间函数
 - 2022-04-14 v1.0.6
   - 通用：
     - 更换自定义miraigo，可能减少消息发送失败

@@ -157,6 +157,8 @@ autoreply:
 
 从传入的参数中随机返回一个，参数类型为string，支持变长参数。
 
+*以下为v1.0.6新增*
+
 - {{ at 123456 }}
 
 发送@指定的qq号
@@ -164,6 +166,36 @@ autoreply:
 - {{ icon 123456 }}
 
 发送指定qq号的头像
+
+*以下为v1.0.7新增*
+
+- {{ hour }}
+
+返回当前时间的小时数, 范围为[0, 23]，类型为int
+
+- {{ minute }}
+
+返回当前时间的分钟数，范围为[0, 59]，类型int
+
+- {{ second }}
+
+返回当前时间的秒数，范围为[0, 59]，类型为int
+
+- {{ month }}
+
+返回当前时间的月份，范围为[1,12]，类型为int
+
+- {{ year }}
+
+返回当前时间的年份，类型为int
+
+- {{ day }}
+
+返回当前时间为当月的第几天，类型为int
+
+- {{ yearday }}
+
+返回当前时间为当年的第几天，闰年范围为[1,366]，非闰年范围为[1,365]，类型为int
 
 ## 当前支持的命令模板
 
@@ -421,3 +453,43 @@ ACFUN-{{ .name }}直播结束了
 ```
 
 </details>
+
+- bot添加新好友
+
+模板名：`trigger.private.new_friend_added.tmpl`
+
+| 模板变量                 | 类型     | 含义               |
+|----------------------|--------|------------------|
+| member_code          | int64  | 添加的好友QQ号         |
+| member_name          | string | 添加的好友QQ昵称        |
+| .command.HelpCommand | string | 帮助命令名称，默认是`help` |
+
+<details>
+  <summary>默认模板</summary>
+
+```text
+阁下的好友请求已通过，请使用<{{ prefix .command.HelpCommand }}>查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。
+```
+
+</details>
+
+- bot接受加群邀请
+
+模板名：`trigger.private.group_invited.tmpl`
+
+| 模板变量        | 类型     | 含义       |
+|-------------|--------|----------|
+| group_code  | int64  | 邀请加入的群号码 |
+| group_name  | string | 邀请加入的群名称 |
+| member_code | int64  | 邀请人的QQ号  |
+| member_name | string | 邀请人的QQ昵称 |
+
+<details>
+  <summary>默认模板</summary>
+
+```text
+阁下的群邀请已通过，基于对阁下的信任，阁下已获得本bot在群【{{ .group_name }}】的控制权限，相信阁下不会滥用本bot。
+```
+
+</details>
+
