@@ -1,17 +1,46 @@
 package cfg
 
 import (
+	"errors"
 	"github.com/Sora233/MiraiGo-Template/config"
 	"strings"
 	"time"
 )
 
-func GetCommandPrefix() string {
+func MatchCmdWithPrefix(cmd string) (prefix string, command string, err error) {
+	var customPrefixCfg = GetCustomCommandPrefix()
+	if customPrefixCfg != nil {
+		for k, v := range customPrefixCfg {
+			if v+k == cmd {
+				return v, k, nil
+			}
+		}
+	}
+	commonPrefix := GetCommandPrefix()
+	if strings.HasPrefix(cmd, commonPrefix) {
+		return commonPrefix, strings.TrimPrefix(cmd, commonPrefix), nil
+	}
+	return "", "", errors.New("match failed")
+}
+
+func GetCommandPrefix(commands ...string) string {
+	if len(commands) > 0 {
+		var customPrefixCfg = GetCustomCommandPrefix()
+		if customPrefixCfg != nil {
+			if prefix, found := customPrefixCfg[commands[0]]; found {
+				return prefix
+			}
+		}
+	}
 	prefix := strings.TrimSpace(config.GlobalConfig.GetString("bot.commandPrefix"))
 	if len(prefix) == 0 {
 		prefix = "/"
 	}
 	return prefix
+}
+
+func GetCustomCommandPrefix() map[string]string {
+	return config.GlobalConfig.GetStringMapString("customCommandPrefix")
 }
 
 func GetEmitInterval() time.Duration {

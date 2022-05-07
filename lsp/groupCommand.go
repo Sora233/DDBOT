@@ -2,7 +2,6 @@ package lsp
 
 import (
 	"fmt"
-	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/template"
 	"go.uber.org/atomic"
@@ -66,7 +65,7 @@ func (lgc *LspGroupCommand) Execute() {
 		}
 	}()
 
-	if !strings.HasPrefix(lgc.GetCmd(), cfg.GetCommandPrefix()) {
+	if len(lgc.CommandName()) == 0 {
 		return
 	}
 

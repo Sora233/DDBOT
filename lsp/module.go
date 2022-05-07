@@ -57,7 +57,7 @@ type Lsp struct {
 }
 
 func (l *Lsp) CommandShowName(command string) string {
-	return cfg.GetCommandPrefix() + command
+	return cfg.GetCommandPrefix(command) + command
 }
 
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {

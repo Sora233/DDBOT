@@ -28,7 +28,7 @@ func prefix(commandName ...string) string {
 	if len(commandName) == 0 {
 		return cfg.GetCommandPrefix()
 	} else {
-		return cfg.GetCommandPrefix() + commandName[0]
+		return cfg.GetCommandPrefix(commandName[0]) + commandName[0]
 	}
 }
 
