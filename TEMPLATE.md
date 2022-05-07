@@ -127,6 +127,39 @@ autoreply:
 
 其他命令也遵守这个规则。
 
+## 通过模板创建定时消息
+
+DDBOT现在支持通过模板发送消息的定时命令：
+
+首先需要在配置文件`application.yaml`中定义定时消息：
+
+```yaml
+cronjob:
+  - cron: "* * * * *"
+    templateName: "定时1"
+    target:
+      private: [ 123 ]
+      group: [ ]
+  - cron: "0 * * * *"
+    templateName: "定时2"
+    target:
+      private: [ ]
+      group: [ 456 ]
+```
+
+在上面这段配置中，自定义了两条定时消息，完成后需要创建对应的模板文件：
+
+- `custom.cronjob.定时1.tmpl`
+- `custom.cronjob.定时2.tmpl`
+
+定时消息的定时条件使用`cron表达式`定义，可以在[工具网站](https://tool.lu/crontab/)上选择`类型：Linux`编辑和测试Cron表达式。
+
+DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1分钟`。
+
+完成配置后，`定时1`会每分钟触发一次，触发时会私聊QQ号为123发送消息模板`custom.cronjob.定时1.tmpl`。
+
+`定时2`会每小时触发一次，触发时会在QQ群456内发送消息模板`custom.cronjob.定时2.tmpl`。
+
 ## DDBOT新增的模板函数
 
 - {{- cut -}}

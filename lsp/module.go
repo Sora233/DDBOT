@@ -22,8 +22,9 @@ import (
 	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"github.com/Sora233/MiraiGo-Template/bot"
 	"github.com/Sora233/MiraiGo-Template/config"
-	"github.com/Sora233/MiraiGo-Template/utils"
+	"github.com/fsnotify/fsnotify"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
 	"golang.org/x/sync/semaphore"
@@ -36,7 +37,7 @@ import (
 
 const ModuleName = "me.sora233.Lsp"
 
-var logger = utils.GetModuleLogger(ModuleName)
+var logger = logrus.WithField("module", ModuleName)
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
@@ -50,6 +51,7 @@ type Lsp struct {
 	status        *Status
 	notifyWg      sync.WaitGroup
 	msgLimit      *semaphore.Weighted
+	cron          *cron.Cron
 
 	PermissionStateManager *permission.StateManager
 	LspStateManager        *StateManager
@@ -192,10 +194,13 @@ func (l *Lsp) Init() {
 	default:
 		log.Errorf("unknown proxy type")
 	}
-	if config.GlobalConfig.GetBool("template.enable") {
+	if cfg.GetTemplateEnabled() {
 		log.Infof("已启用模板")
 		template.InitTemplateLoader()
 	}
+	config.GlobalConfig.OnConfigChange(func(in fsnotify.Event) {
+		l.CronjobReload()
+	})
 }
 
 func (l *Lsp) PostInit() {
@@ -496,6 +501,8 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 			l.FreshIndex()
 		}
 	}()
+	l.CronjobReload()
+	l.CronStart()
 	concern.StartAll()
 	l.started.Store(true)
 
@@ -526,7 +533,7 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 	if l.stop != nil {
 		close(l.stop)
 	}
-
+	l.CronStop()
 	concern.StopAll()
 
 	l.wg.Wait()
@@ -750,6 +757,7 @@ var Instance = &Lsp{
 	msgLimit:               semaphore.NewWeighted(3),
 	PermissionStateManager: permission.NewStateManager(),
 	LspStateManager:        NewStateManager(),
+	cron:                   cron.New(cron.WithLogger(cron.VerbosePrintfLogger(cronLog))),
 }
 
 func init() {

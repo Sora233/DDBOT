@@ -55,6 +55,28 @@ func GetLargeNotifyLimit() int {
 	return limit
 }
 
+type CronJob struct {
+	Cron         string `yaml:"cron"`
+	TemplateName string `yaml:"templateName"`
+	Target       struct {
+		Group   []int64 `yaml:"group"`
+		Private []int64 `yaml:"private"`
+	} `yaml:"target"`
+}
+
+func GetCronJob() []*CronJob {
+	var result []*CronJob
+	if err := config.GlobalConfig.UnmarshalKey("cronjob", &result); err != nil {
+		logger.Errorf("GetCronJob UnmarshalKey <cronjob> error %v", err)
+		return nil
+	}
+	return result
+}
+
+func GetTemplateEnabled() bool {
+	return config.GlobalConfig.GetBool("template.enable")
+}
+
 func GetCustomGroupCommand() []string {
 	return config.GlobalConfig.GetStringSlice("autoreply.group.command")
 }
