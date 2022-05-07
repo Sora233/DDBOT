@@ -468,7 +468,7 @@ ACFUN-{{ .name }}直播结束了
   <summary>默认模板</summary>
 
 ```text
-阁下的好友请求已通过，请使用<{{ prefix .command.HelpCommand }}>查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。
+阁下的好友请求已通过，请使用<{{ prefix .command.HelpCommand }}>(不含括号)查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。
 ```
 
 </details>
