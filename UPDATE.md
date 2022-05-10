@@ -11,6 +11,7 @@
     - 增加`trigger.private.new_friend_added.tmpl`事件模板
     - 增加`trigger.private.group_invited.tmpl`事件模板
     - 增加`hour minute second month year day yearday`等时间函数
+    - 新增私聊命令`/ping`支持模板
 - 2022-04-14 v1.0.6
   - 通用：
     - 更换自定义miraigo，可能减少消息发送失败

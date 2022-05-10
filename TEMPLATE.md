@@ -329,6 +329,23 @@ LSP竟然是你
 
 </details>
 
+- /ping(私聊)
+
+模板名：`command.private.ping.tmpl`
+
+| 模板变量 | 类型  | 含义  |
+|------|-----|-----|
+| 无    |     ||
+
+<details>
+  <summary>默认模板</summary>
+
+```text
+pong
+```
+
+</details>
+
 ## 当前支持的推送模板
 
 - b站直播推送

@@ -1180,7 +1180,7 @@ func (c *LspPrivateCommand) PingCommand() {
 	if c.exit {
 		return
 	}
-	c.textReply("pong")
+	c.sendChain(c.templateMsg("command.private.ping.tmpl", nil))
 }
 
 func (c *LspPrivateCommand) HelpCommand() {
