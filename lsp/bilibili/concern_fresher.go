@@ -147,11 +147,23 @@ func (c *Concern) fresh() concern.FreshFunc {
 								continue
 							} else {
 								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
-									Trace("notlive count done, notlive confirmed")
+									Debug("notlive count done, notlive confirmed")
 							}
 							if err := c.ClearNotLiveCount(mid); err != nil {
 								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
 									Errorf("clear notlive count error %v", err)
+							}
+							resp, err := XSpaceAccInfo(mid)
+							if err != nil {
+								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
+									Errorf("XSpaceAccInfo error %v", err)
+								continue
+							}
+							if resp.GetData().GetLiveRoom().GetLiveStatus() == LiveStatus_Living {
+								continue
+							} else {
+								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
+									Debug("XSpaceAccInfo notlive confirmed")
 							}
 							newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle,
 								oldInfo.Cover, LiveStatus_NoLiving)
