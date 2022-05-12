@@ -213,8 +213,14 @@ func (c *StateManager) CheckGroupAdministrator(target mt.Target, caller int64) b
 			return false
 		}
 		return groupMemberInfo.Permission == client.Administrator || groupMemberInfo.Permission == client.Owner
-	} else if target.GetTargetType().IsGulid() {
-		// TODO
+	} else if target.GetTargetType().IsGuild() {
+		if info, _ := localutils.GetBot().GetGuildService().FetchGuildMemberProfileInfo(target.(*mt.GuildTarget).GuildId, uint64(caller)); info != nil {
+			for _, role := range info.Roles {
+				if role.RoleId == 2 || role.Owned {
+					return true
+				}
+			}
+		}
 		return false
 	}
 	return false

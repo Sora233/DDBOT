@@ -83,8 +83,8 @@ func (c *MessageContext) IsFromGroup() bool {
 	return c.Source == mt.TargetGroup
 }
 
-func (c *MessageContext) IsFromGulid() bool {
-	return c.Source == mt.TargetGulid
+func (c *MessageContext) IsFromGuild() bool {
+	return c.Source == mt.TargetGuild
 }
 
 func NewMessageContext() *MessageContext {

@@ -9,17 +9,17 @@ func TestTarget(t *testing.T) {
 	pt := NewPrivateTarget(1)
 	assert.True(t, pt.IsPrivate())
 	assert.False(t, pt.IsGroup())
-	assert.False(t, pt.IsGulid())
+	assert.False(t, pt.IsGuild())
 	assert.EqualValues(t, 1, pt.TargetCode())
 
 	gt := NewGroupTarget(2)
 	assert.True(t, gt.IsGroup())
 	assert.False(t, gt.IsPrivate())
-	assert.False(t, gt.IsGulid())
+	assert.False(t, gt.IsGuild())
 	assert.EqualValues(t, 2, gt.TargetCode())
 
-	gut := NewGulidTarget(3, 3)
-	assert.True(t, gut.IsGulid())
+	gut := NewGuildTarget(3, 3)
+	assert.True(t, gut.IsGuild())
 	assert.False(t, gut.IsPrivate())
 	assert.False(t, gut.IsGroup())
 
@@ -27,9 +27,9 @@ func TestTarget(t *testing.T) {
 	assert.False(t, gut.Equal(pt))
 	assert.False(t, gt.Equal(pt))
 
-	assert.False(t, gut.Equal(NewGulidTarget(3, 4)))
-	assert.False(t, gut.Equal(NewGulidTarget(4, 3)))
-	assert.True(t, gut.Equal(NewGulidTarget(3, 3)))
+	assert.False(t, gut.Equal(NewGuildTarget(3, 4)))
+	assert.False(t, gut.Equal(NewGuildTarget(4, 3)))
+	assert.True(t, gut.Equal(NewGuildTarget(3, 3)))
 
 	assert.False(t, pt.Equal(NewPrivateTarget(2)))
 	assert.False(t, pt.Equal(NewPrivateTarget(3)))

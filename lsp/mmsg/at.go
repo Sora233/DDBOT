@@ -27,7 +27,7 @@ func (a *AtElement) PackToElement(target mt.Target) message.IMessageElement {
 			if a.Display == "" {
 				if gi := localutils.GetBot().FindGroup(target.(*mt.GroupTarget).TargetCode()); gi != nil {
 					if gmi := gi.FindMember(a.Target); gmi != nil {
-						a.Display = fmt.Sprintf("@%v", gmi.DisplayName())
+						a.Display = "@" + gmi.DisplayName()
 					}
 				}
 			}
@@ -36,14 +36,14 @@ func (a *AtElement) PackToElement(target mt.Target) message.IMessageElement {
 			}
 		}
 		return a.AtElement
-	case mt.TargetGulid:
+	case mt.TargetGuild:
 		if a.Target == 0 {
 			a.Display = "@全体成员"
 		} else {
 			if a.Display == "" {
 				if info, _ := localutils.GetBot().GetGuildService().
-					FetchGuildMemberProfileInfo(target.(*mt.GulidTarget).ChannelId, uint64(a.Target)); info != nil {
-					a.Display = info.Nickname
+					FetchGuildMemberProfileInfo(target.(*mt.GuildTarget).GuildId, uint64(a.Target)); info != nil {
+					a.Display = "@" + info.Nickname
 				}
 			}
 			if a.Display == "" {

@@ -12,7 +12,7 @@ type TypedElement struct {
 	//E map[GetTargetType]message.IMessageElement
 	privateE message.IMessageElement
 	groupE   message.IMessageElement
-	gulidE   message.IMessageElement
+	guildE   message.IMessageElement
 }
 
 func NewTypedElement() *TypedElement {
@@ -27,8 +27,8 @@ func NewPrivateElement(e message.IMessageElement) *TypedElement {
 	return NewTypedElement().OnPrivate(e)
 }
 
-func NewGulidElement(e message.IMessageElement) *TypedElement {
-	return NewTypedElement().OnGulid(e)
+func NewGuildElement(e message.IMessageElement) *TypedElement {
+	return NewTypedElement().OnGuild(e)
 }
 
 func (t *TypedElement) Type() message.ElementType {
@@ -45,8 +45,8 @@ func (t *TypedElement) PackToElement(target mt.Target) message.IMessageElement {
 		e = t.privateE
 	case mt.TargetGroup:
 		e = t.groupE
-	case mt.TargetGulid:
-		e = t.gulidE
+	case mt.TargetGuild:
+		e = t.guildE
 	}
 	if e == nil {
 		return e
@@ -72,10 +72,10 @@ func (t *TypedElement) OnGroup(e message.IMessageElement) *TypedElement {
 	t.groupE = e
 	return t
 }
-func (t *TypedElement) OnGulid(e message.IMessageElement) *TypedElement {
+func (t *TypedElement) OnGuild(e message.IMessageElement) *TypedElement {
 	if t == e {
 		panic("TypedElement can not type self")
 	}
-	t.gulidE = e
+	t.guildE = e
 	return t
 }

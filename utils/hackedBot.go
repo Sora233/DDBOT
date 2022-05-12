@@ -12,7 +12,7 @@ type HackedBot struct {
 	Bot        **miraiBot.Bot
 	testGroups []*client.GroupInfo
 	testUin    int64
-	testGulids []*client.GuildInfo
+	testGuilds []*client.GuildInfo
 }
 
 func (h *HackedBot) valid() bool {
@@ -41,36 +41,36 @@ func (h *HackedBot) FindGroup(code int64) *client.GroupInfo {
 	return (*h.Bot).FindGroup(code)
 }
 
-func (h *HackedBot) FindGulid(gulidId uint64) *client.GuildInfo {
+func (h *HackedBot) FindGuild(guildId uint64) *client.GuildInfo {
 	if !h.valid() {
-		for _, gi := range h.testGulids {
-			if gi.GuildId == gulidId {
+		for _, gi := range h.testGuilds {
+			if gi.GuildId == guildId {
 				return gi
 			}
 		}
 		return nil
 	}
-	return (*h.Bot).GuildService.FindGuild(gulidId)
+	return (*h.Bot).GuildService.FindGuild(guildId)
 }
 
-func (h *HackedBot) FindGulidChannel(gulidId, channelId uint64) (*client.GuildInfo, *client.ChannelInfo) {
-	gulid := h.FindGulid(gulidId)
-	if gulid == nil {
+func (h *HackedBot) FindGuildChannel(guildId, channelId uint64) (*client.GuildInfo, *client.ChannelInfo) {
+	guild := h.FindGuild(guildId)
+	if guild == nil {
 		return nil, nil
 	}
-	return gulid, gulid.FindChannel(channelId)
+	return guild, guild.FindChannel(channelId)
 }
 
-func (h *HackedBot) FindGulidName(gulidId uint64) string {
-	gulid := h.FindGulid(gulidId)
-	if gulid == nil {
-		return strconv.FormatUint(gulidId, 10)
+func (h *HackedBot) FindGuildName(guildId uint64) string {
+	guild := h.FindGuild(guildId)
+	if guild == nil {
+		return strconv.FormatUint(guildId, 10)
 	}
-	return gulid.GuildName
+	return guild.GuildName
 }
 
-func (h *HackedBot) FindChannelName(gulidId, channelId uint64) string {
-	_, channel := h.FindGulidChannel(gulidId, channelId)
+func (h *HackedBot) FindChannelName(guildId, channelId uint64) string {
+	_, channel := h.FindGuildChannel(guildId, channelId)
 	if channel == nil {
 		return strconv.FormatUint(channelId, 10)
 	}
@@ -83,8 +83,8 @@ func (h *HackedBot) CheckTarget(target mt.Target) bool {
 		return h.FindGroup(t.GroupCode) != nil
 	case *mt.PrivateTarget:
 		return h.FindFriend(t.Uin) != nil
-	case *mt.GulidTarget:
-		_, c := h.FindGulidChannel(t.GulidId, t.ChannelId)
+	case *mt.GuildTarget:
+		_, c := h.FindGuildChannel(t.GuildId, t.ChannelId)
 		return c != nil
 	}
 	return false
@@ -142,9 +142,9 @@ func (h *HackedBot) CheckMember(target mt.Target, id int64) bool {
 		if gi := h.FindGroup(t.GroupCode); gi != nil && gi.FindMember(id) != nil {
 			pass = true
 		}
-	case *mt.GulidTarget:
-		if _, ci := h.FindGulidChannel(t.GulidId, t.ChannelId); ci != nil {
-			if pi, _ := h.GetGuildService().FetchGuildMemberProfileInfo(t.GulidId, uint64(id)); pi != nil {
+	case *mt.GuildTarget:
+		if _, ci := h.FindGuildChannel(t.GuildId, t.ChannelId); ci != nil {
+			if pi, _ := h.GetGuildService().FetchGuildMemberProfileInfo(t.GuildId, uint64(id)); pi != nil {
 				pass = true
 			}
 		}

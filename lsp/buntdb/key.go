@@ -201,13 +201,6 @@ func GroupInvitorKey(keys ...interface{}) string {
 	return NamedKey("GroupInventor", keys)
 }
 
-func GulidEnabledKey(keys ...interface{}) string {
-	return NamedKey("GulidEnabledKey", keys)
-}
-func GulidPermissionKey(keys ...interface{}) string {
-	return NamedKey("GulidPermissionKey", keys)
-}
-
 func LoliconPoolStoreKey(keys ...interface{}) string {
 	return NamedKey("LoliconPoolStore", keys)
 }

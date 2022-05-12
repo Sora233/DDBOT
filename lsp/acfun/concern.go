@@ -221,7 +221,7 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, target mt.Target, id interface{}, ctype 
 	if ctype.ContainAny(Live) {
 		// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
 		if liveInfo != nil && liveInfo.Living() {
-			if ctx.GetSource().IsGroup() || ctx.GetSource().IsGulid() {
+			if ctx.GetSource().IsGroup() || ctx.GetSource().IsGuild() {
 				defer c.TargetWatchNotify(target, uid)
 			}
 			if ctx.GetSource().IsPrivate() {

@@ -927,12 +927,12 @@ func (lgc *LspGroupCommand) requireNotDisable(command string) bool {
 
 // explicit defined and enabled
 func (lgc *LspGroupCommand) groupEnabled(command string) bool {
-	return lgc.l.PermissionStateManager.CheckTargetCommandEnabled(mt.NewGroupTarget(lgc.groupCode()), command)
+	return lgc.Runtime.groupEnabled(mt.NewGroupTarget(lgc.groupCode()), command)
 }
 
 // explicit defined and disabled
 func (lgc *LspGroupCommand) groupDisabled(command string) bool {
-	return lgc.l.PermissionStateManager.CheckTargetCommandDisabled(mt.NewGroupTarget(lgc.groupCode()), command)
+	return lgc.Runtime.groupDisabled(mt.NewGroupTarget(lgc.groupCode()), command)
 }
 
 func (lgc *LspGroupCommand) textReply(text string) *message.GroupMessage {

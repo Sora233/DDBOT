@@ -205,8 +205,8 @@ func TargetFields(target mt.Target) logrus.Fields {
 	switch t := target.(type) {
 	case *mt.GroupTarget:
 		return GroupLogFields(t.GroupCode)
-	case *mt.GulidTarget:
-		return GulidChannelLogFields(t.GulidId, t.ChannelId)
+	case *mt.GuildTarget:
+		return GuildChannelLogFields(t.GuildId, t.ChannelId)
 	case *mt.PrivateTarget:
 		return FriendLogFields(t.Uin)
 	default:
@@ -223,13 +223,13 @@ func GroupLogFields(groupCode int64) logrus.Fields {
 	return fields
 }
 
-func GulidChannelLogFields(gulidId, channelId uint64) logrus.Fields {
+func GuildChannelLogFields(guildId, channelId uint64) logrus.Fields {
 	var fields = make(logrus.Fields)
-	fields["GulidID"] = gulidId
+	fields["GuildID"] = guildId
 	fields["ChannelID"] = channelId
-	gulid, channel := GetBot().FindGulidChannel(gulidId, channelId)
-	if gulid != nil {
-		fields["GulidName"] = gulid.GuildName
+	guild, channel := GetBot().FindGuildChannel(guildId, channelId)
+	if guild != nil {
+		fields["GuildName"] = guild.GuildName
 	}
 	if channel != nil {
 		fields["ChannelName"] = channel.ChannelName

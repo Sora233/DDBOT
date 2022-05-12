@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/lsp/parser"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/alecthomas/kong"
@@ -78,6 +79,16 @@ func (r *Runtime) ParseRawSite(rawSite string) (string, error) {
 		err = fmt.Errorf("%v <%v>", err.Error(), rawSite)
 	}
 	return site, err
+}
+
+// explicit defined and enabled
+func (r *Runtime) groupEnabled(target mt.Target, command string) bool {
+	return r.l.PermissionStateManager.CheckTargetCommandEnabled(target, command)
+}
+
+// explicit defined and disabled
+func (r *Runtime) groupDisabled(target mt.Target, command string) bool {
+	return r.l.PermissionStateManager.CheckTargetCommandDisabled(target, command)
 }
 
 func NewRuntime(l *Lsp, silence ...bool) *Runtime {

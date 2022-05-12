@@ -30,7 +30,7 @@ type ConcernConfig struct {
 // 默认支持 ConcernNotifyConfig ConcernAtConfig
 // ConcernFilterConfig 默认只支持 text
 func (g *ConcernConfig) Validate() error {
-	for _, tp := range []mt.TargetType{mt.TargetGroup, mt.TargetGulid, mt.TargetPrivate} {
+	for _, tp := range []mt.TargetType{mt.TargetGroup, mt.TargetGuild, mt.TargetPrivate} {
 		if !g.GetConcernFilter(tp).Empty() && g.GetConcernFilter(tp).Type != FilterTypeText {
 			return ErrConfigNotSupported
 		}

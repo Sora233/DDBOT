@@ -11,7 +11,7 @@ type TargetType string
 const (
 	TargetGroup   TargetType = "Group"
 	TargetPrivate TargetType = "Private"
-	TargetGulid   TargetType = "Gulid"
+	TargetGuild   TargetType = "Guild"
 )
 
 func (t TargetType) IsGroup() bool {
@@ -22,8 +22,8 @@ func (t TargetType) IsPrivate() bool {
 	return t == TargetPrivate
 }
 
-func (t TargetType) IsGulid() bool {
-	return t == TargetGulid
+func (t TargetType) IsGuild() bool {
+	return t == TargetGuild
 }
 
 func (t TargetType) GetTargetType() TargetType {
@@ -109,25 +109,25 @@ func (t *GroupTarget) Parse(hash string) bool {
 	}
 }
 
-type GulidTarget struct {
+type GuildTarget struct {
 	TargetType
-	GulidId   uint64 `json:"gulid_id"`
+	GuildId   uint64 `json:"guild_id"`
 	ChannelId uint64 `json:"channel_id"`
 }
 
-func (t *GulidTarget) Hash() string {
-	return fmt.Sprintf("%v_%v_%v", TargetGulid, t.GulidId, t.ChannelId)
+func (t *GuildTarget) Hash() string {
+	return fmt.Sprintf("%v_%v_%v", TargetGuild, t.GuildId, t.ChannelId)
 }
 
-func (t *GulidTarget) Equal(target2 Target) bool {
+func (t *GuildTarget) Equal(target2 Target) bool {
 	if target2 == nil {
 		return false
 	}
 	return t.Hash() == target2.Hash()
 }
 
-func (t *GulidTarget) Parse(hash string) bool {
-	if !strings.HasPrefix(hash, string(TargetGulid)) {
+func (t *GuildTarget) Parse(hash string) bool {
+	if !strings.HasPrefix(hash, string(TargetGuild)) {
 		return false
 	}
 	spt := strings.Split(hash, "_")
@@ -137,7 +137,7 @@ func (t *GulidTarget) Parse(hash string) bool {
 	if x, err := strconv.ParseUint(spt[1], 10, 64); err != nil {
 		return false
 	} else {
-		t.GulidId = x
+		t.GuildId = x
 	}
 	if x, err := strconv.ParseUint(spt[2], 10, 64); err != nil {
 		return false
@@ -155,10 +155,10 @@ func NewPrivateTarget(uin int64) *PrivateTarget {
 	return &PrivateTarget{TargetType: TargetPrivate, Uin: uin}
 }
 
-func NewGulidTarget(gulidId uint64, channelId uint64) *GulidTarget {
-	return &GulidTarget{
-		TargetType: TargetGulid,
-		GulidId:    gulidId,
+func NewGuildTarget(guildId uint64, channelId uint64) *GuildTarget {
+	return &GuildTarget{
+		TargetType: TargetGuild,
+		GuildId:    guildId,
 		ChannelId:  channelId,
 	}
 }
@@ -169,8 +169,8 @@ func ParseTargetHash(hash string) Target {
 		t = NewPrivateTarget(0)
 	} else if strings.HasPrefix(hash, string(TargetGroup)) {
 		t = NewGroupTarget(0)
-	} else if strings.HasPrefix(hash, string(TargetGulid)) {
-		t = NewGulidTarget(0, 0)
+	} else if strings.HasPrefix(hash, string(TargetGuild)) {
+		t = NewGuildTarget(0, 0)
 	} else {
 		return nil
 	}
@@ -182,6 +182,6 @@ func ParseTargetHash(hash string) Target {
 
 func AllTargetType() []TargetType {
 	return []TargetType{
-		TargetGroup, TargetPrivate, TargetGulid,
+		TargetGroup, TargetPrivate, TargetGuild,
 	}
 }

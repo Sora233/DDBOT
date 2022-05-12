@@ -5,6 +5,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	localutils "github.com/Sora233/DDBOT/utils"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -41,6 +42,8 @@ func reply(msg interface{}) *message.ReplyElement {
 		return message.NewReply(e)
 	case *message.PrivateMessage:
 		return message.NewPrivateReply(e)
+	case *message.GuildChannelMessage:
+		return localutils.NewGuildChannelReply(e)
 	default:
 		panic(fmt.Sprintf("unknown reply message %v", msg))
 	}

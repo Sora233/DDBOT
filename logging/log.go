@@ -181,9 +181,9 @@ func logGuildChannelMessage(msg *message.GuildChannelMessage) {
 		"MessageIID":  msg.InternalId,
 		"TinyId":      msg.Sender.TinyId,
 		"Nickname":    msg.Sender.Nickname,
-		"GulidID":     msg.GuildId,
+		"GuildID":     msg.GuildId,
 		"ChannelID":   msg.ChannelId,
-		"GulidName":   localutils.GetBot().FindGulidName(msg.GuildId),
+		"GuildName":   localutils.GetBot().FindGuildName(msg.GuildId),
 		"ChannelName": localutils.GetBot().FindChannelName(msg.GuildId, msg.ChannelId),
 	}).Info(msgstringer.MsgToString(msg.Elements))
 }

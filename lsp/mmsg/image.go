@@ -101,17 +101,17 @@ func (i *ImageBytesElement) PackToElement(target mt.Target) message.IMessageElem
 		} else {
 			logger.Debugf("TargetGroup %v nil image buf", targetCode)
 		}
-	case mt.TargetGulid:
-		gulidId := target.(*mt.GulidTarget).GulidId
-		channelId := target.(*mt.GulidTarget).ChannelId
+	case mt.TargetGuild:
+		guildId := target.(*mt.GuildTarget).GuildId
+		channelId := target.(*mt.GuildTarget).ChannelId
 		if i.Buf != nil {
-			img, err := utils.UploadGulidImage(gulidId, channelId, i.Buf, false)
+			img, err := utils.UploadGuildImage(guildId, channelId, i.Buf, false)
 			if err == nil {
 				return img
 			}
-			logger.Errorf("TargetGulid %v - %v UploadGroupImage error %v", gulidId, channelId, err)
+			logger.Errorf("TargetGuild %v - %v UploadGroupImage error %v", guildId, channelId, err)
 		} else {
-			logger.Debugf("TargetGroup %v - %v nil image buf", gulidId, channelId)
+			logger.Debugf("TargetGroup %v - %v nil image buf", guildId, channelId)
 		}
 	default:
 		panic("ImageBytesElement PackToElement: unknown GetTargetType")

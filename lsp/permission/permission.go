@@ -100,9 +100,6 @@ func (g *qqAdminRequireOption) Validate(s *StateManager) bool {
 	switch g.target.GetTargetType() {
 	case mt.TargetPrivate:
 		return true
-	case mt.TargetGulid:
-		// TODO support
-		return false
 	}
 	if s.CheckGroupAdministrator(g.target, uin) {
 		logger.WithFields(localutils.TargetFields(g.target)).

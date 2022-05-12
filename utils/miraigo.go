@@ -38,7 +38,7 @@ func UploadGroupImage(groupCode int64, img []byte, isNorm bool) (image *message.
 	return bot.Instance.UploadGroupImage(groupCode, bytes.NewReader(img))
 }
 
-func UploadGulidImage(gulidId uint64, channelId uint64, img []byte, isNorm bool) (image *message.GuildImageElement, err error) {
+func UploadGuildImage(guildId uint64, channelId uint64, img []byte, isNorm bool) (image *message.GuildImageElement, err error) {
 	if isNorm {
 		img, err = ImageNormSize(img)
 		if err != nil {
@@ -48,7 +48,7 @@ func UploadGulidImage(gulidId uint64, channelId uint64, img []byte, isNorm bool)
 	if !GetBot().IsOnline() {
 		return nil, errors.New("bot offline")
 	}
-	return bot.Instance.GuildService.UploadGuildImage(gulidId, channelId, bytes.NewReader(img))
+	return bot.Instance.GuildService.UploadGuildImage(guildId, channelId, bytes.NewReader(img))
 }
 
 func UploadPrivateImage(uin int64, img []byte, isNorm bool) (*message.FriendImageElement, error) {
@@ -198,4 +198,13 @@ func DeserializationElement(r string) ([]message.IMessageElement, error) {
 		}
 	}
 	return result, nil
+}
+
+func NewGuildChannelReply(e *message.GuildChannelMessage) *message.ReplyElement {
+	return &message.ReplyElement{
+		ReplySeq: int32(e.Id),
+		Sender:   int64(e.Sender.TinyId),
+		Time:     int32(e.Time),
+		Elements: e.Elements,
+	}
 }

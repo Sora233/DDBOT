@@ -27,6 +27,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
+	"github.com/tidwall/buntdb"
 	"go.uber.org/atomic"
 	"golang.org/x/sync/semaphore"
 	"os"
@@ -94,36 +95,45 @@ func (l *Lsp) Init() {
 	}
 
 	db := localdb.MustGetClient()
-
-	curVersion := version.GetCurrentVersion(LspVersionName)
-
-	if curVersion < 0 {
-		log.Errorf("警告：无法检查数据库兼容性，程序可能无法正常工作")
-	} else if curVersion > LspSupportVersion {
-		log.Fatalf("警告：检查数据库兼容性失败！最高支持版本：%v，当前版本：%v", LspSupportVersion, curVersion)
-	} else if curVersion < LspSupportVersion {
-		// 应该更新下
-		backupFileName := fmt.Sprintf("%v-%v", localdb.LSPDB, time.Now().Unix())
-		log.Warnf(
-			`警告：数据库兼容性检查完毕，当前需要从<%v>更新至<%v>，将备份当前数据库文件到"%v"`,
-			curVersion, LspSupportVersion, backupFileName)
-		f, err := os.Create(backupFileName)
-		if err != nil {
-			log.Fatalf(`无法创建备份文件<%v>：%v`, backupFileName, err)
-		}
-		err = db.Save(f)
-		if err != nil {
-			log.Fatalf(`无法备份数据库到<%v>：%v`, backupFileName, err)
-		}
-		log.Infof(`备份完成，已备份数据库到<%v>"`, backupFileName)
-		log.Info("五秒后将开始更新数据库，如需取消请按Ctrl+C")
-		time.Sleep(time.Second * 5)
-		err = version.DoMigration(LspVersionName, lspMigrationMap)
-		if err != nil {
-			log.Fatalf("更新数据库失败：%v", err)
-		}
+	var count int
+	err = db.View(func(tx *buntdb.Tx) error {
+		return tx.Ascend("", func(key, value string) bool {
+			count++
+			return true
+		})
+	})
+	if err == nil && count == 0 {
+		version.SetVersion(LspVersionName, LspSupportVersion)
 	} else {
-		log.Debugf("数据库兼容性检查完毕，当前已为最新模式：%v", curVersion)
+		curVersion := version.GetCurrentVersion(LspVersionName)
+		if curVersion < 0 {
+			log.Errorf("警告：无法检查数据库兼容性，程序可能无法正常工作")
+		} else if curVersion > LspSupportVersion {
+			log.Fatalf("警告：检查数据库兼容性失败！最高支持版本：%v，当前版本：%v", LspSupportVersion, curVersion)
+		} else if curVersion < LspSupportVersion {
+			// 应该更新下
+			backupFileName := fmt.Sprintf("%v-%v", localdb.LSPDB, time.Now().Unix())
+			log.Warnf(
+				`警告：数据库兼容性检查完毕，当前需要从<%v>更新至<%v>，将备份当前数据库文件到"%v"`,
+				curVersion, LspSupportVersion, backupFileName)
+			f, err := os.Create(backupFileName)
+			if err != nil {
+				log.Fatalf(`无法创建备份文件<%v>：%v`, backupFileName, err)
+			}
+			err = db.Save(f)
+			if err != nil {
+				log.Fatalf(`无法备份数据库到<%v>：%v`, backupFileName, err)
+			}
+			log.Infof(`备份完成，已备份数据库到<%v>"`, backupFileName)
+			log.Info("五秒后将开始更新数据库，如需取消请按Ctrl+C")
+			time.Sleep(time.Second * 5)
+			err = version.DoMigration(LspVersionName, lspMigrationMap)
+			if err != nil {
+				log.Fatalf("更新数据库失败：%v", err)
+			}
+		} else {
+			log.Debugf("数据库兼容性检查完毕，当前已为最新模式：%v", curVersion)
+		}
 	}
 
 	imagePoolType := config.GlobalConfig.GetString("imagePool.type")
@@ -464,7 +474,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if !l.started.Load() {
 			return
 		}
-		cmd := NewLspGulidChannelCommand(l, msg)
+		cmd := NewLspGuildChannelCommand(l, msg)
 		go cmd.Execute()
 	})
 
@@ -633,9 +643,9 @@ func (l *Lsp) send(msg *message.SendingMessage, target mt.Target) interface{} {
 		return l.sendGroupMessage(target.(*mt.GroupTarget).TargetCode(), msg)
 	case mt.TargetPrivate:
 		return l.sendPrivateMessage(target.(*mt.PrivateTarget).TargetCode(), msg)
-	case mt.TargetGulid:
-		gulidTarget := target.(*mt.GulidTarget)
-		return l.sendGulidMessage(gulidTarget.GulidId, gulidTarget.ChannelId, msg)
+	case mt.TargetGuild:
+		guildTarget := target.(*mt.GuildTarget)
+		return l.sendGuildMessage(guildTarget.GuildId, guildTarget.ChannelId, msg)
 	}
 	panic("unknown target type")
 }
@@ -649,7 +659,7 @@ func (l *Lsp) SendMsg(m *mmsg.MSG, target mt.Target) (res []interface{}) {
 			res = append(res, &message.PrivateMessage{Id: -1})
 		case mt.TargetGroup:
 			res = append(res, &message.GroupMessage{Id: -1})
-		case mt.TargetGulid:
+		case mt.TargetGuild:
 			res = append(res, &message.GuildChannelMessage{Id: 0})
 		}
 		return
@@ -658,7 +668,7 @@ func (l *Lsp) SendMsg(m *mmsg.MSG, target mt.Target) (res []interface{}) {
 		r := l.send(msg, target)
 		res = append(res, r)
 		var v int64
-		if target.GetTargetType() == mt.TargetGulid {
+		if target.GetTargetType() == mt.TargetGuild {
 			v = int64(reflect.ValueOf(r).Elem().FieldByName("Id").Uint())
 		} else {
 			v = reflect.ValueOf(r).Elem().FieldByName("Id").Int()
@@ -697,25 +707,25 @@ func (l *Lsp) GCM(res []interface{}) []*message.GuildChannelMessage {
 	return result
 }
 
-func (l *Lsp) sendGulidMessage(gulidId uint64, channelId uint64, msg *message.SendingMessage) (res *message.GuildChannelMessage) {
+func (l *Lsp) sendGuildMessage(guildId uint64, channelId uint64, msg *message.SendingMessage) (res *message.GuildChannelMessage) {
 	if bot.Instance == nil || !bot.Instance.Online.Load() {
 		return &message.GuildChannelMessage{Id: 0, Elements: msg.Elements}
 	}
 	if msg == nil {
-		logger.WithFields(localutils.GulidChannelLogFields(gulidId, channelId)).Debug("send with nil message")
+		logger.WithFields(localutils.GuildChannelLogFields(guildId, channelId)).Debug("send with nil message")
 		return &message.GuildChannelMessage{Id: 0}
 	}
 	msg.Elements = localutils.MessageFilter(msg.Elements, func(element message.IMessageElement) bool {
 		return element != nil
 	})
 	if len(msg.Elements) == 0 {
-		logger.WithFields(localutils.GulidChannelLogFields(gulidId, channelId)).Debug("send with empty message")
+		logger.WithFields(localutils.GuildChannelLogFields(guildId, channelId)).Debug("send with empty message")
 		return &message.GuildChannelMessage{Id: 0}
 	}
-	res, _ = bot.Instance.GuildService.SendGuildChannelMessage(gulidId, channelId, msg)
+	res, _ = bot.Instance.GuildService.SendGuildChannelMessage(guildId, channelId, msg)
 	if res == nil || res.Id == 0 {
 		logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
-			WithFields(localutils.GulidChannelLogFields(gulidId, channelId)).
+			WithFields(localutils.GuildChannelLogFields(guildId, channelId)).
 			Errorf("发送消息失败")
 	}
 	if res == nil {
@@ -726,11 +736,11 @@ func (l *Lsp) sendGulidMessage(gulidId uint64, channelId uint64, msg *message.Se
 			return e.Type() == message.At && e.(*message.AtElement).Target == 0
 		}) > 0 {
 			logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
-				WithFields(localutils.GulidChannelLogFields(gulidId, channelId)).
+				WithFields(localutils.GuildChannelLogFields(guildId, channelId)).
 				Errorf("发送群消息失败，可能是@全员次数用尽")
 		} else {
 			logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
-				WithFields(localutils.GulidChannelLogFields(gulidId, channelId)).
+				WithFields(localutils.GuildChannelLogFields(guildId, channelId)).
 				Errorf("发送群消息失败，可能是被禁言或者账号被风控")
 		}
 	}
