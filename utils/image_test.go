@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-var imageUrl = test.FakeImage(1500)
+var imageUrl = "https://user-images.githubusercontent.com/11474360/111737379-78fbe200-88ba-11eb-9e7e-ecc9f2440dd8.jpg"
 
 func TestImageNormSize(t *testing.T) {
 	test.FakeImage(0)
@@ -21,14 +21,14 @@ func TestImageNormSize(t *testing.T) {
 	assert.NotEmpty(t, b)
 	cfg, _, err := image.DecodeConfig(bytes.NewReader(b))
 	assert.Nil(t, err)
-	assert.EqualValues(t, 1500, cfg.Width)
-	assert.EqualValues(t, 1500, cfg.Height)
+	assert.EqualValues(t, 1080, cfg.Width)
+	assert.EqualValues(t, 2340, cfg.Height)
 
 	b, err = ImageNormSize(b)
 	assert.Nil(t, err)
 	cfg, _, err = image.DecodeConfig(bytes.NewReader(b))
 	assert.Nil(t, err)
-	assert.EqualValues(t, 1200, cfg.Width)
+	assert.EqualValues(t, 553, cfg.Width)
 	assert.EqualValues(t, 1200, cfg.Height)
 }
 
@@ -41,7 +41,7 @@ func TestImageGet(t *testing.T) {
 	assert.NotEmpty(t, b)
 	cfg, _, err := image.DecodeConfig(bytes.NewReader(b))
 	assert.Nil(t, err)
-	assert.EqualValues(t, 1200, cfg.Width)
+	assert.EqualValues(t, 553, cfg.Width)
 	assert.EqualValues(t, 1200, cfg.Height)
 
 	b, err = ImageResize(b, 500, 500)
@@ -53,7 +53,7 @@ func TestImageGet(t *testing.T) {
 
 	format, err := ImageFormat(b)
 	assert.Nil(t, err)
-	assert.EqualValues(t, "png", format)
+	assert.EqualValues(t, "jpeg", format)
 
 	_, err = ImageReserve(b)
 	assert.NotNil(t, err)

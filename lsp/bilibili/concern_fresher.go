@@ -167,7 +167,7 @@ func (c *Concern) fresh() concern.FreshFunc {
 									Debug("XSpaceAccInfo notlive confirmed")
 							}
 							newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle,
-								oldInfo.Cover, LiveStatus_NoLiving)
+								resp.GetData().GetLiveRoom().GetCover(), LiveStatus_NoLiving)
 							newInfo.liveStatusChanged = true
 							sendLiveInfo(newInfo)
 						} else {
