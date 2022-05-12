@@ -1,19 +1,23 @@
 package bilibili
 
-import "github.com/Sora233/DDBOT/lsp/buntdb"
+import (
+	"github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
+)
 
 type keySet struct {
 }
 
-func (k *keySet) GroupAtAllMarkKey(keys ...interface{}) string {
+func (k *keySet) AtAllMarkKey(keys ...interface{}) string {
 	return buntdb.BilibiliGroupAtAllMarkKey(keys...)
 }
 
-func (k *keySet) GroupConcernConfigKey(keys ...interface{}) string {
+func (k *keySet) ConcernConfigKey(keys ...interface{}) string {
 	return buntdb.BilibiliGroupConcernConfigKey(keys...)
 }
 
-func (k *keySet) GroupConcernStateKey(keys ...interface{}) string {
+func (k *keySet) ConcernStateKey(keys ...interface{}) string {
 	return buntdb.BilibiliGroupConcernStateKey(keys...)
 }
 
@@ -21,8 +25,8 @@ func (k *keySet) FreshKey(keys ...interface{}) string {
 	return buntdb.BilibliFreshKey(keys...)
 }
 
-func (k *keySet) ParseGroupConcernStateKey(key string) (int64, interface{}, error) {
-	return buntdb.ParseConcernStateKeyWithInt64(key)
+func (k *keySet) ParseConcernStateKey(key string) (mt.Target, interface{}, error) {
+	return concern.ParseConcernStateKeyWithInt64(key)
 }
 
 type extraKey struct {

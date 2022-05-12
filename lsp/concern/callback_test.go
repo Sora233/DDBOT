@@ -4,6 +4,7 @@ import (
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/sirupsen/logrus"
 	"testing"
 )
@@ -27,8 +28,8 @@ func (t *testNotify) Logger() *logrus.Entry {
 	return logrus.WithField("Site", t.Site())
 }
 
-func (t *testNotify) GetGroupCode() int64 {
-	return test.G1
+func (t *testNotify) GetTarget() mt.Target {
+	return mt.NewGroupTarget(test.G1)
 }
 
 func (t *testNotify) ToMessage() *mmsg.MSG {

@@ -1,6 +1,7 @@
 package concern
 
 import (
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"strings"
 )
@@ -9,44 +10,47 @@ import (
 // TODO 需要一种支持自定义配置的方法，要怎么样做呢
 type IConfig interface {
 	Validate() error
-	GetGroupConcernAt() *GroupConcernAtConfig
-	GetGroupConcernNotify() *GroupConcernNotifyConfig
-	GetGroupConcernFilter() *GroupConcernFilterConfig
+	GetConcernAt(targetType mt.TargetType) *ConcernAtConfig
+	GetConcernNotify(targetType mt.TargetType) *ConcernNotifyConfig
+	GetConcernFilter(targetType mt.TargetType) *ConcernFilterConfig
 	ICallback
 	Hook
 }
 
-// GroupConcernConfig 实现了 IConfig，并附带一些默认逻辑
+// ConcernConfig 实现了 IConfig，并附带一些默认逻辑
 // 如果 Notify 有实现 NotifyLiveExt，则会使用默认逻辑
-type GroupConcernConfig struct {
+type ConcernConfig struct {
 	DefaultCallback
-	GroupConcernAt     GroupConcernAtConfig     `json:"group_concern_at"`
-	GroupConcernNotify GroupConcernNotifyConfig `json:"group_concern_notify"`
-	GroupConcernFilter GroupConcernFilterConfig `json:"group_concern_filter"`
+	ConcernAtMap     map[mt.TargetType]*ConcernAtConfig     `json:"concern_at_map"`
+	ConcernNotifyMap map[mt.TargetType]*ConcernNotifyConfig `json:"concern_notify_map"`
+	ConcernFilterMap map[mt.TargetType]*ConcernFilterConfig `json:"concern_filter_map"`
 }
 
 // Validate 可以在此自定义config校验，每次对config修改后会在同一个事务中调用，如果返回non-nil，则改动会回滚，此次操作失败
-// 默认支持 GroupConcernNotifyConfig GroupConcernAtConfig
-// GroupConcernFilterConfig 默认只支持 text
-func (g *GroupConcernConfig) Validate() error {
-	if !g.GetGroupConcernFilter().Empty() && g.GetGroupConcernFilter().Type != FilterTypeText {
-		return ErrConfigNotSupported
+// 默认支持 ConcernNotifyConfig ConcernAtConfig
+// ConcernFilterConfig 默认只支持 text
+func (g *ConcernConfig) Validate() error {
+	for _, tp := range []mt.TargetType{mt.TargetGroup, mt.TargetGulid, mt.TargetPrivate} {
+		if !g.GetConcernFilter(tp).Empty() && g.GetConcernFilter(tp).Type != FilterTypeText {
+			return ErrConfigNotSupported
+		}
 	}
 	return nil
 }
 
 // FilterHook 默认支持filter text配置，其他为Pass，可以重写这个函数实现自定义的过滤
 // b站推送使用这个Hook来支持配置动态类型的过滤（过滤转发动态等）
-func (g *GroupConcernConfig) FilterHook(notify Notify) *HookResult {
-	if g.GetGroupConcernFilter().Empty() {
+func (g *ConcernConfig) FilterHook(notify Notify) *HookResult {
+	target := notify.GetTarget()
+	if g.GetConcernFilter(target.GetTargetType()).Empty() {
 		return HookResultPass
 	}
-	logger := notify.Logger().WithField("FilterType", g.GetGroupConcernFilter().Type)
-	switch g.GetGroupConcernFilter().Type {
+	logger := notify.Logger().WithField("FilterType", g.GetConcernFilter(target.GetTargetType()).Type)
+	switch g.GetConcernFilter(target.GetTargetType()).Type {
 	case FilterTypeText:
-		textFilter, err := g.GetGroupConcernFilter().GetFilterByText()
+		textFilter, err := g.GetConcernFilter(target.GetTargetType()).GetFilterByText()
 		if err != nil {
-			logger.WithField("Content", g.GetGroupConcernFilter().Config).
+			logger.WithField("Content", g.GetConcernFilter(target.GetTargetType()).Config).
 				Errorf("GetFilterByText() error %v", err)
 		} else {
 			var hook = new(HookResult)
@@ -72,7 +76,7 @@ func (g *GroupConcernConfig) FilterHook(notify Notify) *HookResult {
 
 // AtBeforeHook 默认为Pass
 // 当 Notify 实现了 NotifyLiveExt，则仅有上播(Living && LiveStatusChanged 均为true)的时候会Pass
-func (g *GroupConcernConfig) AtBeforeHook(notify Notify) *HookResult {
+func (g *ConcernConfig) AtBeforeHook(notify Notify) *HookResult {
 	var result = new(HookResult)
 	if liveExe, ok := notify.(NotifyLiveExt); ok && liveExe.IsLive() {
 		if !liveExe.Living() {
@@ -88,7 +92,8 @@ func (g *GroupConcernConfig) AtBeforeHook(notify Notify) *HookResult {
 }
 
 // ShouldSendHook 默认为Pass
-func (g *GroupConcernConfig) ShouldSendHook(notify Notify) *HookResult {
+func (g *ConcernConfig) ShouldSendHook(notify Notify) *HookResult {
+	target := notify.GetTarget()
 	var result = new(HookResult)
 	if liveExt, ok := notify.(NotifyLiveExt); ok && liveExt.IsLive() {
 		if liveExt.Living() {
@@ -99,7 +104,7 @@ func (g *GroupConcernConfig) ShouldSendHook(notify Notify) *HookResult {
 			if liveExt.TitleChanged() {
 				// 直播间标题改了，检查改标题推送配置
 				result.PassOrReason(
-					g.GetGroupConcernNotify().CheckTitleChangeNotify(notify.Type()),
+					g.GetConcernNotify(target.GetTargetType()).CheckTitleChangeNotify(notify.Type()),
 					"CheckTitleChangeNotify is false",
 				)
 				return result
@@ -107,7 +112,7 @@ func (g *GroupConcernConfig) ShouldSendHook(notify Notify) *HookResult {
 		} else if liveExt.LiveStatusChanged() {
 			// 下播了，检查下播推送配置
 			result.PassOrReason(
-				g.GetGroupConcernNotify().CheckOfflineNotify(notify.Type()),
+				g.GetConcernNotify(target.GetTargetType()).CheckOfflineNotify(notify.Type()),
 				"CheckOfflineNotify is false",
 			)
 			return result
@@ -117,23 +122,50 @@ func (g *GroupConcernConfig) ShouldSendHook(notify Notify) *HookResult {
 	return HookResultPass
 }
 
-// GetGroupConcernAt 返回 GroupConcernAtConfig，总是返回 non-nil
-func (g *GroupConcernConfig) GetGroupConcernAt() *GroupConcernAtConfig {
-	return &g.GroupConcernAt
+// GetConcernAt 返回 ConcernAtConfig，总是返回 non-nil
+func (g *ConcernConfig) GetConcernAt(targetType mt.TargetType) *ConcernAtConfig {
+	if g.ConcernAtMap == nil {
+		g.ConcernAtMap = make(map[mt.TargetType]*ConcernAtConfig)
+	}
+	var v *ConcernAtConfig
+	v = g.ConcernAtMap[targetType]
+	if v == nil {
+		v = new(ConcernAtConfig)
+		g.ConcernAtMap[targetType] = v
+	}
+	return v
 }
 
-// GetGroupConcernNotify 返回 GroupConcernNotifyConfig，总是返回 non-nil
-func (g *GroupConcernConfig) GetGroupConcernNotify() *GroupConcernNotifyConfig {
-	return &g.GroupConcernNotify
+// GetConcernNotify 返回 ConcernNotifyConfig，总是返回 non-nil
+func (g *ConcernConfig) GetConcernNotify(targetType mt.TargetType) *ConcernNotifyConfig {
+	if g.ConcernNotifyMap == nil {
+		g.ConcernNotifyMap = make(map[mt.TargetType]*ConcernNotifyConfig)
+	}
+	var v *ConcernNotifyConfig
+	v = g.ConcernNotifyMap[targetType]
+	if v == nil {
+		v = new(ConcernNotifyConfig)
+		g.ConcernNotifyMap[targetType] = v
+	}
+	return v
 }
 
-// GetGroupConcernFilter 返回 GroupConcernFilterConfig，总是返回 non-nil
-func (g *GroupConcernConfig) GetGroupConcernFilter() *GroupConcernFilterConfig {
-	return &g.GroupConcernFilter
+// GetConcernFilter 返回 ConcernFilterConfig，总是返回 non-nil
+func (g *ConcernConfig) GetConcernFilter(targetType mt.TargetType) *ConcernFilterConfig {
+	if g.ConcernFilterMap == nil {
+		g.ConcernFilterMap = make(map[mt.TargetType]*ConcernFilterConfig)
+	}
+	var v *ConcernFilterConfig
+	v = g.ConcernFilterMap[targetType]
+	if v == nil {
+		v = new(ConcernFilterConfig)
+		g.ConcernFilterMap[targetType] = v
+	}
+	return v
 }
 
-// ToString 将 GroupConcernConfig 通过json序列化成string
-func (g *GroupConcernConfig) ToString() string {
+// ToString 将 ConcernConfig 通过json序列化成string
+func (g *ConcernConfig) ToString() string {
 	b, e := json.Marshal(g)
 	if e != nil {
 		panic(e)
@@ -141,9 +173,9 @@ func (g *GroupConcernConfig) ToString() string {
 	return string(b)
 }
 
-// NewGroupConcernConfigFromString 从json格式反序列化 GroupConcernConfig
-func NewGroupConcernConfigFromString(s string) (*GroupConcernConfig, error) {
-	var concernConfig *GroupConcernConfig
+// NewConcernConfigFromString 从json格式反序列化 ConcernConfig
+func NewConcernConfigFromString(s string) (*ConcernConfig, error) {
+	var concernConfig *ConcernConfig
 	decoder := json.NewDecoder(strings.NewReader(s))
 	decoder.UseNumber()
 	err := decoder.Decode(&concernConfig)

@@ -8,11 +8,11 @@ func (k *KeySet) PermissionKey(keys ...interface{}) string {
 	return localdb.PermissionKey(keys...)
 }
 
-func (k *KeySet) GroupPermissionKey(keys ...interface{}) string {
+func (k *KeySet) TargetPermissionKey(keys ...interface{}) string {
 	return localdb.GroupPermissionKey(keys...)
 }
 
-func (k *KeySet) GroupEnabledKey(keys ...interface{}) string {
+func (k *KeySet) TargetEnabledKey(keys ...interface{}) string {
 	return localdb.GroupEnabledKey(keys...)
 }
 
@@ -20,7 +20,7 @@ func (k *KeySet) GlobalEnabledKey(keys ...interface{}) string {
 	return localdb.GlobalEnabledKey(keys...)
 }
 
-func (k *KeySet) GroupSilenceKey(keys ...interface{}) string {
+func (k *KeySet) TargetSilenceKey(keys ...interface{}) string {
 	return localdb.GroupSilenceKey(keys...)
 }
 

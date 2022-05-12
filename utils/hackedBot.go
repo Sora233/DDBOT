@@ -2,7 +2,9 @@ package utils
 
 import (
 	"github.com/Mrs4s/MiraiGo/client"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	miraiBot "github.com/Sora233/MiraiGo-Template/bot"
+	"strconv"
 )
 
 // HackedBot 拦截一些方法方便测试
@@ -10,6 +12,7 @@ type HackedBot struct {
 	Bot        **miraiBot.Bot
 	testGroups []*client.GroupInfo
 	testUin    int64
+	testGulids []*client.GuildInfo
 }
 
 func (h *HackedBot) valid() bool {
@@ -36,6 +39,55 @@ func (h *HackedBot) FindGroup(code int64) *client.GroupInfo {
 		return nil
 	}
 	return (*h.Bot).FindGroup(code)
+}
+
+func (h *HackedBot) FindGulid(gulidId uint64) *client.GuildInfo {
+	if !h.valid() {
+		for _, gi := range h.testGulids {
+			if gi.GuildId == gulidId {
+				return gi
+			}
+		}
+		return nil
+	}
+	return (*h.Bot).GuildService.FindGuild(gulidId)
+}
+
+func (h *HackedBot) FindGulidChannel(gulidId, channelId uint64) (*client.GuildInfo, *client.ChannelInfo) {
+	gulid := h.FindGulid(gulidId)
+	if gulid == nil {
+		return nil, nil
+	}
+	return gulid, gulid.FindChannel(channelId)
+}
+
+func (h *HackedBot) FindGulidName(gulidId uint64) string {
+	gulid := h.FindGulid(gulidId)
+	if gulid == nil {
+		return strconv.FormatUint(gulidId, 10)
+	}
+	return gulid.GuildName
+}
+
+func (h *HackedBot) FindChannelName(gulidId, channelId uint64) string {
+	_, channel := h.FindGulidChannel(gulidId, channelId)
+	if channel == nil {
+		return strconv.FormatUint(channelId, 10)
+	}
+	return channel.ChannelName
+}
+
+func (h *HackedBot) CheckTarget(target mt.Target) bool {
+	switch t := target.(type) {
+	case *mt.GroupTarget:
+		return h.FindGroup(t.GroupCode) != nil
+	case *mt.PrivateTarget:
+		return h.FindFriend(t.Uin) != nil
+	case *mt.GulidTarget:
+		_, c := h.FindGulidChannel(t.GulidId, t.ChannelId)
+		return c != nil
+	}
+	return false
 }
 
 func (h *HackedBot) SolveFriendRequest(req *client.NewFriendRequest, accept bool) {
@@ -81,6 +133,31 @@ var hackedBot = &HackedBot{Bot: &miraiBot.Instance}
 
 func GetBot() *HackedBot {
 	return hackedBot
+}
+
+func (h *HackedBot) CheckMember(target mt.Target, id int64) bool {
+	var pass bool
+	switch t := target.(type) {
+	case *mt.GroupTarget:
+		if gi := h.FindGroup(t.GroupCode); gi != nil && gi.FindMember(id) != nil {
+			pass = true
+		}
+	case *mt.GulidTarget:
+		if _, ci := h.FindGulidChannel(t.GulidId, t.ChannelId); ci != nil {
+			if pi, _ := h.GetGuildService().FetchGuildMemberProfileInfo(t.GulidId, uint64(id)); pi != nil {
+				pass = true
+			}
+		}
+	case *mt.PrivateTarget:
+		if h.FindFriend(id) != nil {
+			pass = true
+		}
+	}
+	return pass
+}
+
+func (h *HackedBot) GetGuildService() *client.GuildService {
+	return (*h.Bot).GuildService
 }
 
 // TESTSetUin 仅可用于测试

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -12,6 +13,14 @@ type testConcern struct {
 	site     string
 	types    []concern_type.Type
 	startErr error
+}
+
+func (t *testConcern) Site() string {
+	return t.site
+}
+
+func (t *testConcern) Types() []concern_type.Type {
+	return t.types
 }
 
 func (t *testConcern) Start() error {
@@ -25,11 +34,11 @@ func (t *testConcern) ParseId(s string) (interface{}, error) {
 	return s, nil
 }
 
-func (t *testConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error) {
+func (t *testConcern) Add(ctx mmsg.IMsgCtx, target mt.Target, id interface{}, ctype concern_type.Type) (IdentityInfo, error) {
 	return nil, nil
 }
 
-func (t *testConcern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error) {
+func (t *testConcern) Remove(ctx mmsg.IMsgCtx, target mt.Target, id interface{}, ctype concern_type.Type) (IdentityInfo, error) {
 	return nil, nil
 }
 
@@ -41,14 +50,7 @@ func (t *testConcern) GetStateManager() IStateManager {
 	return nil
 }
 
-func (t *testConcern) FreshIndex(groupCode ...int64) {
-}
-
-func (t *testConcern) Site() string {
-	return t.site
-}
-func (t *testConcern) Types() []concern_type.Type {
-	return t.types
+func (t *testConcern) FreshIndex(targets ...mt.Target) {
 }
 
 func TestGetNotifyChan(t *testing.T) {

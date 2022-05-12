@@ -6,6 +6,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/MiraiGo-Template/utils"
 )
@@ -32,11 +33,11 @@ func (c *Concern) GetStateManager() concern.IStateManager {
 	return c.StateManager
 }
 
-func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Add(ctx mmsg.IMsgCtx, target mt.Target, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	id := _id.(string)
-	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
+	log := logger.WithFields(localutils.TargetFields(target)).WithField("id", id)
 
-	err := c.StateManager.CheckGroupConcern(groupCode, id, ctype)
+	err := c.StateManager.CheckTargetConcern(target, id, ctype)
 	if err != nil {
 		return nil, err
 	}
@@ -48,17 +49,17 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype 
 	for _, v := range info.VideoInfo {
 		c.StateManager.AddVideo(v)
 	}
-	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
+	_, err = c.StateManager.AddTargetConcern(target, id, ctype)
 	if err != nil {
 		return nil, err
 	}
 	return concern.NewIdentity(info.ChannelId, info.ChannelName), nil
 }
 
-func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Remove(ctx mmsg.IMsgCtx, target mt.Target, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	id := _id.(string)
 	identity, _ := c.Get(id)
-	_, err := c.StateManager.RemoveGroupConcern(groupCode, id, ctype)
+	_, err := c.StateManager.RemoveTargetConcern(target, id, ctype)
 	if identity == nil {
 		identity = concern.NewIdentity(_id, "unknown")
 	}
@@ -120,20 +121,20 @@ func (c *Concern) fresh() concern.FreshFunc {
 }
 
 func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
-	return func(groupCode int64, ievent concern.Event) []concern.Notify {
+	return func(target mt.Target, ievent concern.Event) []concern.Notify {
 		switch event := ievent.(type) {
 		case *VideoInfo:
 			log := event.Logger()
 			if event.IsVideo() {
-				log.WithFields(localutils.GroupLogFields(groupCode)).Debugf("video notify")
+				log.WithFields(localutils.TargetFields(target)).Debugf("video notify")
 			} else if event.IsLive() {
 				if event.IsWaiting() {
-					log.WithFields(localutils.GroupLogFields(groupCode)).Debugf("live waiting notify")
+					log.WithFields(localutils.TargetFields(target)).Debugf("live waiting notify")
 				} else if event.IsLiving() {
-					log.WithFields(localutils.GroupLogFields(groupCode)).Debugf("living notify")
+					log.WithFields(localutils.TargetFields(target)).Debugf("living notify")
 				}
 			}
-			return []concern.Notify{NewConcernNotify(groupCode, event)}
+			return []concern.Notify{NewConcernNotify(target, event)}
 		default:
 			logger.Errorf("unknown EventType %+v", event)
 			return nil

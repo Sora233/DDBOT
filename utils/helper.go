@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/guonaihong/gout"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
@@ -200,11 +201,38 @@ func ArgSplit(str string) (result []string) {
 	return
 }
 
+func TargetFields(target mt.Target) logrus.Fields {
+	switch t := target.(type) {
+	case *mt.GroupTarget:
+		return GroupLogFields(t.GroupCode)
+	case *mt.GulidTarget:
+		return GulidChannelLogFields(t.GulidId, t.ChannelId)
+	case *mt.PrivateTarget:
+		return FriendLogFields(t.Uin)
+	default:
+		return nil
+	}
+}
+
 func GroupLogFields(groupCode int64) logrus.Fields {
 	var fields = make(logrus.Fields)
 	fields["GroupCode"] = groupCode
 	if groupInfo := GetBot().FindGroup(groupCode); groupInfo != nil {
 		fields["GroupName"] = groupInfo.Name
+	}
+	return fields
+}
+
+func GulidChannelLogFields(gulidId, channelId uint64) logrus.Fields {
+	var fields = make(logrus.Fields)
+	fields["GulidID"] = gulidId
+	fields["ChannelID"] = channelId
+	gulid, channel := GetBot().FindGulidChannel(gulidId, channelId)
+	if gulid != nil {
+		fields["GulidName"] = gulid.GuildName
+	}
+	if channel != nil {
+		fields["ChannelName"] = channel.ChannelName
 	}
 	return fields
 }

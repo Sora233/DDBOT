@@ -5,35 +5,42 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"strconv"
 	"strings"
 )
 
-type GroupConcernConfig struct {
+type ConcernConfig struct {
 	concern.IConfig
 	concern *Concern
 }
 
-func (g *GroupConcernConfig) Validate() error {
-	if !g.GetGroupConcernFilter().Empty() {
-		switch g.GetGroupConcernFilter().Type {
-		case concern.FilterTypeNotType, concern.FilterTypeType:
-			filterByType, err := g.GetGroupConcernFilter().GetFilterByType()
-			if err != nil {
-				return err
+func (g *ConcernConfig) Validate() error {
+	for _, tp := range mt.AllTargetType() {
+		if !g.GetConcernFilter(tp).Empty() {
+			switch g.GetConcernFilter(tp).Type {
+			case concern.FilterTypeNotType, concern.FilterTypeType:
+				filterByType, err := g.GetConcernFilter(tp).GetFilterByType()
+				if err != nil {
+					return err
+				}
+				var invalid = CheckTypeDefine(filterByType.Type)
+				if len(invalid) != 0 {
+					return fmt.Errorf("未定义的类型：\n%v", strings.Join(invalid, " "))
+				}
+				return nil
 			}
-			var invalid = CheckTypeDefine(filterByType.Type)
-			if len(invalid) != 0 {
-				return fmt.Errorf("未定义的类型：\n%v", strings.Join(invalid, " "))
-			}
-			return nil
 		}
 	}
+
 	return g.IConfig.Validate()
 }
 
-func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
+func (g *ConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 	if inotify.Type() != News {
+		return
+	}
+	if inotify.GetTarget().GetTargetType() != mt.TargetGroup {
 		return
 	}
 	notify := inotify.(*ConcernNewsNotify)
@@ -41,29 +48,36 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 	case DynamicDescType_WithVideo:
 		// 解决联合投稿的时候刷屏
 		notify.compactKey = notify.Card.GetDesc().GetBvid()
-		err := g.concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
+		err := g.concern.SetTargetCompactMarkIfNotExist(notify.GetTarget(), notify.compactKey)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	case DynamicDescType_WithOrigin:
 		// 解决一起转发的时候刷屏
 		notify.compactKey = notify.Card.GetDesc().GetOrigDyIdStr()
-		err := g.concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
+		err := g.concern.SetTargetCompactMarkIfNotExist(notify.GetTarget(), notify.compactKey)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	default:
 		// 其他动态也设置一下
 		notify.compactKey = notify.Card.GetDesc().GetDynamicIdStr()
-		err := g.concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
+		err := g.concern.SetTargetCompactMarkIfNotExist(notify.GetTarget(), notify.Card.GetDesc().GetDynamicIdStr())
 		if err != nil && !localdb.IsRollback(err) {
 			logger.Errorf("SetGroupOriginMarkIfNotExist error %v", err)
 		}
 	}
 }
 
-func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, msg *message.GroupMessage) {
-	if inotify.Type() != News || msg == nil || msg.Id == -1 {
+func (g *ConcernConfig) NotifyAfterCallback(inotify concern.Notify, _msg interface{}) {
+	if inotify.Type() != News {
+		return
+	}
+	if inotify.GetTarget().GetTargetType() != mt.TargetGroup {
+		return
+	}
+	msg := _msg.(*message.GroupMessage)
+	if msg == nil || msg.Id == -1 {
 		return
 	}
 	notify := inotify.(*ConcernNewsNotify)
@@ -76,7 +90,7 @@ func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, msg *me
 	}
 }
 
-func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.HookResult) {
+func (g *ConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.HookResult) {
 	hook = new(concern.HookResult)
 	if g.concern != nil && g.concern.unsafeStart.Load() {
 		hook.Reason = "bilibili unsafe start status"
@@ -85,7 +99,8 @@ func (g *GroupConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.
 	return g.IConfig.AtBeforeHook(notify)
 }
 
-func (g *GroupConcernConfig) FilterHook(notify concern.Notify) (hook *concern.HookResult) {
+func (g *ConcernConfig) FilterHook(notify concern.Notify) (hook *concern.HookResult) {
+	targetType := notify.GetTarget().GetTargetType()
 	hook = new(concern.HookResult)
 	switch n := notify.(type) {
 	case *ConcernLiveNotify:
@@ -93,17 +108,17 @@ func (g *GroupConcernConfig) FilterHook(notify concern.Notify) (hook *concern.Ho
 		return
 	case *ConcernNewsNotify:
 		// 没设置过滤，pass
-		if g.GetGroupConcernFilter().Empty() {
+		if g.GetConcernFilter(targetType).Empty() {
 			hook.Pass = true
 			return
 		}
 
-		logger := notify.Logger().WithField("FilterType", g.GetGroupConcernFilter().Type)
-		switch g.GetGroupConcernFilter().Type {
+		logger := notify.Logger().WithField("FilterType", g.GetConcernFilter(targetType).Type)
+		switch g.GetConcernFilter(targetType).Type {
 		case concern.FilterTypeType, concern.FilterTypeNotType:
-			typeFilter, err := g.GetGroupConcernFilter().GetFilterByType()
+			typeFilter, err := g.GetConcernFilter(targetType).GetFilterByType()
 			if err != nil {
-				logger.WithField("GroupConcernFilterConfig", g.GetGroupConcernFilter().Config).
+				logger.WithField("ConcernFilterConfig", g.GetConcernFilter(targetType).Config).
 					Errorf("get type filter error %v", err)
 				hook.Pass = true
 			} else {
@@ -119,7 +134,7 @@ func (g *GroupConcernConfig) FilterHook(notify concern.Notify) (hook *concern.Ho
 				}
 
 				var ok bool
-				switch g.GetGroupConcernFilter().Type {
+				switch g.GetConcernFilter(targetType).Type {
 				case concern.FilterTypeType:
 					ok = false
 					for _, tp := range convTypes {
@@ -156,8 +171,8 @@ func (g *GroupConcernConfig) FilterHook(notify concern.Notify) (hook *concern.Ho
 	}
 }
 
-func NewGroupConcernConfig(g concern.IConfig, c *Concern) *GroupConcernConfig {
-	return &GroupConcernConfig{g, c}
+func NewConcernConfig(g concern.IConfig, c *Concern) *ConcernConfig {
+	return &ConcernConfig{g, c}
 }
 
 const (

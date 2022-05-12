@@ -2,10 +2,16 @@ package permission
 
 import (
 	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+)
+
+var (
+	g1 = mt.NewGroupTarget(test.G1)
+	g2 = mt.NewGroupTarget(test.G2)
 )
 
 func initStateManager(t *testing.T) *StateManager {
@@ -39,27 +45,27 @@ func TestStateManager_CheckGroupCommandFunc(t *testing.T) {
 	defer test.CloseBuntdb(t)
 	c := initStateManager(t)
 
-	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
-	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
-	assert.Nil(t, c.EnableGroupCommand(test.G1, test.CMD1))
-	assert.NotNil(t, c.EnableGroupCommand(test.G1, test.CMD1))
+	assert.False(t, c.CheckTargetCommandEnabled(g1, test.CMD1))
+	assert.False(t, c.CheckTargetCommandDisabled(g1, test.CMD1))
+	assert.Nil(t, c.EnableTargetCommand(g1, test.CMD1))
+	assert.NotNil(t, c.EnableTargetCommand(g1, test.CMD1))
 
-	assert.True(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
-	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
+	assert.True(t, c.CheckTargetCommandEnabled(g1, test.CMD1))
+	assert.False(t, c.CheckTargetCommandDisabled(g1, test.CMD1))
 
-	assert.Nil(t, c.DisableGroupCommand(test.G1, test.CMD1))
-	assert.NotNil(t, c.DisableGroupCommand(test.G1, test.CMD1))
+	assert.Nil(t, c.DisableTargetCommand(g1, test.CMD1))
+	assert.NotNil(t, c.DisableTargetCommand(g1, test.CMD1))
 
-	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
-	assert.True(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
+	assert.False(t, c.CheckTargetCommandEnabled(g1, test.CMD1))
+	assert.True(t, c.CheckTargetCommandDisabled(g1, test.CMD1))
 
-	assert.Nil(t, c.EnableGroupCommand(test.G1, test.CMD1))
-	assert.True(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
-	assert.False(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
+	assert.Nil(t, c.EnableTargetCommand(g1, test.CMD1))
+	assert.True(t, c.CheckTargetCommandEnabled(g1, test.CMD1))
+	assert.False(t, c.CheckTargetCommandDisabled(g1, test.CMD1))
 
-	assert.Nil(t, c.DisableGroupCommand(test.G1, test.CMD1))
-	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
-	assert.True(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
+	assert.Nil(t, c.DisableTargetCommand(g1, test.CMD1))
+	assert.False(t, c.CheckTargetCommandEnabled(g1, test.CMD1))
+	assert.True(t, c.CheckTargetCommandDisabled(g1, test.CMD1))
 
 }
 
@@ -69,29 +75,29 @@ func TestStateManager_CheckGlobalCommandFunc(t *testing.T) {
 	c := initStateManager(t)
 
 	assert.False(t, c.CheckGlobalCommandDisabled(test.CMD1))
-	assert.Nil(t, c.GlobalDisableGroupCommand(test.CMD1))
+	assert.Nil(t, c.GlobalDisableCommand(test.CMD1))
 	assert.True(t, c.CheckGlobalCommandDisabled(test.CMD1))
 	assert.False(t, c.CheckGlobalCommandDisabled(test.CMD2))
 
-	assert.Nil(t, c.GlobalEnableGroupCommand(test.CMD1))
-	assert.NotNil(t, c.GlobalEnableGroupCommand(test.CMD1))
+	assert.Nil(t, c.GlobalEnableCommand(test.CMD1))
+	assert.NotNil(t, c.GlobalEnableCommand(test.CMD1))
 	assert.False(t, c.CheckGlobalCommandDisabled(test.CMD1))
-	assert.Nil(t, c.GlobalDisableGroupCommand(test.CMD1))
+	assert.Nil(t, c.GlobalDisableCommand(test.CMD1))
 
-	assert.Nil(t, c.GlobalEnableGroupCommand(test.CMD1))
+	assert.Nil(t, c.GlobalEnableCommand(test.CMD1))
 
-	assert.Nil(t, c.GlobalDisableGroupCommand(test.CMD1))
-	assert.Equal(t, ErrGlobalDisabled, c.EnableGroupCommand(test.G1, test.CMD1))
-	assert.Equal(t, ErrGlobalDisabled, c.DisableGroupCommand(test.G1, test.CMD1))
-	assert.Nil(t, c.GlobalEnableGroupCommand(test.CMD1))
-	assert.Nil(t, c.EnableGroupCommand(test.G1, test.CMD1))
-	assert.True(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
+	assert.Nil(t, c.GlobalDisableCommand(test.CMD1))
+	assert.Equal(t, ErrGlobalDisabled, c.EnableTargetCommand(g1, test.CMD1))
+	assert.Equal(t, ErrGlobalDisabled, c.DisableTargetCommand(g1, test.CMD1))
+	assert.Nil(t, c.GlobalEnableCommand(test.CMD1))
+	assert.Nil(t, c.EnableTargetCommand(g1, test.CMD1))
+	assert.True(t, c.CheckTargetCommandEnabled(g1, test.CMD1))
 
-	assert.Nil(t, c.GlobalDisableGroupCommand(test.CMD1))
-	assert.False(t, c.CheckGroupCommandEnabled(test.G1, test.CMD1))
-	assert.True(t, c.CheckGroupCommandDisabled(test.G1, test.CMD1))
-	assert.Equal(t, ErrGlobalDisabled, c.GrantPermission(test.G1, test.UID1, test.CMD1))
-	assert.Equal(t, ErrGlobalDisabled, c.UngrantPermission(test.G1, test.UID1, test.CMD1))
+	assert.Nil(t, c.GlobalDisableCommand(test.CMD1))
+	assert.False(t, c.CheckTargetCommandEnabled(g1, test.CMD1))
+	assert.True(t, c.CheckTargetCommandDisabled(g1, test.CMD1))
+	assert.Equal(t, ErrGlobalDisabled, c.TargetGrantPermission(g1, test.UID1, test.CMD1))
+	assert.Equal(t, ErrGlobalDisabled, c.UngrantPermission(g1, test.UID1, test.CMD1))
 }
 
 func TestStateManager_CheckRole(t *testing.T) {
@@ -100,7 +106,7 @@ func TestStateManager_CheckRole(t *testing.T) {
 	c := initStateManager(t)
 
 	assert.False(t, c.CheckRole(test.UID1, RoleType(-1)))
-	assert.False(t, c.CheckGroupRole(test.UID1, test.G1, RoleType(-1)))
+	assert.False(t, c.CheckTargetRole(g1, test.UID1, RoleType(-1)))
 	assert.False(t, c.CheckAdmin(test.UID1))
 
 	adminOpt1 := AdminRoleRequireOption(test.UID1)
@@ -133,43 +139,43 @@ func TestStateManager_CheckGroupRole(t *testing.T) {
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 	c := initStateManager(t)
-	localutils.GetBot().TESTAddGroup(test.G1)
-	localutils.GetBot().TESTAddGroup(test.G2)
+	localutils.GetBot().TESTAddGroup(g1.GroupCode)
+	localutils.GetBot().TESTAddGroup(g2.GroupCode)
 	c.FreshIndex()
 
-	gadminOpt1 := GroupAdminRoleRequireOption(test.G1, test.UID1)
-	gadminOpt2 := GroupAdminRoleRequireOption(test.G2, test.UID1)
+	gadminOpt1 := TargetAdminRoleRequireOption(g1, test.UID1)
+	gadminOpt2 := TargetAdminRoleRequireOption(g2, test.UID1)
 	assert.False(t, gadminOpt1.Validate(c))
 	assert.False(t, gadminOpt2.Validate(c))
 	assert.False(t, c.RequireAny(gadminOpt1, gadminOpt2))
-	assert.False(t, c.CheckGroupAdmin(test.G1, test.UID1))
+	assert.False(t, c.CheckTargetAdmin(g1, test.UID1))
 
-	assert.NotNil(t, c.GrantGroupRole(test.G2, test.UID1, RoleType(-1)))
-	assert.Nil(t, c.GrantGroupRole(test.G2, test.UID1, GroupAdmin))
+	assert.NotNil(t, c.GrantTargetRole(g2, test.UID1, RoleType(-1)))
+	assert.Nil(t, c.GrantTargetRole(g2, test.UID1, TargetAdmin))
 	assert.False(t, gadminOpt1.Validate(c))
 	assert.True(t, gadminOpt2.Validate(c))
 	assert.True(t, c.RequireAny(gadminOpt1, gadminOpt2))
-	assert.True(t, c.CheckGroupAdmin(test.G2, test.UID1))
+	assert.True(t, c.CheckTargetAdmin(g2, test.UID1))
 
-	ids := c.ListGroupAdmin(test.G1)
+	ids := c.ListTargetAdmin(g1)
 	assert.Empty(t, ids)
-	ids = c.ListGroupAdmin(test.G2)
+	ids = c.ListTargetAdmin(g2)
 	assert.Len(t, ids, 1)
 	assert.EqualValues(t, test.UID1, ids[0])
 
-	assert.NotNil(t, c.GrantGroupRole(test.G2, test.UID1, RoleType(-1)))
-	assert.NotNil(t, c.GrantGroupRole(test.G2, test.UID1, GroupAdmin))
+	assert.NotNil(t, c.GrantTargetRole(g2, test.UID1, RoleType(-1)))
+	assert.NotNil(t, c.GrantTargetRole(g2, test.UID1, TargetAdmin))
 
-	assert.Nil(t, c.UngrantGroupRole(test.G2, test.UID1, GroupAdmin))
+	assert.Nil(t, c.UngrantTargetRole(g2, test.UID1, TargetAdmin))
 	assert.False(t, gadminOpt1.Validate(c))
 	assert.False(t, gadminOpt2.Validate(c))
 	assert.False(t, c.RequireAny(gadminOpt1, gadminOpt2))
-	assert.False(t, c.CheckGroupAdmin(test.G2, test.UID1))
+	assert.False(t, c.CheckTargetAdmin(g2, test.UID1))
 
-	assert.NotNil(t, c.UngrantGroupRole(test.G2, test.UID1, RoleType(-1)))
-	assert.NotNil(t, c.UngrantGroupRole(test.G2, test.UID1, GroupAdmin))
+	assert.NotNil(t, c.UngrantTargetRole(g2, test.UID1, RoleType(-1)))
+	assert.NotNil(t, c.UngrantTargetRole(g2, test.UID1, TargetAdmin))
 
-	ids = c.ListGroupAdmin(test.G2)
+	ids = c.ListTargetAdmin(g2)
 	assert.Empty(t, ids)
 }
 
@@ -178,28 +184,28 @@ func TestStateManager_CheckGroupCommandPermission(t *testing.T) {
 	defer test.CloseBuntdb(t)
 	c := initStateManager(t)
 
-	opt := QQAdminRequireOption(test.G1, test.UID1)
+	opt := QQAdminRequireOption(g1, test.UID1)
 	assert.False(t, opt.Validate(c))
 
-	gcadminOpt1 := GroupCommandRequireOption(test.G1, test.UID1, test.CMD1)
-	gcadminOpt2 := GroupCommandRequireOption(test.G1, test.UID1, test.CMD2)
+	gcadminOpt1 := TargetCommandRequireOption(g1, test.UID1, test.CMD1)
+	gcadminOpt2 := TargetCommandRequireOption(g1, test.UID1, test.CMD2)
 	assert.False(t, gcadminOpt1.Validate(c))
 	assert.False(t, gcadminOpt2.Validate(c))
 	assert.False(t, c.RequireAny(gcadminOpt1, gcadminOpt2))
 
-	assert.Nil(t, c.GrantPermission(test.G1, test.UID1, test.CMD2))
+	assert.Nil(t, c.TargetGrantPermission(g1, test.UID1, test.CMD2))
 	assert.False(t, gcadminOpt1.Validate(c))
 	assert.True(t, gcadminOpt2.Validate(c))
 	assert.True(t, c.RequireAny(gcadminOpt1, gcadminOpt2))
 
-	assert.NotNil(t, c.GrantPermission(test.G1, test.UID1, test.CMD2))
+	assert.NotNil(t, c.TargetGrantPermission(g1, test.UID1, test.CMD2))
 
-	assert.Nil(t, c.UngrantPermission(test.G1, test.UID1, test.CMD2))
+	assert.Nil(t, c.UngrantPermission(g1, test.UID1, test.CMD2))
 	assert.False(t, gcadminOpt1.Validate(c))
 	assert.False(t, gcadminOpt2.Validate(c))
 	assert.False(t, c.RequireAny(gcadminOpt1, gcadminOpt2))
 
-	assert.NotNil(t, c.UngrantPermission(test.G1, test.UID1, test.CMD2))
+	assert.NotNil(t, c.UngrantPermission(g1, test.UID1, test.CMD2))
 }
 
 func TestStateManager_RemoveAllByGroup(t *testing.T) {
@@ -207,22 +213,22 @@ func TestStateManager_RemoveAllByGroup(t *testing.T) {
 	defer test.CloseBuntdb(t)
 	c := initStateManager(t)
 
-	assert.Nil(t, c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{test.G1}))
-	assert.Nil(t, c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{test.G2}))
+	assert.Nil(t, c.CreatePatternIndex(c.TargetPermissionKey, []interface{}{g1}))
+	assert.Nil(t, c.CreatePatternIndex(c.TargetPermissionKey, []interface{}{g2}))
 
-	assert.Nil(t, c.GrantGroupRole(test.G1, test.UID1, GroupAdmin))
-	assert.Nil(t, c.GrantGroupRole(test.G2, test.UID1, GroupAdmin))
+	assert.Nil(t, c.GrantTargetRole(g1, test.UID1, TargetAdmin))
+	assert.Nil(t, c.GrantTargetRole(g2, test.UID1, TargetAdmin))
 
-	gadminOpt1 := GroupAdminRoleRequireOption(test.G1, test.UID1)
+	gadminOpt1 := TargetAdminRoleRequireOption(g1, test.UID1)
 	// 当发现group command 应该用GroupPermissionKey的时候已经太晚了
-	//gcadminOpt1 := GroupCommandRequireOption(test.G1, test.UID1, test.CMD1)
-	gcadminOpt2 := GroupAdminRoleRequireOption(test.G2, test.UID1)
+	//gcadminOpt1 := TargetCommandRequireOption(g1, test.UID1, test.CMD1)
+	gcadminOpt2 := TargetAdminRoleRequireOption(g2, test.UID1)
 
 	assert.True(t, gadminOpt1.Validate(c))
 	//assert.True(t, gcadminOpt1.Validate(c))
 	assert.True(t, gcadminOpt2.Validate(c))
 
-	_, err := c.RemoveAllByGroupCode(test.G1)
+	_, err := c.RemoveAllByTarget(g1)
 	assert.Nil(t, err)
 
 	assert.False(t, gadminOpt1.Validate(c))
@@ -247,7 +253,7 @@ func TestStateManager_CheckNoAdmin(t *testing.T) {
 	ids = c.ListAdmin()
 	assert.Empty(t, ids)
 
-	assert.Nil(t, c.GrantGroupRole(test.G1, test.UID1, GroupAdmin))
+	assert.Nil(t, c.GrantTargetRole(g1, test.UID1, TargetAdmin))
 	assert.True(t, c.CheckNoAdmin())
 	ids = c.ListAdmin()
 	assert.Empty(t, ids)
@@ -287,23 +293,23 @@ func TestStateManager_CheckGroupSilence(t *testing.T) {
 	defer test.CloseBuntdb(t)
 	c := initStateManager(t)
 
-	assert.False(t, c.CheckGroupSilence(test.G1))
-	assert.False(t, c.CheckGroupSilence(test.G2))
+	assert.False(t, c.CheckTargetSilence(g1))
+	assert.False(t, c.CheckTargetSilence(g2))
 
-	assert.Nil(t, c.GroupSilence(test.G1))
+	assert.Nil(t, c.TargetSilence(g1))
 
-	assert.True(t, c.CheckGroupSilence(test.G1))
-	assert.False(t, c.CheckGroupSilence(test.G2))
+	assert.True(t, c.CheckTargetSilence(g1))
+	assert.False(t, c.CheckTargetSilence(g2))
 
-	assert.Nil(t, c.UndoGroupSilence(test.G1))
+	assert.Nil(t, c.UndoTargetSilence(g1))
 
-	assert.False(t, c.CheckGroupSilence(test.G1))
-	assert.False(t, c.CheckGroupSilence(test.G2))
+	assert.False(t, c.CheckTargetSilence(g1))
+	assert.False(t, c.CheckTargetSilence(g2))
 
 	assert.Nil(t, c.GlobalSilence())
-	assert.True(t, c.CheckGroupSilence(test.G1))
-	assert.True(t, c.CheckGroupSilence(test.G2))
+	assert.True(t, c.CheckTargetSilence(g1))
+	assert.True(t, c.CheckTargetSilence(g2))
 
-	assert.NotNil(t, c.GroupSilence(test.G1))
-	assert.NotNil(t, c.UndoGroupSilence(test.G1))
+	assert.NotNil(t, c.TargetSilence(g1))
+	assert.NotNil(t, c.UndoTargetSilence(g1))
 }

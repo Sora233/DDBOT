@@ -4,6 +4,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/lsp/template"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/DDBOT/utils/blockCache"
@@ -39,7 +40,7 @@ func (n *NewsInfo) Logger() *logrus.Entry {
 }
 
 type ConcernNewsNotify struct {
-	GroupCode int64 `json:"group_code"`
+	Target mt.Target `json:"-"`
 	*UserInfo
 	Card *CacheCard
 
@@ -58,7 +59,7 @@ func (notify *ConcernNewsNotify) Living() bool {
 }
 
 type ConcernLiveNotify struct {
-	GroupCode int64 `json:"group_code"`
+	Target mt.Target `json:"-"`
 	*LiveInfo
 }
 
@@ -225,29 +226,29 @@ func NewNewsInfoWithDetail(userInfo *UserInfo, cards []*Card) *NewsInfo {
 	}
 }
 
-func NewConcernNewsNotify(groupCode int64, newsInfo *NewsInfo, c *Concern) []*ConcernNewsNotify {
+func NewConcernNewsNotify(target mt.Target, newsInfo *NewsInfo, c *Concern) []*ConcernNewsNotify {
 	if newsInfo == nil {
 		return nil
 	}
 	var result []*ConcernNewsNotify
 	for _, card := range newsInfo.Cards {
 		result = append(result, &ConcernNewsNotify{
-			GroupCode: groupCode,
-			UserInfo:  &newsInfo.UserInfo,
-			Card:      NewCacheCard(card),
-			concern:   c,
+			Target:   target,
+			UserInfo: &newsInfo.UserInfo,
+			Card:     NewCacheCard(card),
+			concern:  c,
 		})
 	}
 	return result
 }
 
-func NewConcernLiveNotify(groupCode int64, liveInfo *LiveInfo) *ConcernLiveNotify {
+func NewConcernLiveNotify(target mt.Target, liveInfo *LiveInfo) *ConcernLiveNotify {
 	if liveInfo == nil {
 		return nil
 	}
 	return &ConcernLiveNotify{
-		GroupCode: groupCode,
-		LiveInfo:  liveInfo,
+		Target:   target,
+		LiveInfo: liveInfo,
 	}
 }
 
@@ -262,7 +263,7 @@ func (notify *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
 	if notify.shouldCompact {
 		// 通过回复之前消息的方式简化推送
 		m = mmsg.NewMSG()
-		msg, _ := notify.concern.GetNotifyMsg(notify.GroupCode, notify.compactKey)
+		msg, _ := notify.concern.GetNotifyMsg(notify.GetTarget(), notify.compactKey)
 		if msg != nil {
 			m.Append(message.NewReply(msg))
 		}
@@ -300,8 +301,8 @@ func (notify *ConcernNewsNotify) Site() string {
 	return Site
 }
 
-func (notify *ConcernNewsNotify) GetGroupCode() int64 {
-	return notify.GroupCode
+func (notify *ConcernNewsNotify) GetTarget() mt.Target {
+	return notify.Target
 }
 func (notify *ConcernNewsNotify) GetUid() interface{} {
 	return notify.Mid
@@ -311,7 +312,7 @@ func (notify *ConcernNewsNotify) Logger() *logrus.Entry {
 	if notify == nil {
 		return logger
 	}
-	return logger.WithFields(localutils.GroupLogFields(notify.GroupCode)).
+	return logger.WithFields(localutils.TargetFields(notify.Target)).
 		WithFields(logrus.Fields{
 			"Site":      Site,
 			"Mid":       notify.Mid,
@@ -331,11 +332,11 @@ func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
 		return logger
 	}
 	return notify.LiveInfo.Logger().
-		WithFields(localutils.GroupLogFields(notify.GroupCode))
+		WithFields(localutils.TargetFields(notify.GetTarget()))
 }
 
-func (notify *ConcernLiveNotify) GetGroupCode() int64 {
-	return notify.GroupCode
+func (notify *ConcernLiveNotify) GetTarget() mt.Target {
+	return notify.Target
 }
 
 // combineImageCache 是给combineImage用的cache，其他地方禁止使用

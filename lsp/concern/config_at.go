@@ -7,20 +7,20 @@ type AtSomeone struct {
 	AtList []int64           `json:"at_list"`
 }
 
-// GroupConcernAtConfig @配置
-type GroupConcernAtConfig struct {
+// ConcernAtConfig @配置
+type ConcernAtConfig struct {
 	AtAll     concern_type.Type `json:"at_all"`
 	AtSomeone []*AtSomeone      `json:"at_someone"`
 }
 
-func (g *GroupConcernAtConfig) CheckAtAll(ctype concern_type.Type) bool {
+func (g *ConcernAtConfig) CheckAtAll(ctype concern_type.Type) bool {
 	if g == nil {
 		return false
 	}
 	return g.AtAll.ContainAll(ctype)
 }
 
-func (g *GroupConcernAtConfig) GetAtSomeoneList(ctype concern_type.Type) []int64 {
+func (g *ConcernAtConfig) GetAtSomeoneList(ctype concern_type.Type) []int64 {
 	if g == nil {
 		return nil
 	}
@@ -32,7 +32,7 @@ func (g *GroupConcernAtConfig) GetAtSomeoneList(ctype concern_type.Type) []int64
 	return nil
 }
 
-func (g *GroupConcernAtConfig) SetAtSomeoneList(ctype concern_type.Type, ids []int64) {
+func (g *ConcernAtConfig) SetAtSomeoneList(ctype concern_type.Type, ids []int64) {
 	if g == nil {
 		return
 	}
@@ -51,7 +51,7 @@ func (g *GroupConcernAtConfig) SetAtSomeoneList(ctype concern_type.Type, ids []i
 	}
 }
 
-func (g *GroupConcernAtConfig) MergeAtSomeoneList(ctype concern_type.Type, ids []int64) {
+func (g *ConcernAtConfig) MergeAtSomeoneList(ctype concern_type.Type, ids []int64) {
 	if g == nil {
 		return
 	}
@@ -80,7 +80,7 @@ func (g *GroupConcernAtConfig) MergeAtSomeoneList(ctype concern_type.Type, ids [
 	}
 }
 
-func (g *GroupConcernAtConfig) RemoveAtSomeoneList(ctype concern_type.Type, ids []int64) {
+func (g *ConcernAtConfig) RemoveAtSomeoneList(ctype concern_type.Type, ids []int64) {
 	if g == nil {
 		return
 	}
@@ -101,7 +101,7 @@ func (g *GroupConcernAtConfig) RemoveAtSomeoneList(ctype concern_type.Type, ids 
 	}
 }
 
-func (g *GroupConcernAtConfig) ClearAtSomeoneList(ctype concern_type.Type) {
+func (g *ConcernAtConfig) ClearAtSomeoneList(ctype concern_type.Type) {
 	if g == nil {
 		return
 	}

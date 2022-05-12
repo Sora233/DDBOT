@@ -5,6 +5,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
 	"strings"
@@ -70,10 +71,10 @@ func (s *StateManager) GetMessageImageUrl(groupCode int64, messageID int32) []st
 	return result
 }
 
-func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
+func (s *StateManager) Muted(target mt.Target, uin int64, t int32) error {
 	return s.RWCoverTx(func(tx *buntdb.Tx) error {
 		var err error
-		key := s.GroupMuteKey(groupCode, uin)
+		key := s.GroupMuteKey(target, uin)
 		if t == 0 {
 			_, err = s.Delete(key)
 		} else if t < 0 {
@@ -86,8 +87,11 @@ func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
 	})
 }
 
-func (s *StateManager) IsMuted(groupCode int64, uin int64) bool {
-	return s.Exist(s.GroupMuteKey(groupCode, uin))
+func (s *StateManager) IsMuted(target mt.Target, uin int64) bool {
+	if target.GetTargetType().IsGroup() {
+		return s.Exist(s.GroupMuteKey(target, uin))
+	}
+	return false
 }
 
 func (s *StateManager) SaveGroupInvitor(groupCode int64, uin int64) error {

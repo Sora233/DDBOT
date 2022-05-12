@@ -1,8 +1,8 @@
 package buntdb
 
 import (
-	"errors"
 	"fmt"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -13,6 +13,10 @@ type KeyPatternFunc func(...interface{}) string
 func Key(keys ...interface{}) string {
 	var _keys []string
 	for _, ikey := range keys {
+		if t, ok := ikey.(mt.Target); ok {
+			_keys = append(_keys, t.Hash())
+			continue
+		}
 		rk := reflect.ValueOf(ikey)
 		if !rk.IsValid() {
 			panic(fmt.Sprintf("invalid value %T %v", ikey, ikey))
@@ -29,6 +33,7 @@ func Key(keys ...interface{}) string {
 			_keys = append(_keys, rk.String())
 		case reflect.Bool:
 			_keys = append(_keys, strconv.FormatBool(rk.Bool()))
+
 		default:
 			panic("unsupported key type " + reflect.ValueOf(ikey).Type().Name())
 		}
@@ -184,7 +189,7 @@ func GroupMessageImageKey(keys ...interface{}) string {
 	return NamedKey("GroupMessageImage", keys)
 }
 func GroupSilenceKey(keys ...interface{}) string {
-	return NamedKey("GroupSilence", keys)
+	return NamedKey("TargetSilence", keys)
 }
 func GlobalSilenceKey(keys ...interface{}) string {
 	return NamedKey("GlobalSilence", keys)
@@ -194,6 +199,13 @@ func GroupMuteKey(keys ...interface{}) string {
 }
 func GroupInvitorKey(keys ...interface{}) string {
 	return NamedKey("GroupInventor", keys)
+}
+
+func GulidEnabledKey(keys ...interface{}) string {
+	return NamedKey("GulidEnabledKey", keys)
+}
+func GulidPermissionKey(keys ...interface{}) string {
+	return NamedKey("GulidPermissionKey", keys)
 }
 
 func LoliconPoolStoreKey(keys ...interface{}) string {
@@ -224,32 +236,4 @@ func DDBotReleaseKey(keys ...interface{}) string {
 
 func DDBotNoUpdateKey(keys ...interface{}) string {
 	return NamedKey("DDBotNoUpdateKey", keys)
-}
-
-func ParseConcernStateKeyWithInt64(key string) (groupCode int64, id int64, err error) {
-	keys := strings.Split(key, ":")
-	if len(keys) != 3 {
-		return 0, 0, errors.New("invalid key")
-	}
-	groupCode, err = strconv.ParseInt(keys[1], 10, 64)
-	if err != nil {
-		return 0, 0, err
-	}
-	id, err = strconv.ParseInt(keys[2], 10, 64)
-	if err != nil {
-		return 0, 0, err
-	}
-	return groupCode, id, nil
-}
-func ParseConcernStateKeyWithString(key string) (groupCode int64, id string, err error) {
-	keys := strings.Split(key, ":")
-	if len(keys) != 3 {
-		return 0, "", errors.New("invalid key")
-	}
-	groupCode, err = strconv.ParseInt(keys[1], 10, 64)
-	if err != nil {
-		return 0, "", err
-	}
-	return groupCode, keys[2], nil
-
 }

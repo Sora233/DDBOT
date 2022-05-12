@@ -174,6 +174,20 @@ func logDisconnect(event *client.ClientDisconnectedEvent) {
 	}).Warn("bot断开链接")
 }
 
+func logGuildChannelMessage(msg *message.GuildChannelMessage) {
+	logger.WithFields(logrus.Fields{
+		"From":        "GuildChannelMessage",
+		"MessageID":   msg.Id,
+		"MessageIID":  msg.InternalId,
+		"TinyId":      msg.Sender.TinyId,
+		"Nickname":    msg.Sender.Nickname,
+		"GulidID":     msg.GuildId,
+		"ChannelID":   msg.ChannelId,
+		"GulidName":   localutils.GetBot().FindGulidName(msg.GuildId),
+		"ChannelName": localutils.GetBot().FindChannelName(msg.GuildId, msg.ChannelId),
+	}).Info(msgstringer.MsgToString(msg.Elements))
+}
+
 func registerLog(b *bot.Bot) {
 	b.OnGroupMessageRecalled(func(qqClient *client.QQClient, event *client.GroupMessageRecalledEvent) {
 		logGroupMessageRecallEvent(event)
@@ -205,5 +219,8 @@ func registerLog(b *bot.Bot) {
 
 	b.OnSelfPrivateMessage(func(qqClient *client.QQClient, privateMessage *message.PrivateMessage) {
 		logPrivateMessage(privateMessage)
+	})
+	b.GuildService.OnGuildChannelMessage(func(qqClient *client.QQClient, channelMessage *message.GuildChannelMessage) {
+		logGuildChannelMessage(channelMessage)
 	})
 }

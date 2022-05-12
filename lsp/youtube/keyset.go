@@ -1,19 +1,23 @@
 package youtube
 
-import "github.com/Sora233/DDBOT/lsp/buntdb"
+import (
+	"github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
+)
 
 type KeySet struct {
 }
 
-func (k *KeySet) GroupAtAllMarkKey(keys ...interface{}) string {
+func (k *KeySet) AtAllMarkKey(keys ...interface{}) string {
 	return buntdb.YoutubeGroupAtAllMarkKey(keys...)
 }
 
-func (k *KeySet) GroupConcernConfigKey(keys ...interface{}) string {
+func (k *KeySet) ConcernConfigKey(keys ...interface{}) string {
 	return buntdb.YoutubeGroupConcernConfigKey(keys...)
 }
 
-func (k *KeySet) GroupConcernStateKey(keys ...interface{}) string {
+func (k *KeySet) ConcernStateKey(keys ...interface{}) string {
 	return buntdb.YoutubeGroupConcernStateKey(keys...)
 }
 
@@ -21,8 +25,8 @@ func (k *KeySet) FreshKey(keys ...interface{}) string {
 	return buntdb.YoutubeFreshKey(keys...)
 }
 
-func (k *KeySet) ParseGroupConcernStateKey(key string) (int64, interface{}, error) {
-	return buntdb.ParseConcernStateKeyWithString(key)
+func (k *KeySet) ParseConcernStateKey(key string) (mt.Target, interface{}, error) {
+	return concern.ParseConcernStateKeyWithString(key)
 }
 
 func NewKeySet() *KeySet {

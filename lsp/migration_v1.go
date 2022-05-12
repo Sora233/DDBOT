@@ -2,7 +2,6 @@ package lsp
 
 import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/version"
 	"strconv"
@@ -68,13 +67,76 @@ func newGroupConcernConfigFromString(s string) (*groupConcernConfig, error) {
 type V1 struct {
 }
 
+type v1AtSomeone struct {
+	Ctype  concern_type.Type `json:"ctype"`
+	AtList []int64           `json:"at_list"`
+}
+
+type v1GroupConcernFilterConfig struct {
+	Type   string `json:"type"`
+	Config string `json:"config"`
+}
+
+type v1GroupConcernAtConfig struct {
+	AtAll     concern_type.Type `json:"at_all"`
+	AtSomeone []*v1AtSomeone    `json:"at_someone"`
+}
+
+func (g *v1GroupConcernAtConfig) MergeAtSomeoneList(ctype concern_type.Type, ids []int64) {
+	if g == nil {
+		return
+	}
+	var found = false
+	for _, at := range g.AtSomeone {
+		if at.Ctype.ContainAll(ctype) {
+			found = true
+			var qqSet = make(map[int64]bool)
+			for _, id := range at.AtList {
+				qqSet[id] = true
+			}
+			for _, id := range ids {
+				qqSet[id] = true
+			}
+			at.AtList = nil
+			for id := range qqSet {
+				at.AtList = append(at.AtList, id)
+			}
+		}
+	}
+	if !found {
+		g.AtSomeone = append(g.AtSomeone, &v1AtSomeone{
+			Ctype:  ctype,
+			AtList: ids,
+		})
+	}
+}
+
+type v1GroupConcernNotifyConfig struct {
+	TitleChangeNotify concern_type.Type `json:"title_change_notify"`
+	OfflineNotify     concern_type.Type `json:"offline_notify"`
+}
+
+type v1GroupConcernConfig struct {
+	GroupConcernAt     v1GroupConcernAtConfig     `json:"group_concern_at"`
+	GroupConcernNotify v1GroupConcernNotifyConfig `json:"group_concern_notify"`
+	GroupConcernFilter v1GroupConcernFilterConfig `json:"group_concern_filter"`
+}
+
+func (g *v1GroupConcernConfig) ToString() string {
+	b, e := json.Marshal(g)
+	if e != nil {
+		panic(e)
+	}
+	return string(b)
+}
+
 func (v *V1) configMigrate(key, value string) string {
 	g, err := newGroupConcernConfigFromString(value)
 	if err != nil {
 		logger.WithField("key", key).Errorf("configMigrate newGroupConcernConfigFromString <%v> error %v", value, err)
 		return value
 	}
-	var ng concern.GroupConcernConfig
+	var ng v1GroupConcernConfig
 	ng.GroupConcernAt.AtAll = g.GroupConcernAt.AtAll.ToNewType()
 	for _, atone := range g.GroupConcernAt.AtSomeone {
 		ng.GroupConcernAt.MergeAtSomeoneList(atone.Ctype.ToNewType(), atone.AtList)

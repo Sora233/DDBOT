@@ -3,6 +3,7 @@ package mmsg
 import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/requests"
 	"strings"
 	"unicode"
@@ -152,7 +153,7 @@ func (m *MSG) ImageByLocalWithResize(filepath, alternative string, width, height
 }
 
 // ToCombineMessage 总是返回 non-nil
-func (m *MSG) ToCombineMessage(target Target) *message.SendingMessage {
+func (m *MSG) ToCombineMessage(target mt.Target) *message.SendingMessage {
 	var result = message.NewSendingMessage()
 	sms := m.ToMessage(target)
 	for _, sm := range sms {
@@ -164,7 +165,7 @@ func (m *MSG) ToCombineMessage(target Target) *message.SendingMessage {
 }
 
 // ToMessage 返回消息用于发送
-func (m *MSG) ToMessage(target Target) []*message.SendingMessage {
+func (m *MSG) ToMessage(target mt.Target) []*message.SendingMessage {
 	if m == nil {
 		return nil
 	}

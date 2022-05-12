@@ -5,6 +5,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/sirupsen/logrus"
@@ -52,12 +53,12 @@ func (c *Concern) Start() error {
 	return c.StateManager.Start()
 }
 
-func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Add(ctx mmsg.IMsgCtx, target mt.Target, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	id := _id.(int64)
 	var err error
-	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
+	log := logger.WithFields(localutils.TargetFields(target)).WithField("id", id)
 
-	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
+	err = c.StateManager.CheckTargetConcern(target, id, ctype)
 	if err != nil {
 		return nil, err
 	}
@@ -76,17 +77,17 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype 
 		VideoLoop:  betardResp.GetRoom().GetVideoLoop(),
 		Avatar:     betardResp.GetRoom().GetAvatar(),
 	}
-	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
+	_, err = c.StateManager.AddTargetConcern(target, id, ctype)
 	if err != nil {
 		return nil, err
 	}
 	return liveInfo, nil
 }
 
-func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Remove(ctx mmsg.IMsgCtx, target mt.Target, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	id := _id.(int64)
 	identity, _ := c.Get(id)
-	_, err := c.StateManager.RemoveGroupConcern(groupCode, id, ctype)
+	_, err := c.StateManager.RemoveTargetConcern(target, id, ctype)
 	_ = c.RWCoverTx(func(tx *buntdb.Tx) error {
 		allCtype, err := c.GetConcern(id)
 		if err != nil {
@@ -109,15 +110,15 @@ func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
 }
 
 func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
-	return func(groupCode int64, event concern.Event) []concern.Notify {
+	return func(target mt.Target, event concern.Event) []concern.Notify {
 		switch info := event.(type) {
 		case *LiveInfo:
 			if info.Living() {
-				info.Logger().WithFields(localutils.GroupLogFields(groupCode)).Trace("living notify")
+				info.Logger().WithFields(localutils.TargetFields(target)).Trace("living notify")
 			} else {
-				info.Logger().WithFields(localutils.GroupLogFields(groupCode)).Trace("noliving notify")
+				info.Logger().WithFields(localutils.TargetFields(target)).Trace("noliving notify")
 			}
-			return []concern.Notify{NewConcernLiveNotify(groupCode, info)}
+			return []concern.Notify{NewConcernLiveNotify(target, info)}
 		default:
 			logger.Errorf("unknown EventType %+v", event)
 			return nil

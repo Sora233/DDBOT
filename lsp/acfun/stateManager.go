@@ -4,6 +4,7 @@ import (
 	"errors"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/tidwall/buntdb"
 )
 
@@ -12,8 +13,8 @@ type StateManager struct {
 	extraKey
 }
 
-func (s *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
-	return NewGroupConcernConfig(s.StateManager.GetGroupConcernConfig(groupCode, id))
+func (s *StateManager) GetConcernConfig(target mt.Target, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(s.StateManager.GetConcernConfig(target, id))
 }
 
 func NewStateManager(notify chan<- concern.Notify) *StateManager {

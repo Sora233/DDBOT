@@ -3,6 +3,7 @@ package weibo
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 	"strings"
@@ -59,7 +60,7 @@ func (n *NewsInfo) Logger() *logrus.Entry {
 }
 
 type ConcernNewsNotify struct {
-	GroupCode int64 `json:"group_code"`
+	Target mt.Target `json:"-"`
 	*UserInfo
 	Card *CacheCard
 }
@@ -68,25 +69,25 @@ func (c *ConcernNewsNotify) Type() concern_type.Type {
 	return News
 }
 
-func (c *ConcernNewsNotify) GetGroupCode() int64 {
-	return c.GroupCode
+func (c *ConcernNewsNotify) GetTarget() mt.Target {
+	return c.Target
 }
 
 func (c *ConcernNewsNotify) Logger() *logrus.Entry {
-	return c.UserInfo.Logger().WithFields(localutils.GroupLogFields(c.GroupCode))
+	return c.UserInfo.Logger().WithFields(localutils.TargetFields(c.GetTarget()))
 }
 
 func (c *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
 	return c.Card.GetMSG()
 }
 
-func NewConcernNewsNotify(groupCode int64, info *NewsInfo) []*ConcernNewsNotify {
+func NewConcernNewsNotify(target mt.Target, info *NewsInfo) []*ConcernNewsNotify {
 	var result []*ConcernNewsNotify
 	for _, card := range info.Cards {
 		result = append(result, &ConcernNewsNotify{
-			GroupCode: groupCode,
-			UserInfo:  info.UserInfo,
-			Card:      NewCacheCard(card, info.GetName()),
+			Target:   target,
+			UserInfo: info.UserInfo,
+			Card:     NewCacheCard(card, info.GetName()),
 		})
 	}
 	return result

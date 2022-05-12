@@ -7,6 +7,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/Sora233/MiraiGo-Template/utils"
@@ -54,16 +55,16 @@ func (c *Concern) Stop() {
 }
 
 func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
-	return func(groupCode int64, ievent concern.Event) (result []concern.Notify) {
+	return func(target mt.Target, ievent concern.Event) (result []concern.Notify) {
 		log := ievent.Logger()
 		switch event := ievent.(type) {
 		case *LiveInfo:
-			notify := NewConcernLiveNotify(groupCode, event)
+			notify := NewConcernLiveNotify(target, event)
 			result = append(result, notify)
 			if event.Living() {
-				log.WithFields(localutils.GroupLogFields(groupCode)).Trace("living notify")
+				log.WithFields(localutils.TargetFields(target)).Trace("living notify")
 			} else {
-				log.WithFields(localutils.GroupLogFields(groupCode)).Trace("noliving notify")
+				log.WithFields(localutils.TargetFields(target)).Trace("noliving notify")
 			}
 		default:
 			log.Errorf("unknown concern_type %v", ievent.Type().String())
@@ -92,7 +93,7 @@ func (c *Concern) fresh() concern.FreshFunc {
 			err := func() error {
 				defer func() { logger.WithField("cost", time.Now().Sub(start)).Tracef("watchCore live fresh done") }()
 
-				_, ids, types, err := c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+				_, ids, types, err := c.StateManager.ListConcernState(func(target mt.Target, id interface{}, p concern_type.Type) bool {
 					return p.ContainAny(Live)
 				})
 				if err != nil {
@@ -193,12 +194,12 @@ func (c *Concern) fresh() concern.FreshFunc {
 	}
 }
 
-func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Add(ctx mmsg.IMsgCtx, target mt.Target, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	var err error
 	var uid = id.(int64)
-	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
+	log := logger.WithFields(localutils.TargetFields(target)).WithField("id", id)
 
-	err = c.StateManager.CheckGroupConcern(groupCode, id, ctype)
+	err = c.StateManager.CheckTargetConcern(target, id, ctype)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +210,7 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype c
 		log.Errorf("FindOrLoadUserInfo error %v", err)
 		return nil, fmt.Errorf("查询用户信息失败 %v - %v", id, err)
 	}
-	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
+	_, err = c.StateManager.AddTargetConcern(target, id, ctype)
 	if err != nil {
 		return nil, err
 	}
@@ -220,10 +221,10 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype c
 	if ctype.ContainAny(Live) {
 		// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
 		if liveInfo != nil && liveInfo.Living() {
-			if ctx.GetTarget().TargetType().IsGroup() {
-				defer c.GroupWatchNotify(groupCode, uid)
+			if ctx.GetSource().IsGroup() || ctx.GetSource().IsGulid() {
+				defer c.TargetWatchNotify(target, uid)
 			}
-			if ctx.GetTarget().TargetType().IsPrivate() {
+			if ctx.GetSource().IsPrivate() {
 				defer ctx.Send(mmsg.NewText("检测到该用户正在直播，但由于您目前处于私聊模式，" +
 					"因此不会在群内推送本次直播，将在该用户下次直播时推送"))
 			}
@@ -232,14 +233,14 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype c
 	return concern.NewIdentity(userInfo.Uid, userInfo.GetName()), nil
 }
 
-func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Remove(ctx mmsg.IMsgCtx, target mt.Target, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := id.(int64)
 	var identityInfo concern.IdentityInfo
 	var allCtype concern_type.Type
 	err := c.StateManager.RWCoverTx(func(tx *buntdb.Tx) error {
 		var err error
 		identityInfo, _ = c.Get(mid)
-		_, err = c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
+		_, err = c.StateManager.RemoveTargetConcern(target, mid, ctype)
 		if err != nil {
 			return err
 		}
@@ -303,11 +304,11 @@ func (c *Concern) FindOrLoadUserInfo(uid int64) (*UserInfo, error) {
 	return userInfo, nil
 }
 
-func (c *Concern) GroupWatchNotify(groupCode, mid int64) {
+func (c *Concern) TargetWatchNotify(target mt.Target, mid int64) {
 	liveInfo, _ := c.GetLiveInfo(mid)
 	if liveInfo.Living() {
 		liveInfo.liveStatusChanged = true
-		c.notify <- NewConcernLiveNotify(groupCode, liveInfo)
+		c.notify <- NewConcernLiveNotify(target, liveInfo)
 	}
 }
 

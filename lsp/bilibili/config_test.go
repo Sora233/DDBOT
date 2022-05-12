@@ -1,17 +1,17 @@
 package bilibili
 
 import (
-	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/internal/test"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
 )
 
-func newLiveInfo(uid int64, living bool, liveStatusChanged bool, liveTitleChanged bool) *ConcernLiveNotify {
+func newGroupLiveInfo(uid int64, living bool, liveStatusChanged bool, liveTitleChanged bool) *ConcernLiveNotify {
 	notify := &ConcernLiveNotify{
 		LiveInfo: &LiveInfo{
 			UserInfo: UserInfo{
@@ -26,17 +26,18 @@ func newLiveInfo(uid int64, living bool, liveStatusChanged bool, liveTitleChange
 	} else {
 		notify.Status = LiveStatus_NoLiving
 	}
+	notify.Target = mt.NewGroupTarget(test.G1)
 	return notify
 }
 
-func newNewsInfo(uid int64, cardTypes ...DynamicDescType) []*ConcernNewsNotify {
-
+func newGroupNewsInfo(uid int64, cardTypes ...DynamicDescType) []*ConcernNewsNotify {
 	var result []*ConcernNewsNotify
 	for _, t := range cardTypes {
 		notify := &ConcernNewsNotify{
 			UserInfo: &UserInfo{
 				Mid: uid,
 			},
+			Target:  mt.NewGroupTarget(test.G1),
 			concern: NewConcern(concern.GetNotifyChan()),
 		}
 		notify.Card = NewCacheCard(&Card{
@@ -55,33 +56,33 @@ func TestNewGroupConcernConfig(t *testing.T) {
 
 	c := initConcern(t)
 
-	g := c.GetGroupConcernConfig(test.G1, test.UID1)
+	g := c.GetConcernConfig(mt.NewGroupTarget(test.G1), test.UID1)
 
 	assert.NotNil(t, g)
 	assert.Nil(t, g.Validate())
 
-	g.GetGroupConcernFilter().Type = concern.FilterTypeNotType
-	g.GetGroupConcernFilter().Config = (&concern.GroupConcernFilterConfigByType{Type: []string{"q", "a"}}).ToString()
+	g.GetConcernFilter(mt.TargetGroup).Type = concern.FilterTypeNotType
+	g.GetConcernFilter(mt.TargetGroup).Config = (&concern.GroupConcernFilterConfigByType{Type: []string{"q", "a"}}).ToString()
 
 	assert.NotNil(t, g.Validate())
-	g.GetGroupConcernFilter().Config = "wrong"
+	g.GetConcernFilter(mt.TargetGroup).Config = "wrong"
 	assert.NotNil(t, g.Validate())
-	g.GetGroupConcernFilter().Config = ""
-	g.GetGroupConcernFilter().Type = ""
+	g.GetConcernFilter(mt.TargetGroup).Config = ""
+	g.GetConcernFilter(mt.TargetGroup).Type = ""
 	assert.Nil(t, g.Validate())
 
-	g = c.GetGroupConcernConfig(test.G1, test.UID1)
-	err := c.OperateGroupConcernConfig(test.G1, test.UID1, g, func(concernConfig concern.IConfig) bool {
-		concernConfig.GetGroupConcernFilter().Type = concern.FilterTypeNotType
-		concernConfig.GetGroupConcernFilter().Config = (&concern.GroupConcernFilterConfigByType{Type: []string{"wrong"}}).ToString()
+	g = c.GetConcernConfig(mt.NewGroupTarget(test.G1), test.UID1)
+	err := c.OperateConcernConfig(mt.NewGroupTarget(test.G1), test.UID1, g, func(concernConfig concern.IConfig) bool {
+		concernConfig.GetConcernFilter(mt.TargetGroup).Type = concern.FilterTypeNotType
+		concernConfig.GetConcernFilter(mt.TargetGroup).Config = (&concern.GroupConcernFilterConfigByType{Type: []string{"wrong"}}).ToString()
 		return true
 	})
 	assert.NotNil(t, err)
 
-	g = c.GetGroupConcernConfig(test.G1, test.UID1)
-	err = c.OperateGroupConcernConfig(test.G1, test.UID1, g, func(concernConfig concern.IConfig) bool {
-		concernConfig.GetGroupConcernFilter().Type = concern.FilterTypeNotType
-		concernConfig.GetGroupConcernFilter().Config = (&concern.GroupConcernFilterConfigByType{Type: []string{Tougao}}).ToString()
+	g = c.GetConcernConfig(mt.NewGroupTarget(test.G1), test.UID1)
+	err = c.OperateConcernConfig(mt.NewGroupTarget(test.G1), test.UID1, g, func(concernConfig concern.IConfig) bool {
+		concernConfig.GetConcernFilter(mt.TargetGroup).Type = concern.FilterTypeNotType
+		concernConfig.GetConcernFilter(mt.TargetGroup).Config = (&concern.GroupConcernFilterConfigByType{Type: []string{Tougao}}).ToString()
 		return true
 	})
 	assert.Nil(t, err)
@@ -93,47 +94,53 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 
 	var notify = []concern.Notify{
 		// 下播状态 什么也没变 不推
-		newLiveInfo(test.UID1, false, false, false),
+		newGroupLiveInfo(test.UID1, false, false, false),
 		// 下播状态 标题变了 不推
-		newLiveInfo(test.UID1, false, false, true),
+		newGroupLiveInfo(test.UID1, false, false, true),
 		// 下播了 检查配置
-		newLiveInfo(test.UID1, false, true, false),
+		newGroupLiveInfo(test.UID1, false, true, false),
 		// 下播了 检查配置
-		newLiveInfo(test.UID1, false, true, true),
+		newGroupLiveInfo(test.UID1, false, true, true),
 		// 直播状态 什么也没变 不推
-		newLiveInfo(test.UID1, true, false, false),
+		newGroupLiveInfo(test.UID1, true, false, false),
 		// 直播状态 改了标题 检查配置
-		newLiveInfo(test.UID1, true, false, true),
+		newGroupLiveInfo(test.UID1, true, false, true),
 		// 开播了 推
-		newLiveInfo(test.UID1, true, true, false),
+		newGroupLiveInfo(test.UID1, true, true, false),
 		// 开播了改了标题 推
-		newLiveInfo(test.UID1, true, true, true),
+		newGroupLiveInfo(test.UID1, true, true, true),
 		// 无法处理news，应该pass
-		newNewsInfo(test.UID1, DynamicDescType_TextOnly)[0],
+		newGroupNewsInfo(test.UID1, DynamicDescType_TextOnly)[0],
 	}
-	var testCase = []*GroupConcernConfig{
+	var testCase = []*ConcernConfig{
 		{
-			IConfig: &concern.GroupConcernConfig{},
+			IConfig: &concern.ConcernConfig{},
 		},
 		{
-			IConfig: &concern.GroupConcernConfig{
-				GroupConcernNotify: concern.GroupConcernNotifyConfig{
-					TitleChangeNotify: Live,
+			IConfig: &concern.ConcernConfig{
+				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
+					mt.TargetGroup: {
+						TitleChangeNotify: Live,
+					},
 				},
 			},
 		},
 		{
-			IConfig: &concern.GroupConcernConfig{
-				GroupConcernNotify: concern.GroupConcernNotifyConfig{
-					OfflineNotify: Live,
+			IConfig: &concern.ConcernConfig{
+				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
+					mt.TargetGroup: {
+						OfflineNotify: Live,
+					},
 				},
 			},
 		},
 		{
-			IConfig: &concern.GroupConcernConfig{
-				GroupConcernNotify: concern.GroupConcernNotifyConfig{
-					OfflineNotify:     Live,
-					TitleChangeNotify: Live,
+			IConfig: &concern.ConcernConfig{
+				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
+					mt.TargetGroup: {
+						OfflineNotify:     Live,
+						TitleChangeNotify: Live,
+					},
 				},
 			},
 		},
@@ -174,25 +181,25 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 	var liveInfos = []concern.Notify{
 		// 下播状态 什么也没变 不推
-		newLiveInfo(test.UID1, false, false, false),
+		newGroupLiveInfo(test.UID1, false, false, false),
 		// 下播状态 标题变了 不推
-		newLiveInfo(test.UID1, false, false, true),
+		newGroupLiveInfo(test.UID1, false, false, true),
 		// 下播了 检查配置
-		newLiveInfo(test.UID1, false, true, false),
+		newGroupLiveInfo(test.UID1, false, true, false),
 		// 下播了 检查配置
-		newLiveInfo(test.UID1, false, true, true),
+		newGroupLiveInfo(test.UID1, false, true, true),
 		// 直播状态 什么也没变 不推
-		newLiveInfo(test.UID1, true, false, false),
+		newGroupLiveInfo(test.UID1, true, false, false),
 		// 直播状态 改了标题 检查配置
-		newLiveInfo(test.UID1, true, false, true),
+		newGroupLiveInfo(test.UID1, true, false, true),
 		// 开播了 推
-		newLiveInfo(test.UID1, true, true, false),
+		newGroupLiveInfo(test.UID1, true, true, false),
 		// 开播了改了标题 推
-		newLiveInfo(test.UID1, true, true, true),
+		newGroupLiveInfo(test.UID1, true, true, true),
 		// news 默认pass
-		newNewsInfo(test.UID1, DynamicDescType_TextOnly)[0],
+		newGroupNewsInfo(test.UID1, DynamicDescType_TextOnly)[0],
 	}
-	var g = NewGroupConcernConfig(new(concern.GroupConcernConfig), NewConcern(concern.GetNotifyChan()))
+	var g = NewConcernConfig(new(concern.ConcernConfig), NewConcern(concern.GetNotifyChan()))
 	var expected = []bool{
 		false, false, false, false,
 		false, false, true, true,
@@ -212,8 +219,8 @@ func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 }
 
 func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
-	var notifies = newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
-	var g = NewGroupConcernConfig(new(concern.GroupConcernConfig), nil)
+	var notifies = newGroupNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
+	var g = NewConcernConfig(new(concern.ConcernConfig), nil)
 
 	// 默认应该不过滤
 	for _, notify := range notifies {
@@ -272,11 +279,13 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 	}
 
 	testFn := func(index int, tp string, expected []DynamicDescType) {
-		notifies := newNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
-		var g = NewGroupConcernConfig(&concern.GroupConcernConfig{
-			GroupConcernFilter: concern.GroupConcernFilterConfig{
-				Type:   tp,
-				Config: typeFilter[index].ToString(),
+		notifies := newGroupNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
+		var g = NewConcernConfig(&concern.ConcernConfig{
+			ConcernFilterMap: map[mt.TargetType]*concern.ConcernFilterConfig{
+				mt.TargetGroup: {
+					Type:   tp,
+					Config: typeFilter[index].ToString(),
+				},
 			},
 		}, nil)
 		assert.Nil(t, g.Validate())
@@ -296,7 +305,7 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 		testFn(index, concern.FilterTypeNotType, expectedNotType[index])
 	}
 
-	live := newLiveInfo(test.UID1, true, false, false)
+	live := newGroupLiveInfo(test.UID1, true, false, false)
 	g.FilterHook(live)
 }
 
@@ -312,20 +321,20 @@ func TestGroupConcernConfig_NotifyBeforeCallback(t *testing.T) {
 
 	c := initConcern(t)
 
-	_, err := c.GetNotifyMsg(test.G1, test.BVID1)
+	_, err := c.GetNotifyMsg(mt.NewGroupTarget(test.G1), test.BVID1)
 	assert.True(t, localdb.IsNotFound(err))
 
-	var notify = newNewsInfo(test.UID1, DynamicDescType_WithOrigin)[0]
+	var notify = newGroupNewsInfo(test.UID1, DynamicDescType_WithOrigin)[0]
 	notify.Card.Desc.OrigDyIdStr = test.BVID1
 
-	var g = new(GroupConcernConfig)
+	var g = new(ConcernConfig)
 	g.concern = c
 	g.NotifyBeforeCallback(notify)
 	assert.False(t, notify.shouldCompact)
 	g.NotifyBeforeCallback(notify)
 	assert.True(t, notify.shouldCompact)
 
-	notify = newNewsInfo(test.UID1, DynamicDescType_WithVideo)[0]
+	notify = newGroupNewsInfo(test.UID1, DynamicDescType_WithVideo)[0]
 	notify.Card.Desc.Bvid = test.BVID2
 
 	g.NotifyBeforeCallback(notify)
@@ -333,7 +342,7 @@ func TestGroupConcernConfig_NotifyBeforeCallback(t *testing.T) {
 	g.NotifyBeforeCallback(notify)
 	assert.True(t, notify.shouldCompact)
 
-	notify = newNewsInfo(test.UID1, DynamicDescType_TextOnly)[0]
+	notify = newGroupNewsInfo(test.UID1, DynamicDescType_TextOnly)[0]
 	notify.Card.Desc.DynamicIdStr = strconv.FormatInt(test.DynamicID1, 10)
 
 	g.NotifyBeforeCallback(notify)
@@ -341,7 +350,7 @@ func TestGroupConcernConfig_NotifyBeforeCallback(t *testing.T) {
 	g.NotifyBeforeCallback(notify)
 	assert.False(t, notify.shouldCompact)
 
-	live := newLiveInfo(test.UID1, true, false, false)
+	live := newGroupLiveInfo(test.UID1, true, false, false)
 	g.NotifyBeforeCallback(live)
 }
 
@@ -351,10 +360,10 @@ func TestGroupConcernConfig_NotifyAfterCallback(t *testing.T) {
 
 	c := initConcern(t)
 
-	_, err := c.GetNotifyMsg(test.G1, test.BVID1)
+	_, err := c.GetNotifyMsg(mt.NewGroupTarget(test.G1), test.BVID1)
 	assert.True(t, localdb.IsNotFound(err))
 
-	var notify = newNewsInfo(test.UID1, DynamicDescType_WithOrigin)[0]
+	var notify = newGroupNewsInfo(test.UID1, DynamicDescType_WithOrigin)[0]
 	notify.compactKey = test.BVID1
 	var msg = &message.GroupMessage{
 		Id:        1,
@@ -363,26 +372,18 @@ func TestGroupConcernConfig_NotifyAfterCallback(t *testing.T) {
 			message.NewText("asd"),
 		},
 	}
-	var g = new(GroupConcernConfig)
+	var g = new(ConcernConfig)
 	g.concern = c
 
 	g.NotifyAfterCallback(notify, msg)
 
-	msg2, err := c.GetNotifyMsg(test.G1, test.BVID1)
+	msg2, err := c.GetNotifyMsg(mt.NewGroupTarget(test.G1), test.BVID1)
 	assert.Nil(t, err)
 	assert.EqualValues(t, msg, msg2)
 
 	notify.shouldCompact = true
 	g.NotifyAfterCallback(notify, msg)
 
-	live := newLiveInfo(test.UID1, true, false, false)
+	live := newGroupLiveInfo(test.UID1, true, false, false)
 	g.NotifyAfterCallback(live, nil)
-}
-
-func TestConfigJson(t *testing.T) {
-	var g = NewGroupConcernConfig(&concern.GroupConcernConfig{
-		GroupConcernFilter: concern.GroupConcernFilterConfig{},
-	}, nil)
-	fmt.Println(json.MarshalToString(g))
-
 }

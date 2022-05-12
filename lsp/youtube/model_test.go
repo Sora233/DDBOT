@@ -2,6 +2,7 @@ package youtube
 
 import (
 	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -20,9 +21,9 @@ func TestVideoInfo(t *testing.T) {
 	info := NewInfo([]*VideoInfo{vi})
 	assert.NotNil(t, info)
 
-	notify := NewConcernNotify(test.G1, vi)
+	notify := NewConcernNotify(mt.NewGroupTarget(test.G1), vi)
 	assert.NotNil(t, notify)
-	assert.Equal(t, test.G1, notify.GetGroupCode())
+	assert.True(t, notify.GetTarget().Equal(mt.NewGroupTarget(test.G1)))
 	assert.Equal(t, test.NAME1, notify.GetUid())
 	assert.NotNil(t, notify.Logger())
 	assert.Equal(t, Video, notify.Type())

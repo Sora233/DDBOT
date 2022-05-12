@@ -1,6 +1,7 @@
 package permission
 
 import (
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
 )
@@ -11,7 +12,7 @@ const (
 	Unknown RoleType = 0
 
 	Admin RoleType = 1 << iota
-	GroupAdmin
+	TargetAdmin
 	User
 )
 
@@ -22,8 +23,8 @@ func (t RoleType) String() string {
 	switch t {
 	case Admin:
 		return "Admin"
-	case GroupAdmin:
-		return "GroupAdmin"
+	case TargetAdmin:
+		return "TargetAdmin"
 	case User:
 		return "User"
 	default:
@@ -35,8 +36,8 @@ func NewRoleFromString(s string) RoleType {
 	switch s {
 	case "Admin":
 		return Admin
-	case "GroupAdmin":
-		return GroupAdmin
+	case "TargetAdmin":
+		return TargetAdmin
 	case "User":
 		return User
 	default:
@@ -67,39 +68,44 @@ func AdminRoleRequireOption(uin int64) RequireOption {
 	return &adminRoleRequireOption{uin}
 }
 
-type groupAdminRoleRequireOption struct {
-	groupCode int64
-	uin       int64
+type targetAdminRoleRequireOption struct {
+	target mt.Target
+	uin    int64
 }
 
-func (g *groupAdminRoleRequireOption) Validate(s *StateManager) bool {
+func (g *targetAdminRoleRequireOption) Validate(s *StateManager) bool {
 	uin := g.uin
-	groupCode := g.groupCode
-	if s.CheckGroupRole(groupCode, uin, GroupAdmin) {
-		logger.WithFields(localutils.GroupLogFields(groupCode)).
+	if s.CheckTargetRole(g.target, uin, TargetAdmin) {
+		logger.WithFields(localutils.TargetFields(g.target)).
 			WithFields(logrus.Fields{
-				"type": "GroupAdminRole",
+				"type": "TargetAdminRole",
 				"uin":  uin,
-			}).Debug("groupAdminRole permission pass")
+			}).Debug("targetAdminRole permission pass")
 		return true
 	}
 	return false
 }
 
-func GroupAdminRoleRequireOption(groupCode int64, uin int64) RequireOption {
-	return &groupAdminRoleRequireOption{groupCode: groupCode, uin: uin}
+func TargetAdminRoleRequireOption(target mt.Target, uin int64) RequireOption {
+	return &targetAdminRoleRequireOption{target: target, uin: uin}
 }
 
 type qqAdminRequireOption struct {
-	groupCode int64
-	uin       int64
+	target mt.Target
+	uin    int64
 }
 
 func (g *qqAdminRequireOption) Validate(s *StateManager) bool {
 	uin := g.uin
-	groupCode := g.groupCode
-	if s.CheckGroupAdministrator(groupCode, uin) {
-		logger.WithFields(localutils.GroupLogFields(groupCode)).
+	switch g.target.GetTargetType() {
+	case mt.TargetPrivate:
+		return true
+	case mt.TargetGulid:
+		// TODO support
+		return false
+	}
+	if s.CheckGroupAdministrator(g.target, uin) {
+		logger.WithFields(localutils.TargetFields(g.target)).
 			WithFields(logrus.Fields{
 				"type": "QQGroupAdmin",
 				"uin":  uin,
@@ -109,27 +115,26 @@ func (g *qqAdminRequireOption) Validate(s *StateManager) bool {
 	return false
 }
 
-func QQAdminRequireOption(groupCode int64, uin int64) RequireOption {
+func QQAdminRequireOption(target mt.Target, uin int64) RequireOption {
 	return &qqAdminRequireOption{
-		groupCode: groupCode,
-		uin:       uin,
+		target: target,
+		uin:    uin,
 	}
 }
 
-type groupCommandRequireOption struct {
-	groupCode int64
-	uin       int64
-	command   string
+type targetCommandRequireOption struct {
+	target  mt.Target
+	uin     int64
+	command string
 }
 
-func (g *groupCommandRequireOption) Validate(s *StateManager) bool {
+func (g *targetCommandRequireOption) Validate(s *StateManager) bool {
 	uin := g.uin
-	groupCode := g.groupCode
 	cmd := g.command
-	if s.CheckGroupCommandPermission(groupCode, uin, cmd) {
-		logger.WithFields(localutils.GroupLogFields(groupCode)).
+	if s.CheckTargetCommandPermission(g.target, uin, cmd) {
+		logger.WithFields(localutils.TargetFields(g.target)).
 			WithFields(logrus.Fields{
-				"type":    "command",
+				"type":    "targetCommand",
 				"uin":     uin,
 				"command": cmd,
 			}).Debug("groupCommand permission pass")
@@ -138,10 +143,10 @@ func (g *groupCommandRequireOption) Validate(s *StateManager) bool {
 	return false
 }
 
-func GroupCommandRequireOption(groupCode int64, uin int64, command string) RequireOption {
-	return &groupCommandRequireOption{
-		groupCode: groupCode,
-		uin:       uin,
-		command:   command,
+func TargetCommandRequireOption(target mt.Target, uin int64, command string) RequireOption {
+	return &targetCommandRequireOption{
+		target:  target,
+		uin:     uin,
+		command: command,
 	}
 }

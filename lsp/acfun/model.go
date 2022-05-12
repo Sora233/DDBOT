@@ -3,6 +3,7 @@ package acfun
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/lsp/template"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
@@ -93,12 +94,12 @@ func (l *LiveInfo) GetMSG() *mmsg.MSG {
 }
 
 type ConcernLiveNotify struct {
-	GroupCode int64
+	Target mt.Target
 	*LiveInfo
 }
 
-func (notify *ConcernLiveNotify) GetGroupCode() int64 {
-	return notify.GroupCode
+func (notify *ConcernLiveNotify) GetTarget() mt.Target {
+	return notify.Target
 }
 
 func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
@@ -109,12 +110,12 @@ func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
 	if notify == nil {
 		return logger
 	}
-	return notify.LiveInfo.Logger().WithFields(localutils.GroupLogFields(notify.GroupCode))
+	return notify.LiveInfo.Logger().WithFields(localutils.TargetFields(notify.GetTarget()))
 }
 
-func NewConcernLiveNotify(groupCode int64, info *LiveInfo) *ConcernLiveNotify {
+func NewConcernLiveNotify(target mt.Target, info *LiveInfo) *ConcernLiveNotify {
 	return &ConcernLiveNotify{
-		GroupCode: groupCode,
-		LiveInfo:  info,
+		Target:   target,
+		LiveInfo: info,
 	}
 }

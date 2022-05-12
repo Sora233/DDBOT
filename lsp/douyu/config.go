@@ -8,6 +8,6 @@ type GroupConcernConfig struct {
 	concern.IConfig
 }
 
-func NewGroupConcernConfig(g concern.IConfig) *GroupConcernConfig {
+func NewConcernConfig(g concern.IConfig) *GroupConcernConfig {
 	return &GroupConcernConfig{g}
 }

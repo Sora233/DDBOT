@@ -5,6 +5,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/internal/test"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
 	"testing"
@@ -14,7 +15,7 @@ import (
 func initStateManager(t *testing.T) *StateManager {
 	sm := NewStateManager(NewConcern(nil))
 	assert.NotNil(t, sm)
-	sm.FreshIndex(test.G1, test.G2)
+	sm.FreshIndex()
 	return sm
 }
 
@@ -24,7 +25,7 @@ func TestNewStateManager(t *testing.T) {
 
 	sm := initStateManager(t)
 	assert.NotNil(t, sm)
-	assert.NotNil(t, sm.GetGroupConcernConfig(test.G1, test.UID1))
+	assert.NotNil(t, sm.GetConcernConfig(mt.NewGroupTarget(test.G1), test.UID1))
 }
 
 func TestStateManager_GetUserInfo(t *testing.T) {
@@ -342,7 +343,7 @@ func TestStateManager_GetNotifyMsgReplyInfo(t *testing.T) {
 
 	err := c.SetNotifyMsg(test.BVID1, msg)
 	assert.Nil(t, err)
-	actual, err := c.GetNotifyMsg(test.G1, test.BVID1)
+	actual, err := c.GetNotifyMsg(mt.NewGroupTarget(test.G1), test.BVID1)
 	assert.Nil(t, err)
 	assert.EqualValues(t, actual, msg)
 }
@@ -353,8 +354,8 @@ func TestStateManager_SetGroupCompactMarkIfNotExist(t *testing.T) {
 
 	c := initStateManager(t)
 
-	assert.Nil(t, c.SetGroupCompactMarkIfNotExist(test.G1, test.BVID1))
-	assert.NotNil(t, c.SetGroupCompactMarkIfNotExist(test.G1, test.BVID1))
+	assert.Nil(t, c.SetTargetCompactMarkIfNotExist(mt.NewGroupTarget(test.G1), test.BVID1))
+	assert.NotNil(t, c.SetTargetCompactMarkIfNotExist(mt.NewGroupTarget(test.G1), test.BVID1))
 }
 
 func TestStateManager_GetLastFreshTime(t *testing.T) {

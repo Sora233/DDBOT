@@ -6,6 +6,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/tidwall/buntdb"
@@ -64,11 +65,11 @@ func (c *Concern) Stop() {
 	logger.Tracef("%v concern已停止", Site)
 }
 
-func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Add(ctx mmsg.IMsgCtx, target mt.Target, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	id := _id.(int64)
-	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
+	log := logger.WithFields(localutils.TargetFields(target)).WithField("id", id)
 
-	err := c.StateManager.CheckGroupConcern(groupCode, id, ctype)
+	err := c.StateManager.CheckTargetConcern(target, id, ctype)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +78,7 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype 
 		log.Errorf("FindOrLoadUserInfo error %v", err)
 		return nil, fmt.Errorf("查询用户信息失败 %v - %v", id, err)
 	}
-	if r, _ := c.GetStateManager().GetConcern(id); r.Empty() {
+	if r, _ := c.GetStateManager().GetTargetConcern(target, id); r.Empty() {
 		cardResp, err := ApiContainerGetIndexCards(id)
 		if err != nil {
 			log.Errorf("ApiContainerGetIndexCards error %v", err)
@@ -99,17 +100,17 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype 
 			return nil, fmt.Errorf("添加订阅失败 - 内部错误")
 		}
 	}
-	_, err = c.StateManager.AddGroupConcern(groupCode, id, ctype)
+	_, err = c.StateManager.AddTargetConcern(target, id, ctype)
 	if err != nil {
 		return nil, err
 	}
 	return info, nil
 }
 
-func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Remove(ctx mmsg.IMsgCtx, target mt.Target, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	id := _id.(int64)
 	identity, _ := c.Get(id)
-	_, err := c.StateManager.RemoveGroupConcern(groupCode, id, ctype)
+	_, err := c.StateManager.RemoveTargetConcern(target, id, ctype)
 	if identity == nil {
 		identity = concern.NewIdentity(_id, "unknown")
 	}
@@ -180,12 +181,12 @@ func (c *Concern) freshNews(uid int64) (*NewsInfo, error) {
 }
 
 func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
-	return func(groupCode int64, ievent concern.Event) []concern.Notify {
+	return func(target mt.Target, ievent concern.Event) []concern.Notify {
 		var result []concern.Notify
 		switch news := ievent.(type) {
 		case *NewsInfo:
 			if len(news.Cards) > 0 {
-				for _, n := range NewConcernNewsNotify(groupCode, news) {
+				for _, n := range NewConcernNewsNotify(target, news) {
 					result = append(result, n)
 				}
 			}

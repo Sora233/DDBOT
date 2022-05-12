@@ -6,6 +6,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
@@ -74,7 +75,7 @@ func (c *Concern) fresh() concern.FreshFunc {
 				}
 
 				_, ids, types, err := c.StateManager.ListConcernState(
-					func(groupCode int64, id interface{}, p concern_type.Type) bool {
+					func(target mt.Target, id interface{}, p concern_type.Type) bool {
 						return p.ContainAny(Live)
 					})
 				if err != nil {

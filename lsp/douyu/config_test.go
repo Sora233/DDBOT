@@ -3,11 +3,12 @@ package douyu
 import (
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func newLiveInfo(roomId int64, live bool, liveStatusChanged bool, liveTitleChanged bool) *ConcernLiveNotify {
+func newGroupLiveInfo(roomId int64, live bool, liveStatusChanged bool, liveTitleChanged bool) *ConcernLiveNotify {
 	li := &ConcernLiveNotify{
 		LiveInfo: &LiveInfo{
 			RoomId:            roomId,
@@ -21,57 +22,64 @@ func newLiveInfo(roomId int64, live bool, liveStatusChanged bool, liveTitleChang
 	} else {
 		li.VideoLoop = VideoLoopStatus_On
 	}
+	li.Target = mt.NewGroupTarget(test.G1)
 	return li
 }
 
 func TestNewGroupConcernConfig(t *testing.T) {
-	g := NewGroupConcernConfig(new(concern.GroupConcernConfig))
+	g := NewConcernConfig(new(concern.ConcernConfig))
 	assert.NotNil(t, g)
 }
 
 func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 	var notify = []concern.Notify{
 		// 下播状态 什么也没变 不推
-		newLiveInfo(test.UID1, false, false, false),
+		newGroupLiveInfo(test.UID1, false, false, false),
 		// 下播状态 标题变了 不推
-		newLiveInfo(test.UID1, false, false, true),
+		newGroupLiveInfo(test.UID1, false, false, true),
 		// 下播了 检查配置
-		newLiveInfo(test.UID1, false, true, false),
+		newGroupLiveInfo(test.UID1, false, true, false),
 		// 下播了 检查配置
-		newLiveInfo(test.UID1, false, true, true),
+		newGroupLiveInfo(test.UID1, false, true, true),
 		// 直播状态 什么也没变 不推
-		newLiveInfo(test.UID1, true, false, false),
+		newGroupLiveInfo(test.UID1, true, false, false),
 		// 直播状态 改了标题 检查配置
-		newLiveInfo(test.UID1, true, false, true),
+		newGroupLiveInfo(test.UID1, true, false, true),
 		// 开播了 推
-		newLiveInfo(test.UID1, true, true, false),
+		newGroupLiveInfo(test.UID1, true, true, false),
 		// 开播了改了标题 推
-		newLiveInfo(test.UID1, true, true, true),
+		newGroupLiveInfo(test.UID1, true, true, true),
 	}
 
 	var testCase = []*GroupConcernConfig{
 		{
-			IConfig: &concern.GroupConcernConfig{},
+			IConfig: &concern.ConcernConfig{},
 		},
 		{
-			IConfig: &concern.GroupConcernConfig{
-				GroupConcernNotify: concern.GroupConcernNotifyConfig{
-					TitleChangeNotify: Live,
+			IConfig: &concern.ConcernConfig{
+				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
+					mt.TargetGroup: {
+						TitleChangeNotify: Live,
+					},
 				},
 			},
 		},
 		{
-			IConfig: &concern.GroupConcernConfig{
-				GroupConcernNotify: concern.GroupConcernNotifyConfig{
-					OfflineNotify: Live,
+			IConfig: &concern.ConcernConfig{
+				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
+					mt.TargetGroup: {
+						OfflineNotify: Live,
+					},
 				},
 			},
 		},
 		{
-			IConfig: &concern.GroupConcernConfig{
-				GroupConcernNotify: concern.GroupConcernNotifyConfig{
-					OfflineNotify:     Live,
-					TitleChangeNotify: Live,
+			IConfig: &concern.ConcernConfig{
+				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
+					mt.TargetGroup: {
+						OfflineNotify:     Live,
+						TitleChangeNotify: Live,
+					},
 				},
 			},
 		},
@@ -108,26 +116,26 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 	var notify = []concern.Notify{
 		// 下播状态 什么也没变 不推
-		newLiveInfo(test.UID1, false, false, false),
+		newGroupLiveInfo(test.UID1, false, false, false),
 		// 下播状态 标题变了 不推
-		newLiveInfo(test.UID1, false, false, true),
+		newGroupLiveInfo(test.UID1, false, false, true),
 		// 下播了 检查配置
-		newLiveInfo(test.UID1, false, true, false),
+		newGroupLiveInfo(test.UID1, false, true, false),
 		// 下播了 检查配置
-		newLiveInfo(test.UID1, false, true, true),
+		newGroupLiveInfo(test.UID1, false, true, true),
 		// 直播状态 什么也没变 不推
-		newLiveInfo(test.UID1, true, false, false),
+		newGroupLiveInfo(test.UID1, true, false, false),
 		// 直播状态 改了标题 检查配置
-		newLiveInfo(test.UID1, true, false, true),
+		newGroupLiveInfo(test.UID1, true, false, true),
 		// 开播了 推
-		newLiveInfo(test.UID1, true, true, false),
+		newGroupLiveInfo(test.UID1, true, true, false),
 		// 开播了改了标题 推
-		newLiveInfo(test.UID1, true, true, true),
+		newGroupLiveInfo(test.UID1, true, true, true),
 	}
 	var expected = []bool{
 		false, false, false, false, false, false, true, true,
 	}
-	var config = &GroupConcernConfig{IConfig: &concern.GroupConcernConfig{}}
+	var config = &GroupConcernConfig{IConfig: &concern.ConcernConfig{}}
 	for idx, n := range notify {
 		hook := config.AtBeforeHook(n)
 		assert.EqualValues(t, expected[idx], hook.Pass)

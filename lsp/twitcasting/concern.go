@@ -6,6 +6,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/nobuf/cas"
@@ -63,8 +64,8 @@ type tcStateManager struct {
 	*concern.StateManager
 }
 
-func (tc *tcStateManager) GetGroupConcernConfig(groupCode int64, id interface{}) concern.IConfig {
-	return NewGroupConcernConfig(tc.StateManager.GetGroupConcernConfig(groupCode, id))
+func (tc *tcStateManager) GetGroupConcernConfig(target mt.Target, id interface{}) concern.IConfig {
+	return NewGroupConcernConfig(tc.StateManager.GetConcernConfig(target, id))
 }
 
 type TwitCastConcern struct {
@@ -229,13 +230,13 @@ func (tc *TwitCastConcern) tcFresh() concern.FreshFunc {
 }
 
 func (tc *TwitCastConcern) tcNotifyGenerator() concern.NotifyGeneratorFunc {
-	return func(groupCode int64, event concern.Event) []concern.Notify {
+	return func(target mt.Target, event concern.Event) []concern.Notify {
 
 		if liveEvent, ok := event.(*LiveEvent); ok {
 			return []concern.Notify{
 				&LiveNotify{
-					groupCode,
-					*liveEvent,
+					target:    target,
+					LiveEvent: *liveEvent,
 				},
 			}
 		}
@@ -278,7 +279,7 @@ func (tc *TwitCastConcern) ParseId(s string) (interface{}, error) {
 	return strings.ReplaceAll(s, ":", "%"), nil
 }
 
-func (tc *TwitCastConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (tc *TwitCastConcern) Add(ctx mmsg.IMsgCtx, target mt.Target, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 
 	userId := id.(string)
 
@@ -307,7 +308,7 @@ func (tc *TwitCastConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}
 
 	}
 
-	_, err := tc.GetStateManager().AddGroupConcern(groupCode, userId, ctype)
+	_, err := tc.GetStateManager().AddTargetConcern(target, userId, ctype)
 
 	if err != nil {
 		return nil, err
@@ -317,8 +318,8 @@ func (tc *TwitCastConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}
 }
 
 // Remove 实现删除一个订阅
-func (tc *TwitCastConcern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
-	_, err := tc.GetStateManager().RemoveGroupConcern(groupCode, id.(string), ctype)
+func (tc *TwitCastConcern) Remove(ctx mmsg.IMsgCtx, target mt.Target, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	_, err := tc.GetStateManager().RemoveTargetConcern(target, id.(string), ctype)
 	if err != nil {
 		return nil, err
 	}

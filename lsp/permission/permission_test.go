@@ -8,13 +8,13 @@ import (
 func TestRoleType_String(t *testing.T) {
 	var testCase = []RoleType{
 		Admin,
-		GroupAdmin,
+		TargetAdmin,
 		User,
 		Unknown,
 	}
 	var expected = []string{
 		"Admin",
-		"GroupAdmin",
+		"TargetAdmin",
 		"User",
 		"",
 	}
@@ -27,13 +27,13 @@ func TestRoleType_String(t *testing.T) {
 func TestFromString(t *testing.T) {
 	var testCase = []string{
 		"Admin",
-		"GroupAdmin",
+		"TargetAdmin",
 		"User",
 		"",
 	}
 	var expected = []RoleType{
 		Admin,
-		GroupAdmin,
+		TargetAdmin,
 		User,
 		Unknown,
 	}

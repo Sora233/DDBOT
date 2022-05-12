@@ -5,6 +5,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/tidwall/buntdb"
 	"time"
@@ -16,8 +17,8 @@ type StateManager struct {
 	concern *Concern
 }
 
-func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
-	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id), c.concern)
+func (c *StateManager) GetConcernConfig(target mt.Target, id interface{}) (concernConfig concern.IConfig) {
+	return NewConcernConfig(c.StateManager.GetConcernConfig(target, id), c.concern)
 }
 
 func (c *StateManager) AddUserInfo(userInfo *UserInfo) error {
@@ -187,8 +188,8 @@ func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err err
 	return c.GetInt64(c.UidFirstTimestamp(uid))
 }
 
-func (c *StateManager) SetGroupCompactMarkIfNotExist(groupCode int64, compactKey string) error {
-	return c.Set(c.CompactMarkKey(groupCode, compactKey), "",
+func (c *StateManager) SetTargetCompactMarkIfNotExist(target mt.Target, compactKey string) error {
+	return c.Set(c.CompactMarkKey(target, compactKey), "",
 		localdb.SetExpireOpt(CompactExpireTime), localdb.SetNoOverWriteOpt())
 }
 func (c *StateManager) SetLastFreshTime(ts int64) error {
@@ -231,12 +232,12 @@ func (c *StateManager) SetNotifyMsg(notifyKey string, msg *message.GroupMessage)
 	if err != nil {
 		return err
 	}
-	return c.Set(c.NotifyMsgKey(tmp.GroupCode, notifyKey), value,
+	return c.Set(c.NotifyMsgKey(mt.NewGroupTarget(msg.GroupCode), notifyKey), value,
 		localdb.SetExpireOpt(CompactExpireTime), localdb.SetNoOverWriteOpt())
 }
 
-func (c *StateManager) GetNotifyMsg(groupCode int64, notifyKey string) (*message.GroupMessage, error) {
-	value, err := c.Get(c.NotifyMsgKey(groupCode, notifyKey))
+func (c *StateManager) GetNotifyMsg(target mt.Target, notifyKey string) (*message.GroupMessage, error) {
+	value, err := c.Get(c.NotifyMsgKey(target, notifyKey))
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +272,7 @@ func ClearCookieInfo(username string) error {
 
 func (c *StateManager) Start() error {
 	for _, pattern := range []localdb.KeyPatternFunc{
-		c.GroupConcernStateKey, c.CurrentLiveKey, c.FreshKey,
+		c.ConcernStateKey, c.CurrentLiveKey, c.FreshKey,
 		c.UserInfoKey, c.UserStatKey, c.DynamicIdKey} {
 		c.CreatePatternIndex(pattern, nil)
 	}

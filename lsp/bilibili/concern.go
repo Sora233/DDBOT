@@ -7,6 +7,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/DDBOT/utils/expirable"
 	"github.com/Sora233/MiraiGo-Template/config"
@@ -125,14 +126,14 @@ func (c *Concern) Start() error {
 }
 
 func (c *Concern) Add(ctx mmsg.IMsgCtx,
-	groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	target mt.Target, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := _id.(int64)
 	selfUid := accountUid.Load()
 	var watchSelf = selfUid != 0 && selfUid == mid
 	var err error
-	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("mid", mid)
+	log := logger.WithFields(localutils.TargetFields(target)).WithField("mid", mid)
 
-	err = c.StateManager.CheckGroupConcern(groupCode, mid, ctype)
+	err = c.StateManager.CheckTargetConcern(target, mid, ctype)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +183,7 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 		if !watchSelf {
 			oldCtype, err := c.StateManager.GetConcern(mid)
 			if err != nil {
-				log.Errorf("GetConcern error %v", err)
+				log.Errorf("GetTargetConcern error %v", err)
 			} else if oldCtype.Empty() {
 				if c.checkRelation(mid) {
 					log.Infof("当前B站账户已关注该用户，跳过关注")
@@ -219,9 +220,9 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 		}
 	}
 
-	_, err = c.StateManager.AddGroupConcern(groupCode, mid, ctype)
+	_, err = c.StateManager.AddTargetConcern(target, mid, ctype)
 	if err != nil {
-		log.Errorf("AddGroupConcern error %v", err)
+		log.Errorf("AddTargetConcern error %v", err)
 		return nil, fmt.Errorf("关注用户失败 - 内部错误")
 	}
 	err = c.StateManager.SetUidFirstTimestampIfNotExist(mid, time.Now().Add(-time.Second*30).Unix())
@@ -232,12 +233,11 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 	if ctype.ContainAny(Live) {
 		// 其他群关注了同一uid，并且推送过Living，那么给新watch的群也推一份
 		if liveInfo != nil && liveInfo.Living() {
-			if ctx.GetTarget().TargetType().IsGroup() {
-				defer c.GroupWatchNotify(groupCode, mid)
-			}
-			if ctx.GetTarget().TargetType().IsPrivate() {
-				defer ctx.Send(mmsg.NewText("检测到该用户正在直播，但由于您目前处于私聊模式，" +
-					"因此不会在群内推送本次直播，将在该用户下次直播时推送"))
+			if ctx.GetSource() != target.GetTargetType() {
+				defer ctx.Send(mmsg.NewText("检测到该用户正在直播，但由于您目前正在操作跨源操作，因此不会推送本次直播，" +
+					"将在该用户下次直播时推送"))
+			} else {
+				defer c.TargetWatchNotify(target, mid)
 			}
 		}
 	}
@@ -253,14 +253,14 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 }
 
 func (c *Concern) Remove(ctx mmsg.IMsgCtx,
-	groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	target mt.Target, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := id.(int64)
 	var identityInfo concern.IdentityInfo
 	var allCtype concern_type.Type
 	err := c.StateManager.RWCoverTx(func(tx *buntdb.Tx) error {
 		var err error
 		identityInfo, _ = c.Get(mid)
-		_, err = c.StateManager.RemoveGroupConcern(groupCode, mid, ctype)
+		_, err = c.StateManager.RemoveTargetConcern(target, mid, ctype)
 		if err != nil {
 			return err
 		}
@@ -297,21 +297,21 @@ func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
 }
 
 func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
-	return func(groupCode int64, ievent concern.Event) (result []concern.Notify) {
+	return func(target mt.Target, ievent concern.Event) (result []concern.Notify) {
 		log := ievent.Logger()
 		switch event := ievent.(type) {
 		case *LiveInfo:
 			if event.Status == LiveStatus_Living {
-				log.WithFields(localutils.GroupLogFields(groupCode)).Trace("living notify")
+				log.WithFields(localutils.TargetFields(target)).Trace("living notify")
 			} else if event.Status == LiveStatus_NoLiving {
-				log.WithFields(localutils.GroupLogFields(groupCode)).Trace("noliving notify")
+				log.WithFields(localutils.TargetFields(target)).Trace("noliving notify")
 			} else {
-				log.WithFields(localutils.GroupLogFields(groupCode)).Error("unknown live status")
+				log.WithFields(localutils.TargetFields(target)).Error("unknown live status")
 			}
-			result = append(result, NewConcernLiveNotify(groupCode, event))
+			result = append(result, NewConcernLiveNotify(target, event))
 		case *NewsInfo:
-			notifies := NewConcernNewsNotify(groupCode, event, c)
-			log.WithFields(localutils.GroupLogFields(groupCode)).
+			notifies := NewConcernNewsNotify(target, event, c)
+			log.WithFields(localutils.TargetFields(target)).
 				WithField("Size", len(notifies)).Trace("news notify")
 			for _, notify := range notifies {
 				result = append(result, notify)
@@ -409,7 +409,7 @@ func (c *Concern) SyncSub() {
 	}
 	var midSet = make(map[int64]bool)
 	var attentionMidSet = make(map[int64]bool)
-	_, _, _, err = c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+	_, _, _, err = c.StateManager.ListConcernState(func(target mt.Target, id interface{}, p concern_type.Type) bool {
 		midSet[id.(int64)] = true
 		return true
 	})
@@ -508,28 +508,30 @@ func (c *Concern) FindUserNews(mid int64, load bool) (*NewsInfo, error) {
 	return c.StateManager.GetNewsInfo(mid)
 }
 
-func (c *Concern) GroupWatchNotify(groupCode, mid int64) {
+func (c *Concern) TargetWatchNotify(target mt.Target, mid int64) {
 	liveInfo, _ := c.GetLiveInfo(mid)
 	if liveInfo.Living() {
 		liveInfo.liveStatusChanged = true
-		c.notify <- NewConcernLiveNotify(groupCode, liveInfo)
+		c.notify <- NewConcernLiveNotify(target, liveInfo)
 	}
 }
 
-func (c *Concern) RemoveAllByGroupCode(groupCode int64) ([]string, error) {
-	keys, err := c.StateManager.RemoveAllByGroupCode(groupCode)
+func (c *Concern) RemoveAllByTarget(target mt.Target) ([]string, error) {
+	keys, err := c.StateManager.RemoveAllByTarget(target)
 	if cfg.GetBilibiliUnsub() {
 		var changedIdSet = make(map[int64]interface{})
 		if err == nil {
 			for _, key := range keys {
-				if !strings.HasPrefix(key, c.GroupConcernStateKey()) {
+				if !strings.HasPrefix(key, c.ConcernStateKey()) {
 					continue
 				}
-				_, id, err := c.ParseGroupConcernStateKey(key)
+				t, id, err := c.ParseConcernStateKey(key)
 				if err != nil {
 					continue
 				}
-				changedIdSet[id.(int64)] = true
+				if t.Equal(target) {
+					changedIdSet[id.(int64)] = true
+				}
 			}
 			c.RWCover(func() error {
 				for mid := range changedIdSet {

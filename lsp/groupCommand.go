@@ -3,6 +3,7 @@ package lsp
 import (
 	"fmt"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/lsp/template"
 	"go.uber.org/atomic"
 	"math/rand"
@@ -34,7 +35,7 @@ type LspGroupCommand struct {
 
 func NewLspGroupCommand(l *Lsp, msg *message.GroupMessage) *LspGroupCommand {
 	c := &LspGroupCommand{
-		Runtime: NewRuntime(l, l.PermissionStateManager.CheckGroupSilence(msg.GroupCode)),
+		Runtime: NewRuntime(l, l.PermissionStateManager.CheckTargetSilence(mt.NewGroupTarget(msg.GroupCode))),
 		msg:     msg,
 	}
 	c.Parse(msg.Elements)
@@ -102,7 +103,7 @@ func (lgc *LspGroupCommand) Execute() {
 		if lgc.requireEnable(HuangtuCommand) {
 			if lgc.l.PermissionStateManager.RequireAny(
 				permission.AdminRoleRequireOption(lgc.uin()),
-				permission.GroupCommandRequireOption(lgc.groupCode(), lgc.uin(), HuangtuCommand),
+				permission.TargetCommandRequireOption(mt.NewGroupTarget(lgc.groupCode()), lgc.uin(), HuangtuCommand),
 			) {
 				lgc.SetuCommand(true)
 			}
@@ -401,7 +402,7 @@ func (lgc *LspGroupCommand) WatchCommand(remove bool) {
 
 	id := watchCmd.Id
 
-	IWatch(lgc.NewMessageContext(log), groupCode, id, site, watchType, remove)
+	IWatch(lgc.NewMessageContext(log), mt.NewGroupTarget(groupCode), id, site, watchType, remove)
 }
 
 func (lgc *LspGroupCommand) ListCommand() {
@@ -422,7 +423,7 @@ func (lgc *LspGroupCommand) ListCommand() {
 		return
 	}
 
-	IList(lgc.NewMessageContext(log), groupCode, listCmd.Site)
+	IList(lgc.NewMessageContext(log), mt.NewGroupTarget(groupCode), listCmd.Site)
 }
 
 func (lgc *LspGroupCommand) RollCommand() {
@@ -596,7 +597,7 @@ func (lgc *LspGroupCommand) EnableCommand(disable bool) {
 
 	log = log.WithField("targetCommand", enableCmd.Command)
 
-	IEnable(lgc.NewMessageContext(log), lgc.groupCode(), enableCmd.Command, disable)
+	IEnable(lgc.NewMessageContext(log), mt.NewGroupTarget(lgc.groupCode()), enableCmd.Command, disable)
 }
 
 func (lgc *LspGroupCommand) GrantCommand() {
@@ -606,7 +607,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 
 	var grantCmd struct {
 		Command string `optional:"" short:"c" xor:"1" help:"命令名"`
-		Role    string `optional:"" short:"r" xor:"1" enum:"Admin,GroupAdmin," help:"Admin / GroupAdmin"`
+		Role    string `optional:"" short:"r" xor:"1" enum:"Admin,TargetAdmin," help:"Admin / TargetAdmin"`
 		Delete  bool   `short:"d" help:"删除模式，执行删除权限操作"`
 		Target  int64  `arg:"" help:"目标qq号"`
 	}
@@ -629,9 +630,9 @@ func (lgc *LspGroupCommand) GrantCommand() {
 	log = log.WithField("grantFrom", grantFrom).WithField("grantTo", grantTo).WithField("delete", del)
 
 	if grantCmd.Command != "" {
-		IGrantCmd(lgc.NewMessageContext(log), lgc.groupCode(), grantCmd.Command, grantTo, del)
+		IGrantCmd(lgc.NewMessageContext(log), mt.NewGroupTarget(lgc.groupCode()), grantCmd.Command, grantTo, del)
 	} else if grantCmd.Role != "" {
-		IGrantRole(lgc.NewMessageContext(log), lgc.groupCode(), permission.NewRoleFromString(grantCmd.Role), grantTo, del)
+		IGrantRole(lgc.NewMessageContext(log), mt.NewGroupTarget(lgc.groupCode()), permission.NewRoleFromString(grantCmd.Role), grantTo, del)
 	}
 }
 
@@ -652,7 +653,7 @@ func (lgc *LspGroupCommand) SilenceCommand() {
 		return
 	}
 
-	ISilenceCmd(lgc.NewMessageContext(log), lgc.groupCode(), silenceCmd.Delete)
+	ISilenceCmd(lgc.NewMessageContext(log), mt.NewGroupTarget(lgc.groupCode()), false, silenceCmd.Delete)
 }
 
 func (lgc *LspGroupCommand) ConfigCommand() {
@@ -719,6 +720,7 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 
 	cmd := kongPath[0]
 	log = log.WithField("sub_command", cmd)
+	target := mt.NewGroupTarget(lgc.groupCode())
 
 	switch cmd {
 	case "at":
@@ -729,7 +731,7 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 			return
 		}
 		log = log.WithField("site", site).WithField("id", configCmd.At.Id).WithField("action", configCmd.At.Action).WithField("QQ", configCmd.At.QQ)
-		IConfigAtCmd(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.At.Id, site, ctype, configCmd.At.Action, configCmd.At.QQ)
+		IConfigAtCmd(lgc.NewMessageContext(log), target, configCmd.At.Id, site, ctype, configCmd.At.Action, configCmd.At.QQ)
 	case "at_all":
 		site, ctype, err := lgc.ParseRawSiteAndType(configCmd.AtAll.Site, "live")
 		if err != nil {
@@ -739,7 +741,7 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		}
 		var on = utils.Switch2Bool(configCmd.AtAll.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.AtAll.Id).WithField("on", on)
-		IConfigAtAllCmd(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.AtAll.Id, site, ctype, on)
+		IConfigAtAllCmd(lgc.NewMessageContext(log), target, configCmd.AtAll.Id, site, ctype, on)
 	case "title_notify":
 		site, ctype, err := lgc.ParseRawSiteAndType(configCmd.TitleNotify.Site, "live")
 		if err != nil {
@@ -749,7 +751,7 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		}
 		var on = utils.Switch2Bool(configCmd.TitleNotify.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.TitleNotify.Id).WithField("on", on)
-		IConfigTitleNotifyCmd(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.TitleNotify.Id, site, ctype, on)
+		IConfigTitleNotifyCmd(lgc.NewMessageContext(log), target, configCmd.TitleNotify.Id, site, ctype, on)
 	case "offline_notify":
 		site, ctype, err := lgc.ParseRawSiteAndType(configCmd.OfflineNotify.Site, "live")
 		if err != nil {
@@ -759,7 +761,7 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		}
 		var on = utils.Switch2Bool(configCmd.OfflineNotify.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.OfflineNotify.Id).WithField("on", on)
-		IConfigOfflineNotifyCmd(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.OfflineNotify.Id, site, ctype, on)
+		IConfigOfflineNotifyCmd(lgc.NewMessageContext(log), target, configCmd.OfflineNotify.Id, site, ctype, on)
 	case "filter":
 		filterCmd := kongPath[1]
 		site, ctype, err := lgc.ParseRawSiteAndType(configCmd.Filter.Site, "news")
@@ -770,15 +772,15 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 		}
 		switch filterCmd {
 		case "type":
-			IConfigFilterCmdType(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.Filter.Type.Id, site, ctype, configCmd.Filter.Type.Type)
+			IConfigFilterCmdType(lgc.NewMessageContext(log), target, configCmd.Filter.Type.Id, site, ctype, configCmd.Filter.Type.Type)
 		case "not_type":
-			IConfigFilterCmdNotType(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.Filter.NotType.Id, site, ctype, configCmd.Filter.NotType.Type)
+			IConfigFilterCmdNotType(lgc.NewMessageContext(log), target, configCmd.Filter.NotType.Id, site, ctype, configCmd.Filter.NotType.Type)
 		case "text":
-			IConfigFilterCmdText(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.Filter.Text.Id, site, ctype, configCmd.Filter.Text.Keyword)
+			IConfigFilterCmdText(lgc.NewMessageContext(log), target, configCmd.Filter.Text.Id, site, ctype, configCmd.Filter.Text.Keyword)
 		case "clear":
-			IConfigFilterCmdClear(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.Filter.Clear.Id, site, ctype)
+			IConfigFilterCmdClear(lgc.NewMessageContext(log), target, configCmd.Filter.Clear.Id, site, ctype)
 		case "show":
-			IConfigFilterCmdShow(lgc.NewMessageContext(log), lgc.groupCode(), configCmd.Filter.Show.Id, site, ctype)
+			IConfigFilterCmdShow(lgc.NewMessageContext(log), target, configCmd.Filter.Show.Id, site, ctype)
 		default:
 			log.WithField("filter_cmd", filterCmd).Errorf("unknown filter command")
 			lgc.textSend("未知的filter子命令")
@@ -892,14 +894,14 @@ func (lgc *LspGroupCommand) groupName() string {
 func (lgc *LspGroupCommand) requireAnyCommand(commands ...string) bool {
 	var ok = lgc.l.PermissionStateManager.RequireAny(
 		permission.AdminRoleRequireOption(lgc.uin()),
-		permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
-		permission.QQAdminRequireOption(lgc.groupCode(), lgc.uin()),
+		permission.TargetAdminRoleRequireOption(mt.NewGroupTarget(lgc.groupCode()), lgc.uin()),
+		permission.QQAdminRequireOption(mt.NewGroupTarget(lgc.groupCode()), lgc.uin()),
 	)
 	if ok {
 		return true
 	}
 	for _, command := range commands {
-		ok = ok || lgc.l.PermissionStateManager.RequireAny(permission.GroupCommandRequireOption(lgc.groupCode(), lgc.uin(), command))
+		ok = ok || lgc.l.PermissionStateManager.RequireAny(permission.TargetCommandRequireOption(mt.NewGroupTarget(lgc.groupCode()), lgc.uin(), command))
 		if ok {
 			return true
 		}
@@ -925,12 +927,12 @@ func (lgc *LspGroupCommand) requireNotDisable(command string) bool {
 
 // explicit defined and enabled
 func (lgc *LspGroupCommand) groupEnabled(command string) bool {
-	return lgc.l.PermissionStateManager.CheckGroupCommandEnabled(lgc.groupCode(), command)
+	return lgc.l.PermissionStateManager.CheckTargetCommandEnabled(mt.NewGroupTarget(lgc.groupCode()), command)
 }
 
 // explicit defined and disabled
 func (lgc *LspGroupCommand) groupDisabled(command string) bool {
-	return lgc.l.PermissionStateManager.CheckGroupCommandDisabled(lgc.groupCode(), command)
+	return lgc.l.PermissionStateManager.CheckTargetCommandDisabled(mt.NewGroupTarget(lgc.groupCode()), command)
 }
 
 func (lgc *LspGroupCommand) textReply(text string) *message.GroupMessage {
@@ -957,11 +959,11 @@ func (lgc *LspGroupCommand) reply(msg *mmsg.MSG) *message.GroupMessage {
 }
 
 func (lgc *LspGroupCommand) send(msg *mmsg.MSG) *message.GroupMessage {
-	return lgc.l.GM(lgc.l.SendMsg(msg, mmsg.NewGroupTarget(lgc.groupCode())))[0]
+	return lgc.l.GM(lgc.l.SendMsg(msg, mt.NewGroupTarget(lgc.groupCode())))[0]
 }
 
 func (lgc *LspGroupCommand) sendChain(msg *mmsg.MSG) []*message.GroupMessage {
-	return lgc.l.GM(lgc.l.SendMsg(msg, mmsg.NewGroupTarget(lgc.groupCode())))
+	return lgc.l.GM(lgc.l.SendMsg(msg, mt.NewGroupTarget(lgc.groupCode())))
 }
 
 func (lgc *LspGroupCommand) sender() *message.Sender {
@@ -1003,7 +1005,7 @@ func (lgc *LspGroupCommand) templateMsg(name string, data map[string]interface{}
 
 func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
 	ctx := NewMessageContext()
-	ctx.Target = mmsg.NewGroupTarget(lgc.groupCode())
+	ctx.Source = mt.TargetGroup
 	ctx.Lsp = lgc.l
 	ctx.Log = log
 	ctx.SendFunc = func(m *mmsg.MSG) interface{} {
@@ -1014,9 +1016,14 @@ func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	}
 	ctx.NoPermissionReplyFunc = func() interface{} {
 		ctx.Log.Debugf("no permission")
-		if !lgc.l.PermissionStateManager.CheckGroupSilence(lgc.groupCode()) {
+		if !lgc.l.PermissionStateManager.CheckTargetSilence(mt.NewGroupTarget(lgc.groupCode())) {
 			return lgc.noPermissionReply()
 		}
+		return nil
+	}
+	ctx.NotImplReplyFunc = func() interface{} {
+		ctx.Log.Errorf("not impl")
+		lgc.textReply("暂未实现，你可以催作者GKD")
 		return nil
 	}
 	ctx.DisabledReply = func() interface{} {
@@ -1025,11 +1032,11 @@ func (lgc *LspGroupCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	}
 	ctx.GlobalDisabledReply = func() interface{} {
 		ctx.Log.Debugf("global disabled")
-		if !lgc.l.PermissionStateManager.CheckGroupSilence(lgc.groupCode()) {
+		if !lgc.l.PermissionStateManager.CheckTargetSilence(mt.NewGroupTarget(lgc.groupCode())) {
 			return lgc.globalDisabledReply()
 		}
 		return nil
 	}
-	ctx.Sender = lgc.sender()
+	ctx.Sender = NewMessageSender(lgc.uin(), lgc.displayName())
 	return ctx
 }

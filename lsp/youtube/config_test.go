@@ -3,11 +3,12 @@ package youtube
 import (
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func newLiveInfo(channelId string, live bool, liveStatusChanged bool, liveTitleChanged bool) *ConcernNotify {
+func newGroupLiveInfo(channelId string, live bool, liveStatusChanged bool, liveTitleChanged bool) *ConcernNotify {
 	li := &ConcernNotify{
 		VideoInfo: &VideoInfo{
 			UserInfo: UserInfo{
@@ -23,6 +24,7 @@ func newLiveInfo(channelId string, live bool, liveStatusChanged bool, liveTitleC
 	} else {
 		li.VideoStatus = VideoStatus_Waiting
 	}
+	li.Target = mt.NewGroupTarget(test.G1)
 	return li
 }
 
@@ -39,38 +41,40 @@ func newNewsInfo(channelId string) *ConcernNotify {
 }
 
 func TestNewGroupConcernConfig(t *testing.T) {
-	g := NewGroupConcernConfig(new(concern.GroupConcernConfig))
+	g := NewGroupConcernConfig(new(concern.ConcernConfig))
 	assert.NotNil(t, g)
 }
 
 func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 	var notify = []concern.Notify{
 		// 直播预告 推
-		newLiveInfo(test.NAME1, false, false, false),
+		newGroupLiveInfo(test.NAME1, false, false, false),
 		// 直播预告 标题变了 推
-		newLiveInfo(test.NAME1, false, false, true),
+		newGroupLiveInfo(test.NAME1, false, false, true),
 		// 可能吗
-		newLiveInfo(test.NAME1, false, true, false),
+		newGroupLiveInfo(test.NAME1, false, true, false),
 		// 可能吗
-		newLiveInfo(test.NAME1, false, true, true),
+		newGroupLiveInfo(test.NAME1, false, true, true),
 		// 直播状态 什么也没变 不推
-		newLiveInfo(test.NAME1, true, false, false),
+		newGroupLiveInfo(test.NAME1, true, false, false),
 		// 直播状态 改了标题 检查配置
-		newLiveInfo(test.NAME1, true, false, true),
+		newGroupLiveInfo(test.NAME1, true, false, true),
 		// 开播了 推
-		newLiveInfo(test.NAME1, true, true, false),
+		newGroupLiveInfo(test.NAME1, true, true, false),
 		// 开播了改了标题 推
-		newLiveInfo(test.NAME1, true, true, true),
+		newGroupLiveInfo(test.NAME1, true, true, true),
 	}
 
 	var testCase = []*GroupConcernConfig{
 		{
-			IConfig: &concern.GroupConcernConfig{},
+			IConfig: &concern.ConcernConfig{},
 		},
 		{
-			IConfig: &concern.GroupConcernConfig{
-				GroupConcernNotify: concern.GroupConcernNotifyConfig{
-					TitleChangeNotify: Live,
+			IConfig: &concern.ConcernConfig{
+				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
+					mt.TargetGroup: {
+						TitleChangeNotify: Live,
+					},
 				},
 			},
 		},
@@ -99,26 +103,26 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 func TestGroupConcernConfig_AtBeforeHook(t *testing.T) {
 	var notify = []concern.Notify{
 		// 下播状态 什么也没变 不推
-		newLiveInfo(test.NAME1, false, false, false),
+		newGroupLiveInfo(test.NAME1, false, false, false),
 		// 下播状态 标题变了 不推
-		newLiveInfo(test.NAME1, false, false, true),
+		newGroupLiveInfo(test.NAME1, false, false, true),
 		// 下播了 检查配置
-		newLiveInfo(test.NAME1, false, true, false),
+		newGroupLiveInfo(test.NAME1, false, true, false),
 		// 下播了 检查配置
-		newLiveInfo(test.NAME1, false, true, true),
+		newGroupLiveInfo(test.NAME1, false, true, true),
 		// 直播状态 什么也没变 不推
-		newLiveInfo(test.NAME1, true, false, false),
+		newGroupLiveInfo(test.NAME1, true, false, false),
 		// 直播状态 改了标题 检查配置
-		newLiveInfo(test.NAME1, true, false, true),
+		newGroupLiveInfo(test.NAME1, true, false, true),
 		// 开播了 推
-		newLiveInfo(test.NAME1, true, true, false),
+		newGroupLiveInfo(test.NAME1, true, true, false),
 		// 开播了改了标题 推
-		newLiveInfo(test.NAME1, true, true, true),
+		newGroupLiveInfo(test.NAME1, true, true, true),
 	}
 	var expected = []bool{
 		false, false, false, false, false, false, true, true,
 	}
-	var config = &GroupConcernConfig{IConfig: &concern.GroupConcernConfig{}}
+	var config = &GroupConcernConfig{IConfig: &concern.ConcernConfig{}}
 	for idx, n := range notify {
 		hook := config.AtBeforeHook(n)
 		assert.EqualValues(t, expected[idx], hook.Pass)

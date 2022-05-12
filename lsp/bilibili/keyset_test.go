@@ -10,5 +10,5 @@ func TestNewKeySet(t *testing.T) {
 	assert.NotNil(t, s)
 	e := NewExtraKey()
 	assert.NotNil(t, e)
-	s.GroupAtAllMarkKey()
+	s.AtAllMarkKey()
 }

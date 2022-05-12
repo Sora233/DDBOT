@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
@@ -14,7 +15,7 @@ import (
 func initConcern(t *testing.T) *Concern {
 	c := NewConcern(nil)
 	assert.NotNil(t, c)
-	c.StateManager.FreshIndex(test.G1, test.G2)
+	c.StateManager.FreshIndex()
 	return c
 }
 
@@ -43,10 +44,10 @@ func TestConcern_Remove(t *testing.T) {
 
 	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
 	assert.NotNil(t, origUserInfo)
-	_, err := c.AddGroupConcern(test.G1, test.UID1, test.BibiliLive)
+	_, err := c.AddTargetConcern(mt.NewGroupTarget(test.G1), test.UID1, test.BibiliLive)
 	assert.Nil(t, err)
 
-	_, err = c.Remove(nil, test.G1, test.UID1, test.BibiliLive)
+	_, err = c.Remove(nil, mt.NewGroupTarget(test.G1), test.UID1, test.BibiliLive)
 	assert.Nil(t, err)
 }
 
@@ -172,9 +173,9 @@ func TestConcernNotify(t *testing.T) {
 	defer c.Stop()
 	defer close(testEventChan)
 
-	_, err := c.StateManager.AddGroupConcern(test.G1, test.UID1, Live.Add(News))
+	_, err := c.StateManager.AddTargetConcern(mt.NewGroupTarget(test.G1), test.UID1, Live.Add(News))
 	assert.Nil(t, err)
-	_, err = c.StateManager.AddGroupConcern(test.G2, test.UID1, News)
+	_, err = c.StateManager.AddTargetConcern(mt.NewGroupTarget(test.G2), test.UID1, News)
 	assert.Nil(t, err)
 
 	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
@@ -191,7 +192,7 @@ func TestConcernNotify(t *testing.T) {
 	case notify := <-testNotifyChan:
 		assert.NotNil(t, notify)
 		assert.EqualValues(t, test.UID1, notify.GetUid())
-		assert.EqualValues(t, test.G1, notify.GetGroupCode())
+		assert.True(t, mt.NewGroupTarget(test.G1).Equal(notify.GetTarget()))
 		assert.Contains(t, msgstringer.MsgToString(notify.ToMessage().Elements()), "mytitle")
 	case <-time.After(time.Second):
 		assert.Fail(t, "no item received")
@@ -209,7 +210,7 @@ func TestConcernNotify(t *testing.T) {
 		case notify := <-testNotifyChan:
 			assert.NotNil(t, notify)
 			assert.EqualValues(t, test.UID1, notify.GetUid())
-			assert.True(t, notify.GetGroupCode() == test.G1 || notify.GetGroupCode() == test.G2)
+			assert.True(t, notify.GetTarget().Equal(mt.NewGroupTarget(test.G1)) || notify.GetTarget().Equal(mt.NewGroupTarget(test.G2)))
 		case <-time.After(time.Second):
 			assert.Fail(t, "no item received")
 		}
@@ -241,7 +242,7 @@ func TestConcern_GroupWatchNotify(t *testing.T) {
 	defer c.Stop()
 	defer close(testEventChan)
 
-	_, err := c.StateManager.AddGroupConcern(test.G1, test.UID1, Live.Add(News))
+	_, err := c.StateManager.AddTargetConcern(mt.NewGroupTarget(test.G1), test.UID1, Live.Add(News))
 	assert.Nil(t, err)
 
 	origUserInfo := NewUserInfo(test.UID1, test.ROOMID1, test.NAME1, "")
@@ -250,12 +251,12 @@ func TestConcern_GroupWatchNotify(t *testing.T) {
 
 	assert.Nil(t, c.AddLiveInfo(origLiveInfo))
 
-	go c.GroupWatchNotify(test.G2, test.UID1)
+	go c.TargetWatchNotify(mt.NewGroupTarget(test.G2), test.UID1)
 	select {
 	case notify := <-testNotifyChan:
 		assert.NotNil(t, notify)
 		assert.EqualValues(t, test.UID1, notify.GetUid())
-		assert.EqualValues(t, test.G2, notify.GetGroupCode())
+		assert.True(t, mt.NewGroupTarget(test.G2).Equal(notify.GetTarget()))
 	case <-time.After(time.Second):
 		assert.Fail(t, "no item received")
 	}

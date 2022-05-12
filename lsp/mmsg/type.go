@@ -2,6 +2,7 @@ package mmsg
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 )
 
 const (
@@ -12,5 +13,5 @@ const (
 )
 
 type CustomElement interface {
-	PackToElement(target Target) message.IMessageElement
+	PackToElement(target mt.Target) message.IMessageElement
 }

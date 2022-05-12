@@ -9,6 +9,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/template"
 	localutils "github.com/Sora233/DDBOT/utils"
@@ -220,7 +221,7 @@ func (c *LspPrivateCommand) ListCommand() {
 		return
 	}
 	log = log.WithFields(localutils.GroupLogFields(groupCode))
-	IList(c.NewMessageContext(log), groupCode, listCmd.Site)
+	IList(c.NewMessageContext(log), mt.NewGroupTarget(groupCode), listCmd.Site)
 }
 
 func (c *LspPrivateCommand) ConfigCommand() {
@@ -289,6 +290,7 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		c.textReply(err.Error())
 		return
 	}
+	target := mt.NewGroupTarget(groupCode)
 
 	kongPath := strings.Split(kongCtx.Command(), " ")
 
@@ -304,7 +306,7 @@ func (c *LspPrivateCommand) ConfigCommand() {
 			return
 		}
 		log = log.WithField("site", site).WithField("id", configCmd.At.Id).WithField("action", configCmd.At.Action).WithField("QQ", configCmd.At.QQ)
-		IConfigAtCmd(c.NewMessageContext(log), groupCode, configCmd.At.Id, site, ctype, configCmd.At.Action, configCmd.At.QQ)
+		IConfigAtCmd(c.NewMessageContext(log), target, configCmd.At.Id, site, ctype, configCmd.At.Action, configCmd.At.QQ)
 	case "at_all":
 		site, ctype, err := c.ParseRawSiteAndType(configCmd.AtAll.Site, "live")
 		if err != nil {
@@ -314,7 +316,7 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		}
 		var on = localutils.Switch2Bool(configCmd.AtAll.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.AtAll.Id).WithField("on", on)
-		IConfigAtAllCmd(c.NewMessageContext(log), groupCode, configCmd.AtAll.Id, site, ctype, on)
+		IConfigAtAllCmd(c.NewMessageContext(log), target, configCmd.AtAll.Id, site, ctype, on)
 	case "title_notify":
 		site, ctype, err := c.ParseRawSiteAndType(configCmd.TitleNotify.Site, "live")
 		if err != nil {
@@ -324,7 +326,7 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		}
 		var on = localutils.Switch2Bool(configCmd.TitleNotify.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.TitleNotify.Id).WithField("on", on)
-		IConfigTitleNotifyCmd(c.NewMessageContext(log), groupCode, configCmd.TitleNotify.Id, site, ctype, on)
+		IConfigTitleNotifyCmd(c.NewMessageContext(log), target, configCmd.TitleNotify.Id, site, ctype, on)
 	case "offline_notify":
 		site, ctype, err := c.ParseRawSiteAndType(configCmd.OfflineNotify.Site, "live")
 		if err != nil {
@@ -334,7 +336,7 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		}
 		var on = localutils.Switch2Bool(configCmd.OfflineNotify.Switch)
 		log = log.WithField("site", site).WithField("id", configCmd.OfflineNotify.Id).WithField("on", on)
-		IConfigOfflineNotifyCmd(c.NewMessageContext(log), groupCode, configCmd.OfflineNotify.Id, site, ctype, on)
+		IConfigOfflineNotifyCmd(c.NewMessageContext(log), target, configCmd.OfflineNotify.Id, site, ctype, on)
 	case "filter":
 		filterCmd := kongPath[1]
 		site, ctype, err := c.ParseRawSiteAndType(configCmd.Filter.Site, "news")
@@ -345,15 +347,15 @@ func (c *LspPrivateCommand) ConfigCommand() {
 		}
 		switch filterCmd {
 		case "type":
-			IConfigFilterCmdType(c.NewMessageContext(log), groupCode, configCmd.Filter.Type.Id, site, ctype, configCmd.Filter.Type.Type)
+			IConfigFilterCmdType(c.NewMessageContext(log), target, configCmd.Filter.Type.Id, site, ctype, configCmd.Filter.Type.Type)
 		case "not_type":
-			IConfigFilterCmdNotType(c.NewMessageContext(log), groupCode, configCmd.Filter.NotType.Id, site, ctype, configCmd.Filter.NotType.Type)
+			IConfigFilterCmdNotType(c.NewMessageContext(log), target, configCmd.Filter.NotType.Id, site, ctype, configCmd.Filter.NotType.Type)
 		case "text":
-			IConfigFilterCmdText(c.NewMessageContext(log), groupCode, configCmd.Filter.Text.Id, site, ctype, configCmd.Filter.Text.Keyword)
+			IConfigFilterCmdText(c.NewMessageContext(log), target, configCmd.Filter.Text.Id, site, ctype, configCmd.Filter.Text.Keyword)
 		case "clear":
-			IConfigFilterCmdClear(c.NewMessageContext(log), groupCode, configCmd.Filter.Clear.Id, site, ctype)
+			IConfigFilterCmdClear(c.NewMessageContext(log), target, configCmd.Filter.Clear.Id, site, ctype)
 		case "show":
-			IConfigFilterCmdShow(c.NewMessageContext(log), groupCode, configCmd.Filter.Show.Id, site, ctype)
+			IConfigFilterCmdShow(c.NewMessageContext(log), target, configCmd.Filter.Show.Id, site, ctype)
 		default:
 			log.WithField("filter_cmd", filterCmd).Errorf("unknown filter command")
 			c.textSend("未知的filter子命令")
@@ -409,7 +411,7 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 
 	log = log.WithFields(localutils.GroupLogFields(groupCode))
 
-	IWatch(c.NewMessageContext(log), groupCode, id, site, watchType, remove)
+	IWatch(c.NewMessageContext(log), mt.NewGroupTarget(groupCode), id, site, watchType, remove)
 }
 
 func (c *LspPrivateCommand) EnableCommand(disable bool) {
@@ -456,9 +458,9 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 		var err error
 
 		if disable {
-			err = c.l.PermissionStateManager.GlobalDisableGroupCommand(command)
+			err = c.l.PermissionStateManager.GlobalDisableCommand(command)
 		} else {
-			err = c.l.PermissionStateManager.GlobalEnableGroupCommand(command)
+			err = c.l.PermissionStateManager.GlobalEnableCommand(command)
 		}
 		if err == nil {
 			c.textReply("成功")
@@ -485,7 +487,7 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 			WithField("global", enableCmd.Global).
 			WithField("targetCommand", enableCmd.Command)
 
-		IEnable(c.NewMessageContext(log), groupCode, command, disable)
+		IEnable(c.NewMessageContext(log), mt.NewGroupTarget(groupCode), command, disable)
 	}
 }
 
@@ -497,7 +499,7 @@ func (c *LspPrivateCommand) GrantCommand() {
 	var grantCmd struct {
 		Group   int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
 		Command string `optional:"" short:"c" xor:"1" help:"命令名"`
-		Role    string `optional:"" short:"r" xor:"1" enum:"Admin,GroupAdmin," help:"Admin / GroupAdmin"`
+		Role    string `optional:"" short:"r" xor:"1" enum:"Admin,TargetAdmin," help:"Admin / TargetAdmin"`
 		Delete  bool   `short:"d" help:"删除模式，执行删除权限操作"`
 		Target  int64  `arg:"" help:"目标qq号"`
 	}
@@ -528,7 +530,7 @@ func (c *LspPrivateCommand) GrantCommand() {
 			return
 		}
 		log = log.WithFields(localutils.GroupLogFields(groupCode))
-		IGrantCmd(c.NewMessageContext(log), groupCode, grantCmd.Command, grantTo, del)
+		IGrantCmd(c.NewMessageContext(log), mt.NewGroupTarget(groupCode), grantCmd.Command, grantTo, del)
 	} else if grantCmd.Role != "" {
 		role := permission.NewRoleFromString(grantCmd.Role)
 		if role != permission.Admin {
@@ -538,7 +540,7 @@ func (c *LspPrivateCommand) GrantCommand() {
 			}
 		}
 		log = log.WithFields(localutils.GroupLogFields(groupCode))
-		IGrantRole(c.NewMessageContext(log), groupCode, role, grantTo, del)
+		IGrantRole(c.NewMessageContext(log), mt.NewGroupTarget(groupCode), role, grantTo, del)
 	}
 }
 
@@ -740,7 +742,7 @@ func (c *LspPrivateCommand) QuitCommand() {
 		log.Debugf("已退出群【%v】", displayName)
 		c.textSend(fmt.Sprintf("已退出群【%v】", displayName))
 	}
-	c.l.RemoveAllByGroup(quitCmd.GroupCode)
+	c.l.RemoveAllByTarget(mt.NewGroupTarget(quitCmd.GroupCode))
 	log.Debugf("已清除群【%v】的数据", displayName)
 	c.textSend(fmt.Sprintf("已清除群【%v】的数据", displayName))
 }
@@ -887,7 +889,7 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 				if err := c.l.LspStateManager.DeleteGroupInvitedRequest(req.RequestId); err != nil {
 					log.Errorf("DeleteGroupInvitedRequest error %v", err)
 				}
-				if err := c.l.PermissionStateManager.GrantGroupRole(req.GroupCode, req.InvitorUin, permission.GroupAdmin); err != nil {
+				if err := c.l.PermissionStateManager.GrantTargetRole(mt.NewGroupTarget(req.GroupCode), req.InvitorUin, permission.TargetAdmin); err != nil {
 					log.Errorf("设置群管理员权限失败 - %v", err)
 				}
 			}
@@ -926,7 +928,7 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 			c.textReply(fmt.Sprintf("成功- 已拒绝 %v(%v) 邀请加群 %v(%v)", request.InvitorNick, request.InvitorUin, request.GroupName, request.GroupCode))
 		} else {
 			c.bot.SolveGroupJoinRequest(request, true, false, "")
-			if err := c.l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
+			if err := c.l.PermissionStateManager.GrantTargetRole(mt.NewGroupTarget(request.GroupCode), request.InvitorUin, permission.TargetAdmin); err != nil {
 				log.Errorf("设置群管理员权限失败 - %v", err)
 			}
 			log.Info("接受加群请求成功")
@@ -1083,7 +1085,7 @@ func (c *LspPrivateCommand) AdminCommand() {
 	} else {
 		if !c.l.PermissionStateManager.RequireAny(
 			permission.AdminRoleRequireOption(c.uin()),
-			permission.GroupAdminRoleRequireOption(adminCmd.Group, c.uin()),
+			permission.TargetAdminRoleRequireOption(mt.NewGroupTarget(adminCmd.Group), c.uin()),
 		) {
 			c.noPermission()
 			return
@@ -1114,7 +1116,7 @@ func (c *LspPrivateCommand) AdminCommand() {
 		if gi == nil {
 			m.Textf("注意：没有找到这个群\n")
 		}
-		ids := c.l.PermissionStateManager.ListGroupAdmin(adminCmd.Group)
+		ids := c.l.PermissionStateManager.ListTargetAdmin(mt.NewGroupTarget(adminCmd.Group))
 		if len(ids) == 0 {
 			m.Text("未查询到GroupAdmin，如果bot刚刚启动，请稍后重试。")
 		} else {
@@ -1165,7 +1167,7 @@ func (c *LspPrivateCommand) SilenceCommand() {
 		return
 	}
 
-	ISilenceCmd(c.NewMessageContext(log), silenceCmd.Group, silenceCmd.Delete)
+	ISilenceCmd(c.NewMessageContext(log), mt.NewGroupTarget(silenceCmd.Group), silenceCmd.Group == 0, silenceCmd.Delete)
 }
 
 func (c *LspPrivateCommand) PingCommand() {
@@ -1221,7 +1223,7 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 	m.Textf("当前群组数：%v\n", len(c.bot.GetGroupList()))
 	for index, cm := range concern.ListConcern() {
 		_, ids, ctypes, err := cm.GetStateManager().ListConcernState(
-			func(groupCode int64, id interface{}, p concern_type.Type) bool {
+			func(target mt.Target, id interface{}, p concern_type.Type) bool {
 				return true
 			})
 		if index > 0 {
@@ -1269,10 +1271,6 @@ func (c *LspPrivateCommand) disabledReply() *message.PrivateMessage {
 	return c.textSend("该命令已被设置为disable，请设置enable后重试")
 }
 
-func (c *LspPrivateCommand) notImplReply() *message.PrivateMessage {
-	return c.textReply("暂未实现，你可以催作者GKD")
-}
-
 func (c *LspPrivateCommand) textSend(text string) *message.PrivateMessage {
 	return c.send(mmsg.NewText(text))
 }
@@ -1287,11 +1285,11 @@ func (c *LspPrivateCommand) textReplyF(format string, args ...interface{}) *mess
 }
 
 func (c *LspPrivateCommand) send(msg *mmsg.MSG) *message.PrivateMessage {
-	return c.l.PM(c.l.SendMsg(msg, mmsg.NewPrivateTarget(c.uin())))[0]
+	return c.l.PM(c.l.SendMsg(msg, mt.NewPrivateTarget(c.uin())))[0]
 }
 
 func (c *LspPrivateCommand) sendChain(msg *mmsg.MSG) []*message.PrivateMessage {
-	return c.l.PM(c.l.SendMsg(msg, mmsg.NewPrivateTarget(c.uin())))
+	return c.l.PM(c.l.SendMsg(msg, mt.NewPrivateTarget(c.uin())))
 }
 
 func (c *LspPrivateCommand) commonTemplateData() map[string]interface{} {
@@ -1330,7 +1328,7 @@ func (c *LspPrivateCommand) name() string {
 
 func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
 	ctx := NewMessageContext()
-	ctx.Target = mmsg.NewPrivateTarget(c.uin())
+	ctx.Source = mt.TargetPrivate
 	ctx.Lsp = c.l
 	ctx.Log = log
 	ctx.SendFunc = func(m *mmsg.MSG) interface{} {
@@ -1340,6 +1338,11 @@ func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	ctx.NoPermissionReplyFunc = func() interface{} {
 		return c.noPermission()
 	}
+	ctx.NotImplReplyFunc = func() interface{} {
+		ctx.Log.Errorf("not impl")
+		c.textReply("暂未实现，你可以催作者GKD")
+		return nil
+	}
 	ctx.DisabledReply = func() interface{} {
 		ctx.Log.Debugf("disabled")
 		return c.disabledReply()
@@ -1348,7 +1351,7 @@ func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 		ctx.Log.Debugf("global disabled")
 		return c.globalDisabledReply()
 	}
-	ctx.Sender = c.sender()
+	ctx.Sender = NewMessageSender(c.uin(), c.name())
 	return ctx
 }
 

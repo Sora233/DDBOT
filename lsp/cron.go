@@ -3,7 +3,7 @@ package lsp
 import (
 	"fmt"
 	"github.com/Sora233/DDBOT/lsp/cfg"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/lsp/template"
 	"github.com/sirupsen/logrus"
 	"sync"
@@ -27,7 +27,7 @@ func (c *cronjobRun) Run() {
 				"target": groupCode,
 			})
 			if m != nil {
-				c.l.SendMsg(m, mmsg.NewGroupTarget(groupCode))
+				c.l.SendMsg(m, mt.NewGroupTarget(groupCode))
 			}
 		}
 	}()
@@ -38,7 +38,7 @@ func (c *cronjobRun) Run() {
 				"target": uin,
 			})
 			if m != nil {
-				c.l.SendMsg(m, mmsg.NewPrivateTarget(uin))
+				c.l.SendMsg(m, mt.NewPrivateTarget(uin))
 			}
 		}
 	}()

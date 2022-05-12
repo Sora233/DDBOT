@@ -4,9 +4,9 @@ import (
 	"errors"
 	"github.com/Mrs4s/MiraiGo/client"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/MiraiGo-Template/utils"
-	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"strconv"
 	"strings"
@@ -49,36 +49,36 @@ func (c *StateManager) CheckAdmin(caller int64) bool {
 	return c.CheckRole(caller, Admin)
 }
 
-func (c *StateManager) CheckGroupAdmin(groupCode int64, caller int64) bool {
-	return c.CheckGroupRole(groupCode, caller, GroupAdmin)
+func (c *StateManager) CheckTargetAdmin(target mt.Target, caller int64) bool {
+	return c.CheckTargetRole(target, caller, TargetAdmin)
 }
 
-func (c *StateManager) CheckGroupRole(groupCode int64, caller int64, role RoleType) bool {
+func (c *StateManager) CheckTargetRole(target mt.Target, caller int64, role RoleType) bool {
 	if role.String() == "" {
 		return false
 	}
-	return c.Exist(c.GroupPermissionKey(groupCode, caller, role.String()))
+	return c.Exist(c.TargetPermissionKey(target, caller, role.String()))
 }
 
-func (c *StateManager) EnableGroupCommand(groupCode int64, command string) error {
+func (c *StateManager) EnableTargetCommand(target mt.Target, command string) error {
 	if c.CheckGlobalCommandDisabled(command) {
 		return ErrGlobalDisabled
 	}
-	return c.operatorEnableKey(c.GroupEnabledKey(groupCode, command), Enable)
+	return c.operatorEnableKey(c.TargetEnabledKey(target, command), Enable)
 }
 
-func (c *StateManager) DisableGroupCommand(groupCode int64, command string) error {
+func (c *StateManager) DisableTargetCommand(target mt.Target, command string) error {
 	if c.CheckGlobalCommandDisabled(command) {
 		return ErrGlobalDisabled
 	}
-	return c.operatorEnableKey(c.GroupEnabledKey(groupCode, command), Disable)
+	return c.operatorEnableKey(c.TargetEnabledKey(target, command), Disable)
 }
 
-func (c *StateManager) GlobalEnableGroupCommand(command string) error {
+func (c *StateManager) GlobalEnableCommand(command string) error {
 	return c.operatorEnableKey(c.GlobalEnabledKey(command), Enable)
 }
 
-func (c *StateManager) GlobalDisableGroupCommand(command string) error {
+func (c *StateManager) GlobalDisableCommand(command string) error {
 	return c.operatorEnableKey(c.GlobalEnabledKey(command), Disable)
 }
 
@@ -95,12 +95,12 @@ func (c *StateManager) operatorEnableKey(key string, status string) error {
 	return nil
 }
 
-// CheckGroupCommandEnabled check global first, check explicit enabled, must exist
-func (c *StateManager) CheckGroupCommandEnabled(groupCode int64, command string) bool {
+// CheckTargetCommandEnabled check global first, check explicit enabled, must exist
+func (c *StateManager) CheckTargetCommandEnabled(target mt.Target, command string) bool {
 	var result bool
 	_ = c.RCover(func() error {
 		result = !c.CheckGlobalCommandDisabled(command) &&
-			c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
+			c.CheckTargetCommandFunc(target, command, func(val string, exist bool) bool {
 				return exist && val == Enable
 			})
 		return nil
@@ -108,12 +108,12 @@ func (c *StateManager) CheckGroupCommandEnabled(groupCode int64, command string)
 	return result
 }
 
-// CheckGroupCommandDisabled check global first, then check explicit disabled, must exist
-func (c *StateManager) CheckGroupCommandDisabled(groupCode int64, command string) bool {
+// CheckTargetCommandDisabled check global first, then check explicit disabled, must exist
+func (c *StateManager) CheckTargetCommandDisabled(target mt.Target, command string) bool {
 	var result bool
 	_ = c.RCover(func() error {
 		result = c.CheckGlobalCommandDisabled(command) ||
-			c.CheckGroupCommandFunc(groupCode, command, func(val string, exist bool) bool {
+			c.CheckTargetCommandFunc(target, command, func(val string, exist bool) bool {
 				return exist && val == Disable
 			})
 		return nil
@@ -127,10 +127,10 @@ func (c *StateManager) CheckGlobalCommandDisabled(command string) bool {
 	})
 }
 
-func (c *StateManager) CheckGroupCommandFunc(groupCode int64, command string, f func(val string, exist bool) bool) bool {
+func (c *StateManager) CheckTargetCommandFunc(target mt.Target, command string, f func(val string, exist bool) bool) bool {
 	var result bool
 	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		val, err := c.Get(c.GroupEnabledKey(groupCode, command))
+		val, err := c.Get(c.TargetEnabledKey(target, command))
 		if err != nil && !localdb.IsNotFound(err) {
 			return err
 		}
@@ -138,7 +138,7 @@ func (c *StateManager) CheckGroupCommandFunc(groupCode int64, command string, f 
 		return nil
 	})
 	if err != nil {
-		logger.WithFields(localutils.GroupLogFields(groupCode)).
+		logger.WithFields(localutils.TargetFields(target)).
 			WithField("command", command).
 			Errorf("check group enable err %v", err)
 		result = false
@@ -177,46 +177,51 @@ func (c *StateManager) UndoGlobalSilence() error {
 	return err
 }
 
-func (c *StateManager) CheckGroupSilence(groupCode int64) bool {
-	return c.CheckGlobalSilence() || c.Exist(c.GroupSilenceKey(groupCode))
+func (c *StateManager) CheckTargetSilence(target mt.Target) bool {
+	return c.CheckGlobalSilence() || c.Exist(c.TargetSilenceKey(target))
 }
 
-func (c *StateManager) GroupSilence(groupCode int64) error {
+func (c *StateManager) TargetSilence(target mt.Target) error {
 	if c.CheckGlobalSilence() {
 		return ErrGlobalSilenced
 	}
-	return c.Set(c.GroupSilenceKey(groupCode), "")
+	return c.Set(c.TargetSilenceKey(target), "")
 }
 
-func (c *StateManager) UndoGroupSilence(groupCode int64) error {
+func (c *StateManager) UndoTargetSilence(target mt.Target) error {
 	if c.CheckGlobalSilence() {
 		return ErrGlobalSilenced
 	}
-	_, err := c.Delete(c.GroupSilenceKey(groupCode), localdb.IgnoreNotFoundOpt())
+	_, err := c.Delete(c.TargetSilenceKey(target), localdb.IgnoreNotFoundOpt())
 	return err
 }
 
-func (c *StateManager) CheckGroupAdministrator(groupCode int64, caller int64) bool {
-	log := logger.WithFields(logrus.Fields{
-		"GroupCode": groupCode,
-		"Caller":    caller,
-	})
-	groupInfo := localutils.GetBot().FindGroup(groupCode)
-	if groupInfo == nil {
-		log.Errorf("nil group info")
+func (c *StateManager) CheckGroupAdministrator(target mt.Target, caller int64) bool {
+	log := logger.WithField("Caller", caller).WithFields(localutils.TargetFields(target))
+	if target.GetTargetType().IsPrivate() {
 		return false
 	}
-	log = log.WithField("GroupName", groupInfo.Name)
-	groupMemberInfo := groupInfo.FindMember(caller)
-	if groupMemberInfo == nil {
-		log.Errorf("nil member info")
+	if target.GetTargetType().IsGroup() {
+		groupInfo := localutils.GetBot().FindGroup(target.(*mt.GroupTarget).GroupCode)
+		if groupInfo == nil {
+			log.Errorf("nil group info")
+			return false
+		}
+		groupMemberInfo := groupInfo.FindMember(caller)
+		if groupMemberInfo == nil {
+			log.Errorf("nil member info")
+			return false
+		}
+		return groupMemberInfo.Permission == client.Administrator || groupMemberInfo.Permission == client.Owner
+	} else if target.GetTargetType().IsGulid() {
+		// TODO
 		return false
 	}
-	return groupMemberInfo.Permission == client.Administrator || groupMemberInfo.Permission == client.Owner
+	return false
 }
 
-func (c *StateManager) CheckGroupCommandPermission(groupCode int64, caller int64, command string) bool {
-	return c.CheckRole(caller, Admin) || c.Exist(c.PermissionKey(groupCode, caller, command))
+func (c *StateManager) CheckTargetCommandPermission(target mt.Target, caller int64, command string) bool {
+	return c.CheckRole(caller, Admin) || c.Exist(c.TargetPermissionKey(target, caller, command))
 }
 
 func (c *StateManager) GrantRole(target int64, role RoleType) error {
@@ -271,18 +276,25 @@ func (c *StateManager) ListAdmin() []int64 {
 	return result
 }
 
-func (c *StateManager) ListGroupAdmin(groupCode int64) []int64 {
+func (c *StateManager) ListTargetAdmin(target mt.Target) []int64 {
 	var result []int64
 	err := c.RCoverTx(func(tx *buntdb.Tx) error {
-		return tx.Ascend(c.GroupPermissionKey(groupCode), func(key, value string) bool {
+		return tx.Ascend(c.TargetPermissionKey(), func(key, value string) bool {
 			splits := strings.Split(key, ":")
 			if len(splits) != 4 {
 				return true
 			}
-			if NewRoleFromString(splits[3]) == GroupAdmin {
+			t := mt.ParseTargetHash(splits[1])
+			if t == nil {
+				return true
+			}
+			if !t.Equal(target) {
+				return true
+			}
+			if NewRoleFromString(splits[3]) == TargetAdmin {
 				i, err := strconv.ParseInt(splits[2], 0, 64)
 				if err != nil {
-					logger.WithField("Key", key).Errorf("Parse GroupPermissionKey error %v", err)
+					logger.WithField("Key", key).Errorf("Parse TargetPermissionKey error %v", err)
 				} else {
 					result = append(result, i)
 				}
@@ -292,49 +304,49 @@ func (c *StateManager) ListGroupAdmin(groupCode int64) []int64 {
 	})
 	if err != nil {
 		result = nil
-		logger.Errorf("ListGroupAdmin error %v", err)
+		logger.Errorf("ListTargetAdmin error %v", err)
 	}
 	return result
 }
 
-func (c *StateManager) GrantGroupRole(groupCode int64, target int64, role RoleType) error {
+func (c *StateManager) GrantTargetRole(target mt.Target, uin int64, role RoleType) error {
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	err := c.Set(c.GroupPermissionKey(groupCode, target, role.String()), "", localdb.SetNoOverWriteOpt())
+	err := c.Set(c.TargetPermissionKey(target, uin, role.String()), "", localdb.SetNoOverWriteOpt())
 	if localdb.IsRollback(err) {
 		return ErrPermissionExist
 	}
 	return err
 }
 
-func (c *StateManager) UngrantGroupRole(groupCode int64, target int64, role RoleType) error {
+func (c *StateManager) UngrantTargetRole(target mt.Target, uin int64, role RoleType) error {
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	_, err := c.Delete(c.GroupPermissionKey(groupCode, target, role.String()))
+	_, err := c.Delete(c.TargetPermissionKey(target, uin, role.String()))
 	if localdb.IsNotFound(err) {
 		return ErrPermissionNotExist
 	}
 	return err
 }
 
-func (c *StateManager) GrantPermission(groupCode int64, target int64, command string) error {
+func (c *StateManager) TargetGrantPermission(target mt.Target, uin int64, command string) error {
 	if c.CheckGlobalCommandDisabled(command) {
 		return ErrGlobalDisabled
 	}
-	err := c.Set(c.PermissionKey(groupCode, target, command), "", localdb.SetNoOverWriteOpt())
+	err := c.Set(c.TargetPermissionKey(target, uin, command), "", localdb.SetNoOverWriteOpt())
 	if localdb.IsRollback(err) {
 		return ErrPermissionExist
 	}
 	return err
 }
 
-func (c *StateManager) UngrantPermission(groupCode int64, target int64, command string) error {
+func (c *StateManager) UngrantPermission(target mt.Target, uin int64, command string) error {
 	if c.CheckGlobalCommandDisabled(command) {
 		return ErrGlobalDisabled
 	}
-	_, err := c.Delete(c.PermissionKey(groupCode, target, command))
+	_, err := c.Delete(c.TargetPermissionKey(target, uin, command))
 	if localdb.IsNotFound(err) {
 		return ErrPermissionNotExist
 	}
@@ -350,27 +362,23 @@ func (c *StateManager) RequireAny(option ...RequireOption) bool {
 	return false
 }
 
-func (c *StateManager) RemoveAllByGroupCode(groupCode int64) ([]string, error) {
+func (c *StateManager) RemoveAllByTarget(target mt.Target) ([]string, error) {
 	var indexKey = []string{
-		c.GroupPermissionKey(),
+		c.TargetPermissionKey(),
 		c.PermissionKey(),
-		c.GroupEnabledKey(),
+		c.TargetEnabledKey(),
 	}
 	var prefixKey = []string{
-		c.GroupPermissionKey(groupCode),
-		c.PermissionKey(groupCode),
-		c.GroupEnabledKey(groupCode),
+		c.TargetPermissionKey(target),
+		c.PermissionKey(target),
+		c.TargetEnabledKey(target),
 	}
 	return localdb.RemoveByPrefixAndIndex(prefixKey, indexKey)
 }
 
 func (c *StateManager) FreshIndex() {
-	for _, pattern := range []localdb.KeyPatternFunc{c.PermissionKey, c.GroupPermissionKey, c.GroupEnabledKey} {
+	for _, pattern := range []localdb.KeyPatternFunc{c.PermissionKey, c.TargetPermissionKey, c.TargetEnabledKey} {
 		c.CreatePatternIndex(pattern, nil)
-	}
-	for _, group := range localutils.GetBot().GetGroupList() {
-		c.CreatePatternIndex(c.GroupPermissionKey, []interface{}{group.Code})
-		c.CreatePatternIndex(c.GroupEnabledKey, []interface{}{group.Code})
 	}
 }
 

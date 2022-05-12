@@ -4,6 +4,7 @@ import (
 	"github.com/Sora233/DDBOT/internal/test"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
 	"testing"
@@ -12,7 +13,7 @@ import (
 func initStateManager(t *testing.T, notifyChan chan<- concern.Notify) *StateManager {
 	sm := NewStateManager(notifyChan)
 	assert.NotNil(t, sm)
-	sm.FreshIndex(test.G1, test.G2)
+	sm.FreshIndex()
 	return sm
 }
 
@@ -26,7 +27,7 @@ func TestStateManager(t *testing.T) {
 	assert.NotNil(t, sm)
 	defer sm.Stop()
 
-	assert.NotNil(t, sm.GetGroupConcernConfig(test.G1, test.UID1))
+	assert.NotNil(t, sm.GetConcernConfig(mt.NewGroupTarget(test.G1), test.UID1))
 
 	userInfo := UserInfo{
 		Uid:  test.UID1,

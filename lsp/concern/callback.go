@@ -1,7 +1,5 @@
 package concern
 
-import "github.com/Mrs4s/MiraiGo/message"
-
 // ICallback 定义了一些针对 Notify 推送前后的 callback
 type ICallback interface {
 	// NotifyBeforeCallback 会在 Notify 推送前获取推送文案内容之前最后一刻进行调用
@@ -9,7 +7,7 @@ type ICallback interface {
 	// b站推送使用了这个callback进行缩略推送
 	NotifyBeforeCallback(notify Notify)
 	// NotifyAfterCallback 会在 Notify 推送后第一时间进行调用
-	NotifyAfterCallback(notify Notify, message *message.GroupMessage)
+	NotifyAfterCallback(notify Notify, message interface{})
 }
 
 // DefaultCallback ICallback 的默认实现，默认为空
@@ -21,5 +19,5 @@ func (d DefaultCallback) NotifyBeforeCallback(notify Notify) {
 }
 
 // NotifyAfterCallback stub
-func (d DefaultCallback) NotifyAfterCallback(notify Notify, message *message.GroupMessage) {
+func (d DefaultCallback) NotifyAfterCallback(notify Notify, message interface{}) {
 }

@@ -2,6 +2,7 @@ package mmsg
 
 import (
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
 	"io/ioutil"
@@ -73,33 +74,47 @@ func (i *ImageBytesElement) Type() message.ElementType {
 	return ImageBytes
 }
 
-func (i *ImageBytesElement) PackToElement(target Target) message.IMessageElement {
+func (i *ImageBytesElement) PackToElement(target mt.Target) message.IMessageElement {
 	if i == nil {
 		return message.NewText("[nil image]\n")
 	}
-	switch target.TargetType() {
-	case TargetPrivate:
+	switch target.GetTargetType() {
+	case mt.TargetPrivate:
+		targetCode := target.(*mt.PrivateTarget).TargetCode()
 		if i.Buf != nil {
-			img, err := utils.UploadPrivateImage(target.TargetCode(), i.Buf, false)
+			img, err := utils.UploadPrivateImage(targetCode, i.Buf, false)
 			if err == nil {
 				return img
 			}
-			logger.Errorf("TargetPrivate %v UploadGroupImage error %v", target.TargetCode(), err)
+			logger.Errorf("TargetPrivate %v UploadGroupImage error %v", targetCode, err)
 		} else {
-			logger.Debugf("TargetPrivate %v nil image buf", target.TargetCode())
+			logger.Debugf("TargetPrivate %v nil image buf", targetCode)
 		}
-	case TargetGroup:
+	case mt.TargetGroup:
+		targetCode := target.(*mt.GroupTarget).TargetCode()
 		if i.Buf != nil {
-			img, err := utils.UploadGroupImage(target.TargetCode(), i.Buf, false)
+			img, err := utils.UploadGroupImage(targetCode, i.Buf, false)
 			if err == nil {
 				return img
 			}
-			logger.Errorf("TargetGroup %v UploadGroupImage error %v", target.TargetCode(), err)
+			logger.Errorf("TargetGroup %v UploadGroupImage error %v", targetCode, err)
 		} else {
-			logger.Debugf("TargetGroup %v nil image buf", target.TargetCode())
+			logger.Debugf("TargetGroup %v nil image buf", targetCode)
+		}
+	case mt.TargetGulid:
+		gulidId := target.(*mt.GulidTarget).GulidId
+		channelId := target.(*mt.GulidTarget).ChannelId
+		if i.Buf != nil {
+			img, err := utils.UploadGulidImage(gulidId, channelId, i.Buf, false)
+			if err == nil {
+				return img
+			}
+			logger.Errorf("TargetGulid %v - %v UploadGroupImage error %v", gulidId, channelId, err)
+		} else {
+			logger.Debugf("TargetGroup %v - %v nil image buf", gulidId, channelId)
 		}
 	default:
-		panic("ImageBytesElement PackToElement: unknown TargetType")
+		panic("ImageBytesElement PackToElement: unknown GetTargetType")
 	}
 	if i.alternative == "" {
 		return message.NewText("")

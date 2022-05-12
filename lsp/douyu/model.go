@@ -3,6 +3,7 @@ package douyu
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/lsp/template"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
@@ -154,11 +155,11 @@ func (m *LiveInfo) Logger() *logrus.Entry {
 
 type ConcernLiveNotify struct {
 	*LiveInfo
-	GroupCode int64 `json:"group_code"`
+	Target mt.Target `json:"-"`
 }
 
-func (notify *ConcernLiveNotify) GetGroupCode() int64 {
-	return notify.GroupCode
+func (notify *ConcernLiveNotify) GetTarget() mt.Target {
+	return notify.Target
 }
 
 func (notify *ConcernLiveNotify) ToMessage() (m *mmsg.MSG) {
@@ -169,15 +170,15 @@ func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
 	if notify == nil {
 		return logger
 	}
-	return notify.LiveInfo.Logger().WithFields(localutils.GroupLogFields(notify.GroupCode))
+	return notify.LiveInfo.Logger().WithFields(localutils.TargetFields(notify.GetTarget()))
 }
 
-func NewConcernLiveNotify(groupCode int64, l *LiveInfo) *ConcernLiveNotify {
+func NewConcernLiveNotify(target mt.Target, l *LiveInfo) *ConcernLiveNotify {
 	if l == nil {
 		return nil
 	}
 	return &ConcernLiveNotify{
-		LiveInfo:  l,
-		GroupCode: groupCode,
+		LiveInfo: l,
+		Target:   target,
 	}
 }

@@ -5,6 +5,10 @@ import (
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/stretchr/testify/assert"
 	"image"
+	_ "image/draw"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"testing"
 )
 

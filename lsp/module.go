@@ -12,6 +12,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/lsp/template"
 	"github.com/Sora233/DDBOT/lsp/version"
@@ -92,6 +93,8 @@ func (l *Lsp) Init() {
 		}
 	}
 
+	db := localdb.MustGetClient()
+
 	curVersion := version.GetCurrentVersion(LspVersionName)
 
 	if curVersion < 0 {
@@ -108,7 +111,6 @@ func (l *Lsp) Init() {
 		if err != nil {
 			log.Fatalf(`无法创建备份文件<%v>：%v`, backupFileName, err)
 		}
-		db := localdb.MustGetClient()
 		err = db.Save(f)
 		if err != nil {
 			log.Fatalf(`无法备份数据库到<%v>：%v`, backupFileName, err)
@@ -219,7 +221,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			"member_name": event.Member.DisplayName(),
 		})
 		if m != nil {
-			l.SendMsg(m, mmsg.NewGroupTarget(event.Group.Code))
+			l.SendMsg(m, mt.NewGroupTarget(event.Group.Code))
 		}
 	})
 	bot.OnGroupMemberLeaved(func(qqClient *client.QQClient, event *client.MemberLeaveGroupEvent) {
@@ -234,7 +236,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			"member_name": event.Member.DisplayName(),
 		})
 		if m != nil {
-			l.SendMsg(m, mmsg.NewGroupTarget(event.Group.Code))
+			l.SendMsg(m, mt.NewGroupTarget(event.Group.Code))
 		}
 	})
 	bot.OnGroupInvited(func(qqClient *client.QQClient, request *client.GroupInvitedRequest) {
@@ -291,9 +293,9 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 				"command":     CommandMaps,
 			})
 			if m != nil {
-				l.SendMsg(m, mmsg.NewPrivateTarget(request.InvitorUin))
+				l.SendMsg(m, mt.NewPrivateTarget(request.InvitorUin))
 			}
-			if err := l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
+			if err := l.PermissionStateManager.GrantTargetRole(mt.NewGroupTarget(request.GroupCode), request.InvitorUin, permission.TargetAdmin); err != nil {
 				if err != permission.ErrPermissionExist {
 					log.Errorf("设置群管理员权限失败 - %v", err)
 				}
@@ -364,7 +366,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			"command":     CommandMaps,
 		})
 		if m != nil {
-			l.SendMsg(m, mmsg.NewPrivateTarget(event.Friend.Uin))
+			l.SendMsg(m, mt.NewPrivateTarget(event.Friend.Uin))
 		}
 	})
 
@@ -401,7 +403,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 					if err = l.LspStateManager.DeleteGroupInvitedRequest(req.RequestId); err != nil {
 						log.WithField("RequestId", req.RequestId).Errorf("DeleteGroupInvitedRequest error %v", err)
 					}
-					if err = l.PermissionStateManager.GrantGroupRole(info.Code, req.InvitorUin, permission.GroupAdmin); err != nil {
+					if err = l.PermissionStateManager.GrantTargetRole(mt.NewGroupTarget(info.Code), req.InvitorUin, permission.TargetAdmin); err != nil {
 						if err != permission.ErrPermissionExist {
 							log.WithField("target", req.InvitorUin).Errorf("设置群管理员权限失败 - %v", err)
 						}
@@ -416,10 +418,11 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		log := logger.WithField("GroupCode", event.Group.Code).
 			WithField("GroupName", event.Group.Name).
 			WithField("MemberCount", event.Group.MemberCount)
+		groupTarge := mt.NewGroupTarget(event.Group.Code)
 		for _, c := range concern.ListConcern() {
 			_, ids, _, err := c.GetStateManager().ListConcernState(
-				func(groupCode int64, id interface{}, p concern_type.Type) bool {
-					return groupCode == event.Group.Code
+				func(target mt.Target, id interface{}, p concern_type.Type) bool {
+					return target.Equal(groupTarge)
 				})
 			if err != nil {
 				log = log.WithField(fmt.Sprintf("%v订阅", c.Site()), "查询失败")
@@ -432,7 +435,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		} else {
 			log.Infof("被 %v 踢出群聊", event.Operator.DisplayName())
 		}
-		l.RemoveAllByGroup(event.Group.Code)
+		l.RemoveAllByTarget(mt.NewGroupTarget(event.Group.Code))
 	})
 
 	bot.OnGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {
@@ -449,9 +452,20 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if Debug {
 			cmd.Debug()
 		}
-		if !l.LspStateManager.IsMuted(msg.GroupCode, bot.Uin) {
+		if !l.LspStateManager.IsMuted(mt.NewGroupTarget(msg.GroupCode), bot.Uin) {
 			go cmd.Execute()
 		}
+	})
+
+	bot.GuildService.OnGuildChannelMessage(func(qqClient *client.QQClient, msg *message.GuildChannelMessage) {
+		if len(msg.Elements) <= 0 {
+			return
+		}
+		if !l.started.Load() {
+			return
+		}
+		cmd := NewLspGulidChannelCommand(l, msg)
+		go cmd.Execute()
 	})
 
 	bot.OnSelfGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {
@@ -464,7 +478,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	})
 
 	bot.OnGroupMuted(func(qqClient *client.QQClient, event *client.GroupMuteEvent) {
-		if err := l.LspStateManager.Muted(event.GroupCode, event.TargetUin, event.Time); err != nil {
+		if err := l.LspStateManager.Muted(mt.NewGroupTarget(event.GroupCode), event.TargetUin, event.Time); err != nil {
 			logger.Errorf("Muted failed %v", err)
 		}
 	})
@@ -586,7 +600,7 @@ func (l *Lsp) NewVersionNotify(newVersionChan <-chan string) {
 				continue
 			}
 			logger.WithField("Target", admin).Infof("new ddbot version notify")
-			l.SendMsg(m, mmsg.NewPrivateTarget(admin))
+			l.SendMsg(m, mt.NewPrivateTarget(admin))
 		}
 	}
 }
@@ -599,11 +613,11 @@ func (l *Lsp) FreshIndex() {
 	l.LspStateManager.FreshIndex()
 }
 
-func (l *Lsp) RemoveAllByGroup(groupCode int64) {
+func (l *Lsp) RemoveAllByTarget(target mt.Target) {
 	for _, c := range concern.ListConcern() {
-		c.GetStateManager().RemoveAllByGroupCode(groupCode)
+		c.GetStateManager().RemoveAllByTarget(target)
 	}
-	l.PermissionStateManager.RemoveAllByGroupCode(groupCode)
+	l.PermissionStateManager.RemoveAllByTarget(target)
 }
 
 func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.Image, error) {
@@ -613,32 +627,43 @@ func (l *Lsp) GetImageFromPool(options ...image_pool.OptionFunc) ([]image_pool.I
 	return l.pool.Get(options...)
 }
 
-func (l *Lsp) send(msg *message.SendingMessage, target mmsg.Target) interface{} {
-	switch target.TargetType() {
-	case mmsg.TargetGroup:
-		return l.sendGroupMessage(target.TargetCode(), msg)
-	case mmsg.TargetPrivate:
-		return l.sendPrivateMessage(target.TargetCode(), msg)
+func (l *Lsp) send(msg *message.SendingMessage, target mt.Target) interface{} {
+	switch target.GetTargetType() {
+	case mt.TargetGroup:
+		return l.sendGroupMessage(target.(*mt.GroupTarget).TargetCode(), msg)
+	case mt.TargetPrivate:
+		return l.sendPrivateMessage(target.(*mt.PrivateTarget).TargetCode(), msg)
+	case mt.TargetGulid:
+		gulidTarget := target.(*mt.GulidTarget)
+		return l.sendGulidMessage(gulidTarget.GulidId, gulidTarget.ChannelId, msg)
 	}
 	panic("unknown target type")
 }
 
 // SendMsg 总是返回至少一个
-func (l *Lsp) SendMsg(m *mmsg.MSG, target mmsg.Target) (res []interface{}) {
+func (l *Lsp) SendMsg(m *mmsg.MSG, target mt.Target) (res []interface{}) {
 	msgs := m.ToMessage(target)
 	if len(msgs) == 0 {
-		switch target.TargetType() {
-		case mmsg.TargetPrivate:
+		switch target.GetTargetType() {
+		case mt.TargetPrivate:
 			res = append(res, &message.PrivateMessage{Id: -1})
-		case mmsg.TargetGroup:
+		case mt.TargetGroup:
 			res = append(res, &message.GroupMessage{Id: -1})
+		case mt.TargetGulid:
+			res = append(res, &message.GuildChannelMessage{Id: 0})
 		}
 		return
 	}
 	for idx, msg := range msgs {
 		r := l.send(msg, target)
 		res = append(res, r)
-		if reflect.ValueOf(r).Elem().FieldByName("Id").Int() == -1 {
+		var v int64
+		if target.GetTargetType() == mt.TargetGulid {
+			v = int64(reflect.ValueOf(r).Elem().FieldByName("Id").Uint())
+		} else {
+			v = reflect.ValueOf(r).Elem().FieldByName("Id").Int()
+		}
+		if v == -1 || v == 0 {
 			break
 		}
 		if idx > 1 {
@@ -662,6 +687,54 @@ func (l *Lsp) PM(res []interface{}) []*message.PrivateMessage {
 		result = append(result, r.(*message.PrivateMessage))
 	}
 	return result
+}
+
+func (l *Lsp) GCM(res []interface{}) []*message.GuildChannelMessage {
+	var result []*message.GuildChannelMessage
+	for _, r := range res {
+		result = append(result, r.(*message.GuildChannelMessage))
+	}
+	return result
+}
+
+func (l *Lsp) sendGulidMessage(gulidId uint64, channelId uint64, msg *message.SendingMessage) (res *message.GuildChannelMessage) {
+	if bot.Instance == nil || !bot.Instance.Online.Load() {
+		return &message.GuildChannelMessage{Id: 0, Elements: msg.Elements}
+	}
+	if msg == nil {
+		logger.WithFields(localutils.GulidChannelLogFields(gulidId, channelId)).Debug("send with nil message")
+		return &message.GuildChannelMessage{Id: 0}
+	}
+	msg.Elements = localutils.MessageFilter(msg.Elements, func(element message.IMessageElement) bool {
+		return element != nil
+	})
+	if len(msg.Elements) == 0 {
+		logger.WithFields(localutils.GulidChannelLogFields(gulidId, channelId)).Debug("send with empty message")
+		return &message.GuildChannelMessage{Id: 0}
+	}
+	res, _ = bot.Instance.GuildService.SendGuildChannelMessage(gulidId, channelId, msg)
+	if res == nil || res.Id == 0 {
+		logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
+			WithFields(localutils.GulidChannelLogFields(gulidId, channelId)).
+			Errorf("发送消息失败")
+	}
+	if res == nil {
+		res = &message.GuildChannelMessage{Id: 0, Elements: msg.Elements}
+	}
+	if res == nil || res.Id == 0 {
+		if msg.Count(func(e message.IMessageElement) bool {
+			return e.Type() == message.At && e.(*message.AtElement).Target == 0
+		}) > 0 {
+			logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
+				WithFields(localutils.GulidChannelLogFields(gulidId, channelId)).
+				Errorf("发送群消息失败，可能是@全员次数用尽")
+		} else {
+			logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
+				WithFields(localutils.GulidChannelLogFields(gulidId, channelId)).
+				Errorf("发送群消息失败，可能是被禁言或者账号被风控")
+		}
+	}
+	return res
 }
 
 func (l *Lsp) sendPrivateMessage(uin int64, msg *message.SendingMessage) (res *message.PrivateMessage) {
@@ -713,7 +786,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 	if bot.Instance == nil || !bot.Instance.Online.Load() {
 		return &message.GroupMessage{Id: -1, Elements: msg.Elements}
 	}
-	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
+	if l.LspStateManager.IsMuted(mt.NewGroupTarget(groupCode), bot.Instance.Uin) {
 		logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
 			WithFields(localutils.GroupLogFields(groupCode)).
 			Debug("BOT被禁言无法发送群消息")

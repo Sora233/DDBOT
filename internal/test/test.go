@@ -3,7 +3,6 @@ package test
 import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/MiraiGo-Template/bot"
@@ -61,18 +60,6 @@ const (
 	T1           concern_type.Type = "t1"
 	T2           concern_type.Type = "t2"
 	T3           concern_type.Type = "t3"
-)
-
-var (
-	Sender1 = &message.Sender{
-		Uin:      UID1,
-		Nickname: NAME1,
-	}
-
-	Sender2 = &message.Sender{
-		Uin:      UID2,
-		Nickname: NAME2,
-	}
 )
 
 func InitBuntdb(t *testing.T) {

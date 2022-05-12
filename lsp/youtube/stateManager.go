@@ -3,6 +3,7 @@ package youtube
 import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"time"
 )
 
@@ -37,8 +38,8 @@ func (s *StateManager) AddVideo(v *VideoInfo) error {
 	return s.SetJson(s.VideoKey(v.ChannelId, v.VideoId), v)
 }
 
-func (s *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
-	return NewGroupConcernConfig(s.StateManager.GetGroupConcernConfig(groupCode, id))
+func (s *StateManager) GetConcernConfig(target mt.Target, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(s.StateManager.GetConcernConfig(target, id))
 }
 
 func NewStateManager(notify chan<- concern.Notify) *StateManager {

@@ -38,6 +38,19 @@ func UploadGroupImage(groupCode int64, img []byte, isNorm bool) (image *message.
 	return bot.Instance.UploadGroupImage(groupCode, bytes.NewReader(img))
 }
 
+func UploadGulidImage(gulidId uint64, channelId uint64, img []byte, isNorm bool) (image *message.GuildImageElement, err error) {
+	if isNorm {
+		img, err = ImageNormSize(img)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if !GetBot().IsOnline() {
+		return nil, errors.New("bot offline")
+	}
+	return bot.Instance.GuildService.UploadGuildImage(gulidId, channelId, bytes.NewReader(img))
+}
+
 func UploadPrivateImage(uin int64, img []byte, isNorm bool) (*message.FriendImageElement, error) {
 	var err error
 	if isNorm {

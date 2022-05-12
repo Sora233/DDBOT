@@ -44,6 +44,7 @@ func ImageGet(url string, opt ...requests.Option) ([]byte, error) {
 		opts := []requests.Option{
 			requests.TimeoutOption(time.Second * 15),
 			requests.RetryOption(3),
+			requests.AddUAOption(),
 		}
 		opts = append(opts, opt...)
 

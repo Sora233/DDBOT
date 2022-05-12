@@ -5,22 +5,23 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/sirupsen/logrus"
 )
 
 type TestEvent struct {
-	site      string
-	ctype     concern_type.Type
-	id        string
-	groupCode int64
+	site   string
+	ctype  concern_type.Type
+	id     string
+	target mt.Target
 }
 
-func (t *TestEvent) GetGroupCode() int64 {
-	return t.groupCode
+func (t *TestEvent) GetTarget() mt.Target {
+	return t.target
 }
 
 func (t *TestEvent) ToMessage() *mmsg.MSG {
-	return mmsg.NewTextf("%v %v %v %v", t.site, t.ctype.String(), t.groupCode, t.id)
+	return mmsg.NewTextf("%v %v %v %v", t.site, t.ctype.String(), t.target, t.id)
 }
 
 func (t *TestEvent) Site() string {
@@ -38,7 +39,7 @@ func (t *TestEvent) GetUid() interface{} {
 func (t *TestEvent) Logger() *logrus.Entry {
 	return logrus.WithField("site", t.site).
 		WithField("ctype", t.ctype.String()).
-		WithField("id", t.id).WithField("group_code", t.groupCode)
+		WithField("id", t.id).WithField("group_code", t.target)
 }
 
 type TestConcern struct {
@@ -47,12 +48,12 @@ type TestConcern struct {
 	Ctypes []concern_type.Type
 }
 
-func (t *TestConcern) NewTestEvent(p concern_type.Type, groupCode int64, id string) *TestEvent {
+func (t *TestConcern) NewTestEvent(p concern_type.Type, target mt.Target, id string) *TestEvent {
 	return &TestEvent{
-		site:      t.site,
-		ctype:     p,
-		id:        id,
-		groupCode: groupCode,
+		site:   t.site,
+		ctype:  p,
+		id:     id,
+		target: target,
 	}
 }
 
@@ -68,13 +69,13 @@ func (t *TestConcern) ParseId(s string) (interface{}, error) {
 	return s, nil
 }
 
-func (t *TestConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
-	_, err := t.StateManager.AddGroupConcern(groupCode, id, ctype)
+func (t *TestConcern) Add(ctx mmsg.IMsgCtx, target mt.Target, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	_, err := t.StateManager.AddTargetConcern(target, id, ctype)
 	return concern.NewIdentity(id, id.(string)), err
 }
 
-func (t *TestConcern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
-	_, err := t.StateManager.RemoveGroupConcern(groupCode, id, ctype)
+func (t *TestConcern) Remove(ctx mmsg.IMsgCtx, target mt.Target, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+	_, err := t.StateManager.RemoveTargetConcern(target, id, ctype)
 	return concern.NewIdentity(id, id.(string)), err
 }
 
@@ -95,9 +96,9 @@ func (t *TestConcern) UseNotifyGenerator(generator concern.NotifyGeneratorFunc) 
 }
 
 func (t *TestConcern) TestNotifyGenerator() concern.NotifyGeneratorFunc {
-	return func(groupCode int64, event concern.Event) []concern.Notify {
+	return func(target mt.Target, event concern.Event) []concern.Notify {
 		e := event.(*TestEvent)
-		e.groupCode = groupCode
+		e.target = target
 		return []concern.Notify{e}
 	}
 }

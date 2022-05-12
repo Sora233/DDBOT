@@ -3,6 +3,7 @@ package mmsg
 import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -39,8 +40,8 @@ func TestMSG(t *testing.T) {
 	m = m.Clone()
 	assert.Len(t, m.Elements(), 17)
 
-	m.ToCombineMessage(NewGroupTarget(test.G1))
-	m.ToCombineMessage(NewPrivateTarget(1))
+	m.ToCombineMessage(mt.NewGroupTarget(test.G1))
+	m.ToCombineMessage(mt.NewPrivateTarget(1))
 
 	m = NewText("1")
 	m = NewTextf("asd %v", "xxx")

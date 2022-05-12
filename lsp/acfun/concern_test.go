@@ -4,10 +4,16 @@ import (
 	"context"
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+)
+
+var (
+	g1 = mt.NewGroupTarget(test.G1)
+	g2 = mt.NewGroupTarget(test.G2)
 )
 
 func TestNewConcern(t *testing.T) {
@@ -63,7 +69,7 @@ func TestNewConcern(t *testing.T) {
 	case <-time.After(time.Second):
 	}
 
-	_, err = c.StateManager.AddGroupConcern(test.G1, test.UID1, Live)
+	_, err = c.StateManager.AddTargetConcern(g1, test.UID1, Live)
 	assert.Nil(t, err)
 	assert.Nil(t, c.StateManager.AddLiveInfo(origLiveInfo))
 
@@ -77,14 +83,14 @@ func TestNewConcern(t *testing.T) {
 	case notify := <-testNotifyChan:
 		assert.NotNil(t, notify)
 		assert.EqualValues(t, test.UID1, notify.GetUid())
-		assert.EqualValues(t, test.G1, notify.GetGroupCode())
+		assert.True(t, notify.GetTarget().Equal(g1))
 	case <-time.After(time.Second):
 		assert.Fail(t, "no item received")
 	}
 
-	_, err = c.StateManager.AddGroupConcern(test.G2, test.UID1, Live)
+	_, err = c.StateManager.AddTargetConcern(g2, test.UID1, Live)
 	assert.Nil(t, err)
-	_, err = c.StateManager.AddGroupConcern(test.G2, test.UID2, Live)
+	_, err = c.StateManager.AddTargetConcern(g2, test.UID2, Live)
 	assert.Nil(t, err)
 	err = c.StateManager.AddUserInfo(&UserInfo{
 		Uid:  test.UID2,
@@ -103,18 +109,18 @@ func TestNewConcern(t *testing.T) {
 		case notify := <-testNotifyChan:
 			assert.NotNil(t, notify)
 			assert.EqualValues(t, test.UID1, notify.GetUid())
-			assert.True(t, notify.GetGroupCode() == test.G1 || notify.GetGroupCode() == test.G2)
+			assert.True(t, notify.GetTarget().Equal(g1) || notify.GetTarget().Equal(g2))
 		case <-time.After(time.Second):
 			assert.Fail(t, "no item received")
 		}
 	}
 
-	go c.GroupWatchNotify(test.G2, test.UID1)
+	go c.TargetWatchNotify(g2, test.UID1)
 	select {
 	case notify := <-testNotifyChan:
 		assert.NotNil(t, notify)
 		assert.EqualValues(t, test.UID1, notify.GetUid())
-		assert.EqualValues(t, test.G2, notify.GetGroupCode())
+		assert.True(t, notify.GetTarget().Equal(g2))
 		assert.NotNil(t, notify.Logger())
 		assert.NotNil(t, notify.ToMessage())
 	case <-time.After(time.Second):
@@ -136,12 +142,12 @@ func TestNewConcern2(t *testing.T) {
 
 	const testId int64 = 1
 
-	info, err := c.Add(nil, test.G1, testId, Live)
+	info, err := c.Add(nil, g1, testId, Live)
 	assert.Nil(t, err)
 	assert.EqualValues(t, "admin", info.GetName())
 	assert.EqualValues(t, testId, info.GetUid())
 
-	info, err = c.Remove(nil, test.G1, testId, Live)
+	info, err = c.Remove(nil, g1, testId, Live)
 	assert.Nil(t, err)
 	assert.EqualValues(t, "admin", info.GetName())
 	assert.EqualValues(t, testId, info.GetUid())

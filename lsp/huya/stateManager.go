@@ -4,6 +4,7 @@ import (
 	"errors"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"time"
 )
 
@@ -33,8 +34,8 @@ func (c *StateManager) DeleteLiveInfo(id string) error {
 	return err
 }
 
-func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
-	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id))
+func (c *StateManager) GetConcernConfig(target mt.Target, id interface{}) (concernConfig concern.IConfig) {
+	return NewGroupConcernConfig(c.StateManager.GetConcernConfig(target, id))
 }
 
 func NewStateManager(notify chan<- concern.Notify) *StateManager {

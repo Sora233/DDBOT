@@ -2,6 +2,7 @@ package douyu
 
 import (
 	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -48,11 +49,11 @@ func TestLiveInfo(t *testing.T) {
 	assert.Equal(t, VideoLoopStatus_Off, l.GetVideoLoop())
 	assert.False(t, l.GetLiveStatusChanged())
 
-	notify := NewConcernLiveNotify(test.G1, l)
+	notify := NewConcernLiveNotify(mt.NewGroupTarget(test.G1), l)
 	assert.NotNil(t, notify)
 	assert.Equal(t, Live, notify.Type())
 	assert.NotNil(t, notify.Logger())
-	assert.Equal(t, test.G1, notify.GetGroupCode())
+	assert.True(t, notify.GetTarget().Equal(mt.NewGroupTarget(test.G1)))
 	assert.Equal(t, test.UID1, notify.GetUid())
 	assert.EqualValues(t, Site, notify.Site())
 

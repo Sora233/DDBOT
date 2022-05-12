@@ -54,14 +54,14 @@ func TestStateManager_IsMuted(t *testing.T) {
 
 	sm := newStateManager(t)
 	assert.NotNil(t, sm)
-	assert.False(t, sm.IsMuted(test.G1, test.UID1))
-	assert.Nil(t, sm.Muted(test.G1, test.UID1, 999999))
-	assert.True(t, sm.IsMuted(test.G1, test.UID1))
-	assert.Nil(t, sm.Muted(test.G1, test.UID1, 0))
-	assert.False(t, sm.IsMuted(test.G1, test.UID1))
-	assert.Nil(t, sm.Muted(test.G1, 0, -1))
-	assert.True(t, sm.IsMuted(test.G1, 0))
-	assert.Nil(t, sm.Muted(test.G1, test.UID1, -1))
+	assert.False(t, sm.IsMuted(g1, test.UID1))
+	assert.Nil(t, sm.Muted(g1, test.UID1, 999999))
+	assert.True(t, sm.IsMuted(g1, test.UID1))
+	assert.Nil(t, sm.Muted(g1, test.UID1, 0))
+	assert.False(t, sm.IsMuted(g1, test.UID1))
+	assert.Nil(t, sm.Muted(g1, 0, -1))
+	assert.True(t, sm.IsMuted(g1, 0))
+	assert.Nil(t, sm.Muted(g1, test.UID1, -1))
 }
 
 func TestStateManager_GetMessageImageUrl(t *testing.T) {

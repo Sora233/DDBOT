@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -37,7 +38,7 @@ func TestLoadTemplate(t *testing.T) {
 	err = tmpl.ExecuteTemplate(m, "trigger.group.member_in.tmpl", nil)
 	assert.Nil(t, err)
 	assert.Empty(t, msgstringer.MsgToString(m.Elements()))
-	assert.Empty(t, m.ToMessage(mmsg.NewGroupTarget(test.G1)))
+	assert.Empty(t, m.ToMessage(mt.NewGroupTarget(test.G1)))
 }
 
 func TestTemplateOption(t *testing.T) {

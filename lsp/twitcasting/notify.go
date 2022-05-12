@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	localutils "github.com/Sora233/DDBOT/utils"
@@ -34,16 +35,19 @@ func (e *LiveEvent) GetUid() interface{} {
 }
 
 func (e *LiveEvent) Logger() *logrus.Entry {
-	return logger.WithField("Id", e.Id)
+	return logger.WithFields(logrus.Fields{
+		"Id":   e.Id,
+		"Name": e.Name,
+	})
 }
 
 type LiveNotify struct {
-	groupCode int64
+	target mt.Target
 	LiveEvent
 }
 
-func (n *LiveNotify) GetGroupCode() int64 {
-	return n.groupCode
+func (n *LiveNotify) GetTarget() mt.Target {
+	return n.target
 }
 
 func (n *LiveNotify) ToMessage() *mmsg.MSG {
@@ -108,5 +112,5 @@ func (n *LiveNotify) ToMessage() *mmsg.MSG {
 }
 
 func (n *LiveNotify) Logger() *logrus.Entry {
-	return n.LiveEvent.Logger().WithFields(localutils.GroupLogFields(n.groupCode))
+	return n.LiveEvent.Logger().WithFields(localutils.TargetFields(n.GetTarget()))
 }

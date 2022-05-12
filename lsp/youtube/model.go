@@ -3,6 +3,7 @@ package youtube
 import (
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	localutils "github.com/Sora233/DDBOT/utils"
@@ -156,11 +157,11 @@ func NewInfo(vinfo []*VideoInfo) *Info {
 
 type ConcernNotify struct {
 	*VideoInfo
-	GroupCode int64 `json:"group_code"`
+	Target mt.Target `json:"-"`
 }
 
-func (notify *ConcernNotify) GetGroupCode() int64 {
-	return notify.GroupCode
+func (notify *ConcernNotify) GetTarget() mt.Target {
+	return notify.Target
 }
 
 func (notify *ConcernNotify) ToMessage() (m *mmsg.MSG) {
@@ -171,16 +172,16 @@ func (notify *ConcernNotify) Logger() *logrus.Entry {
 	if notify == nil {
 		return logger
 	}
-	return notify.VideoInfo.Logger().WithFields(localutils.GroupLogFields(notify.GroupCode))
+	return notify.VideoInfo.Logger().WithFields(localutils.TargetFields(notify.GetTarget()))
 }
 
-func NewConcernNotify(groupCode int64, info *VideoInfo) *ConcernNotify {
+func NewConcernNotify(target mt.Target, info *VideoInfo) *ConcernNotify {
 	if info == nil {
 		return nil
 	}
 	return &ConcernNotify{
 		VideoInfo: info,
-		GroupCode: groupCode,
+		Target:    target,
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"github.com/sirupsen/logrus"
@@ -30,25 +31,25 @@ func TestLsp_ConcernNotify(t *testing.T) {
 
 	var result *mmsg.MSG
 	msgChan := make(chan *mmsg.MSG, 10)
-	target := mmsg.NewGroupTarget(test.G1)
-	ctx := NewCtx(t, msgChan, test.Sender1, target)
+	target := mt.NewGroupTarget(test.G1)
+	ctx := NewCtx(t, msgChan, Sender1, target.GetTargetType())
 
-	err := Instance.PermissionStateManager.GrantRole(test.Sender1.Uin, permission.Admin)
+	err := Instance.PermissionStateManager.GrantRole(Sender1.Uin(), permission.Admin)
 	assert.Nil(t, err)
 
 	tc1 := newTestConcern(t, testEventChan, testNotifyChan, test.Site1, []concern_type.Type{test.T1})
 	concern.RegisterConcern(tc1)
 	defer tc1.Stop()
 
-	IWatch(ctx, test.G1, test.NAME1, test.Site1, test.T1, false)
+	IWatch(ctx, g1, test.NAME1, test.Site1, test.T1, false)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), success)
 
-	IWatch(ctx, test.G2, test.NAME1, test.Site1, test.T1, false)
+	IWatch(ctx, g2, test.NAME1, test.Site1, test.T1, false)
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), success)
 
-	testEventChan <- tc1.NewTestEvent(test.T1, 0, test.NAME1)
+	testEventChan <- tc1.NewTestEvent(test.T1, mt.NewGroupTarget(0), test.NAME1)
 
 	go Instance.ConcernNotify()
 	Instance.notifyWg.Wait()
@@ -61,7 +62,7 @@ func TestNewAtAllMsg(t *testing.T) {
 	var msg = mmsg.NewMSG()
 	newAtAllMsg(msg)
 	assert.NotNil(t, msg)
-	e := msg.ToCombineMessage(mmsg.NewGroupTarget(test.G1)).FirstOrNil(func(e message.IMessageElement) bool {
+	e := msg.ToCombineMessage(g1).FirstOrNil(func(e message.IMessageElement) bool {
 		return e.Type() == message.At
 	})
 	assert.NotNil(t, e)

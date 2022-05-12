@@ -28,17 +28,17 @@ func (g *GroupConcernFilterConfigByText) ToString() string {
 	return string(b)
 }
 
-// GroupConcernFilterConfig 过滤器配置
-type GroupConcernFilterConfig struct {
+// ConcernFilterConfig 过滤器配置
+type ConcernFilterConfig struct {
 	Type   string `json:"type"`
 	Config string `json:"config"`
 }
 
-func (g *GroupConcernFilterConfig) Empty() bool {
-	return g.Type == "" || g.Config == ""
+func (g *ConcernFilterConfig) Empty() bool {
+	return g == nil || g.Type == "" || g.Config == ""
 }
 
-func (g *GroupConcernFilterConfig) GetFilterByType() (*GroupConcernFilterConfigByType, error) {
+func (g *ConcernFilterConfig) GetFilterByType() (*GroupConcernFilterConfigByType, error) {
 	if g.Type != FilterTypeType && g.Type != FilterTypeNotType {
 		return nil, errors.New("filter type mismatched")
 	}
@@ -47,7 +47,7 @@ func (g *GroupConcernFilterConfig) GetFilterByType() (*GroupConcernFilterConfigB
 	return result, err
 }
 
-func (g *GroupConcernFilterConfig) GetFilterByText() (*GroupConcernFilterConfigByText, error) {
+func (g *ConcernFilterConfig) GetFilterByText() (*GroupConcernFilterConfigByText, error) {
 	if g.Type != FilterTypeText {
 		return nil, errors.New("filter type mismatched")
 	}

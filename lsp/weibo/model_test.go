@@ -2,6 +2,7 @@ package weibo
 
 import (
 	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -63,13 +64,13 @@ func TestNewsInfo(t *testing.T) {
 	assert.EqualValues(t, News, newsInfo.Type())
 	assert.NotNil(t, newsInfo.Logger())
 
-	concernNews := NewConcernNewsNotify(test.G1, newsInfo)
+	concernNews := NewConcernNewsNotify(mt.NewGroupTarget(test.G1), newsInfo)
 	assert.NotNil(t, concernNews)
 	assert.Len(t, concernNews, len(newsInfo.Cards))
 
 	for _, concernNewsNotify := range concernNews {
 		assert.EqualValues(t, News, concernNewsNotify.Type())
-		assert.EqualValues(t, test.G1, concernNewsNotify.GetGroupCode())
+		assert.True(t, concernNewsNotify.GetTarget().Equal(mt.NewGroupTarget(test.G1)))
 		assert.NotNil(t, concernNewsNotify.Logger())
 		assert.NotNil(t, concernNewsNotify.ToMessage())
 	}

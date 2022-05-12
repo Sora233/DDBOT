@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -49,17 +50,17 @@ func TestConcern(t *testing.T) {
 	})
 	assert.Nil(t, err)
 
-	_, err = c.StateManager.AddGroupConcern(test.G1, test.NAME1, Live)
+	_, err = c.StateManager.AddTargetConcern(mt.NewGroupTarget(test.G1), test.NAME1, Live)
 	assert.Nil(t, err)
 
-	_, err = c.StateManager.AddGroupConcern(test.G2, test.NAME1, Live)
+	_, err = c.StateManager.AddTargetConcern(mt.NewGroupTarget(test.G2), test.NAME1, Live)
 	assert.Nil(t, err)
 
 	identityInfo, err := c.Get(test.NAME1)
 	assert.Nil(t, err)
 	assert.EqualValues(t, test.NAME1, identityInfo.GetUid())
 
-	assert.NotNil(t, c.GetGroupConcernConfig(test.G1, test.NAME1))
+	assert.NotNil(t, c.GetConcernConfig(mt.NewGroupTarget(test.G1), test.NAME1))
 
 	testEventChan <- &VideoInfo{
 		UserInfo: UserInfo{
@@ -79,14 +80,12 @@ func TestConcern(t *testing.T) {
 	for i := 0; i < 2; i++ {
 		select {
 		case notify := <-testNotifyChan:
-			if notify.GetGroupCode() == test.G1 {
+			if notify.GetTarget().Equal(mt.NewGroupTarget(test.G1)) {
 				g1 = true
-				assert.Equal(t, test.G1, notify.GetGroupCode())
 				assert.Equal(t, test.NAME1, notify.GetUid())
 			}
-			if notify.GetGroupCode() == test.G2 {
+			if notify.GetTarget().Equal(mt.NewGroupTarget(test.G2)) {
 				g2 = true
-				assert.Equal(t, test.G2, notify.GetGroupCode())
 				assert.Equal(t, test.NAME1, notify.GetUid())
 			}
 		case <-time.After(time.Second):
@@ -104,8 +103,8 @@ func TestConcern(t *testing.T) {
 
 	}
 
-	_, err = c.Remove(nil, test.G1, test.NAME1, Live)
+	_, err = c.Remove(nil, mt.NewGroupTarget(test.G1), test.NAME1, Live)
 	assert.Nil(t, err)
-	_, err = c.Remove(nil, test.G2, test.NAME1, Live)
+	_, err = c.Remove(nil, mt.NewGroupTarget(test.G2), test.NAME1, Live)
 	assert.Nil(t, err)
 }
