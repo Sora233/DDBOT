@@ -31,6 +31,9 @@ func (v *V2) genPrefixGroupPatternMigrate(pattern localdb.KeyPatternFunc) func(s
 			logger.WithField("key", key).Errorf("v2ParsePrefixGroupPattern error")
 			return key, value
 		}
+		if len(remains) == 0 {
+			return pattern(mt.NewGroupTarget(groupCode)), value
+		}
 		return pattern(mt.NewGroupTarget(groupCode), remains), value
 	}
 }
@@ -38,6 +41,75 @@ func (v *V2) genPrefixGroupPatternMigrate(pattern localdb.KeyPatternFunc) func(s
 func (v *V2) Func() version.MigrationFunc {
 
 	var f []version.MigrationFunc
+
+	//f = append(f, version.MigrationKeyValueByRaw(func(key, value string) (string, string) {
+	//	spts := strings.Split(key, ":")
+	//	if !strings.HasSuffix(spts[0], "GroupAtAll") {
+	//		return key, value
+	//	}
+	//	return strings.ReplaceAll(key, "GroupAtAll", "AtAllMark"), value
+	//}))
+
+	var rename = [][2]string{
+		{"GroupPermission", "TargetPermission"},
+		{"GroupSilence", "TargetSilence"},
+		{"GroupAtAll", "AtAllMark"},
+		{"DouyuGroupAtAll", "DouyuAtAllMark"},
+		{"YoutubeGroupAtAll", "YoutubeAtAllMark"},
+		{"HuyaGroupAtAll", "HuyaAtAllMark"},
+		{"GroupEnable", "TargetEnable"},
+		{"GroupMute", "TargetMute"},
+	}
+
+	for _, p := range rename {
+		s1 := p[0]
+		s2 := p[1]
+		f = append(f, version.MigrationPattern(func(i ...interface{}) string {
+			return localdb.NamedKey(s1, i)
+		}, func(i ...interface{}) string {
+			return localdb.NamedKey(s2, i)
+		}))
+	}
+
+	extraOp := func(key, value string) (string, string) {
+		if strings.Contains(key, "GroupConcernState") {
+			return strings.ReplaceAll(key, "GroupConcernState", "ConcernState"), value
+		}
+		if strings.Contains(key, "GroupAtAllMark") {
+			return strings.ReplaceAll(key, "GroupAtAllMark", "AtAllMark"), value
+		}
+		if strings.Contains(key, "GroupConcernConfig") {
+			return strings.ReplaceAll(key, "GroupConcernConfig", "ConcernConfig"), value
+		}
+		return key, value
+	}
+
+	for _, name := range []string{
+		"weiboGroupConcernState", "weiboGroupConcernConfig", "weiboGroupAtAllMark",
+		"AcfunGroupConcernState", "AcfunGroupConcernConfig", "AcfunGroupAtAllMark",
+		"twitcastingGroupConcernState", "twitcastingGroupConcernConfig", "twitcastingGroupAtAllMark",
+	} {
+		name := name
+		f = append(f, version.MigrationKeyValueByPattern(func(i ...interface{}) string {
+			return localdb.NamedKey(name, i)
+		}, extraOp))
+	}
+
+	f = append(f, version.MigrationKeyValueByPattern(localdb.PermissionKey, func(key, value string) (string, string) {
+		spts := strings.Split(key, ":")
+		if len(spts) != 4 {
+			return key, value
+		}
+		if strings.HasSuffix(key, "Admin") {
+			return key, value
+		}
+		var g []interface{}
+		for _, s := range spts[1:] {
+			g = append(g, s)
+		}
+		return localdb.TargetPermissionKey(g...), value
+	}))
+
 	var acfunKeyset = concern.NewPrefixKeySetWithInt64ID("Acfun")
 	var weiboKeyset = concern.NewPrefixKeySetWithStringID("weibo")
 	var tcKeyset = concern.NewPrefixKeySetWithStringID("twitcasting")
@@ -78,6 +150,7 @@ func (v *V2) Func() version.MigrationFunc {
 	} {
 		f = append(f, version.MigrationKeyValueByPattern(pattern, v.genPrefixGroupPatternMigrate(pattern)))
 	}
+
 	f = append(f, version.MigrationKeyValueByRaw(func(key, value string) (string, string) {
 		if strings.HasSuffix(key, "GroupAdmin") {
 			return strings.TrimSuffix(key, "GroupAdmin") + "TargetAdmin", value
@@ -85,19 +158,21 @@ func (v *V2) Func() version.MigrationFunc {
 		return key, value
 	}))
 
-	f = append(f, version.MigrationKeyValueByPattern(localdb.PermissionKey, func(key, value string) (string, string) {
-		spts := strings.Split(key, ":")
-		if len(spts) != 4 {
+	f = append(f, version.MigrationKeyValueByRaw(func(key, value string) (string, string) {
+		splits := strings.Split(key, ":")
+		if !strings.HasSuffix(splits[0], "ConcernConfig") {
 			return key, value
 		}
-		if strings.HasSuffix(key, "Admin") {
+		g, err := newV1GroupConcernConfigFromString(value)
+		if err != nil {
 			return key, value
 		}
-		var g []interface{}
-		for _, s := range spts {
-			g = append(g, s)
+		var ng = concern.ConcernConfig{
+			ConcernAt:     g.GroupConcernAt,
+			ConcernNotify: g.GroupConcernNotify,
+			ConcernFilter: g.GroupConcernFilter,
 		}
-		return localdb.TargetPermissionKey(g...), value
+		return key, ng.ToString()
 	}))
 
 	return version.ChainMigration(f...)

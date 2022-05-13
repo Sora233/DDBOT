@@ -71,10 +71,8 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 		},
 		{
 			IConfig: &concern.ConcernConfig{
-				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
-					mt.TargetGroup: {
-						TitleChangeNotify: Live,
-					},
+				ConcernNotify: concern.ConcernNotifyConfig{
+					TitleChangeNotify: Live,
 				},
 			},
 		},

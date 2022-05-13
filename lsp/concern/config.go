@@ -1,7 +1,6 @@
 package concern
 
 import (
-	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"strings"
 )
@@ -10,9 +9,9 @@ import (
 // TODO 需要一种支持自定义配置的方法，要怎么样做呢
 type IConfig interface {
 	Validate() error
-	GetConcernAt(targetType mt.TargetType) *ConcernAtConfig
-	GetConcernNotify(targetType mt.TargetType) *ConcernNotifyConfig
-	GetConcernFilter(targetType mt.TargetType) *ConcernFilterConfig
+	GetConcernAt() *ConcernAtConfig
+	GetConcernNotify() *ConcernNotifyConfig
+	GetConcernFilter() *ConcernFilterConfig
 	ICallback
 	Hook
 }
@@ -21,19 +20,17 @@ type IConfig interface {
 // 如果 Notify 有实现 NotifyLiveExt，则会使用默认逻辑
 type ConcernConfig struct {
 	DefaultCallback
-	ConcernAtMap     map[mt.TargetType]*ConcernAtConfig     `json:"concern_at_map"`
-	ConcernNotifyMap map[mt.TargetType]*ConcernNotifyConfig `json:"concern_notify_map"`
-	ConcernFilterMap map[mt.TargetType]*ConcernFilterConfig `json:"concern_filter_map"`
+	ConcernAt     ConcernAtConfig     `json:"concern_at"`
+	ConcernNotify ConcernNotifyConfig `json:"concern_notify"`
+	ConcernFilter ConcernFilterConfig `json:"concern_filter"`
 }
 
 // Validate 可以在此自定义config校验，每次对config修改后会在同一个事务中调用，如果返回non-nil，则改动会回滚，此次操作失败
 // 默认支持 ConcernNotifyConfig ConcernAtConfig
 // ConcernFilterConfig 默认只支持 text
 func (g *ConcernConfig) Validate() error {
-	for _, tp := range []mt.TargetType{mt.TargetGroup, mt.TargetGuild, mt.TargetPrivate} {
-		if !g.GetConcernFilter(tp).Empty() && g.GetConcernFilter(tp).Type != FilterTypeText {
-			return ErrConfigNotSupported
-		}
+	if !g.GetConcernFilter().Empty() && g.GetConcernFilter().Type != FilterTypeText {
+		return ErrConfigNotSupported
 	}
 	return nil
 }
@@ -41,16 +38,15 @@ func (g *ConcernConfig) Validate() error {
 // FilterHook 默认支持filter text配置，其他为Pass，可以重写这个函数实现自定义的过滤
 // b站推送使用这个Hook来支持配置动态类型的过滤（过滤转发动态等）
 func (g *ConcernConfig) FilterHook(notify Notify) *HookResult {
-	target := notify.GetTarget()
-	if g.GetConcernFilter(target.GetTargetType()).Empty() {
+	if g.GetConcernFilter().Empty() {
 		return HookResultPass
 	}
-	logger := notify.Logger().WithField("FilterType", g.GetConcernFilter(target.GetTargetType()).Type)
-	switch g.GetConcernFilter(target.GetTargetType()).Type {
+	logger := notify.Logger().WithField("FilterType", g.GetConcernFilter().Type)
+	switch g.GetConcernFilter().Type {
 	case FilterTypeText:
-		textFilter, err := g.GetConcernFilter(target.GetTargetType()).GetFilterByText()
+		textFilter, err := g.GetConcernFilter().GetFilterByText()
 		if err != nil {
-			logger.WithField("Content", g.GetConcernFilter(target.GetTargetType()).Config).
+			logger.WithField("Content", g.GetConcernFilter().Config).
 				Errorf("GetFilterByText() error %v", err)
 		} else {
 			var hook = new(HookResult)
@@ -93,7 +89,6 @@ func (g *ConcernConfig) AtBeforeHook(notify Notify) *HookResult {
 
 // ShouldSendHook 默认为Pass
 func (g *ConcernConfig) ShouldSendHook(notify Notify) *HookResult {
-	target := notify.GetTarget()
 	var result = new(HookResult)
 	if liveExt, ok := notify.(NotifyLiveExt); ok && liveExt.IsLive() {
 		if liveExt.Living() {
@@ -104,7 +99,7 @@ func (g *ConcernConfig) ShouldSendHook(notify Notify) *HookResult {
 			if liveExt.TitleChanged() {
 				// 直播间标题改了，检查改标题推送配置
 				result.PassOrReason(
-					g.GetConcernNotify(target.GetTargetType()).CheckTitleChangeNotify(notify.Type()),
+					g.GetConcernNotify().CheckTitleChangeNotify(notify.Type()),
 					"CheckTitleChangeNotify is false",
 				)
 				return result
@@ -112,7 +107,7 @@ func (g *ConcernConfig) ShouldSendHook(notify Notify) *HookResult {
 		} else if liveExt.LiveStatusChanged() {
 			// 下播了，检查下播推送配置
 			result.PassOrReason(
-				g.GetConcernNotify(target.GetTargetType()).CheckOfflineNotify(notify.Type()),
+				g.GetConcernNotify().CheckOfflineNotify(notify.Type()),
 				"CheckOfflineNotify is false",
 			)
 			return result
@@ -123,45 +118,18 @@ func (g *ConcernConfig) ShouldSendHook(notify Notify) *HookResult {
 }
 
 // GetConcernAt 返回 ConcernAtConfig，总是返回 non-nil
-func (g *ConcernConfig) GetConcernAt(targetType mt.TargetType) *ConcernAtConfig {
-	if g.ConcernAtMap == nil {
-		g.ConcernAtMap = make(map[mt.TargetType]*ConcernAtConfig)
-	}
-	var v *ConcernAtConfig
-	v = g.ConcernAtMap[targetType]
-	if v == nil {
-		v = new(ConcernAtConfig)
-		g.ConcernAtMap[targetType] = v
-	}
-	return v
+func (g *ConcernConfig) GetConcernAt() *ConcernAtConfig {
+	return &g.ConcernAt
 }
 
 // GetConcernNotify 返回 ConcernNotifyConfig，总是返回 non-nil
-func (g *ConcernConfig) GetConcernNotify(targetType mt.TargetType) *ConcernNotifyConfig {
-	if g.ConcernNotifyMap == nil {
-		g.ConcernNotifyMap = make(map[mt.TargetType]*ConcernNotifyConfig)
-	}
-	var v *ConcernNotifyConfig
-	v = g.ConcernNotifyMap[targetType]
-	if v == nil {
-		v = new(ConcernNotifyConfig)
-		g.ConcernNotifyMap[targetType] = v
-	}
-	return v
+func (g *ConcernConfig) GetConcernNotify() *ConcernNotifyConfig {
+	return &g.ConcernNotify
 }
 
 // GetConcernFilter 返回 ConcernFilterConfig，总是返回 non-nil
-func (g *ConcernConfig) GetConcernFilter(targetType mt.TargetType) *ConcernFilterConfig {
-	if g.ConcernFilterMap == nil {
-		g.ConcernFilterMap = make(map[mt.TargetType]*ConcernFilterConfig)
-	}
-	var v *ConcernFilterConfig
-	v = g.ConcernFilterMap[targetType]
-	if v == nil {
-		v = new(ConcernFilterConfig)
-		g.ConcernFilterMap[targetType] = v
-	}
-	return v
+func (g *ConcernConfig) GetConcernFilter() *ConcernFilterConfig {
+	return &g.ConcernFilter
 }
 
 // ToString 将 ConcernConfig 通过json序列化成string

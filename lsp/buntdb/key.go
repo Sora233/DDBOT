@@ -83,7 +83,7 @@ func BilibiliUserStatKey(keys ...interface{}) string {
 	return NamedKey("UserStat", keys)
 }
 func BilibiliAtAllMarkKey(keys ...interface{}) string {
-	return NamedKey("GroupAtAll", keys)
+	return NamedKey("AtAllMark", keys)
 }
 func BilibiliCompactMarkKey(keys ...interface{}) string {
 	return NamedKey("CompactMark", keys)
@@ -110,7 +110,7 @@ func DouyuCurrentLiveKey(keys ...interface{}) string {
 	return NamedKey("DouyuCurrentLive", keys)
 }
 func DouyuAtAllMarkKey(keys ...interface{}) string {
-	return NamedKey("DouyuGroupAtAll", keys)
+	return NamedKey("DouyuAtAllMark", keys)
 }
 func YoutubeConcernStateKey(keys ...interface{}) string {
 	return NamedKey("YoutubeConcernState", keys)
@@ -131,7 +131,7 @@ func YoutubeVideoKey(keys ...interface{}) string {
 	return NamedKey("YoutubeVideo", keys)
 }
 func YoutubeAtAllMarkKey(keys ...interface{}) string {
-	return NamedKey("YoutubeGroupAtAll", keys)
+	return NamedKey("YoutubeAtAllMark", keys)
 }
 func HuyaConcernStateKey(keys ...interface{}) string {
 	return NamedKey("HuyaConcernState", keys)
@@ -146,7 +146,7 @@ func HuyaCurrentLiveKey(keys ...interface{}) string {
 	return NamedKey("HuyaCurrentLive", keys)
 }
 func HuyaAtAllMarkKey(keys ...interface{}) string {
-	return NamedKey("HuyaGroupAtAll", keys)
+	return NamedKey("HuyaAtAllMark", keys)
 }
 func AcfunUserInfoKey(keys ...interface{}) string {
 	return NamedKey("AcfunUserInfo", keys)
@@ -177,10 +177,10 @@ func BlockListKey(keys ...interface{}) string {
 	return NamedKey("BlockList", keys)
 }
 func TargetPermissionKey(keys ...interface{}) string {
-	return NamedKey("GroupPermission", keys)
+	return NamedKey("TargetPermission", keys)
 }
 func TargetEnabledKey(keys ...interface{}) string {
-	return NamedKey("GroupEnable", keys)
+	return NamedKey("TargetEnable", keys)
 }
 func GlobalEnabledKey(keys ...interface{}) string {
 	return NamedKey("GlobalEnable", keys)
@@ -195,7 +195,7 @@ func GlobalSilenceKey(keys ...interface{}) string {
 	return NamedKey("GlobalSilence", keys)
 }
 func TargetMuteKey(keys ...interface{}) string {
-	return NamedKey("GroupMute", keys)
+	return NamedKey("TargetMute", keys)
 }
 func GroupInvitorKey(keys ...interface{}) string {
 	return NamedKey("GroupInventor", keys)

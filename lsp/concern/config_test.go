@@ -23,18 +23,16 @@ func TestGroupConcernAtConfig_CheckAtAll(t *testing.T) {
 
 func TestNewGroupConcernConfigFromString(t *testing.T) {
 	var testCase = []string{
-		`{"concern_at_map":{"Group": {"at_all":"bilibiliLive","at_someone":[{"ctype":"bilibiliLive", "at_list":[1,2,3,4,5]}]}}}`,
+		`{"concern_at":{"at_all":"bilibiliLive","at_someone":[{"ctype":"bilibiliLive", "at_list":[1,2,3,4,5]}]}}`,
 	}
 	var expected = []*ConcernConfig{
 		{
-			ConcernAtMap: map[mt.TargetType]*ConcernAtConfig{
-				mt.TargetGroup: {
-					AtAll: test.BibiliLive,
-					AtSomeone: []*AtSomeone{
-						{
-							Ctype:  test.BibiliLive,
-							AtList: []int64{1, 2, 3, 4, 5},
-						},
+			ConcernAt: ConcernAtConfig{
+				AtAll: test.BibiliLive,
+				AtSomeone: []*AtSomeone{
+					{
+						Ctype:  test.BibiliLive,
+						AtList: []int64{1, 2, 3, 4, 5},
 					},
 				},
 			},
@@ -51,40 +49,33 @@ func TestNewGroupConcernConfigFromString(t *testing.T) {
 func TestGroupConcernConfig_ToString(t *testing.T) {
 	var testCase = []*ConcernConfig{
 		{
-			ConcernAtMap: map[mt.TargetType]*ConcernAtConfig{
-				mt.TargetGroup: {
-					AtAll: test.BibiliLive,
-					AtSomeone: []*AtSomeone{
-						{
-							Ctype:  test.BibiliLive,
-							AtList: []int64{1, 2, 3, 4, 5},
-						},
+			ConcernAt: ConcernAtConfig{
+				AtAll: test.BibiliLive,
+				AtSomeone: []*AtSomeone{
+					{
+						Ctype:  test.BibiliLive,
+						AtList: []int64{1, 2, 3, 4, 5},
 					},
 				},
 			},
-			ConcernNotifyMap: map[mt.TargetType]*ConcernNotifyConfig{
-				mt.TargetGroup: {
-					TitleChangeNotify: test.BibiliLive,
-					OfflineNotify:     test.DouyuLive,
-				},
-			},
-			ConcernFilterMap: map[mt.TargetType]*ConcernFilterConfig{
-				mt.TargetGroup: {},
+			ConcernNotify: ConcernNotifyConfig{
+				TitleChangeNotify: test.BibiliLive,
+				OfflineNotify:     test.DouyuLive,
 			},
 		},
 	}
 	var expected = []string{
 		`{
-			"concern_at_map":{"Group": {
+			"concern_at":{
 				"at_all":"bilibiliLive",
 				"at_someone":[{"ctype":"bilibiliLive", "at_list":[1,2,3,4,5]}]
-			}},
-			"concern_notify_map":{"Group": {
+			},
+			"concern_notify":{
 				"title_change_notify": "bilibiliLive", "offline_notify": "douyuLive"
-			}},
-			"concern_filter_map": {"Group": {
+			},
+			"concern_filter": {
 				"type": "", "config":""
-			}}
+			}
 		}`,
 	}
 	assert.Equal(t, len(testCase), len(expected))
@@ -96,24 +87,20 @@ func TestGroupConcernConfig_ToString(t *testing.T) {
 func TestGroupConcernAtConfig_GetAtSomeoneList(t *testing.T) {
 	var testCase = []*ConcernConfig{
 		{
-			ConcernAtMap: map[mt.TargetType]*ConcernAtConfig{
-				mt.TargetGroup: {
-					AtAll: test.BibiliLive,
-					AtSomeone: []*AtSomeone{
-						{
-							Ctype:  test.BibiliLive,
-							AtList: []int64{1, 2, 3, 4, 5},
-						},
+			ConcernAt: ConcernAtConfig{
+				AtAll: test.BibiliLive,
+				AtSomeone: []*AtSomeone{
+					{
+						Ctype:  test.BibiliLive,
+						AtList: []int64{1, 2, 3, 4, 5},
 					},
 				},
 			},
 		},
 		{
-			ConcernAtMap: map[mt.TargetType]*ConcernAtConfig{
-				mt.TargetGroup: {
-					AtAll:     test.BibiliLive,
-					AtSomeone: nil,
-				},
+			ConcernAt: ConcernAtConfig{
+				AtAll:     test.BibiliLive,
+				AtSomeone: nil,
 			},
 		},
 	}
@@ -123,7 +110,7 @@ func TestGroupConcernAtConfig_GetAtSomeoneList(t *testing.T) {
 	}
 	assert.Equal(t, len(testCase), len(expected))
 	for i := 0; i < len(testCase); i++ {
-		assert.EqualValues(t, expected[i], testCase[i].ConcernAtMap[mt.TargetGroup].GetAtSomeoneList(test.BibiliLive))
+		assert.EqualValues(t, expected[i], testCase[i].ConcernAt.GetAtSomeoneList(test.BibiliLive))
 	}
 
 	var g *ConcernAtConfig
@@ -232,43 +219,43 @@ func TestGroupConcernNotifyConfig_CheckOfflineNotify(t *testing.T) {
 
 func TestGroupConcernFilterConfig_GetFilter(t *testing.T) {
 	var g ConcernConfig
-	assert.NotNil(t, g.GetConcernNotify(mt.TargetGroup))
-	assert.NotNil(t, g.GetConcernAt(mt.TargetGroup))
-	assert.NotNil(t, g.GetConcernFilter(mt.TargetGroup))
+	assert.NotNil(t, g.GetConcernNotify())
+	assert.NotNil(t, g.GetConcernAt())
+	assert.NotNil(t, g.GetConcernFilter())
 
-	_, err := g.GetConcernFilter(mt.TargetGroup).GetFilterByType()
+	_, err := g.GetConcernFilter().GetFilterByType()
 	assert.NotNil(t, err)
 
-	assert.True(t, g.GetConcernFilter(mt.TargetGroup).Empty())
+	assert.True(t, g.GetConcernFilter().Empty())
 
-	g.GetConcernFilter(mt.TargetGroup).Type = FilterTypeType
-	g.GetConcernFilter(mt.TargetGroup).Config = new(GroupConcernFilterConfigByType).ToString()
+	g.GetConcernFilter().Type = FilterTypeType
+	g.GetConcernFilter().Config = new(GroupConcernFilterConfigByType).ToString()
 
-	_, err = g.GetConcernFilter(mt.TargetGroup).GetFilterByType()
+	_, err = g.GetConcernFilter().GetFilterByType()
 	assert.Nil(t, err)
 
-	_, err = g.GetConcernFilter(mt.TargetGroup).GetFilterByText()
+	_, err = g.GetConcernFilter().GetFilterByText()
 	assert.NotNil(t, err)
 
-	assert.False(t, g.GetConcernFilter(mt.TargetGroup).Empty())
+	assert.False(t, g.GetConcernFilter().Empty())
 
-	g.GetConcernFilter(mt.TargetGroup).Type = FilterTypeText
-	g.GetConcernFilter(mt.TargetGroup).Config = new(GroupConcernFilterConfigByText).ToString()
+	g.GetConcernFilter().Type = FilterTypeText
+	g.GetConcernFilter().Config = new(GroupConcernFilterConfigByText).ToString()
 
-	_, err = g.GetConcernFilter(mt.TargetGroup).GetFilterByText()
+	_, err = g.GetConcernFilter().GetFilterByText()
 	assert.Nil(t, err)
 
-	_, err = g.GetConcernFilter(mt.TargetGroup).GetFilterByType()
+	_, err = g.GetConcernFilter().GetFilterByType()
 	assert.NotNil(t, err)
 
-	assert.False(t, g.GetConcernFilter(mt.TargetGroup).Empty())
+	assert.False(t, g.GetConcernFilter().Empty())
 }
 
 func TestGroupConcernConfig_Validate(t *testing.T) {
 	var g ConcernConfig
 	assert.Nil(t, g.Validate())
-	g.GetConcernFilter(mt.TargetGroup).Type = FilterTypeType
-	g.GetConcernFilter(mt.TargetGroup).Config = "wrong"
+	g.GetConcernFilter().Type = FilterTypeType
+	g.GetConcernFilter().Config = "wrong"
 	assert.NotNil(t, g.Validate())
 }
 
@@ -366,26 +353,20 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 	var testCase = []*ConcernConfig{
 		{},
 		{
-			ConcernNotifyMap: map[mt.TargetType]*ConcernNotifyConfig{
-				mt.TargetGroup: {
-					TitleChangeNotify: test.BibiliLive,
-				},
+			ConcernNotify: ConcernNotifyConfig{
+				TitleChangeNotify: test.BibiliLive,
 			},
 		},
 		{
 
-			ConcernNotifyMap: map[mt.TargetType]*ConcernNotifyConfig{
-				mt.TargetGroup: {
-					OfflineNotify: test.BibiliLive,
-				},
+			ConcernNotify: ConcernNotifyConfig{
+				OfflineNotify: test.BibiliLive,
 			},
 		},
 		{
-			ConcernNotifyMap: map[mt.TargetType]*ConcernNotifyConfig{
-				mt.TargetGroup: {
-					OfflineNotify:     test.BibiliLive,
-					TitleChangeNotify: test.BibiliLive,
-				},
+			ConcernNotify: ConcernNotifyConfig{
+				OfflineNotify:     test.BibiliLive,
+				TitleChangeNotify: test.BibiliLive,
 			},
 		},
 	}

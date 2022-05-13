@@ -3,6 +3,7 @@ package version
 import (
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/tidwall/buntdb"
+	"strings"
 )
 
 // ChainMigration 将多个 MigrationFunc 组合成一个 MigrationFunc ，每个 MigrationFunc 会按顺序执行
@@ -47,6 +48,23 @@ func MigrationKeyValueByRaw(operator func(key, value string) (string, string)) M
 func MigrationValueByRaw(operator func(key, value string) string) MigrationFunc {
 	return migrationByPattern(nil, false, func(key, value string) (string, string) {
 		return key, operator(key, value)
+	})
+}
+
+func MigrationPattern(pattern1, pattern2 localdb.KeyPatternFunc) MigrationFunc {
+	prefix := pattern1()
+	return migrationByPattern(pattern1, false, func(key, value string) (string, string) {
+		spts := strings.Split(key, ":")
+		if spts[0] == "GroupSilence" {
+		}
+		if prefix == spts[0] {
+			var g []interface{}
+			for _, s := range spts[1:] {
+				g = append(g, s)
+			}
+			return pattern2(g...), value
+		}
+		return key, value
 	})
 }
 

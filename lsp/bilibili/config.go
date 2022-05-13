@@ -16,20 +16,18 @@ type ConcernConfig struct {
 }
 
 func (g *ConcernConfig) Validate() error {
-	for _, tp := range mt.AllTargetType() {
-		if !g.GetConcernFilter(tp).Empty() {
-			switch g.GetConcernFilter(tp).Type {
-			case concern.FilterTypeNotType, concern.FilterTypeType:
-				filterByType, err := g.GetConcernFilter(tp).GetFilterByType()
-				if err != nil {
-					return err
-				}
-				var invalid = CheckTypeDefine(filterByType.Type)
-				if len(invalid) != 0 {
-					return fmt.Errorf("未定义的类型：\n%v", strings.Join(invalid, " "))
-				}
-				return nil
+	if !g.GetConcernFilter().Empty() {
+		switch g.GetConcernFilter().Type {
+		case concern.FilterTypeNotType, concern.FilterTypeType:
+			filterByType, err := g.GetConcernFilter().GetFilterByType()
+			if err != nil {
+				return err
 			}
+			var invalid = CheckTypeDefine(filterByType.Type)
+			if len(invalid) != 0 {
+				return fmt.Errorf("未定义的类型：\n%v", strings.Join(invalid, " "))
+			}
+			return nil
 		}
 	}
 
@@ -100,7 +98,6 @@ func (g *ConcernConfig) AtBeforeHook(notify concern.Notify) (hook *concern.HookR
 }
 
 func (g *ConcernConfig) FilterHook(notify concern.Notify) (hook *concern.HookResult) {
-	targetType := notify.GetTarget().GetTargetType()
 	hook = new(concern.HookResult)
 	switch n := notify.(type) {
 	case *ConcernLiveNotify:
@@ -108,17 +105,17 @@ func (g *ConcernConfig) FilterHook(notify concern.Notify) (hook *concern.HookRes
 		return
 	case *ConcernNewsNotify:
 		// 没设置过滤，pass
-		if g.GetConcernFilter(targetType).Empty() {
+		if g.GetConcernFilter().Empty() {
 			hook.Pass = true
 			return
 		}
 
-		logger := notify.Logger().WithField("FilterType", g.GetConcernFilter(targetType).Type)
-		switch g.GetConcernFilter(targetType).Type {
+		logger := notify.Logger().WithField("FilterType", g.GetConcernFilter().Type)
+		switch g.GetConcernFilter().Type {
 		case concern.FilterTypeType, concern.FilterTypeNotType:
-			typeFilter, err := g.GetConcernFilter(targetType).GetFilterByType()
+			typeFilter, err := g.GetConcernFilter().GetFilterByType()
 			if err != nil {
-				logger.WithField("ConcernFilterConfig", g.GetConcernFilter(targetType).Config).
+				logger.WithField("ConcernFilterConfig", g.GetConcernFilter().Config).
 					Errorf("get type filter error %v", err)
 				hook.Pass = true
 			} else {
@@ -134,7 +131,7 @@ func (g *ConcernConfig) FilterHook(notify concern.Notify) (hook *concern.HookRes
 				}
 
 				var ok bool
-				switch g.GetConcernFilter(targetType).Type {
+				switch g.GetConcernFilter().Type {
 				case concern.FilterTypeType:
 					ok = false
 					for _, tp := range convTypes {

@@ -252,28 +252,28 @@ func TestStateManager_GroupConcernConfig(t *testing.T) {
 	c = sm.GetConcernConfig(mt.NewGroupTarget(test.G1), test.UID1)
 	assert.NotNil(t, c)
 
-	assert.Nil(t, c.GetConcernAt(mt.TargetGroup).AtSomeone)
+	assert.Nil(t, c.GetConcernAt().AtSomeone)
 
 	cfg := sm.GetConcernConfig(mt.NewGroupTarget(test.G1), test.UID1)
 	err := sm.OperateConcernConfig(mt.NewGroupTarget(test.G1), test.UID1, cfg, func(concernConfig IConfig) bool {
-		concernConfig.GetConcernNotify(mt.TargetGroup).TitleChangeNotify = test.BibiliLive
-		concernConfig.GetConcernAt(mt.TargetGroup).AtSomeone = []*AtSomeone{
+		concernConfig.GetConcernNotify().TitleChangeNotify = test.BibiliLive
+		concernConfig.GetConcernAt().AtSomeone = []*AtSomeone{
 			{
 				Ctype:  test.DouyuLive,
 				AtList: []int64{1, 2, 3},
 			},
 		}
-		concernConfig.GetConcernAt(mt.TargetGroup).AtAll = test.YoutubeLive
+		concernConfig.GetConcernAt().AtAll = test.YoutubeLive
 		return true
 	})
 	assert.Nil(t, err)
 
 	c = sm.GetConcernConfig(mt.NewGroupTarget(test.G1), test.UID1)
 	assert.NotNil(t, c)
-	assert.NotNil(t, c.GetConcernFilter(mt.TargetGroup))
-	assert.EqualValues(t, c.GetConcernNotify(mt.TargetGroup).TitleChangeNotify, test.BibiliLive)
-	assert.EqualValues(t, c.GetConcernAt(mt.TargetGroup).AtAll, test.YoutubeLive)
-	assert.EqualValues(t, c.GetConcernAt(mt.TargetGroup).AtSomeone, []*AtSomeone{
+	assert.NotNil(t, c.GetConcernFilter())
+	assert.EqualValues(t, c.GetConcernNotify().TitleChangeNotify, test.BibiliLive)
+	assert.EqualValues(t, c.GetConcernAt().AtAll, test.YoutubeLive)
+	assert.EqualValues(t, c.GetConcernAt().AtSomeone, []*AtSomeone{
 		{
 			Ctype:  test.DouyuLive,
 			AtList: []int64{1, 2, 3},
@@ -282,19 +282,19 @@ func TestStateManager_GroupConcernConfig(t *testing.T) {
 
 	cfg = sm.GetConcernConfig(mt.NewGroupTarget(test.G1), test.UID1)
 	err = sm.OperateConcernConfig(mt.NewGroupTarget(test.G1), test.UID1, cfg, func(concernConfig IConfig) bool {
-		concernConfig.GetConcernNotify(mt.TargetGroup).TitleChangeNotify = concern_type.Empty
+		concernConfig.GetConcernNotify().TitleChangeNotify = concern_type.Empty
 		return false
 	})
 	assert.EqualValues(t, localdb.ErrRollback, err)
 
 	c = sm.GetConcernConfig(mt.NewGroupTarget(test.G1), test.UID1)
 	assert.NotNil(t, c)
-	assert.EqualValues(t, c.GetConcernNotify(mt.TargetGroup).TitleChangeNotify, test.BibiliLive)
+	assert.EqualValues(t, c.GetConcernNotify().TitleChangeNotify, test.BibiliLive)
 
 	cfg = sm.GetConcernConfig(mt.NewGroupTarget(test.G1), test.UID1)
 	err = sm.OperateConcernConfig(mt.NewGroupTarget(test.G1), test.UID1, cfg, func(concernConfig IConfig) bool {
-		concernConfig.GetConcernFilter(mt.TargetGroup).Type = FilterTypeType
-		concernConfig.GetConcernFilter(mt.TargetGroup).Config = (&GroupConcernFilterConfigByType{Type: []string{"q", "w", "e"}}).ToString()
+		concernConfig.GetConcernFilter().Type = FilterTypeType
+		concernConfig.GetConcernFilter().Config = (&GroupConcernFilterConfigByType{Type: []string{"q", "w", "e"}}).ToString()
 		return true
 	})
 	assert.EqualValues(t, ErrConfigNotSupported, err)

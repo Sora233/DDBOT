@@ -61,28 +61,28 @@ func TestNewGroupConcernConfig(t *testing.T) {
 	assert.NotNil(t, g)
 	assert.Nil(t, g.Validate())
 
-	g.GetConcernFilter(mt.TargetGroup).Type = concern.FilterTypeNotType
-	g.GetConcernFilter(mt.TargetGroup).Config = (&concern.GroupConcernFilterConfigByType{Type: []string{"q", "a"}}).ToString()
+	g.GetConcernFilter().Type = concern.FilterTypeNotType
+	g.GetConcernFilter().Config = (&concern.GroupConcernFilterConfigByType{Type: []string{"q", "a"}}).ToString()
 
 	assert.NotNil(t, g.Validate())
-	g.GetConcernFilter(mt.TargetGroup).Config = "wrong"
+	g.GetConcernFilter().Config = "wrong"
 	assert.NotNil(t, g.Validate())
-	g.GetConcernFilter(mt.TargetGroup).Config = ""
-	g.GetConcernFilter(mt.TargetGroup).Type = ""
+	g.GetConcernFilter().Config = ""
+	g.GetConcernFilter().Type = ""
 	assert.Nil(t, g.Validate())
 
 	g = c.GetConcernConfig(mt.NewGroupTarget(test.G1), test.UID1)
 	err := c.OperateConcernConfig(mt.NewGroupTarget(test.G1), test.UID1, g, func(concernConfig concern.IConfig) bool {
-		concernConfig.GetConcernFilter(mt.TargetGroup).Type = concern.FilterTypeNotType
-		concernConfig.GetConcernFilter(mt.TargetGroup).Config = (&concern.GroupConcernFilterConfigByType{Type: []string{"wrong"}}).ToString()
+		concernConfig.GetConcernFilter().Type = concern.FilterTypeNotType
+		concernConfig.GetConcernFilter().Config = (&concern.GroupConcernFilterConfigByType{Type: []string{"wrong"}}).ToString()
 		return true
 	})
 	assert.NotNil(t, err)
 
 	g = c.GetConcernConfig(mt.NewGroupTarget(test.G1), test.UID1)
 	err = c.OperateConcernConfig(mt.NewGroupTarget(test.G1), test.UID1, g, func(concernConfig concern.IConfig) bool {
-		concernConfig.GetConcernFilter(mt.TargetGroup).Type = concern.FilterTypeNotType
-		concernConfig.GetConcernFilter(mt.TargetGroup).Config = (&concern.GroupConcernFilterConfigByType{Type: []string{Tougao}}).ToString()
+		concernConfig.GetConcernFilter().Type = concern.FilterTypeNotType
+		concernConfig.GetConcernFilter().Config = (&concern.GroupConcernFilterConfigByType{Type: []string{Tougao}}).ToString()
 		return true
 	})
 	assert.Nil(t, err)
@@ -118,29 +118,23 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 		},
 		{
 			IConfig: &concern.ConcernConfig{
-				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
-					mt.TargetGroup: {
-						TitleChangeNotify: Live,
-					},
+				ConcernNotify: concern.ConcernNotifyConfig{
+					TitleChangeNotify: Live,
 				},
 			},
 		},
 		{
 			IConfig: &concern.ConcernConfig{
-				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
-					mt.TargetGroup: {
-						OfflineNotify: Live,
-					},
+				ConcernNotify: concern.ConcernNotifyConfig{
+					OfflineNotify: Live,
 				},
 			},
 		},
 		{
 			IConfig: &concern.ConcernConfig{
-				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
-					mt.TargetGroup: {
-						OfflineNotify:     Live,
-						TitleChangeNotify: Live,
-					},
+				ConcernNotify: concern.ConcernNotifyConfig{
+					OfflineNotify:     Live,
+					TitleChangeNotify: Live,
 				},
 			},
 		},
@@ -281,11 +275,9 @@ func TestGroupConcernConfig_NewsFilterHook(t *testing.T) {
 	testFn := func(index int, tp string, expected []DynamicDescType) {
 		notifies := newGroupNewsInfo(test.UID1, DynamicDescType_WithOrigin, DynamicDescType_WithImage, DynamicDescType_TextOnly)
 		var g = NewConcernConfig(&concern.ConcernConfig{
-			ConcernFilterMap: map[mt.TargetType]*concern.ConcernFilterConfig{
-				mt.TargetGroup: {
-					Type:   tp,
-					Config: typeFilter[index].ToString(),
-				},
+			ConcernFilter: concern.ConcernFilterConfig{
+				Type:   tp,
+				Config: typeFilter[index].ToString(),
 			},
 		}, nil)
 		assert.Nil(t, g.Validate())

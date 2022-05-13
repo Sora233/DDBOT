@@ -3,7 +3,6 @@ package acfun
 import (
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/mmsg/mt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -53,29 +52,23 @@ func TestGroupConcernConfig_ShouldSendHook(t *testing.T) {
 		},
 		{
 			IConfig: &concern.ConcernConfig{
-				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
-					mt.TargetGroup: {
-						TitleChangeNotify: Live,
-					},
+				ConcernNotify: concern.ConcernNotifyConfig{
+					TitleChangeNotify: Live,
 				},
 			},
 		},
 		{
 			IConfig: &concern.ConcernConfig{
-				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
-					mt.TargetGroup: {
-						OfflineNotify: Live,
-					},
+				ConcernNotify: concern.ConcernNotifyConfig{
+					OfflineNotify: Live,
 				},
 			},
 		},
 		{
 			IConfig: &concern.ConcernConfig{
-				ConcernNotifyMap: map[mt.TargetType]*concern.ConcernNotifyConfig{
-					mt.TargetGroup: {
-						OfflineNotify:     Live,
-						TitleChangeNotify: Live,
-					},
+				ConcernNotify: concern.ConcernNotifyConfig{
+					OfflineNotify:     Live,
+					TitleChangeNotify: Live,
 				},
 			},
 		},

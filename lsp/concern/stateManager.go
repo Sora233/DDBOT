@@ -117,15 +117,6 @@ func (c *StateManager) getConcernConfig(target mt.Target, id interface{}) (conce
 	if concernConfig == nil {
 		concernConfig = new(ConcernConfig)
 	}
-	if concernConfig.ConcernAtMap == nil {
-		concernConfig.ConcernAtMap = make(map[mt.TargetType]*ConcernAtConfig)
-	}
-	if concernConfig.ConcernFilterMap == nil {
-		concernConfig.ConcernFilterMap = make(map[mt.TargetType]*ConcernFilterConfig)
-	}
-	if concernConfig.ConcernNotifyMap == nil {
-		concernConfig.ConcernNotifyMap = make(map[mt.TargetType]*ConcernNotifyConfig)
-	}
 	return
 }
 
@@ -134,7 +125,7 @@ func (c *StateManager) GetConcernConfig(target mt.Target, id interface{}) IConfi
 	return c.getConcernConfig(target, id)
 }
 
-// OperateConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，如果返回true，就保存GroupConcernConfig，否则就回滚。
+// OperateConcernConfig 在一个rw事务中获取ConcernConfig并交给函数，如果返回true，就保存ConcernConfig，否则就回滚。
 func (c *StateManager) OperateConcernConfig(target mt.Target, id interface{}, cfg IConfig, f func(concernConfig IConfig) bool) error {
 	err := c.RWCover(func() error {
 		if !f(cfg) {
@@ -144,9 +135,9 @@ func (c *StateManager) OperateConcernConfig(target mt.Target, id interface{}, cf
 			return err
 		}
 		ccfg := c.getConcernConfig(target, id)
-		ccfg.ConcernNotifyMap[target.GetTargetType()] = cfg.GetConcernNotify(target.GetTargetType())
-		ccfg.ConcernAtMap[target.GetTargetType()] = cfg.GetConcernAt(target.GetTargetType())
-		ccfg.ConcernFilterMap[target.GetTargetType()] = cfg.GetConcernFilter(target.GetTargetType())
+		ccfg.ConcernNotify = *cfg.GetConcernNotify()
+		ccfg.ConcernAt = *cfg.GetConcernAt()
+		ccfg.ConcernFilter = *cfg.GetConcernFilter()
 		return c.SetJson(c.ConcernConfigKey(target, id), ccfg)
 	})
 	return err

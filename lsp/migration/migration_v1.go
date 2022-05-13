@@ -3,6 +3,7 @@ package migration
 import (
 	"encoding/json"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/version"
 	"strconv"
@@ -68,59 +69,18 @@ func newGroupConcernConfigFromString(s string) (*groupConcernConfig, error) {
 type V1 struct {
 }
 
-type v1AtSomeone struct {
-	Ctype  concern_type.Type `json:"ctype"`
-	AtList []int64           `json:"at_list"`
-}
-
-type v1GroupConcernFilterConfig struct {
-	Type   string `json:"type"`
-	Config string `json:"config"`
-}
-
-type v1GroupConcernAtConfig struct {
-	AtAll     concern_type.Type `json:"at_all"`
-	AtSomeone []*v1AtSomeone    `json:"at_someone"`
-}
-
-func (g *v1GroupConcernAtConfig) MergeAtSomeoneList(ctype concern_type.Type, ids []int64) {
-	if g == nil {
-		return
-	}
-	var found = false
-	for _, at := range g.AtSomeone {
-		if at.Ctype.ContainAll(ctype) {
-			found = true
-			var qqSet = make(map[int64]bool)
-			for _, id := range at.AtList {
-				qqSet[id] = true
-			}
-			for _, id := range ids {
-				qqSet[id] = true
-			}
-			at.AtList = nil
-			for id := range qqSet {
-				at.AtList = append(at.AtList, id)
-			}
-		}
-	}
-	if !found {
-		g.AtSomeone = append(g.AtSomeone, &v1AtSomeone{
-			Ctype:  ctype,
-			AtList: ids,
-		})
-	}
-}
-
-type v1GroupConcernNotifyConfig struct {
-	TitleChangeNotify concern_type.Type `json:"title_change_notify"`
-	OfflineNotify     concern_type.Type `json:"offline_notify"`
+func newV1GroupConcernConfigFromString(s string) (*v1GroupConcernConfig, error) {
+	var concernConfig *v1GroupConcernConfig
+	decoder := json.NewDecoder(strings.NewReader(s))
+	decoder.UseNumber()
+	err := decoder.Decode(&concernConfig)
+	return concernConfig, err
 }
 
 type v1GroupConcernConfig struct {
-	GroupConcernAt     v1GroupConcernAtConfig     `json:"group_concern_at"`
-	GroupConcernNotify v1GroupConcernNotifyConfig `json:"group_concern_notify"`
-	GroupConcernFilter v1GroupConcernFilterConfig `json:"group_concern_filter"`
+	GroupConcernAt     concern.ConcernAtConfig     `json:"group_concern_at"`
+	GroupConcernNotify concern.ConcernNotifyConfig `json:"group_concern_notify"`
+	GroupConcernFilter concern.ConcernFilterConfig `json:"group_concern_filter"`
 }
 
 func (g *v1GroupConcernConfig) ToString() string {

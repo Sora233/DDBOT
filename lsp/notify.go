@@ -59,7 +59,7 @@ func (l *Lsp) ConcernNotify() {
 				var qqadmin = atBeforeHook.Pass &&
 					l.PermissionStateManager.CheckGroupAdministrator(inotify.GetTarget(), utils.GetBot().GetUin())
 				var checkAtAll = qqadmin &&
-					cfg.GetConcernAt(inotify.GetTarget().GetTargetType()).CheckAtAll(inotify.Type())
+					cfg.GetConcernAt().CheckAtAll(inotify.Type())
 				var atAllMark = checkAtAll &&
 					c.GetStateManager().CheckAndSetAtAllMark(inotify.GetTarget(), inotify.GetUid())
 				nLogger.WithFields(logrus.Fields{
@@ -71,7 +71,7 @@ func (l *Lsp) ConcernNotify() {
 					nLogger = nLogger.WithField("at_all", true)
 					newAtAllMsg(m)
 				} else {
-					ids := cfg.GetConcernAt(inotify.GetTarget().GetTargetType()).GetAtSomeoneList(inotify.Type())
+					ids := cfg.GetConcernAt().GetAtSomeoneList(inotify.Type())
 					nLogger = nLogger.WithField("at_QQ", ids)
 					newAtIdsMsg(m, ids)
 				}
@@ -133,7 +133,7 @@ func (l *Lsp) ConcernNotify() {
 							continue
 						}
 						// @全体成员失败了，可能是次数到了，尝试@列表
-						ids := cfg.GetConcernAt(inotify.GetTarget().GetTargetType()).GetAtSomeoneList(inotify.Type())
+						ids := cfg.GetConcernAt().GetAtSomeoneList(inotify.Type())
 						if len(ids) != 0 {
 							nLogger = nLogger.WithField("at_QQ", ids)
 							nLogger.Debug("notify atAll failed, try at someone")

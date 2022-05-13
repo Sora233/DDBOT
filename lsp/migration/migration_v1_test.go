@@ -5,6 +5,7 @@ import (
 	"github.com/Sora233/DDBOT/internal/test"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/version"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -12,6 +13,7 @@ import (
 const testName = "lsp-test"
 
 func TestMigrationV1(t *testing.T) {
+	logrus.SetLevel(logrus.WarnLevel)
 	test.InitBuntdb(t)
 	defer test.CloseBuntdb(t)
 
