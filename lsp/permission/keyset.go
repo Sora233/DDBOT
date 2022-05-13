@@ -9,11 +9,11 @@ func (k *KeySet) PermissionKey(keys ...interface{}) string {
 }
 
 func (k *KeySet) TargetPermissionKey(keys ...interface{}) string {
-	return localdb.GroupPermissionKey(keys...)
+	return localdb.TargetPermissionKey(keys...)
 }
 
 func (k *KeySet) TargetEnabledKey(keys ...interface{}) string {
-	return localdb.GroupEnabledKey(keys...)
+	return localdb.TargetEnabledKey(keys...)
 }
 
 func (k *KeySet) GlobalEnabledKey(keys ...interface{}) string {
@@ -21,7 +21,7 @@ func (k *KeySet) GlobalEnabledKey(keys ...interface{}) string {
 }
 
 func (k *KeySet) TargetSilenceKey(keys ...interface{}) string {
-	return localdb.GroupSilenceKey(keys...)
+	return localdb.TargetSilenceKey(keys...)
 }
 
 func (k *KeySet) GlobalSilenceKey(keys ...interface{}) string {

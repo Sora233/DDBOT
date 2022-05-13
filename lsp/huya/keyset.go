@@ -10,15 +10,15 @@ type keySet struct {
 }
 
 func (l *keySet) AtAllMarkKey(keys ...interface{}) string {
-	return buntdb.HuyaGroupAtAllMarkKey(keys...)
+	return buntdb.HuyaAtAllMarkKey(keys...)
 }
 
 func (l *keySet) ConcernConfigKey(keys ...interface{}) string {
-	return buntdb.HuyaGroupConcernConfigKey(keys...)
+	return buntdb.HuyaConcernConfigKey(keys...)
 }
 
 func (l *keySet) ConcernStateKey(keys ...interface{}) string {
-	return buntdb.HuyaGroupConcernStateKey(keys...)
+	return buntdb.HuyaConcernStateKey(keys...)
 }
 
 func (l *keySet) FreshKey(keys ...interface{}) string {

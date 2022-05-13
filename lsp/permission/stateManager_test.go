@@ -96,8 +96,8 @@ func TestStateManager_CheckGlobalCommandFunc(t *testing.T) {
 	assert.Nil(t, c.GlobalDisableCommand(test.CMD1))
 	assert.False(t, c.CheckTargetCommandEnabled(g1, test.CMD1))
 	assert.True(t, c.CheckTargetCommandDisabled(g1, test.CMD1))
-	assert.Equal(t, ErrGlobalDisabled, c.TargetGrantPermission(g1, test.UID1, test.CMD1))
-	assert.Equal(t, ErrGlobalDisabled, c.UngrantPermission(g1, test.UID1, test.CMD1))
+	assert.Equal(t, ErrGlobalDisabled, c.GrantTargetCommandPermission(g1, test.UID1, test.CMD1))
+	assert.Equal(t, ErrGlobalDisabled, c.UngrantTargetCommandPermission(g1, test.UID1, test.CMD1))
 }
 
 func TestStateManager_CheckRole(t *testing.T) {
@@ -193,19 +193,19 @@ func TestStateManager_CheckGroupCommandPermission(t *testing.T) {
 	assert.False(t, gcadminOpt2.Validate(c))
 	assert.False(t, c.RequireAny(gcadminOpt1, gcadminOpt2))
 
-	assert.Nil(t, c.TargetGrantPermission(g1, test.UID1, test.CMD2))
+	assert.Nil(t, c.GrantTargetCommandPermission(g1, test.UID1, test.CMD2))
 	assert.False(t, gcadminOpt1.Validate(c))
 	assert.True(t, gcadminOpt2.Validate(c))
 	assert.True(t, c.RequireAny(gcadminOpt1, gcadminOpt2))
 
-	assert.NotNil(t, c.TargetGrantPermission(g1, test.UID1, test.CMD2))
+	assert.NotNil(t, c.GrantTargetCommandPermission(g1, test.UID1, test.CMD2))
 
-	assert.Nil(t, c.UngrantPermission(g1, test.UID1, test.CMD2))
+	assert.Nil(t, c.UngrantTargetCommandPermission(g1, test.UID1, test.CMD2))
 	assert.False(t, gcadminOpt1.Validate(c))
 	assert.False(t, gcadminOpt2.Validate(c))
 	assert.False(t, c.RequireAny(gcadminOpt1, gcadminOpt2))
 
-	assert.NotNil(t, c.UngrantPermission(g1, test.UID1, test.CMD2))
+	assert.NotNil(t, c.UngrantTargetCommandPermission(g1, test.UID1, test.CMD2))
 }
 
 func TestStateManager_RemoveAllByGroup(t *testing.T) {

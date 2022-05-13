@@ -10,15 +10,15 @@ type keySet struct {
 }
 
 func (l *keySet) AtAllMarkKey(keys ...interface{}) string {
-	return buntdb.DouyuGroupAtAllMarkKey(keys...)
+	return buntdb.DouyuAtAllMarkKey(keys...)
 }
 
 func (l *keySet) ConcernConfigKey(keys ...interface{}) string {
-	return buntdb.DouyuGroupConcernConfigKey(keys...)
+	return buntdb.DouyuConcernConfigKey(keys...)
 }
 
 func (l *keySet) ConcernStateKey(keys ...interface{}) string {
-	return buntdb.DouyuGroupConcernStateKey(keys...)
+	return buntdb.DouyuConcernStateKey(keys...)
 }
 
 func (l *keySet) FreshKey(keys ...interface{}) string {

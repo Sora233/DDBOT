@@ -1,6 +1,7 @@
-package lsp
+package migration
 
 import (
+	"encoding/json"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/version"
@@ -162,15 +163,15 @@ func (v *V1) concernMigrate(key, value string) string {
 
 func (v *V1) Func() version.MigrationFunc {
 	return version.ChainMigration(
-		version.MigrationValueByPattern(localdb.BilibiliGroupConcernConfigKey, v.configMigrate),
-		version.MigrationValueByPattern(localdb.DouyuGroupConcernConfigKey, v.configMigrate),
-		version.MigrationValueByPattern(localdb.HuyaGroupConcernConfigKey, v.configMigrate),
-		version.MigrationValueByPattern(localdb.YoutubeGroupConcernConfigKey, v.configMigrate),
+		version.MigrationValueByPattern(localdb.BilibiliConcernConfigKey, v.configMigrate),
+		version.MigrationValueByPattern(localdb.DouyuConcernConfigKey, v.configMigrate),
+		version.MigrationValueByPattern(localdb.HuyaConcernConfigKey, v.configMigrate),
+		version.MigrationValueByPattern(localdb.YoutubeConcernConfigKey, v.configMigrate),
 
-		version.MigrationValueByPattern(localdb.BilibiliGroupConcernStateKey, v.concernMigrate),
-		version.MigrationValueByPattern(localdb.DouyuGroupConcernStateKey, v.concernMigrate),
-		version.MigrationValueByPattern(localdb.HuyaGroupConcernStateKey, v.concernMigrate),
-		version.MigrationValueByPattern(localdb.YoutubeGroupConcernStateKey, v.concernMigrate),
+		version.MigrationValueByPattern(localdb.BilibiliConcernStateKey, v.concernMigrate),
+		version.MigrationValueByPattern(localdb.DouyuConcernStateKey, v.concernMigrate),
+		version.MigrationValueByPattern(localdb.HuyaConcernStateKey, v.concernMigrate),
+		version.MigrationValueByPattern(localdb.YoutubeConcernStateKey, v.concernMigrate),
 	)
 }
 func (v *V1) TargetVersion() int64 {

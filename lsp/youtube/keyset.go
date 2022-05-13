@@ -10,15 +10,15 @@ type KeySet struct {
 }
 
 func (k *KeySet) AtAllMarkKey(keys ...interface{}) string {
-	return buntdb.YoutubeGroupAtAllMarkKey(keys...)
+	return buntdb.YoutubeAtAllMarkKey(keys...)
 }
 
 func (k *KeySet) ConcernConfigKey(keys ...interface{}) string {
-	return buntdb.YoutubeGroupConcernConfigKey(keys...)
+	return buntdb.YoutubeConcernConfigKey(keys...)
 }
 
 func (k *KeySet) ConcernStateKey(keys ...interface{}) string {
-	return buntdb.YoutubeGroupConcernStateKey(keys...)
+	return buntdb.YoutubeConcernStateKey(keys...)
 }
 
 func (k *KeySet) FreshKey(keys ...interface{}) string {

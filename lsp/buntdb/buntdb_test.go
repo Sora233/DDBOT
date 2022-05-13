@@ -442,26 +442,26 @@ func TestRemoveByPrefixAndIndex(t *testing.T) {
 	defer Close()
 
 	err = RWCoverTx(func(tx *buntdb.Tx) error {
-		_, _, err := tx.Set(BilibiliGroupConcernStateKey("1"), "", nil)
+		_, _, err := tx.Set(BilibiliConcernStateKey("1"), "", nil)
 		assert.Nil(t, err)
-		_, _, err = tx.Set(BilibiliGroupConcernStateKey("2"), "", nil)
+		_, _, err = tx.Set(BilibiliConcernStateKey("2"), "", nil)
 		assert.Nil(t, err)
-		_, _, err = tx.Set(BilibiliGroupConcernStateKey("3"), "", nil)
+		_, _, err = tx.Set(BilibiliConcernStateKey("3"), "", nil)
 		assert.Nil(t, err)
-		_, _, err = tx.Set(DouyuGroupConcernStateKey("4"), "", nil)
+		_, _, err = tx.Set(DouyuConcernStateKey("4"), "", nil)
 		assert.Nil(t, err)
-		_, _, err = tx.Set(HuyaGroupConcernStateKey("5"), "", nil)
+		_, _, err = tx.Set(HuyaConcernStateKey("5"), "", nil)
 		assert.Nil(t, err)
 		createIndex := func(patternFunc KeyPatternFunc) {
 			assert.Nil(t, tx.CreateIndex(patternFunc(), patternFunc("*"), buntdb.IndexString))
 		}
-		for _, pattern := range []KeyPatternFunc{BilibiliGroupConcernStateKey, DouyuGroupConcernStateKey, HuyaGroupConcernStateKey} {
+		for _, pattern := range []KeyPatternFunc{BilibiliConcernStateKey, DouyuConcernStateKey, HuyaConcernStateKey} {
 			createIndex(pattern)
 		}
 		return nil
 	})
 	assert.Nil(t, err)
-	deletedKeys, err := RemoveByPrefixAndIndex([]string{BilibiliGroupConcernStateKey(), DouyuGroupConcernStateKey()}, []string{BilibiliGroupConcernStateKey(), DouyuGroupConcernStateKey()})
+	deletedKeys, err := RemoveByPrefixAndIndex([]string{BilibiliConcernStateKey(), DouyuConcernStateKey()}, []string{BilibiliConcernStateKey(), DouyuConcernStateKey()})
 	assert.Nil(t, err)
 	assert.Len(t, deletedKeys, 4)
 	err = RCoverTx(func(tx *buntdb.Tx) error {
@@ -469,11 +469,11 @@ func TestRemoveByPrefixAndIndex(t *testing.T) {
 			_, err := tx.Get(key)
 			assert.True(t, IsNotFound(err))
 		}
-		assertNotExist(BilibiliGroupConcernStateKey("1"))
-		assertNotExist(BilibiliGroupConcernStateKey("2"))
-		assertNotExist(BilibiliGroupConcernStateKey("3"))
-		assertNotExist(DouyuGroupConcernStateKey("4"))
-		_, err := tx.Get(HuyaGroupConcernStateKey("5"))
+		assertNotExist(BilibiliConcernStateKey("1"))
+		assertNotExist(BilibiliConcernStateKey("2"))
+		assertNotExist(BilibiliConcernStateKey("3"))
+		assertNotExist(DouyuConcernStateKey("4"))
+		_, err := tx.Get(HuyaConcernStateKey("5"))
 		assert.Nil(t, err)
 		return nil
 	})
@@ -502,24 +502,24 @@ func TestCreatePatternIndex(t *testing.T) {
 	assert.Nil(t, err)
 	defer Close()
 
-	assert.Nil(t, CreatePatternIndex(BilibiliGroupConcernStateKey, nil))
+	assert.Nil(t, CreatePatternIndex(BilibiliConcernStateKey, nil))
 	err = RCoverTx(func(tx *buntdb.Tx) error {
 		indexes, err := tx.Indexes()
 		assert.Nil(t, err)
 		assert.Len(t, indexes, 1)
-		assert.Contains(t, indexes, BilibiliGroupConcernStateKey())
+		assert.Contains(t, indexes, BilibiliConcernStateKey())
 		return nil
 	})
 	assert.Nil(t, err)
 
 	var suffix = []interface{}{"a", "1"}
 
-	assert.Nil(t, CreatePatternIndex(BilibiliGroupConcernStateKey, suffix, buntdb.IndexBinary))
+	assert.Nil(t, CreatePatternIndex(BilibiliConcernStateKey, suffix, buntdb.IndexBinary))
 	err = RCoverTx(func(tx *buntdb.Tx) error {
 		indexes, err := tx.Indexes()
 		assert.Nil(t, err)
 		assert.Len(t, indexes, 2)
-		assert.Contains(t, indexes, BilibiliGroupConcernStateKey(suffix...))
+		assert.Contains(t, indexes, BilibiliConcernStateKey(suffix...))
 		return nil
 	})
 	assert.Nil(t, err)

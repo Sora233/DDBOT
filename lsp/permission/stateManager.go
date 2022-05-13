@@ -38,11 +38,11 @@ func (c *StateManager) DeleteBlockList(caller int64) error {
 	return err
 }
 
-func (c *StateManager) CheckRole(caller int64, role RoleType) bool {
+func (c *StateManager) CheckRole(uin int64, role RoleType) bool {
 	if role.String() == "" {
 		return false
 	}
-	return c.Exist(c.PermissionKey(caller, role.String()))
+	return c.Exist(c.PermissionKey(uin, role.String()))
 }
 
 func (c *StateManager) CheckAdmin(caller int64) bool {
@@ -230,22 +230,22 @@ func (c *StateManager) CheckTargetCommandPermission(target mt.Target, caller int
 	return c.CheckRole(caller, Admin) || c.Exist(c.TargetPermissionKey(target, caller, command))
 }
 
-func (c *StateManager) GrantRole(target int64, role RoleType) error {
+func (c *StateManager) GrantRole(uin int64, role RoleType) error {
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	err := c.Set(c.PermissionKey(target, role.String()), "", localdb.SetNoOverWriteOpt())
+	err := c.Set(c.PermissionKey(uin, role.String()), "", localdb.SetNoOverWriteOpt())
 	if localdb.IsRollback(err) {
 		return ErrPermissionExist
 	}
 	return err
 }
 
-func (c *StateManager) UngrantRole(target int64, role RoleType) error {
+func (c *StateManager) UngrantRole(uin int64, role RoleType) error {
 	if role.String() == "" {
 		return errors.New("error role")
 	}
-	_, err := c.Delete(c.PermissionKey(target, role.String()))
+	_, err := c.Delete(c.PermissionKey(uin, role.String()))
 	if localdb.IsNotFound(err) {
 		return ErrPermissionNotExist
 	}
@@ -337,7 +337,7 @@ func (c *StateManager) UngrantTargetRole(target mt.Target, uin int64, role RoleT
 	return err
 }
 
-func (c *StateManager) TargetGrantPermission(target mt.Target, uin int64, command string) error {
+func (c *StateManager) GrantTargetCommandPermission(target mt.Target, uin int64, command string) error {
 	if c.CheckGlobalCommandDisabled(command) {
 		return ErrGlobalDisabled
 	}
@@ -348,7 +348,7 @@ func (c *StateManager) TargetGrantPermission(target mt.Target, uin int64, comman
 	return err
 }
 
-func (c *StateManager) UngrantPermission(target mt.Target, uin int64, command string) error {
+func (c *StateManager) UngrantTargetCommandPermission(target mt.Target, uin int64, command string) error {
 	if c.CheckGlobalCommandDisabled(command) {
 		return ErrGlobalDisabled
 	}
@@ -371,12 +371,10 @@ func (c *StateManager) RequireAny(option ...RequireOption) bool {
 func (c *StateManager) RemoveAllByTarget(target mt.Target) ([]string, error) {
 	var indexKey = []string{
 		c.TargetPermissionKey(),
-		c.PermissionKey(),
 		c.TargetEnabledKey(),
 	}
 	var prefixKey = []string{
 		c.TargetPermissionKey(target),
-		c.PermissionKey(target),
 		c.TargetEnabledKey(target),
 	}
 	return localdb.RemoveByPrefixAndIndex(prefixKey, indexKey)

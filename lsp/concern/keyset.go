@@ -96,6 +96,7 @@ func ParseConcernStateKeyWithInt64(key string) (target mt.Target, id int64, err 
 	}
 	return target, id, nil
 }
+
 func ParseConcernStateKeyWithString(key string) (target mt.Target, id string, err error) {
 	keys := strings.Split(key, ":")
 	if len(keys) != 3 {

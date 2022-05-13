@@ -10,15 +10,15 @@ type keySet struct {
 }
 
 func (k *keySet) AtAllMarkKey(keys ...interface{}) string {
-	return buntdb.BilibiliGroupAtAllMarkKey(keys...)
+	return buntdb.BilibiliAtAllMarkKey(keys...)
 }
 
 func (k *keySet) ConcernConfigKey(keys ...interface{}) string {
-	return buntdb.BilibiliGroupConcernConfigKey(keys...)
+	return buntdb.BilibiliConcernConfigKey(keys...)
 }
 
 func (k *keySet) ConcernStateKey(keys ...interface{}) string {
-	return buntdb.BilibiliGroupConcernStateKey(keys...)
+	return buntdb.BilibiliConcernStateKey(keys...)
 }
 
 func (k *keySet) FreshKey(keys ...interface{}) string {

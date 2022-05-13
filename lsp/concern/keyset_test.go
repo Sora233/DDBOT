@@ -10,8 +10,8 @@ import (
 
 func TestParseConcernStateKeyWithInt64(t *testing.T) {
 	var testCase = []string{
-		localdb.BilibiliGroupConcernStateKey(mt.NewGroupTarget(test.G1), test.UID1),
-		localdb.DouyuGroupConcernStateKey(mt.NewGroupTarget(test.G1), test.UID1),
+		localdb.BilibiliConcernStateKey(mt.NewGroupTarget(test.G1), test.UID1),
+		localdb.DouyuConcernStateKey(mt.NewGroupTarget(test.G1), test.UID1),
 	}
 	var expected1 = []mt.Target{
 		mt.NewGroupTarget(test.G1),
@@ -34,8 +34,8 @@ func TestParseConcernStateKeyWithInt64(t *testing.T) {
 func TestParseConcernStateKeyWithInt642(t *testing.T) {
 	var testCase = []string{
 		"wrong_key",
-		localdb.BilibiliGroupConcernStateKey("wrong_group", test.UID1),
-		localdb.YoutubeGroupConcernStateKey(mt.NewGroupTarget(test.G1), test.NAME1),
+		localdb.BilibiliConcernStateKey("wrong_group", test.UID1),
+		localdb.YoutubeConcernStateKey(mt.NewGroupTarget(test.G1), test.NAME1),
 	}
 
 	for _, key := range testCase {
@@ -47,8 +47,8 @@ func TestParseConcernStateKeyWithInt642(t *testing.T) {
 
 func TestParseConcernStateKeyWithString(t *testing.T) {
 	var testCase = []string{
-		localdb.YoutubeGroupConcernStateKey(mt.NewGroupTarget(test.G1), test.NAME1),
-		localdb.HuyaGroupConcernStateKey(mt.NewGroupTarget(test.G1), test.NAME1),
+		localdb.YoutubeConcernStateKey(mt.NewGroupTarget(test.G1), test.NAME1),
+		localdb.HuyaConcernStateKey(mt.NewGroupTarget(test.G1), test.NAME1),
 	}
 	var expected1 = []mt.Target{
 		mt.NewGroupTarget(test.G1),
@@ -71,7 +71,7 @@ func TestParseConcernStateKeyWithString(t *testing.T) {
 func TestParseConcernStateKeyWithString2(t *testing.T) {
 	var testCase = []string{
 		"wrong_key",
-		localdb.YoutubeGroupConcernStateKey("wrong_group", test.NAME1),
+		localdb.YoutubeConcernStateKey("wrong_group", test.NAME1),
 	}
 	for _, key := range testCase {
 		_, _, err := ParseConcernStateKeyWithString(key)

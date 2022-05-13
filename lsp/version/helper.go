@@ -40,6 +40,16 @@ func CopyKeyValueByPattern(patternFunc localdb.KeyPatternFunc,
 	return migrationByPattern(patternFunc, true, operator)
 }
 
+func MigrationKeyValueByRaw(operator func(key, value string) (string, string)) MigrationFunc {
+	return migrationByPattern(nil, false, operator)
+}
+
+func MigrationValueByRaw(operator func(key, value string) string) MigrationFunc {
+	return migrationByPattern(nil, false, func(key, value string) (string, string) {
+		return key, operator(key, value)
+	})
+}
+
 type migrationMap struct {
 	m map[int64]Migration
 }
@@ -55,15 +65,25 @@ func NewMigrationMapFromMap(m map[int64]Migration) MigrationMap {
 func migrationByPattern(patternFunc localdb.KeyPatternFunc, keepOldOnChanged bool,
 	operator func(key, value string) (string, string)) MigrationFunc {
 	return func() error {
-		if err := localdb.CreatePatternIndex(patternFunc, nil); err != nil {
-			return err
+		if patternFunc != nil {
+			if err := localdb.CreatePatternIndex(patternFunc, nil); err != nil {
+				return err
+			}
 		}
 		return localdb.RWCoverTx(func(tx *buntdb.Tx) error {
 			var data [][2]string
-			err := tx.Ascend(patternFunc(), func(key, value string) bool {
-				data = append(data, [2]string{key, value})
-				return true
-			})
+			var err error
+			if patternFunc == nil {
+				err = tx.Ascend("", func(key, value string) bool {
+					data = append(data, [2]string{key, value})
+					return true
+				})
+			} else {
+				err = tx.Ascend(patternFunc(), func(key, value string) bool {
+					data = append(data, [2]string{key, value})
+					return true
+				})
+			}
 			if err != nil {
 				return err
 			}

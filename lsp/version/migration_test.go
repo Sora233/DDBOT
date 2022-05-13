@@ -21,11 +21,11 @@ func v1() MigrationFunc {
 	return ChainMigration(
 		func() error {
 			return localdb.RWCoverTx(func(tx *buntdb.Tx) error {
-				_, _, err := tx.Set(localdb.BilibiliGroupConcernStateKey(g1, test.UID1), "3", nil)
+				_, _, err := tx.Set(localdb.BilibiliConcernStateKey(g1, test.UID1), "3", nil)
 				if err != nil {
 					return err
 				}
-				_, _, err = tx.Set(localdb.BilibiliGroupConcernStateKey(g1, test.UID2), "1", nil)
+				_, _, err = tx.Set(localdb.BilibiliConcernStateKey(g1, test.UID2), "1", nil)
 				return err
 			})
 		},
@@ -36,7 +36,7 @@ func v1() MigrationFunc {
 }
 
 func v2() MigrationFunc {
-	return MigrationValueByPattern(localdb.BilibiliGroupConcernStateKey, func(key, value string) string {
+	return MigrationValueByPattern(localdb.BilibiliConcernStateKey, func(key, value string) string {
 		if value == "1" {
 			return "live"
 		}
@@ -49,19 +49,19 @@ func v2() MigrationFunc {
 
 func v3() MigrationFunc {
 	return ChainMigration(
-		MigrationKeyValueByPattern(localdb.BilibiliGroupConcernStateKey, func(key, value string) (string, string) {
+		MigrationKeyValueByPattern(localdb.BilibiliConcernStateKey, func(key, value string) (string, string) {
 			groupCode, id, err := concern.ParseConcernStateKeyWithString(key)
 			if err != nil {
 				return key, value
 			}
-			return localdb.DouyuGroupConcernStateKey(groupCode, id), value
+			return localdb.DouyuConcernStateKey(groupCode, id), value
 		}),
-		CopyKeyValueByPattern(localdb.DouyuGroupConcernStateKey, func(key, value string) (string, string) {
+		CopyKeyValueByPattern(localdb.DouyuConcernStateKey, func(key, value string) (string, string) {
 			groupCode, id, err := concern.ParseConcernStateKeyWithString(key)
 			if err != nil {
 				return key, value
 			}
-			return localdb.HuyaGroupConcernStateKey(groupCode, id), value
+			return localdb.HuyaConcernStateKey(groupCode, id), value
 		}),
 	)
 }
@@ -83,13 +83,13 @@ func TestDoMigration(t *testing.T) {
 	assert.EqualValues(t, 99, GetCurrentVersion(testName))
 
 	err := localdb.RCoverTx(func(tx *buntdb.Tx) error {
-		val, err := tx.Get(localdb.BilibiliGroupConcernStateKey(g1, test.UID1))
+		val, err := tx.Get(localdb.BilibiliConcernStateKey(g1, test.UID1))
 		if err != nil {
 			return err
 		}
 		assert.EqualValues(t, "live/news", val)
 
-		val, err = tx.Get(localdb.BilibiliGroupConcernStateKey(g1, test.UID2))
+		val, err = tx.Get(localdb.BilibiliConcernStateKey(g1, test.UID2))
 		if err != nil {
 			return err
 		}
@@ -106,28 +106,28 @@ func TestDoMigration(t *testing.T) {
 	assert.EqualValues(t, 100, GetCurrentVersion(testName))
 
 	err = localdb.RCoverTx(func(tx *buntdb.Tx) error {
-		assert.False(t, localdb.Exist(localdb.BilibiliGroupConcernStateKey(g1, test.UID1)))
-		assert.False(t, localdb.Exist(localdb.BilibiliGroupConcernStateKey(g1, test.UID2)))
+		assert.False(t, localdb.Exist(localdb.BilibiliConcernStateKey(g1, test.UID1)))
+		assert.False(t, localdb.Exist(localdb.BilibiliConcernStateKey(g1, test.UID2)))
 
-		val, err := tx.Get(localdb.DouyuGroupConcernStateKey(g1, test.UID1))
+		val, err := tx.Get(localdb.DouyuConcernStateKey(g1, test.UID1))
 		if err != nil {
 			return err
 		}
 		assert.EqualValues(t, "live/news", val)
 
-		val, err = tx.Get(localdb.DouyuGroupConcernStateKey(g1, test.UID2))
+		val, err = tx.Get(localdb.DouyuConcernStateKey(g1, test.UID2))
 		if err != nil {
 			return err
 		}
 		assert.EqualValues(t, "live", val)
 
-		val, err = tx.Get(localdb.HuyaGroupConcernStateKey(g1, test.UID1))
+		val, err = tx.Get(localdb.HuyaConcernStateKey(g1, test.UID1))
 		if err != nil {
 			return err
 		}
 		assert.EqualValues(t, "live/news", val)
 
-		val, err = tx.Get(localdb.HuyaGroupConcernStateKey(g1, test.UID2))
+		val, err = tx.Get(localdb.HuyaConcernStateKey(g1, test.UID2))
 		if err != nil {
 			return err
 		}

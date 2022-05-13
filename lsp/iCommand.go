@@ -286,9 +286,9 @@ func IGrantCmd(c *MessageContext, target mt.Target, command string, grantTo int6
 	}
 	if utils.GetBot().CheckMember(target, grantTo) {
 		if del {
-			err = c.Lsp.PermissionStateManager.UngrantPermission(target, grantTo, command)
+			err = c.Lsp.PermissionStateManager.UngrantTargetCommandPermission(target, grantTo, command)
 		} else {
-			err = c.Lsp.PermissionStateManager.TargetGrantPermission(target, grantTo, command)
+			err = c.Lsp.PermissionStateManager.GrantTargetCommandPermission(target, grantTo, command)
 		}
 	} else {
 		log.Errorf("can not find uin")

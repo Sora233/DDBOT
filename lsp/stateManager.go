@@ -18,8 +18,8 @@ func (KeySet) GroupMessageImageKey(keys ...interface{}) string {
 	return localdb.GroupMessageImageKey(keys...)
 }
 
-func (KeySet) GroupMuteKey(keys ...interface{}) string {
-	return localdb.GroupMuteKey(keys...)
+func (KeySet) TargetMuteKey(keys ...interface{}) string {
+	return localdb.TargetMuteKey(keys...)
 }
 
 func (KeySet) ModeKey() string {
@@ -74,7 +74,7 @@ func (s *StateManager) GetMessageImageUrl(groupCode int64, messageID int32) []st
 func (s *StateManager) Muted(target mt.Target, uin int64, t int32) error {
 	return s.RWCoverTx(func(tx *buntdb.Tx) error {
 		var err error
-		key := s.GroupMuteKey(target, uin)
+		key := s.TargetMuteKey(target, uin)
 		if t == 0 {
 			_, err = s.Delete(key)
 		} else if t < 0 {
@@ -89,7 +89,7 @@ func (s *StateManager) Muted(target mt.Target, uin int64, t int32) error {
 
 func (s *StateManager) IsMuted(target mt.Target, uin int64) bool {
 	if target.GetTargetType().IsGroup() {
-		return s.Exist(s.GroupMuteKey(target, uin))
+		return s.Exist(s.TargetMuteKey(target, uin))
 	}
 	return false
 }
