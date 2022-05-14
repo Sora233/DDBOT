@@ -165,8 +165,9 @@ func (c *Concern) fresh() concern.FreshFunc {
 								logger.WithField("uid", mid).WithField("name", oldInfo.UserInfo.Name).
 									Debug("XSpaceAccInfo notlive confirmed")
 							}
-							newInfo = NewLiveInfo(&oldInfo.UserInfo, oldInfo.LiveTitle,
-								oldInfo.Cover, LiveStatus_NoLiving)
+							newInfo = NewLiveInfo(&oldInfo.UserInfo, resp.GetData().GetLiveRoom().GetTitle(),
+								resp.GetData().GetLiveRoom().GetCover(), LiveStatus_NoLiving)
+							newInfo.Name = resp.GetData().GetName()
 							newInfo.liveStatusChanged = true
 							sendLiveInfo(newInfo)
 						} else {
