@@ -1,5 +1,19 @@
 ## DDBOT最近更新日志
 
+- 2022-05-17 v1.0.7
+  - 通用：
+    - 修复@时显示QQ号的问题（这次是真的）
+    - 修复release ci没有正确设置版本的问题
+    - 支持重定义特定命令的前缀，可以设置无需前缀的自定义命令，参考完整配置的`customCommandPrefix`
+    - 支持定义`cronjob`定时消息模板，详细介绍请看[模板介绍](/TEMPLATE.md)
+    - 增加b站下播的准确检查，现在不会再发生`错误下播->马上开播`的情况了
+  - 模板：
+    - 现在支持自定义命令传入文字参数，在模板中可以通过{{.cmd}}和{{.args}}变量获取命令名字和参数
+    - 增加`trigger.private.new_friend_added.tmpl`事件模板
+    - 增加`trigger.private.group_invited.tmpl`事件模板
+    - 增加`hour minute second month year day yearday`等时间函数
+    - 新增私聊命令`/ping`支持模板
+    - 模板函数`pic`默认不再对url图片进行缓存，这意味着会返回随机图片的url可以正常工作了
 - 2022-04-14 v1.0.6
   - 通用：
     - 更换自定义miraigo，可能减少消息发送失败

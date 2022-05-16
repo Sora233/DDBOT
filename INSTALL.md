@@ -262,6 +262,13 @@ autoreply: # 自定义命令自动回复，自定义命令通过模板发送消�
   private:
     command: [ ]
 
+# 重定义命令前缀，优先级高于bot.commandPrefix
+# 如果有多个，可填写多项，prefix支持留空，可搭配自定义命令使用
+# 例如下面的配置为：<Q命令1> <命令2> </help>
+customCommandPrefix:
+  命令1: "Q"
+  命令2: ""
+
 logLevel: info # 日志等级
 ```
 

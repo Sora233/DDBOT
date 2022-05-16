@@ -1,6 +1,7 @@
 package requests
 
 import (
+	"fmt"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/guonaihong/gout"
@@ -153,7 +154,11 @@ func GetResponseCookieOption(cookies *[]*http.Cookie) Option {
 }
 
 func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Option) error {
-	var opt = new(option)
+	var (
+		opt  = new(option)
+		code int
+		err  error
+	)
 	for _, o := range options {
 		o(opt)
 	}
@@ -179,9 +184,7 @@ func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Opt
 			df.SetProxy(opt.Proxy)
 		}
 	}
-	if opt.HttpCode != nil {
-		df.Code(opt.HttpCode)
-	}
+	df.Code(&code)
 	if opt.ResponseMiddleware != nil {
 		df.ResponseUse(opt.ResponseMiddleware...)
 	}
@@ -192,9 +195,20 @@ func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Opt
 		df.BindJSON(out)
 	}
 	if opt.Retry > 0 {
-		return df.F().Retry().Attempt(opt.Retry).Do()
+		err = df.F().Retry().Attempt(opt.Retry).Do()
+	} else {
+		err = df.Do()
 	}
-	return df.Do()
+	if opt.HttpCode != nil {
+		*opt.HttpCode = code
+	}
+	if err != nil {
+		return err
+	}
+	if code >= http.StatusBadRequest {
+		return fmt.Errorf("http code error %v", code)
+	}
+	return nil
 }
 
 func Get(url string, params gout.H, out interface{}, options ...Option) error {

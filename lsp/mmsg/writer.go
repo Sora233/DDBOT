@@ -77,8 +77,7 @@ func (m *MSG) Image(buf []byte, alternative string) *MSG {
 	if len(alternative) > 0 {
 		img.Alternative(alternative)
 	}
-	m.Append(img)
-	return m
+	return m.Append(img)
 }
 
 func (m *MSG) ImageWithNorm(buf []byte, alternative string) *MSG {
@@ -86,16 +85,14 @@ func (m *MSG) ImageWithNorm(buf []byte, alternative string) *MSG {
 	if len(alternative) > 0 {
 		img.Alternative(alternative)
 	}
-	m.Append(img)
-	return m
+	return m.Append(img)
 }
 func (m *MSG) ImageWithResize(buf []byte, alternative string, width, height uint) *MSG {
 	img := NewImage(buf).Resize(width, height)
 	if len(alternative) > 0 {
 		img.Alternative(alternative)
 	}
-	m.Append(img)
-	return m
+	return m.Append(img)
 }
 
 func (m *MSG) ImageByUrl(url string, alternative string, opts ...requests.Option) *MSG {
@@ -103,8 +100,7 @@ func (m *MSG) ImageByUrl(url string, alternative string, opts ...requests.Option
 	if len(alternative) > 0 {
 		img.Alternative(alternative)
 	}
-	m.Append(img)
-	return m
+	return m.Append(img)
 }
 
 func (m *MSG) ImageByUrlWithNorm(url string, alternative string, opts ...requests.Option) *MSG {
@@ -112,8 +108,7 @@ func (m *MSG) ImageByUrlWithNorm(url string, alternative string, opts ...request
 	if len(alternative) > 0 {
 		img.Alternative(alternative)
 	}
-	m.Append(img)
-	return m
+	return m.Append(img)
 }
 
 func (m *MSG) ImageByUrlWithResize(url string, alternative string, width, height uint, opts ...requests.Option) *MSG {
@@ -121,8 +116,7 @@ func (m *MSG) ImageByUrlWithResize(url string, alternative string, width, height
 	if len(alternative) > 0 {
 		img.Alternative(alternative)
 	}
-	m.Append(img)
-	return m
+	return m.Append(img)
 }
 
 func (m *MSG) ImageByLocal(filepath, alternative string) *MSG {
@@ -130,8 +124,7 @@ func (m *MSG) ImageByLocal(filepath, alternative string) *MSG {
 	if len(alternative) > 0 {
 		img.Alternative(alternative)
 	}
-	m.Append(img)
-	return m
+	return m.Append(img)
 }
 
 func (m *MSG) ImageByLocalWithNorm(filepath, alternative string) *MSG {
@@ -139,8 +132,15 @@ func (m *MSG) ImageByLocalWithNorm(filepath, alternative string) *MSG {
 	if len(alternative) > 0 {
 		img.Alternative(alternative)
 	}
-	m.Append(img)
-	return m
+	return m.Append(img)
+}
+
+func (m *MSG) At(target int64) *MSG {
+	return m.Append(NewAt(target))
+}
+
+func (m *MSG) AtAll() *MSG {
+	return m.Append(NewAt(0))
 }
 
 func (m *MSG) ImageByLocalWithResize(filepath, alternative string, width, height uint) *MSG {
@@ -148,8 +148,7 @@ func (m *MSG) ImageByLocalWithResize(filepath, alternative string, width, height
 	if len(alternative) > 0 {
 		img.Alternative(alternative)
 	}
-	m.Append(img)
-	return m
+	return m.Append(img)
 }
 
 // ToCombineMessage 总是返回 non-nil
@@ -209,11 +208,12 @@ func (m *MSG) ToMessage(target Target) []*message.SendingMessage {
 	return result
 }
 
-func (m *MSG) Cut() {
+func (m *MSG) Cut() *MSG {
 	m.flushText()
 	if len(m.elements) > 0 {
 		m.elements = append(m.elements, new(CutElement))
 	}
+	return m
 }
 
 func (m *MSG) Elements() []message.IMessageElement {

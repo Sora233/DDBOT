@@ -22,8 +22,9 @@ import (
 	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"github.com/Sora233/MiraiGo-Template/bot"
 	"github.com/Sora233/MiraiGo-Template/config"
-	"github.com/Sora233/MiraiGo-Template/utils"
+	"github.com/fsnotify/fsnotify"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"go.uber.org/atomic"
 	"golang.org/x/sync/semaphore"
@@ -36,7 +37,7 @@ import (
 
 const ModuleName = "me.sora233.Lsp"
 
-var logger = utils.GetModuleLogger(ModuleName)
+var logger = logrus.WithField("module", ModuleName)
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
@@ -50,6 +51,7 @@ type Lsp struct {
 	status        *Status
 	notifyWg      sync.WaitGroup
 	msgLimit      *semaphore.Weighted
+	cron          *cron.Cron
 
 	PermissionStateManager *permission.StateManager
 	LspStateManager        *StateManager
@@ -57,7 +59,7 @@ type Lsp struct {
 }
 
 func (l *Lsp) CommandShowName(command string) string {
-	return cfg.GetCommandPrefix() + command
+	return cfg.GetCommandPrefix(command) + command
 }
 
 func (l *Lsp) MiraiGoModule() bot.ModuleInfo {
@@ -192,10 +194,13 @@ func (l *Lsp) Init() {
 	default:
 		log.Errorf("unknown proxy type")
 	}
-	if config.GlobalConfig.GetBool("template.enable") {
+	if cfg.GetTemplateEnabled() {
 		log.Infof("已启用模板")
 		template.InitTemplateLoader()
 	}
+	config.GlobalConfig.OnConfigChange(func(in fsnotify.Event) {
+		l.CronjobReload()
+	})
 }
 
 func (l *Lsp) PostInit() {
@@ -203,6 +208,10 @@ func (l *Lsp) PostInit() {
 
 func (l *Lsp) Serve(bot *bot.Bot) {
 	bot.OnGroupMemberJoined(func(qqClient *client.QQClient, event *client.MemberJoinGroupEvent) {
+		if err := localdb.Set(localdb.Key("OnGroupMemberJoined", event.Group.Code, event.Member.Uin, event.Member.JoinTime), "",
+			localdb.SetExpireOpt(time.Minute*2), localdb.SetNoOverWriteOpt()); err != nil {
+			return
+		}
 		m, _ := template.LoadAndExec("trigger.group.member_in.tmpl", map[string]interface{}{
 			"group_code":  event.Group.Code,
 			"group_name":  event.Group.Name,
@@ -214,6 +223,10 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 	})
 	bot.OnGroupMemberLeaved(func(qqClient *client.QQClient, event *client.MemberLeaveGroupEvent) {
+		if err := localdb.Set(localdb.Key("OnGroupMemberLeaved", event.Group.Code, event.Member.Uin, event.Member.JoinTime), "",
+			localdb.SetExpireOpt(time.Minute*2), localdb.SetNoOverWriteOpt()); err != nil {
+			return
+		}
 		m, _ := template.LoadAndExec("trigger.group.member_out.tmpl", map[string]interface{}{
 			"group_code":  event.Group.Code,
 			"group_name":  event.Group.Name,
@@ -270,10 +283,16 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			request.Accept()
 			l.PermissionStateManager.DeleteBlockList(request.GroupCode)
 			log.Info("收到加群邀请，当前BOT处于公开模式，将接受加群邀请")
-			l.SendMsg(
-				mmsg.NewTextf("阁下的群邀请已通过，基于对阁下的信任，阁下已获得本bot在群【%s】的控制权限，相信阁下不会滥用本bot。", request.GroupName),
-				mmsg.NewPrivateTarget(request.InvitorUin),
-			)
+			m, _ := template.LoadAndExec("trigger.private.group_invited.tmpl", map[string]interface{}{
+				"member_code": request.InvitorUin,
+				"member_name": request.InvitorNick,
+				"group_code":  request.GroupCode,
+				"group_name":  request.GroupName,
+				"command":     CommandMaps,
+			})
+			if m != nil {
+				l.SendMsg(m, mmsg.NewPrivateTarget(request.InvitorUin))
+			}
 			if err := l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
 				if err != permission.ErrPermissionExist {
 					log.Errorf("设置群管理员权限失败 - %v", err)
@@ -339,10 +358,14 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			return nil
 		})
 
-		l.SendMsg(
-			mmsg.NewTextf("阁下的好友请求已通过，请使用<%v>查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。", l.CommandShowName(HelpCommand)),
-			mmsg.NewPrivateTarget(event.Friend.Uin),
-		)
+		m, _ := template.LoadAndExec("trigger.private.new_friend_added.tmpl", map[string]interface{}{
+			"member_code": event.Friend.Uin,
+			"member_name": event.Friend.Nickname,
+			"command":     CommandMaps,
+		})
+		if m != nil {
+			l.SendMsg(m, mmsg.NewPrivateTarget(event.Friend.Uin))
+		}
 	})
 
 	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
@@ -478,6 +501,8 @@ func (l *Lsp) PostStart(bot *bot.Bot) {
 			l.FreshIndex()
 		}
 	}()
+	l.CronjobReload()
+	l.CronStart()
 	concern.StartAll()
 	l.started.Store(true)
 
@@ -508,7 +533,7 @@ func (l *Lsp) Stop(bot *bot.Bot, wg *sync.WaitGroup) {
 	if l.stop != nil {
 		close(l.stop)
 	}
-
+	l.CronStop()
 	concern.StopAll()
 
 	l.wg.Wait()
@@ -705,17 +730,6 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 		logger.WithFields(localutils.GroupLogFields(groupCode)).Debug("send with empty message")
 		return &message.GroupMessage{Id: -1}
 	}
-	if gi := localutils.GetBot().FindGroup(groupCode); gi != nil {
-		for _, e := range msg.Elements {
-			if at, ok := e.(*message.AtElement); ok && at.Target != 0 && at.Display == "" {
-				if gmi := gi.FindMember(at.Target); gmi != nil {
-					at.Display = fmt.Sprintf("@%v", gmi.DisplayName())
-				} else {
-					at.Display = fmt.Sprintf("@%v", at.Target)
-				}
-			}
-		}
-	}
 	res = bot.Instance.SendGroupMessage(groupCode, msg, cfg.GetFramMessage())
 	if res == nil || res.Id == -1 {
 		if msg.Count(func(e message.IMessageElement) bool {
@@ -743,6 +757,7 @@ var Instance = &Lsp{
 	msgLimit:               semaphore.NewWeighted(3),
 	PermissionStateManager: permission.NewStateManager(),
 	LspStateManager:        NewStateManager(),
+	cron:                   cron.New(cron.WithLogger(cron.VerbosePrintfLogger(cronLog))),
 }
 
 func init() {

@@ -134,16 +134,14 @@ func (l *Lsp) NotifyMessage(inotify concern.Notify) *mmsg.MSG {
 }
 
 func newAtAllMsg(m *mmsg.MSG) *mmsg.MSG {
-	m.Cut()
-	m.Append(message.AtAll())
-	return m
+	return m.Cut().AtAll()
 }
 
 func newAtIdsMsg(m *mmsg.MSG, ids []int64) *mmsg.MSG {
 	if len(ids) > 0 {
 		m.Cut()
 		for _, id := range ids {
-			m.Append(message.NewAt(id))
+			m.At(id)
 		}
 	}
 	return m

@@ -2,7 +2,6 @@ package lsp
 
 import (
 	"fmt"
-	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/template"
 	"go.uber.org/atomic"
@@ -66,7 +65,7 @@ func (lgc *LspGroupCommand) Execute() {
 		}
 	}()
 
-	if !strings.HasPrefix(lgc.GetCmd(), cfg.GetCommandPrefix()) {
+	if len(lgc.CommandName()) == 0 {
 		return
 	}
 
@@ -159,7 +158,12 @@ func (lgc *LspGroupCommand) Execute() {
 					log := lgc.DefaultLoggerWithCommand(lgc.CommandName()).WithField("CustomCommand", true)
 					log.Infof("run %v command", lgc.CommandName())
 					defer func() { log.Infof("%v command end", lgc.CommandName()) }()
-					lgc.sendChain(lgc.templateMsg(fmt.Sprintf("custom.command.group.%s.tmpl", lgc.CommandName()), nil))
+					lgc.sendChain(
+						lgc.templateMsg(fmt.Sprintf("custom.command.group.%s.tmpl", lgc.CommandName()), map[string]interface{}{
+							"cmd":  lgc.CommandName(),
+							"args": lgc.GetArgs(),
+						}),
+					)
 				}()
 			}
 		} else {
@@ -979,6 +983,7 @@ func (lgc *LspGroupCommand) commonTemplateData() map[string]interface{} {
 		"group_name":  lgc.groupName(),
 		"member_code": lgc.sender().Uin,
 		"member_name": lgc.sender().DisplayName(),
+		"command":     CommandMaps,
 	}
 }
 

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
@@ -47,7 +46,8 @@ func (c *LspPrivateCommand) Execute() {
 			c.textSend("エラー発生：看到该信息表示BOT出了一些问题，该问题已记录")
 		}
 	}()
-	if !strings.HasPrefix(c.GetCmd(), cfg.GetCommandPrefix()) {
+
+	if len(c.CommandName()) == 0 {
 		return
 	}
 
@@ -1180,7 +1180,7 @@ func (c *LspPrivateCommand) PingCommand() {
 	if c.exit {
 		return
 	}
-	c.textReply("pong")
+	c.sendChain(c.templateMsg("command.private.ping.tmpl", nil))
 }
 
 func (c *LspPrivateCommand) HelpCommand() {
@@ -1299,6 +1299,7 @@ func (c *LspPrivateCommand) commonTemplateData() map[string]interface{} {
 		"msg":         c.msg,
 		"member_code": c.sender().Uin,
 		"member_name": c.sender().DisplayName(),
+		"command":     CommandMaps,
 	}
 }
 

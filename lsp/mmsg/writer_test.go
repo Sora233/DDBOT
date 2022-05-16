@@ -19,7 +19,7 @@ func TestMSG(t *testing.T) {
 	m.Text("1")
 	m.Text("2")
 	m.Text("3")
-	m.Append(message.NewAt(0))
+	m.AtAll()
 	m.Append(message.NewText("test"))
 	m.Append(nil)
 	m.Append()

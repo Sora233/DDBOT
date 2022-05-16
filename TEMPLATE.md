@@ -127,6 +127,39 @@ autoreply:
 
 其他命令也遵守这个规则。
 
+## 通过模板创建定时消息
+
+DDBOT现在支持通过模板发送消息的定时命令：
+
+首先需要在配置文件`application.yaml`中定义定时消息：
+
+```yaml
+cronjob:
+  - cron: "* * * * *"
+    templateName: "定时1"
+    target:
+      private: [ 123 ]
+      group: [ ]
+  - cron: "0 * * * *"
+    templateName: "定时2"
+    target:
+      private: [ ]
+      group: [ 456 ]
+```
+
+在上面这段配置中，自定义了两条定时消息，完成后需要创建对应的模板文件：
+
+- `custom.cronjob.定时1.tmpl`
+- `custom.cronjob.定时2.tmpl`
+
+定时消息的定时条件使用`cron表达式`定义，可以在[工具网站](https://tool.lu/crontab/)上选择`类型：Linux`编辑和测试Cron表达式。
+
+DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1分钟`。
+
+完成配置后，`定时1`会每分钟触发一次，触发时会私聊QQ号为123发送消息模板`custom.cronjob.定时1.tmpl`。
+
+`定时2`会每小时触发一次，触发时会在QQ群456内发送消息模板`custom.cronjob.定时2.tmpl`。
+
 ## DDBOT新增的模板函数
 
 - {{- cut -}}
@@ -157,6 +190,8 @@ autoreply:
 
 从传入的参数中随机返回一个，参数类型为string，支持变长参数。
 
+*以下为v1.0.6新增*
+
 - {{ at 123456 }}
 
 发送@指定的qq号
@@ -165,16 +200,48 @@ autoreply:
 
 发送指定qq号的头像
 
+*以下为v1.0.7新增*
+
+- {{ hour }}
+
+返回当前时间的小时数, 范围为[0, 23]，类型为int
+
+- {{ minute }}
+
+返回当前时间的分钟数，范围为[0, 59]，类型int
+
+- {{ second }}
+
+返回当前时间的秒数，范围为[0, 59]，类型为int
+
+- {{ month }}
+
+返回当前时间的月份，范围为[1,12]，类型为int
+
+- {{ year }}
+
+返回当前时间的年份，类型为int
+
+- {{ day }}
+
+返回当前时间为当月的第几天，类型为int
+
+- {{ yearday }}
+
+返回当前时间为当年的第几天，闰年范围为[1,366]，非闰年范围为[1,365]，类型为int
+
 ## 当前支持的命令模板
 
 命令通用模板变量：
 
-| 模板变量        | 类型     | 含义                  |
-|-------------|--------|---------------------|
-| group_code  | int    | 本次命令触发的QQ群号码（私聊则为空） |
-| group_name  | string | 本次命令触发的QQ群名称（私聊则为空） |
-| member_code | int    | 本次命令触发的成员QQ号        |
-| member_name | string | 本次命令触发的成员QQ名称       |
+| 模板变量        | 类型     | 含义                    | 备注            |
+|-------------|--------|-----------------------|---------------|
+| group_code  | int    | 本次命令触发的QQ群号码（私聊则为空）   |               |
+| group_name  | string | 本次命令触发的QQ群名称（私聊则为空）   |               |
+| member_code | int    | 本次命令触发的成员QQ号          |               |
+| member_name | string | 本次命令触发的成员QQ名称         |               |
+| cmd         | string | 本次触发的命令名称             | 从v1.0.7版本开始支持 |
+| args        | string | 本次命令触发时附带的参数数组（只支持文字） | 从v1.0.7版本开始支持 |
 
 - /签到
 
@@ -258,6 +325,23 @@ DDBOT是一个多功能单推专用推送机器人，支持b站、斗鱼、油�
 ```text
 {{ reply .msg -}}
 LSP竟然是你
+```
+
+</details>
+
+- /ping(私聊)
+
+模板名：`command.private.ping.tmpl`
+
+| 模板变量 | 类型  | 含义  |
+|------|-----|-----|
+| 无    |     ||
+
+<details>
+  <summary>默认模板</summary>
+
+```text
+pong
 ```
 
 </details>
@@ -419,3 +503,43 @@ ACFUN-{{ .name }}直播结束了
 ```
 
 </details>
+
+- bot添加新好友
+
+模板名：`trigger.private.new_friend_added.tmpl`
+
+| 模板变量                 | 类型     | 含义               |
+|----------------------|--------|------------------|
+| member_code          | int64  | 添加的好友QQ号         |
+| member_name          | string | 添加的好友QQ昵称        |
+| .command.HelpCommand | string | 帮助命令名称，默认是`help` |
+
+<details>
+  <summary>默认模板</summary>
+
+```text
+阁下的好友请求已通过，请使用<{{ prefix .command.HelpCommand }}>(不含括号)查看帮助，然后在群成员页面邀请bot加群（bot不会主动加群）。
+```
+
+</details>
+
+- bot接受加群邀请
+
+模板名：`trigger.private.group_invited.tmpl`
+
+| 模板变量        | 类型     | 含义       |
+|-------------|--------|----------|
+| group_code  | int64  | 邀请加入的群号码 |
+| group_name  | string | 邀请加入的群名称 |
+| member_code | int64  | 邀请人的QQ号  |
+| member_name | string | 邀请人的QQ昵称 |
+
+<details>
+  <summary>默认模板</summary>
+
+```text
+阁下的群邀请已通过，基于对阁下的信任，阁下已获得本bot在群【{{ .group_name }}】的控制权限，相信阁下不会滥用本bot。
+```
+
+</details>
+

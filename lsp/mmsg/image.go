@@ -16,9 +16,24 @@ func NewImage(buf []byte) *ImageBytesElement {
 	return &ImageBytesElement{Buf: buf, alternative: "[图片]"}
 }
 
+// NewImageByUrl 默认会对相同的url使用缓存
 func NewImageByUrl(url string, opts ...requests.Option) *ImageBytesElement {
 	var img = NewImage(nil)
 	b, err := utils.ImageGet(url, opts...)
+	if err == nil {
+		img.Buf = b
+	} else {
+		logger.WithField("url", url).Errorf("ImageGet error %v", err)
+	}
+	return img
+}
+
+// NewImageByUrlWithoutCache 默认情况下相同的url会存在缓存，
+// 如果url会随机返回不同的图片，则需要禁用缓存
+// 这个函数就是不使用缓存的版本
+func NewImageByUrlWithoutCache(url string, opts ...requests.Option) *ImageBytesElement {
+	var img = NewImage(nil)
+	b, err := utils.ImageGetWithoutCache(url, opts...)
 	if err == nil {
 		img.Buf = b
 	} else {

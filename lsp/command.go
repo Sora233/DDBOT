@@ -7,6 +7,36 @@ import (
 
 // TODO command需要重构成注册模式，然后把这个文件废弃
 
+var CommandMaps = map[string]string{
+	"RollCommand":          RollCommand,
+	"CheckinCommand":       CheckinCommand,
+	"ScoreCommand":         ScoreCommand,
+	"GrantCommand":         GrantCommand,
+	"LspCommand":           LspCommand,
+	"WatchCommand":         WatchCommand,
+	"UnwatchCommand":       UnwatchCommand,
+	"ListCommand":          ListCommand,
+	"SetuCommand":          SetuCommand,
+	"HuangtuCommand":       HuangtuCommand,
+	"EnableCommand":        EnableCommand,
+	"DisableCommand":       DisableCommand,
+	"ReverseCommand":       ReverseCommand,
+	"HelpCommand":          HelpCommand,
+	"ConfigCommand":        ConfigCommand,
+	"PingCommand":          PingCommand,
+	"LogCommand":           LogCommand,
+	"BlockCommand":         BlockCommand,
+	"SysinfoCommand":       SysinfoCommand,
+	"WhosyourdaddyCommand": WhosyourdaddyCommand,
+	"QuitCommand":          QuitCommand,
+	"ModeCommand":          ModeCommand,
+	"GroupRequestCommand":  GroupRequestCommand,
+	"FriendRequestCommand": FriendRequestCommand,
+	"AdminCommand":         AdminCommand,
+	"SilenceCommand":       SilenceCommand,
+	"NoUpdateCommand":      NoUpdateCommand,
+}
+
 const (
 	RollCommand    = "roll"
 	CheckinCommand = "签到"
