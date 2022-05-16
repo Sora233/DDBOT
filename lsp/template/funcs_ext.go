@@ -53,7 +53,7 @@ func at(uin int64) *mmsg.AtElement {
 func pic(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 	logger := logger.WithField("uri", uri)
 	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
-		e = mmsg.NewImageByUrl(uri)
+		e = mmsg.NewImageByUrlWithoutCache(uri)
 	} else {
 		fi, err := os.Stat(uri)
 		if err != nil {

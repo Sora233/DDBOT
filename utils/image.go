@@ -36,6 +36,7 @@ func encodeImage(img image.Image, format string, resizedImageBuffer *bytes.Buffe
 
 var imageGetCache = blockCache.NewBlockCache(16, 25)
 
+// ImageGet 默认会对相同的url使用缓存
 func ImageGet(url string, opt ...requests.Option) ([]byte, error) {
 	if url == "" {
 		return nil, errors.New("empty url")
@@ -59,6 +60,29 @@ func ImageGet(url string, opt ...requests.Option) ([]byte, error) {
 		return nil, result.Err()
 	}
 	return result.Result().([]byte), nil
+}
+
+// ImageGetWithoutCache 默认情况下相同的url会存在缓存，
+// 如果url会随机返回不同的图片，则需要禁用缓存
+// 这个函数就是不使用缓存的版本
+func ImageGetWithoutCache(url string, opt ...requests.Option) ([]byte, error) {
+	if url == "" {
+		return nil, errors.New("empty url")
+	}
+	var result []byte
+	var err error
+	opts := []requests.Option{
+		requests.TimeoutOption(time.Second * 15),
+		requests.RetryOption(3),
+	}
+	opts = append(opts, opt...)
+	var body = new(bytes.Buffer)
+	err = requests.Get(url, nil, body, opts...)
+	if err != nil {
+		return nil, err
+	}
+	result, err = body.Bytes(), nil
+	return result, err
 }
 
 func ImageNormSize(origImage []byte) ([]byte, error) {
