@@ -33,6 +33,8 @@ func TestImageNormSize(t *testing.T) {
 }
 
 func TestImageGet(t *testing.T) {
+	_, err := ImageGetWithoutCache(imageUrl)
+	assert.Nil(t, err)
 	b, err := ImageGet(imageUrl)
 	assert.Nil(t, err)
 	assert.NotEmpty(t, b)

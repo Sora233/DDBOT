@@ -67,7 +67,7 @@ func TestUploadPrivateImage(t *testing.T) {
 	test.InitMirai()
 	defer test.CloseMirai()
 	e, err := UploadPrivateImage(1, []byte("asdsad"), true)
-	img, err := ImageGet(test.FakeImage(10))
+	img, err := ImageGet(imageUrl)
 	assert.Nil(t, err)
 	e, err = UploadPrivateImage(1, img, true)
 	assert.NotNil(t, err)
