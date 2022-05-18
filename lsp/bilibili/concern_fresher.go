@@ -278,6 +278,7 @@ func (c *Concern) freshDynamicNew() ([]*NewsInfo, error) {
 	}
 	for _, news := range result {
 		_ = c.MarkLatestActive(news.Mid, news.Timestamp)
+		_ = c.AddUserInfo(&news.UserInfo)
 	}
 	logger.WithField("cost", time.Now().Sub(start)).
 		WithField("NewsInfo Size", len(result)).
