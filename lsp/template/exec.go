@@ -490,7 +490,7 @@ func (s *state) evalCommand(dot reflect.Value, cmd *parse.CommandNode, final ref
 // idealConstant is called to return the value of a number in a context where
 // we don't know the type. In that case, the syntax of the number tells us
 // its type, and we use Go rules to resolve. Note there is no such thing as
-// a uint ideal constant in this situation - the value must be of int type.
+// a uint ideal constant in this situation - the value must be of int64 type.
 func (s *state) idealConstant(constant *parse.NumberNode) reflect.Value {
 	// These are ideal constants but we don't know the type
 	// and we have no context.  (If it was a method argument,
@@ -499,21 +499,16 @@ func (s *state) idealConstant(constant *parse.NumberNode) reflect.Value {
 	switch {
 	case constant.IsComplex:
 		return reflect.ValueOf(constant.Complex128) // incontrovertible.
-
 	case constant.IsFloat &&
 		!isHexInt(constant.Text) && !isRuneInt(constant.Text) &&
 		strings.ContainsAny(constant.Text, ".eEpP"):
 		return reflect.ValueOf(constant.Float64)
-
 	case constant.IsInt:
-		n := int(constant.Int64)
-		if int64(n) != constant.Int64 {
-			s.errorf("%s overflows int", constant.Text)
-		}
+		n := constant.Int64
 		return reflect.ValueOf(n)
-
 	case constant.IsUint:
-		s.errorf("%s overflows int", constant.Text)
+		n := constant.Uint64
+		return reflect.ValueOf(n)
 	}
 	return zero
 }

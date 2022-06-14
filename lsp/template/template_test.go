@@ -2,6 +2,7 @@ package template
 
 import (
 	"fmt"
+	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/internal/test"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/utils/msgstringer"
@@ -94,4 +95,17 @@ func TestPic(t *testing.T) {
 	var e = pic(tempDir)
 	assert.NotNil(t, e)
 	assert.EqualValues(t, []byte{0, 1, 2, 3}, e.Buf)
+}
+
+func TestInt64(t *testing.T) {
+	// 因为64位没有问题
+	// 在32位上这个case才有意义
+	var m = mmsg.NewMSG()
+	const target int64 = 1234567891011
+	var template = `{{- if eq .target 1234567891011 -}}asd{{- end -}}`
+	var tmpl = Must(New("test-int64").Parse(template))
+	err := tmpl.Execute(m, map[string]interface{}{"target": target})
+	assert.Nil(t, err)
+	assert.Len(t, m.Elements(), 1)
+	assert.EqualValues(t, m.Elements()[0].(*message.TextElement).Content, "asd")
 }
