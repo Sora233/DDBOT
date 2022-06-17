@@ -36,3 +36,25 @@ func TestParser_Parse(t *testing.T) {
 
 	assert.False(t, p.AtCheck())
 }
+
+func TestParser_Parse2(t *testing.T) {
+	defer utils.GetBot().TESTReset()
+	p := NewParser()
+	assert.NotNil(t, p)
+
+	p.Parse(
+		[]message.IMessageElement{
+			message.NewText(" "),
+			message.NewText("/a -b 1 -c 2"),
+			&message.GroupImageElement{},
+			message.NewText("-d 3"),
+			message.NewAt(test.UID1),
+			message.NewAt(test.UID2),
+			message.NewText("-e 4"),
+		},
+	)
+	assert.EqualValues(t, "/a", p.GetCmd())
+	assert.EqualValues(t, []string{"-b", "1", "-c", "2", "-d", "3", "-e", "4"}, p.GetArgs())
+	assert.EqualValues(t, []string{"/a", "-b", "1", "-c", "2", "-d", "3", "-e", "4"}, p.GetCmdArgs())
+	assert.EqualValues(t, []int64{test.UID1, test.UID2}, p.GetAtArgs())
+}

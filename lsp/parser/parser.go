@@ -47,20 +47,25 @@ func (p *Parser) Parse(elems []message.IMessageElement) {
 			}
 		}
 	}
-	for _, element := range elems {
+	var buf strings.Builder
+	textElems := utils.MessageFilter(elems, func(element message.IMessageElement) bool {
+		return element.Type() == message.Text
+	})
+	for _, element := range textElems {
 		if te, ok := element.(*message.TextElement); ok {
 			text := strings.TrimSpace(strings.Replace(te.Content, " ", " ", -1))
 			if text == "" {
 				continue
 			}
-			splitStr := utils.ArgSplit(text)
-			if len(splitStr) >= 1 {
-				p.Command = strings.TrimSpace(splitStr[0])
-				for _, s := range splitStr[1:] {
-					p.Args = append(p.Args, strings.TrimSpace(s))
-				}
-			}
-			break
+			buf.WriteString(text)
+			buf.WriteString(" ")
+		}
+	}
+	splitStr := utils.ArgSplit(strings.TrimSpace(buf.String()))
+	if len(splitStr) >= 1 {
+		p.Command = strings.TrimSpace(splitStr[0])
+		for _, s := range splitStr[1:] {
+			p.Args = append(p.Args, strings.TrimSpace(s))
 		}
 	}
 }

@@ -163,6 +163,7 @@ func (lgc *LspGroupCommand) Execute() {
 							map[string]interface{}{
 								"cmd":        lgc.CommandName(),
 								"args":       lgc.GetArgs(),
+								"full_args":  strings.Join(lgc.GetArgs(), " "),
 								"at_targets": lgc.GetAtArgs(),
 							}),
 					)
