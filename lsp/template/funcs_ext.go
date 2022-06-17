@@ -2,9 +2,11 @@ package template
 
 import (
 	"fmt"
+	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
+	localutils "github.com/Sora233/DDBOT/utils"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -18,6 +20,42 @@ var funcsExt = make(FuncMap)
 func RegisterExtFunc(name string, fn interface{}) {
 	checkValueFuncs(name, fn)
 	funcsExt[name] = fn
+}
+
+func memberInfo(groupCode int64, uin int64) map[string]interface{} {
+	var result = make(map[string]interface{})
+	gi := localutils.GetBot().FindGroup(groupCode)
+	if gi == nil {
+		return result
+	}
+	fi := gi.FindMember(uin)
+	if fi == nil {
+		return result
+	}
+	result["name"] = fi.DisplayName()
+	switch fi.Permission {
+	case client.Owner:
+		// 群主
+		result["permission"] = 10
+	case client.Administrator:
+		// 管理员
+		result["permission"] = 5
+	default:
+		// 其他
+		result["permission"] = 1
+	}
+	switch fi.Gender {
+	case 0:
+		// 男
+		result["gender"] = 2
+	case 1:
+		// 女
+		result["gender"] = 1
+	default:
+		// 未知
+		result["gender"] = 0
+	}
+	return result
 }
 
 func cut() *mmsg.CutElement {

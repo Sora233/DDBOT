@@ -13,6 +13,8 @@ type Parser struct {
 	Args    []string
 	// AtTarget 记录消息开头的@
 	AtTarget int64
+	// AtArgs 记录命令后的@
+	AtArgs []int64
 
 	commandName   string
 	commandPrefix string
@@ -21,29 +23,28 @@ type Parser struct {
 
 func (p *Parser) Parse(elems []message.IMessageElement) {
 	if len(elems) > 0 {
-		var hasReply bool
-		var atElem *message.AtElement
-		for _, e := range elems {
-			if e.Type() == message.Reply {
-				hasReply = true
-			}
-		}
-		ats := utils.MessageFilter(elems, func(element message.IMessageElement) bool {
-			return element.Type() == message.At
-		})
-		if hasReply {
-			if len(ats) >= 2 {
-				atElem = ats[len(ats)-1].(*message.AtElement)
-			} else if len(ats) <= 0 {
-				p.AtTarget = -1 // bot reply maybe
+		var search []message.IMessageElement
+		if elems[0].Type() == message.Reply {
+			if elems[1].Type() == message.At {
+				search = elems[2:]
+			} else {
+				search = elems[1:]
 			}
 		} else {
-			if len(ats) > 0 {
-				atElem = ats[0].(*message.AtElement)
-			}
+			search = elems[:]
 		}
-		if atElem != nil {
-			p.AtTarget = atElem.Target
+		if len(search) > 0 && search[0].Type() == message.At {
+			p.AtTarget = search[0].(*message.AtElement).Target
+			search = search[1:]
+		}
+		var afterCmd = false
+		for _, e := range search {
+			if afterCmd && e.Type() == message.At {
+				p.AtArgs = append(p.AtArgs, e.(*message.AtElement).Target)
+			}
+			if !afterCmd && e.Type() != message.At {
+				afterCmd = true
+			}
 		}
 	}
 	for _, element := range elems {
@@ -73,6 +74,10 @@ func (p *Parser) GetArgs() []string {
 	return p.Args
 }
 
+func (p *Parser) GetAtArgs() []int64 {
+	return p.AtArgs
+}
+
 func (p *Parser) GetCmdArgs() []string {
 	result := []string{p.Command}
 	result = append(result, p.Args...)
@@ -80,7 +85,7 @@ func (p *Parser) GetCmdArgs() []string {
 }
 
 func (p *Parser) AtCheck() bool {
-	if p.AtTarget == 0 {
+	if p.AtTarget <= 0 {
 		return true
 	}
 	return p.AtTarget == utils.GetBot().GetUin()

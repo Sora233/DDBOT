@@ -230,18 +230,60 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 返回当前时间为当年的第几天，闰年范围为[1,366]，非闰年范围为[1,365]，类型为int
 
+*以下为v1.0.8新增*
+
+- 变量{{ .at_targets }}
+
+自定义命令现在支持@成员， 可以通过 {{ .at_targets }}来获取本次命令触发时@的成员的QQ号。
+
+该变量为数组类型，可以搭配`len`和`index`等命令使用，例如：
+
+```text
+{{- if gt (len .at_targets) 0 -}}
+你@了{{ index .at_targets 0}}
+{{- else -}}
+请@TA使用命令喵
+{{- end -}}
+```
+
+- {{ member_info .group_code .member_code }}
+
+获取群成员信息，.at_targets中的qq号可以搭配这个命令来获取被@的成员的信息，例如：
+
+```text
+{{- if gt (len .at_targets) 0 -}}
+	{{- $t := index .at_targets 0 -}}
+	{{- $info := member_info .group_code $t -}}
+	你@了{{- $info.name }}
+{{ $info.name }} 的性别是 {{ if eq $info.gender 2 }}男生{{ else if eq $info.gender 1 }}女生{{else}}秘密{{end}} 喵
+{{- else -}}
+请@TA使用命令喵
+{{- end -}}
+```
+
+返回结果中可以使用的信息有：
+
+`name`：成员的群聊名字，如果没有设置，就是QQ资料名字
+
+`gender`：QQ资料性别，2表示男生，1表示女生，0表示未公开
+
+`permission`：QQ群权限，10表示群主，5表示管理员，1表示普通成员
+
+
+
 ## 当前支持的命令模板
 
 命令通用模板变量：
 
-| 模板变量        | 类型     | 含义                    | 备注            |
-|-------------|--------|-----------------------|---------------|
-| group_code  | int    | 本次命令触发的QQ群号码（私聊则为空）   |               |
-| group_name  | string | 本次命令触发的QQ群名称（私聊则为空）   |               |
-| member_code | int    | 本次命令触发的成员QQ号          |               |
-| member_name | string | 本次命令触发的成员QQ名称         |               |
-| cmd         | string | 本次触发的命令名称             | 从v1.0.7版本开始支持 |
-| args        | string | 本次命令触发时附带的参数数组（只支持文字） | 从v1.0.7版本开始支持 |
+| 模板变量        | 类型       | 含义                    | 备注            |
+|-------------|----------|-----------------------|---------------|
+| group_code  | int      | 本次命令触发的QQ群号码（私聊则为空）   |               |
+| group_name  | string   | 本次命令触发的QQ群名称（私聊则为空）   |               |
+| member_code | int      | 本次命令触发的成员QQ号          |               |
+| member_name | string   | 本次命令触发的成员QQ名称         |               |
+| cmd         | string   | 本次触发的命令名称             | 从v1.0.7版本开始支持 |
+| args        | []string | 本次命令触发时附带的参数数组（只支持文字） | 从v1.0.7版本开始支持 |
+| at_targets  | []int64  | 本次命令触发时附带的@成员的QQ号码    | 从v1.0.8版本开始支持 |
 
 - /签到
 

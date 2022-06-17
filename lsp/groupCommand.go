@@ -159,10 +159,12 @@ func (lgc *LspGroupCommand) Execute() {
 					log.Infof("run %v command", lgc.CommandName())
 					defer func() { log.Infof("%v command end", lgc.CommandName()) }()
 					lgc.sendChain(
-						lgc.templateMsg(fmt.Sprintf("custom.command.group.%s.tmpl", lgc.CommandName()), map[string]interface{}{
-							"cmd":  lgc.CommandName(),
-							"args": lgc.GetArgs(),
-						}),
+						lgc.templateMsg(fmt.Sprintf("custom.command.group.%s.tmpl", lgc.CommandName()),
+							map[string]interface{}{
+								"cmd":        lgc.CommandName(),
+								"args":       lgc.GetArgs(),
+								"at_targets": lgc.GetAtArgs(),
+							}),
 					)
 				}()
 			}

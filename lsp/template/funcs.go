@@ -46,14 +46,15 @@ func builtins() FuncMap {
 		"println": fmt.Sprintln,
 
 		// DDBOT template
-		"cut":    cut,
-		"prefix": prefix,
-		"reply":  reply,
-		"pic":    pic,
-		"roll":   roll,
-		"choose": choose,
-		"at":     at,
-		"icon":   icon,
+		"cut":         cut,
+		"prefix":      prefix,
+		"reply":       reply,
+		"pic":         pic,
+		"roll":        roll,
+		"choose":      choose,
+		"at":          at,
+		"icon":        icon,
+		"member_info": memberInfo,
 
 		// DDBOT common
 		"hour":    hour,
