@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"time"
 )
@@ -156,8 +157,56 @@ func roll(from, to int64) int64 {
 	return rand.Int63n(to-from+1) + from
 }
 
-func choose(items ...string) string {
-	return items[rand.Intn(len(items))]
+func choose(args ...reflect.Value) string {
+	if len(args) == 0 {
+		panic("empty choose")
+	}
+	var items []string
+	var weights []int64
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		var weight int64 = 1
+		if arg.Kind() != reflect.String {
+			panic("choose item must be string")
+		}
+		items = append(items, arg.String())
+		if i+1 < len(args) {
+			next := args[i+1]
+			if next.Kind() != reflect.String {
+				// 当作权重处理
+				switch next.Kind() {
+				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+					weight = next.Int()
+				default:
+					panic("item weight must be integer")
+				}
+				i++
+			}
+		}
+		if weight <= 0 {
+			panic("item weight must greater than 0")
+		}
+		weights = append(weights, weight)
+	}
+
+	if len(items) != len(weights) {
+		logger.Errorf("Internal: items weights mismatched: %v %v", items, weights)
+		panic("Internal: items weights mismatched")
+	}
+
+	var sum int64 = 0
+	for _, w := range weights {
+		sum += w
+	}
+	result := rand.Int63n(sum) + 1
+	for i := 0; i < len(weights); i++ {
+		result -= weights[i]
+		if result <= 0 {
+			return items[i]
+		}
+	}
+	logger.Errorf("Internal: wrong rand: %v %v - %v", items, weights, result)
+	panic("Internal: wrong rand")
 }
 
 func hour() int {
