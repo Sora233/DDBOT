@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"sync"
 	"unicode"
 )
@@ -479,6 +480,78 @@ func basicKind(v reflect.Value) (kind, error) {
 	return invalidKind, errBadComparisonType
 }
 
+func tryStringNumberCmp(arg1 reflect.Value, arg2 reflect.Value, order int) (bool, bool) {
+	k1, _ := basicKind(arg1)
+	k2, _ := basicKind(arg2)
+	var err error
+	var result = false
+	switch {
+	case k1 == stringKind:
+		if k2 == intKind {
+			var a1 int64
+			a1, err = strconv.ParseInt(arg1.String(), 10, 64)
+			if err != nil {
+				return false, false
+			}
+			if order == -1 {
+				result = a1 < arg2.Int()
+			} else if order == 0 {
+				result = a1 == arg2.Int()
+			} else {
+				result = a1 > arg2.Int()
+			}
+		} else if k2 == uintKind {
+			var a1 uint64
+			a1, err = strconv.ParseUint(arg1.String(), 10, 64)
+			if err != nil {
+				return false, false
+			}
+			if order == -1 {
+				result = a1 < arg2.Uint()
+			} else if order == 0 {
+				result = a1 == arg2.Uint()
+			} else {
+				result = a1 > arg2.Uint()
+			}
+		} else {
+			return false, false
+		}
+	case k2 == stringKind:
+		if k1 == intKind {
+			var a2 int64
+			a2, err = strconv.ParseInt(arg2.String(), 10, 64)
+			if err != nil {
+				return false, false
+			}
+			if order == -1 {
+				result = arg1.Int() < a2
+			} else if order == 0 {
+				result = arg1.Int() == a2
+			} else {
+				result = arg1.Int() > a2
+			}
+		} else if k1 == uintKind {
+			var a2 uint64
+			a2, err = strconv.ParseUint(arg2.String(), 10, 64)
+			if err != nil {
+				return false, false
+			}
+			if order == -1 {
+				result = arg1.Uint() < a2
+			} else if order == 0 {
+				result = arg1.Uint() == a2
+			} else {
+				result = arg1.Uint() > a2
+			}
+		} else {
+			return false, false
+		}
+	default:
+		return false, false
+	}
+	return result, true
+}
+
 // eq evaluates the comparison a == b || a == c || ...
 func eq(arg1 reflect.Value, arg2 ...reflect.Value) (bool, error) {
 	arg1 = indirectInterface(arg1)
@@ -494,6 +567,9 @@ func eq(arg1 reflect.Value, arg2 ...reflect.Value) (bool, error) {
 	for _, arg := range arg2 {
 		arg = indirectInterface(arg)
 		k2, _ := basicKind(arg)
+		if result, success := tryStringNumberCmp(arg1, arg, 0); success {
+			return result, nil
+		}
 		truth := false
 		if k1 != k2 {
 			// Special case: Can compare integer values regardless of type's sign.
@@ -557,6 +633,9 @@ func lt(arg1, arg2 reflect.Value) (bool, error) {
 	k2, err := basicKind(arg2)
 	if err != nil {
 		return false, err
+	}
+	if result, success := tryStringNumberCmp(arg1, arg2, -1); success {
+		return result, nil
 	}
 	truth := false
 	if k1 != k2 {

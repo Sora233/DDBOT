@@ -109,3 +109,49 @@ func TestInt64(t *testing.T) {
 	assert.Len(t, m.Elements(), 1)
 	assert.EqualValues(t, m.Elements()[0].(*message.TextElement).Content, "asd")
 }
+
+func TestCompareStringAndInt(t *testing.T) {
+	var m = mmsg.NewMSG()
+	var err error
+	var template = `{{- if eq .target 123456 -}}asd{{- end -}}`
+	var tmpl = Must(New("test-compare-string-and-int").Parse(template))
+	err = tmpl.Execute(m, map[string]interface{}{"target": 123456})
+	assert.Nil(t, err)
+	err = tmpl.Execute(m, map[string]interface{}{"target": "123456"})
+	assert.Nil(t, err)
+
+	assert.Len(t, m.Elements(), 1)
+	assert.EqualValues(t, "asdasd", m.Elements()[0].(*message.TextElement).Content)
+
+	m = mmsg.NewMSG()
+	template = `{{- if eq .target "123456" -}}asd{{- end -}}`
+	tmpl = Must(New("test-compare-string-and-int-1").Parse(template))
+	err = tmpl.Execute(m, map[string]interface{}{"target": 123456})
+	assert.Nil(t, err)
+	err = tmpl.Execute(m, map[string]interface{}{"target": "123456"})
+	assert.Nil(t, err)
+
+	assert.Len(t, m.Elements(), 1)
+	assert.EqualValues(t, "asdasd", m.Elements()[0].(*message.TextElement).Content)
+
+	m = mmsg.NewMSG()
+	template = `{{- if eq .target 123456 -}}asd{{- end -}}`
+	tmpl = Must(New("test-compare-string-and-int-1").Parse(template))
+	err = tmpl.Execute(m, map[string]interface{}{"target": "qweasdzxc"})
+	assert.NotNil(t, err)
+
+	m = mmsg.NewMSG()
+	template = `{{- if lt .target 999 -}}1{{- end -}}
+{{- if le .target 999 -}}2{{- end -}}
+{{- if gt .target 100 -}}3{{- end -}}
+{{- if ge .target 100 -}}4{{- end -}}
+{{- if lt .target 0 -}}5{{- end -}}
+{{- if le .target 0 -}}6{{- end -}}
+{{- if gt .target 1000 -}}7{{- end -}}
+{{- if ge .target 1000 -}}8{{- end -}}
+`
+	tmpl = Must(New("test-compare-string-and-int-1").Parse(template))
+	err = tmpl.Execute(m, map[string]interface{}{"target": "200"})
+	assert.Nil(t, err)
+	assert.EqualValues(t, "1234", m.Elements()[0].(*message.TextElement).Content)
+}
