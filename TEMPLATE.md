@@ -295,6 +295,164 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 `{{ .full_args }}`的内容是"a b c"，它是一个字符串而非数组。
 
+- 一组类型转换函数
+
+<details>
+  <summary>点击查看详情</summary>
+
+- {{ float64 123 }}
+
+转换参数为`float64`类型
+
+- {{ int 123 }}
+
+转换参数为`int`类型
+
+*int在32位和64位下表现不一致*
+
+- {{ int64 123}}
+
+转换参数为`int64`类型
+
+- {{ toString 123 }}
+
+转换参数为`string`类型
+
+</details>
+
+- 一组数学函数
+
+<details>
+  <summary>点击查看详情</summary>
+
+函数名字末尾带**f**的表示它返回值是`float64`，不带**f**的返回值为`int64`
+
+- add / addf
+
+{{ add 1 2}} 计算加法
+
+- sub / subf
+
+{{ sub 1 2}} 计算减法
+
+- mul / mulf
+
+{{ mul 2 2 }} 计算乘法
+
+- div / divf
+
+{{ div 10 5 }} 计算除法
+
+- mod / modf
+
+{{ mod 10 5 }} 计算余数
+
+</details>
+
+- 一组最值函数
+
+<details>
+  <summary>点击查看详情</summary>
+
+函数名字末尾带**f**的表示它返回值是`float64`，不带**f**的返回值为`int64`
+
+- max / maxf
+
+{{ max 1 2 3 4 5 }} 返回最大值
+
+- min / minf
+
+{{ min 1 2 3 4 5 }} 返回最小值
+
+</details>
+
+- 一组哈希函数
+
+<details>
+  <summary>点击查看详情</summary>
+
+- base64encode
+
+{{ base64encode "hello world" }} base64的加密
+
+- base64decode
+
+{{ base64decode "aGVsbG8gd29ybGQ=" }} base64的解密
+
+- md5sum
+
+{{ md5sum "hello world" }} md5加密
+
+- sha1sum
+
+{{ sha1sum "hello world" }} sha1加密
+
+- sha256sum
+
+{{ sha256sum "hellow world" }} sha256sum加密
+
+- adler32sum
+
+{{ adler32sum "hellow world" }} adler32sum加密
+
+- uuid
+
+{{ uuid }} 生成一个UUID
+
+
+</details>
+
+- 一组字符串函数
+
+<details>
+  <summary>点击查看详情</summary>
+
+- hasPrefix
+
+{{ hasPrefix "aaa" "aaabcd" }} 检查字符串是否有指定前缀
+
+- hasSuffix
+
+{{ hasSuffix "aaa" "bcdaaa" }} 检查字符串是否有指定后缀
+
+- contains
+
+{{ contains "aaa" "bcdaaabcd" }} 检查字符串是否包含一个子字符串
+
+- trim
+
+{{ trim "   aaa   " }} 去掉字符串前后的空白字符
+
+- trimSuffix
+
+{{ trimSuffix "aaa" "bcdaaa" }} 去掉字符串的指定后缀，如果字符串没有指定后缀，则无效果
+
+- trimPrefix
+
+{{ trimPrefix "aaa" "aaabcd" }} 去掉字符串的指定前缀，如果字符串没有指定前缀，则无效果
+
+- upper
+
+{{ upper "abc" }} 把字符串中所有英文字母改成大写
+
+- lower
+
+{{ lower "ABC" }} 把字符串中所有英文字母改成小写
+
+- title
+
+{{ title "hello world" }} 把字符串中的英文单词改为首字母大写
+
+- snakecase
+
+{{ snakecase "FirstName" }} 把字符串中所有命名改成蛇形命名法
+
+- camelcase
+
+{{ camelcase "first_name" }} 把字符串中所有命名改成驼峰式命名法
+
+</details>
+
 ## 当前支持的命令模板
 
 命令通用模板变量：
