@@ -91,6 +91,8 @@ github.com/gocq/qrcode v0.0.0-20211114040510-366b953fcd98 h1:NJDZEa7gibUa0w4tie8
 github.com/gocq/qrcode v0.0.0-20211114040510-366b953fcd98/go.mod h1:E5TBHc60dsWtOL7sbXCb3P9i4xrj2J7Zm5sEJftIc1w=
 github.com/gocq/rs v1.0.1 h1:ng7nhXmnx3SnfM0DOqmbP6GmQp1xGwRG9XmBiLFDWuM=
 github.com/gocq/rs v1.0.1/go.mod h1:8oaQnRvqn1fMh8i5zsetgQo03OUXksJV1k+dpmExxcY=
+github.com/gofrs/flock v0.8.1 h1:+gYjHKf32LDeiEEFhQaotPbLuUXjY5ZqxKgXy7n59aw=
+github.com/gofrs/flock v0.8.1/go.mod h1:F1TvTiK9OcQqauNUHlbJvyl9Qa1QvF/gOUDKA14jxHU=
 github.com/gogo/protobuf v1.1.1/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7atdtwQ=
 github.com/gogo/protobuf v1.2.1/go.mod h1:hp+jE20tsWTFYpLwKvXlhS1hjn+gTNwPg2I6zVXpSg4=
 github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b/go.mod h1:SBH7ygxi8pfUlaOkMMuAQtPIUF8ecWP5IEl/CR7VP2Q=
