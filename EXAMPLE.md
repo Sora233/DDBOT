@@ -964,17 +964,17 @@ pong
 - 清除群123456和群223456的订阅
 
 ```shell
-/清除订阅 -g 123456 223456 
+/清除订阅 -g 123456,223456 
 ```
 
 - 清除群123456和群223456的bilibili订阅
 
 ```shell
-/清除订阅 -g 123456 223456 --site bilibili 
+/清除订阅 -g 123456,223456 --site bilibili 
 ```
 
 - 清除群123456和群223456的bilibili直播订阅
 
 ```shell
-/清除订阅 -g 123456 223456 --site bilibili --type live 
+/清除订阅 -g 123456,223456 --site bilibili --type live 
 ```
