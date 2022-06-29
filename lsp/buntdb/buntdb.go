@@ -1,6 +1,8 @@
 package buntdb
 
 import (
+	"fmt"
+	"github.com/gofrs/flock"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/modern-go/gls"
 	"github.com/tidwall/buntdb"
@@ -12,11 +14,23 @@ const MEMORYDB = ":memory:"
 const LSPDB = ".lsp.db"
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
+var fileLock *flock.Flock
 
 // InitBuntDB 初始化buntdb，正常情况下框架会负责初始化
 func InitBuntDB(dbpath string) error {
 	if dbpath == "" {
 		dbpath = LSPDB
+	}
+	if dbpath != MEMORYDB {
+		var dblock = dbpath + ".lock"
+		fileLock = flock.New(dblock)
+		ok, err := fileLock.TryLock()
+		if err != nil {
+			fmt.Printf("buntdb tryLock err: %v", err)
+		}
+		if !ok {
+			return ErrLockNotHold
+		}
 	}
 	buntDB, err := buntdb.Open(dbpath)
 	if err != nil {
@@ -59,6 +73,9 @@ func Close() error {
 			return err
 		}
 		db = nil
+	}
+	if fileLock != nil {
+		return fileLock.Unlock()
 	}
 	return nil
 }

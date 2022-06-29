@@ -35,6 +35,8 @@ var CommandMaps = map[string]string{
 	"AdminCommand":         AdminCommand,
 	"SilenceCommand":       SilenceCommand,
 	"NoUpdateCommand":      NoUpdateCommand,
+	"AbnormalConcernCheck": AbnormalConcernCheck,
+	"CleanConcern":         CleanConcern,
 }
 
 const (
@@ -69,6 +71,8 @@ const (
 	AdminCommand         = "admin"
 	SilenceCommand       = "silence"
 	NoUpdateCommand      = "退订更新"
+	AbnormalConcernCheck = "检测异常订阅"
+	CleanConcern         = "清除订阅"
 )
 
 var allGroupCommand = [...]string{
@@ -78,7 +82,7 @@ var allGroupCommand = [...]string{
 	EnableCommand, DisableCommand,
 	ReverseCommand, ConfigCommand,
 	HelpCommand, ScoreCommand, AdminCommand,
-	SilenceCommand, NoUpdateCommand,
+	SilenceCommand, NoUpdateCommand, CleanConcern,
 }
 
 var allPrivateOperate = [...]string{
@@ -88,7 +92,8 @@ var allPrivateOperate = [...]string{
 	EnableCommand, GrantCommand, ConfigCommand,
 	WhosyourdaddyCommand, QuitCommand, ModeCommand,
 	GroupRequestCommand, FriendRequestCommand, AdminCommand,
-	SilenceCommand, NoUpdateCommand,
+	SilenceCommand, NoUpdateCommand, AbnormalConcernCheck,
+	CleanConcern,
 }
 
 var nonOprateable = [...]string{
@@ -96,7 +101,8 @@ var nonOprateable = [...]string{
 	BlockCommand, LogCommand, PingCommand,
 	WhosyourdaddyCommand, QuitCommand, ModeCommand,
 	GroupRequestCommand, FriendRequestCommand, AdminCommand,
-	SilenceCommand, NoUpdateCommand,
+	SilenceCommand, NoUpdateCommand, AbnormalConcernCheck,
+	CleanConcern,
 }
 
 func CheckValidCommand(command string) bool {

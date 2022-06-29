@@ -281,10 +281,8 @@ func (c *Concern) Remove(ctx mmsg.IMsgCtx,
 		}
 		return nil
 	})
-	if err == nil && config.GlobalConfig != nil {
-		if cfg.GetBilibiliUnsub() && allCtype.Empty() {
-			c.unsubUser(mid)
-		}
+	if err == nil && cfg.GetBilibiliUnsub() && allCtype.Empty() {
+		c.unsubUser(mid)
 	}
 	if identityInfo == nil {
 		identityInfo = concern.NewIdentity(id, "unknown")

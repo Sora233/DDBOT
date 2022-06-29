@@ -107,6 +107,10 @@ func (c *LspPrivateCommand) Execute() {
 		c.SilenceCommand()
 	case NoUpdateCommand:
 		c.NoUpdateCommand()
+	case AbnormalConcernCheck:
+		c.AbnormalConcernCheckCommand()
+	case CleanConcern:
+		c.CleanConcernCommand()
 	default:
 		if CheckCustomPrivateCommand(c.CommandName()) {
 			func() {
@@ -162,6 +166,54 @@ func (c *LspPrivateCommand) NoUpdateCommand() {
 	if err != nil {
 		c.textReplyF("失败 - %v", err)
 	}
+}
+
+func (c *LspPrivateCommand) AbnormalConcernCheckCommand() {
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
+
+	_, output := c.parseCommandSyntax(&struct{}{}, c.CommandName())
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	IAbnormalConcernCheck(c.NewMessageContext(log))
+}
+
+func (c *LspPrivateCommand) CleanConcernCommand() {
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
+
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
+	var cleanConcernCmd struct {
+		Abnormal   bool    `optional:"" help:"清除异常订阅"`
+		GroupCodes []int64 `optional:"" short:"g" help:"清除指定群的订阅，可指定多个"`
+		Site       string  `optional:"" short:"s" help:"清除指定的网站订阅,默认为全部"`
+		Type       string  `optional:"" short:"t" help:"清除指定的订阅类型,默认为全部"`
+	}
+
+	_, output := c.parseCommandSyntax(&cleanConcernCmd, c.CommandName())
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	ICleanConcern(c.NewMessageContext(log), cleanConcernCmd.Abnormal,
+		cleanConcernCmd.GroupCodes, cleanConcernCmd.Site, cleanConcernCmd.Type)
+
 }
 
 func (c *LspPrivateCommand) WhosyourdaddyCommand() {
@@ -890,6 +942,9 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 				if err := c.l.PermissionStateManager.GrantGroupRole(req.GroupCode, req.InvitorUin, permission.GroupAdmin); err != nil {
 					log.Errorf("设置群管理员权限失败 - %v", err)
 				}
+				if err := c.l.PermissionStateManager.DeleteBlockList(req.GroupCode); err != nil {
+					log.Errorf("DeleteBlockList error %v", err)
+				}
 			}
 			log.Infof("已接受%v个加群邀请", len(requests))
 			c.textReply(fmt.Sprintf("成功 - 已接受全部%v个加群邀请", len(requests)))
@@ -928,6 +983,9 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 			c.bot.SolveGroupJoinRequest(request, true, false, "")
 			if err := c.l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
 				log.Errorf("设置群管理员权限失败 - %v", err)
+			}
+			if err := c.l.PermissionStateManager.DeleteBlockList(request.GroupCode); err != nil {
+				log.Errorf("DeleteBlockList error %v", err)
 			}
 			log.Info("接受加群请求成功")
 			c.textReply(fmt.Sprintf("成功 - 已接受 %v(%v) 邀请加群 %v(%v)", request.InvitorNick, request.InvitorUin, request.GroupName, request.GroupCode))

@@ -7,8 +7,12 @@ package template
 import (
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
+	"github.com/huandu/xstrings"
+	"github.com/shopspring/decimal"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync"
 	"unicode"
 )
@@ -65,6 +69,78 @@ func builtins() FuncMap {
 		"year":    year,
 		"day":     day,
 		"yearday": yearday,
+
+		// cast
+		"float64": toFloat64,
+		"int":     toInt,
+		"int64":   toInt64,
+
+		// math
+		"add": func(i ...interface{}) int64 {
+			var a int64 = 0
+			for _, b := range i {
+				a += toInt64(b)
+			}
+			return a
+		},
+		"sub": func(a, b interface{}) int64 { return toInt64(a) - toInt64(b) },
+		"div": func(a, b interface{}) int64 { return toInt64(a) / toInt64(b) },
+		"mod": func(a, b interface{}) int64 { return toInt64(a) % toInt64(b) },
+		"mul": func(a interface{}, v ...interface{}) int64 {
+			val := toInt64(a)
+			for _, b := range v {
+				val = val * toInt64(b)
+			}
+			return val
+		},
+		"addf": func(i ...interface{}) float64 {
+			a := interface{}(float64(0))
+			return execDecimalOp(a, i, func(d1, d2 decimal.Decimal) decimal.Decimal { return d1.Add(d2) })
+		},
+		"subf": func(a interface{}, v ...interface{}) float64 {
+			return execDecimalOp(a, v, func(d1, d2 decimal.Decimal) decimal.Decimal { return d1.Sub(d2) })
+		},
+		"divf": func(a interface{}, v ...interface{}) float64 {
+			return execDecimalOp(a, v, func(d1, d2 decimal.Decimal) decimal.Decimal { return d1.Div(d2) })
+		},
+		"modf": func(a interface{}, v ...interface{}) float64 {
+			return execDecimalOp(a, v, func(d1, d2 decimal.Decimal) decimal.Decimal { return d1.Mod(d2) })
+		},
+		"mulf": func(a interface{}, v ...interface{}) float64 {
+			return execDecimalOp(a, v, func(d1, d2 decimal.Decimal) decimal.Decimal { return d1.Mul(d2) })
+		},
+
+		// max min
+		"max":  max,
+		"maxf": maxf,
+		"min":  min,
+		"minf": minf,
+
+		// crypto
+		"base64encode": base64encode,
+		"base64decode": base64decode,
+		"md5sum":       md5sum,
+		"sha1sum":      sha1sum,
+		"sha256sum":    sha256sum,
+		"adler32sum":   adler32sum,
+		"uuid":         func() string { return uuid.New().String() },
+
+		// string
+		"toString":   strval,
+		"trim":       strings.TrimSpace,
+		"trimAll":    func(a, b string) string { return strings.Trim(b, a) },
+		"trimSuffix": func(a, b string) string { return strings.TrimSuffix(b, a) },
+		"trimPrefix": func(a, b string) string { return strings.TrimPrefix(b, a) },
+		"contains":   func(substr string, str string) bool { return strings.Contains(str, substr) },
+		"hasPrefix":  func(substr string, str string) bool { return strings.HasPrefix(str, substr) },
+		"hasSuffix":  func(substr string, str string) bool { return strings.HasSuffix(str, substr) },
+
+		"snakecase": xstrings.ToSnakeCase,
+		"camelcase": xstrings.ToCamelCase,
+		"kebabcase": xstrings.ToKebabCase,
+		"upper":     strings.ToUpper,
+		"lower":     strings.ToLower,
+		"title":     strings.Title,
 
 		// Comparisons
 		"eq": eq, // ==
