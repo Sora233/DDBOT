@@ -117,7 +117,16 @@ func (c *LspPrivateCommand) Execute() {
 				log := c.DefaultLoggerWithCommand(c.CommandName()).WithField("CustomCommand", true)
 				log.Infof("run %v command", c.CommandName())
 				defer func() { log.Infof("%v command end", c.CommandName()) }()
-				c.sendChain(c.templateMsg(fmt.Sprintf("custom.command.private.%s.tmpl", c.CommandName()), nil))
+				c.sendChain(
+					c.templateMsg(
+						fmt.Sprintf("custom.command.private.%s.tmpl", c.CommandName()),
+						map[string]interface{}{
+							"cmd":       c.CommandName(),
+							"args":      c.GetArgs(),
+							"full_args": strings.Join(c.GetArgs(), " "),
+						},
+					),
+				)
 			}()
 		} else {
 			c.textReplyF("阁下似乎输入了一个无法识别的命令，请使用<%v>命令查看帮助。", c.l.CommandShowName(HelpCommand))

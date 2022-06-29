@@ -174,7 +174,8 @@ func (lgc *LspGroupCommand) Execute() {
 								"args":       lgc.GetArgs(),
 								"full_args":  strings.Join(lgc.GetArgs(), " "),
 								"at_targets": lgc.GetAtArgs(),
-							}),
+							},
+						),
 					)
 				}()
 			}
