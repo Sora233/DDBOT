@@ -18,7 +18,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"runtime/debug"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -174,16 +173,7 @@ func (c *LspPrivateCommand) AbnormalConcernCheckCommand() {
 	log.Infof("run %v command", c.CommandName())
 	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
-	if !c.l.PermissionStateManager.RequireAny(
-		permission.AdminRoleRequireOption(c.uin()),
-	) {
-		c.noPermission()
-		return
-	}
-
-	var concernCheckCmd struct{}
-
-	_, output := c.parseCommandSyntax(&concernCheckCmd, c.CommandName())
+	_, output := c.parseCommandSyntax(&struct{}{}, c.CommandName())
 	if output != "" {
 		c.textReply(output)
 	}
@@ -191,54 +181,39 @@ func (c *LspPrivateCommand) AbnormalConcernCheckCommand() {
 		return
 	}
 
-	var allGroups = make(map[int64]bool)
-	for _, groups := range localutils.GetBot().GetGroupList() {
-		allGroups[groups.Code] = true
-	}
-
-	var allConcernGroups = make(map[int64]int)
-	for _, cm := range concern.ListConcern() {
-		_, _, _, err := cm.GetStateManager().ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
-			allConcernGroups[groupCode] += 1
-			return true
-		})
-		if err != nil {
-			c.textReplyF("失败 - %v", err)
-		}
-	}
-	var unknownGroups [][2]int64
-
-	for groupCode, number := range allConcernGroups {
-		if _, found := allGroups[groupCode]; !found {
-			unknownGroups = append(unknownGroups, [2]int64{groupCode, int64(number)})
-		}
-	}
-
-	var m = mmsg.NewMSG()
-
-	if len(localutils.GetBot().GetGroupList()) > 900 {
-		m.Textf("警告：当前账号加入超过900个，由于QQ本身的限制，可能会将正常的群显示为异常！请注意确认。")
-	}
-
-	if len(unknownGroups) == 0 {
-		m.Textf("没有查询到异常群号")
-	} else {
-		// 让结果稳定
-		sort.Slice(unknownGroups, func(i, j int) bool {
-			return unknownGroups[i][0] < unknownGroups[j][0]
-		})
-		m.Textf("共查询到%v个异常群号:\n")
-		for _, pair := range unknownGroups {
-			m.Textf("群 %v - %v个订阅\n", pair[0], pair[1])
-		}
-		m.Textf("可以使用<%v --abnormal>命令清除异常群订阅", c.l.CommandShowName(CleanConcern))
-	}
-	c.send(m)
+	IAbnormalConcernCheck(c.NewMessageContext(log))
 }
 
 func (c *LspPrivateCommand) CleanConcernCommand() {
-	// TODO
-	c.notImplReply()
+	log := c.DefaultLoggerWithCommand(c.CommandName())
+	log.Infof("run %v command", c.CommandName())
+	defer func() { log.Infof("%v command end", c.CommandName()) }()
+
+	if !c.l.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.uin()),
+	) {
+		c.noPermission()
+		return
+	}
+
+	var cleanConcernCmd struct {
+		Abnormal   bool    `optional:"" help:"清除异常订阅"`
+		GroupCodes []int64 `optional:"" short:"g" help:"清除指定群的订阅，可指定多个"`
+		Site       string  `optional:"" short:"s" help:"清除指定的网站订阅,默认为全部"`
+		Type       string  `optional:"" short:"t" help:"清除指定的订阅类型,默认为全部"`
+	}
+
+	_, output := c.parseCommandSyntax(&cleanConcernCmd, c.CommandName())
+	if output != "" {
+		c.textReply(output)
+	}
+	if c.exit {
+		return
+	}
+
+	ICleanConcern(c.NewMessageContext(log), cleanConcernCmd.Abnormal,
+		cleanConcernCmd.GroupCodes, cleanConcernCmd.Site, cleanConcernCmd.Type)
+
 }
 
 func (c *LspPrivateCommand) WhosyourdaddyCommand() {

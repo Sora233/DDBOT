@@ -82,7 +82,7 @@ var allGroupCommand = [...]string{
 	EnableCommand, DisableCommand,
 	ReverseCommand, ConfigCommand,
 	HelpCommand, ScoreCommand, AdminCommand,
-	SilenceCommand, NoUpdateCommand,
+	SilenceCommand, NoUpdateCommand, CleanConcern,
 }
 
 var allPrivateOperate = [...]string{

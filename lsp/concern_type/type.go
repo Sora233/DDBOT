@@ -131,6 +131,23 @@ func (t Type) Add(oList ...Type) Type {
 	return combine(result)
 }
 
+// Intersection 返回t和o的交集
+// 注意这个操作并不会改变t，而是返回操作后的type
+// 如果要改变t，可以这样： t = t.Intersection(...)
+func (t Type) Intersection(o Type) Type {
+	var s1 = make(map[Type]interface{})
+	for _, u1 := range t.Split() {
+		s1[u1] = true
+	}
+	var result []Type
+	for _, u2 := range o.Split() {
+		if _, found := s1[u2]; found {
+			result = append(result, u2)
+		}
+	}
+	return combine(result)
+}
+
 func combine(t []Type) Type {
 	if t == nil {
 		return Empty

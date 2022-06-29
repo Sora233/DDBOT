@@ -151,6 +151,15 @@ func (lgc *LspGroupCommand) Execute() {
 		if lgc.requireNotDisable(HelpCommand) {
 			lgc.HelpCommand()
 		}
+	case CleanConcern:
+		if lgc.requireNotDisable(CleanConcern) {
+			if lgc.l.PermissionStateManager.RequireAny(
+				permission.AdminRoleRequireOption(lgc.uin()),
+				permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
+			) {
+				lgc.CleanConcernCommand()
+			}
+		}
 	default:
 		if CheckCustomGroupCommand(lgc.CommandName()) {
 			if lgc.requireNotDisable(lgc.CommandName()) {
@@ -846,6 +855,28 @@ func (lgc *LspGroupCommand) HelpCommand() {
 		return
 	}
 	lgc.sendChain(lgc.templateMsg("command.group.help.tmpl", nil))
+}
+
+func (lgc *LspGroupCommand) CleanConcernCommand() {
+	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
+	log.Infof("run %v command", lgc.CommandName())
+	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
+
+	var cleanConcernCmd struct {
+		Site string `optional:"" short:"s" help:"清除指定的网站订阅,默认为全部"`
+		Type string `optional:"" short:"t" help:"清除指定的订阅类型,默认为全部"`
+	}
+	_, output := lgc.parseCommandSyntax(&cleanConcernCmd, lgc.CommandName(), kong.Description("print help message"))
+	if output != "" {
+		lgc.textReply(output)
+	}
+	if lgc.exit {
+		return
+	}
+
+	ICleanConcern(lgc.NewMessageContext(log),
+		false, []int64{lgc.groupCode()}, cleanConcernCmd.Site, cleanConcernCmd.Type)
+
 }
 
 func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {

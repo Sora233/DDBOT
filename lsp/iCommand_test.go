@@ -849,3 +849,227 @@ func TestIConfigFilterCmd(t *testing.T) {
 	result = <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "当前配置为空")
 }
+
+func TestICleanConcern(t *testing.T) {
+	initLsp(t)
+	defer closeLsp(t)
+
+	var result *mmsg.MSG
+	var err error
+	msgChan := make(chan *mmsg.MSG, 10)
+	target := mmsg.NewGroupTarget(test.G1)
+	ctx := NewCtx(t, msgChan, test.Sender1, target)
+
+	testNotifyChan := make(chan concern.Notify, 1)
+	defer close(testNotifyChan)
+
+	tc1 := newTestConcern(t, make(chan concern.Event, 16), testNotifyChan, test.Site1, []concern_type.Type{test.T1, test.T2})
+	concern.RegisterConcern(tc1)
+	defer tc1.Stop()
+
+	tc2 := newTestConcern(t, make(chan concern.Event, 16), testNotifyChan, test.Site2, []concern_type.Type{test.T1, test.T2})
+	concern.RegisterConcern(tc2)
+	defer tc2.Stop()
+
+	tc3 := newTestConcern(t, make(chan concern.Event, 16), testNotifyChan, test.Site3, []concern_type.Type{test.T3})
+	concern.RegisterConcern(tc3)
+	defer tc3.Stop()
+
+	ICleanConcern(ctx, false, []int64{test.G1}, test.Site1, test.T1.String())
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除0个")
+
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T2)
+	assert.Nil(t, err)
+
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G2, test.UID1, test.T1)
+	assert.Nil(t, err)
+
+	ICleanConcern(ctx, false, []int64{test.G1}, test.Site1, test.T1.String())
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除1个")
+
+	err = tc1.GetStateManager().CheckGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+
+	err = tc1.GetStateManager().CheckGroupConcern(test.G1, test.UID1, test.T2)
+	assert.NotNil(t, err)
+
+	err = tc1.GetStateManager().CheckGroupConcern(test.G2, test.UID1, test.T1)
+	assert.NotNil(t, err)
+
+	ICleanConcern(ctx, false, []int64{test.G1}, test.Site1, test.T2.String())
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除1个")
+
+	err = tc1.GetStateManager().CheckGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+
+	err = tc1.GetStateManager().CheckGroupConcern(test.G1, test.UID1, test.T2)
+	assert.Nil(t, err)
+
+	err = tc1.GetStateManager().CheckGroupConcern(test.G2, test.UID1, test.T1)
+	assert.NotNil(t, err)
+
+	ICleanConcern(ctx, false, []int64{test.G1}, test.Site1, test.T1.String())
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除0个")
+
+	err = tc1.GetStateManager().CheckGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+
+	err = tc1.GetStateManager().CheckGroupConcern(test.G1, test.UID1, test.T2)
+	assert.Nil(t, err)
+
+	err = tc1.GetStateManager().CheckGroupConcern(test.G2, test.UID1, test.T1)
+	assert.NotNil(t, err)
+
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T2)
+	assert.Nil(t, err)
+
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+
+	ICleanConcern(ctx, false, []int64{test.G1, test.G2}, "", "")
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除2个")
+
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T2)
+	assert.Nil(t, err)
+
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+
+	ICleanConcern(ctx, false, []int64{test.G1, test.G2}, "", "")
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除1个")
+
+	localutils.GetBot().TESTAddGroup(test.G2)
+
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T2)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID2, test.T1)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID3, test.T2)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G2, test.UID1, test.T1)
+	assert.Nil(t, err)
+
+	ICleanConcern(ctx, true, []int64{test.G1, test.G2}, "", "")
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), failed)
+
+	ICleanConcern(ctx, true, nil, "", "")
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除3个")
+
+	err = tc1.GetStateManager().CheckGroupConcern(test.G2, test.UID1, test.T1)
+	assert.NotNil(t, err)
+
+	ICleanConcern(ctx, false, nil, "", "")
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), failed)
+
+	ICleanConcern(ctx, false, []int64{test.G1, test.G2}, "", "")
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除1个")
+
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T2)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID2, test.T1)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID3, test.T2)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G2, test.UID1, test.T1)
+	assert.Nil(t, err)
+
+	ICleanConcern(ctx, false, []int64{test.G1, test.G2}, "", test.T2.String())
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除2个")
+
+	ICleanConcern(ctx, false, []int64{test.G1, test.G2}, "", test.T1.String())
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除3个")
+
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T2)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID2, test.T1)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID3, test.T2)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G2, test.UID1, test.T1)
+	assert.Nil(t, err)
+	_, err = tc2.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+
+	ICleanConcern(ctx, false, []int64{test.G1, test.G2}, test.Site1, "")
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除4个")
+
+	err = tc2.GetStateManager().CheckGroupConcern(test.G1, test.UID1, test.T1)
+	assert.NotNil(t, err)
+
+	ICleanConcern(ctx, false, []int64{test.G1, test.G2}, "wrongasdsad", "")
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), failed)
+
+	ICleanConcern(ctx, false, []int64{test.G1, test.G2}, test.Site2, "")
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除1个")
+
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T2)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID2, test.T1)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID3, test.T2)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G2, test.UID1, test.T1)
+	assert.Nil(t, err)
+	_, err = tc2.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+	ICleanConcern(ctx, true, nil, "", "")
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除4个")
+
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T2)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID2, test.T1)
+	assert.Nil(t, err)
+	_, err = tc1.GetStateManager().AddGroupConcern(test.G1, test.UID3, test.T2)
+	assert.Nil(t, err)
+	_, err = tc2.GetStateManager().AddGroupConcern(test.G1, test.UID1, test.T1)
+	assert.Nil(t, err)
+
+	IAbnormalConcernCheck(ctx)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), noPermission)
+
+	err = Instance.PermissionStateManager.GrantRole(test.Sender1.Uin, permission.Admin)
+	assert.Nil(t, err)
+
+	IAbnormalConcernCheck(ctx)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "查询到1个异常")
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "123456 - 4个订阅")
+
+	ICleanConcern(ctx, true, nil, "", "")
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "清除4个")
+
+	IAbnormalConcernCheck(ctx)
+	result = <-msgChan
+	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), "没有查询到")
+}

@@ -10,7 +10,9 @@ import (
 	"github.com/Sora233/DDBOT/lsp/permission"
 	"github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/sliceutil"
+	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
+	"sort"
 	"strings"
 )
 
@@ -736,4 +738,182 @@ func operateOfflineNotifyConcernConfig(c *MessageContext, ctype concern_type.Typ
 			}
 		}
 	}
+}
+
+func IAbnormalConcernCheck(c *MessageContext) {
+	if !c.Lsp.PermissionStateManager.RequireAny(
+		permission.AdminRoleRequireOption(c.Sender.Uin),
+	) {
+		c.NoPermissionReply()
+		return
+	}
+
+	var allGroups = make(map[int64]bool)
+	for _, groups := range utils.GetBot().GetGroupList() {
+		allGroups[groups.Code] = true
+	}
+
+	var allConcernGroups = make(map[int64]int)
+	for _, cm := range concern.ListConcern() {
+		_, _, _, err := cm.GetStateManager().ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+			allConcernGroups[groupCode] += 1
+			return true
+		})
+		if err != nil {
+			c.TextReply(fmt.Sprintf("失败 - %v", err))
+			return
+		}
+	}
+	var unknownGroups [][2]int64
+
+	for groupCode, number := range allConcernGroups {
+		if _, found := allGroups[groupCode]; !found {
+			unknownGroups = append(unknownGroups, [2]int64{groupCode, int64(number)})
+		}
+	}
+
+	var m = mmsg.NewMSG()
+
+	if len(utils.GetBot().GetGroupList()) > 900 {
+		m.Textf("警告：当前账号加入超过900个群，由于QQ本身的限制，可能会将正常的群显示为异常！请注意确认。")
+	}
+
+	if len(unknownGroups) == 0 {
+		m.Textf("没有查询到异常群号")
+	} else {
+		// 让结果稳定
+		sort.Slice(unknownGroups, func(i, j int) bool {
+			return unknownGroups[i][0] < unknownGroups[j][0]
+		})
+		m.Textf("共查询到%v个异常群号:\n", len(unknownGroups))
+		for _, pair := range unknownGroups {
+			m.Textf("群 %v - %v个订阅\n", pair[0], pair[1])
+		}
+		m.Textf("可以使用<%v --abnormal>命令清除异常群订阅", c.Lsp.CommandShowName(CleanConcern))
+	}
+	c.Send(m)
+}
+
+func ICleanConcern(c *MessageContext, abnormal bool, groupCodes []int64, rawSite string, rawType string) {
+	log := c.GetLog()
+
+	log = log.WithFields(logrus.Fields{
+		"abnormal":    abnormal,
+		"group_codes": groupCodes,
+		"site":        rawSite,
+		"type":        rawType,
+	})
+
+	if abnormal {
+		if len(groupCodes) != 0 {
+			c.TextReply("失败 - 无法同时清除异常订阅和指定群订阅，请重新操作。")
+			return
+		}
+	} else {
+		if len(groupCodes) == 0 {
+			c.TextReply("失败 - 请指定要清除的群号码")
+			return
+		}
+	}
+	type cleanItem struct {
+		groupCode int64
+		id        interface{}
+		tp        concern_type.Type
+	}
+
+	type cleanResult struct {
+		site string
+		tp   concern_type.Type
+	}
+
+	var (
+		cleanGroupCode = make(map[int64]bool)
+		allGroups      = make(map[int64]bool)
+		site           string
+		err            error
+		tp             concern_type.Type
+		itemMap        = make(map[string][]*cleanItem)
+		result         []*cleanResult
+	)
+
+	for _, code := range groupCodes {
+		cleanGroupCode[code] = true
+	}
+
+	for _, groups := range utils.GetBot().GetGroupList() {
+		allGroups[groups.Code] = true
+	}
+
+	for _, cm := range concern.ListConcern() {
+		if len(rawSite) > 0 {
+			site, err = concern.ParseRawSite(rawSite)
+			if err != nil {
+				c.TextReply(fmt.Sprintf("失败 - %v", err))
+				return
+			}
+			if site != cm.Site() {
+				continue
+			}
+		} else {
+			site = cm.Site()
+		}
+		if len(rawType) > 0 {
+			_, tp, err = concern.ParseRawSiteAndType(site, rawType)
+			if err != nil {
+				continue
+			}
+		} else {
+			tp = concern_type.Empty.Add(cm.Types()...)
+		}
+		result = append(result, &cleanResult{
+			site: site,
+			tp:   tp,
+		})
+		_, _, _, err = cm.GetStateManager().ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+			var itp = p.Intersection(tp)
+			if itp.Empty() {
+				return true
+			}
+			if abnormal {
+				if _, found := allGroups[groupCode]; found {
+					return true
+				}
+			} else {
+				if _, found := cleanGroupCode[groupCode]; !found {
+					return true
+				}
+			}
+			itemMap[site] = append(itemMap[site], &cleanItem{
+				groupCode: groupCode,
+				id:        id,
+				tp:        itp,
+			})
+			return true
+		})
+		if err != nil {
+			c.TextReply(fmt.Sprintf("失败 - %v", err))
+			return
+		}
+	}
+
+	var count int
+	for site, items := range itemMap {
+		cm, err := concern.GetConcernBySite(site)
+		if err != nil {
+			c.TextReply(fmt.Sprintf("失败 - %v", err))
+			return
+		}
+		for _, item := range items {
+			_, err = cm.GetStateManager().RemoveGroupConcern(item.groupCode, item.id, item.tp)
+			if err == buntdb.ErrNotFound {
+				continue
+			} else if err != nil {
+				c.TextReply(fmt.Sprintf("失败 - %v", err))
+				return
+			}
+			count++
+		}
+	}
+
+	c.TextSend(fmt.Sprintf("成功 - 共清除%v个订阅", count))
 }
