@@ -904,7 +904,7 @@ func ICleanConcern(c *MessageContext, abnormal bool, groupCodes []int64, rawSite
 			return
 		}
 		for _, item := range items {
-			_, err = cm.GetStateManager().RemoveGroupConcern(item.groupCode, item.id, item.tp)
+			_, err = cm.Remove(c, item.groupCode, item.id, item.tp)
 			if err == buntdb.ErrNotFound {
 				continue
 			} else if err != nil {
