@@ -9,11 +9,6 @@ import (
 	"unsafe"
 )
 
-var (
-	kernel32 = syscall.NewLazyDLL("kernel32.dll")
-	user32   = syscall.NewLazyDLL("user32.dll")
-)
-
 func runningByDoubleClick() bool {
 	lp := kernel32.NewProc("GetConsoleProcessList")
 	if lp != nil {
