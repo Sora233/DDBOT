@@ -143,6 +143,22 @@ func builtins() FuncMap {
 		"lower":     strings.ToLower,
 		"title":     strings.Title,
 
+		// dict
+		"dict":               dict,
+		"get":                get,
+		"set":                set,
+		"unset":              unset,
+		"hasKey":             hasKey,
+		"pluck":              pluck,
+		"keys":               keys,
+		"pick":               pick,
+		"omit":               omit,
+		"merge":              merge,
+		"mergeOverwrite":     mergeOverwrite,
+		"mustMerge":          mustMerge,
+		"mustMergeOverwrite": mustMergeOverwrite,
+		"values":             values,
+
 		// Comparisons
 		"eq": eq, // ==
 		"ge": ge, // >=

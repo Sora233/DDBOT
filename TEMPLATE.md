@@ -457,6 +457,91 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 </details>
 
+- 一组dict函数
+
+<details>
+  <summary>点击查看详情</summary>
+
+- dict
+
+{{ dict "a" 1 "b" 2 "c" 3 }} 创建一个dict，其中key必须是字符串类型，返回创建的dict：
+
+```
+{"a": 1, "b": 2, "c": 3}
+```
+
+- get
+
+从dict中获取值
+
+{{ $d := dict "a" 1 "b" 2 "c" 3 }}
+{{ $value := get $d "a" }}
+
+- set
+
+设置dict的值，其中key必须是字符串类型，返回dict
+
+```
+{{ $d := dict "a" 1 "b" 2 "c" 3 }}
+{{ set $d "a" 100 }}
+```
+
+- unset
+
+删除dict的值，返回dict
+
+```
+{{ $d := dict "a" 1 "b" 2 "c" 3 }}
+{{ unset $d "a" }}
+```
+
+- hasKey
+
+检查dict中是否有指定key
+
+```
+{{ $d := dict "a" 1 "b" 2 "c" 3 }}
+{{ if hasKey $d "a" }}Yes.{{ end }}
+```
+
+- merge
+
+合并dict，支持变长参数，不会覆盖已经存在的key，如果需要覆盖，请使用`mergeOverwrite`
+
+返回合并后的dict
+
+```
+{{ $d1 := dict "a" 1 "b" 2 "c" 3 }}
+{{ $d2 := dict "a" 2 "b" 3 "c" 4 }}
+{{ $d3 := merge $d1 $d2 }}
+```
+
+- mergeOverwrite
+
+合并dict，支持变长参数，会覆盖已经存在的key
+
+返回合并后的dict
+
+```
+{{ $d1 := dict "a" 1 "b" 2 "c" 3 }}
+{{ $d2 := dict "a" 2 "b" 3 "c" 4 }}
+{{ $d3 := mergeOverwrite $d1 $d2 }}
+```
+
+- pick
+
+从dict中取出指定的key创建新dict，支持变长参数，返回新创建的dict
+
+```
+{{ $d := dict "a" 1 "b" 2 "c" 3 }}
+{{ $d2 := pick $d "a" "b" }}
+```
+
+
+
+</details>
+
+
 ## 当前支持的命令模板
 
 命令通用模板变量：
