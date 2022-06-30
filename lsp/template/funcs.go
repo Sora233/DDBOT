@@ -69,6 +69,7 @@ func builtins() FuncMap {
 		"year":    year,
 		"day":     day,
 		"yearday": yearday,
+		"weekday": weekday,
 
 		// cast
 		"float64": toFloat64,

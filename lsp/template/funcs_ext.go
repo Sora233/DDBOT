@@ -246,6 +246,15 @@ func yearday() int {
 	return time.Now().YearDay()
 }
 
+func weekday() int {
+	// 星期天返回0，手动改成7
+	t := time.Now().Weekday()
+	if t == 0 {
+		t = 7
+	}
+	return int(t)
+}
+
 func toFloat64(v interface{}) float64 {
 	return cast.ToFloat64(v)
 }
