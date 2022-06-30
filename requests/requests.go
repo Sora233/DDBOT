@@ -189,7 +189,7 @@ func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Opt
 		df.ResponseUse(opt.ResponseMiddleware...)
 	}
 	switch out.(type) {
-	case io.Writer, []byte, *string:
+	case io.Writer, []byte, *[]byte, *string:
 		df.BindBody(out)
 	default:
 		df.BindJSON(out)

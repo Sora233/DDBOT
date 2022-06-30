@@ -1,6 +1,7 @@
 package template
 
 import (
+	"encoding/base64"
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
@@ -89,7 +90,7 @@ func at(uin int64) *mmsg.AtElement {
 	return mmsg.NewAt(uin)
 }
 
-func pic(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
+func picUri(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 	logger := logger.WithField("uri", uri)
 	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
 		e = mmsg.NewImageByUrlWithoutCache(uri)
@@ -138,6 +139,20 @@ func pic(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 		e.Alternative(alternative[0])
 	}
 	return e
+}
+
+func pic(input interface{}, alternative ...string) *mmsg.ImageBytesElement {
+	switch e := input.(type) {
+	case string:
+		if b, err := base64.StdEncoding.DecodeString(e); err == nil {
+			return mmsg.NewImage(b)
+		}
+		return picUri(e, alternative...)
+	case []byte:
+		return mmsg.NewImage(e)
+	default:
+		panic(fmt.Sprintf("invalid input %v", input))
+	}
 }
 
 func icon(uin int64, size ...uint) *mmsg.ImageBytesElement {
