@@ -634,7 +634,7 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 - json处理
 
-json处理使用[gjson](github.com/tidwall/gjson)库实现，请参考对应文档。
+json处理使用 [gjson](https://github.com/tidwall/gjson) 库实现，请参考对应文档。
 
 ```
 {{- $data := `{"name":{"first":"Janet","last":"Prichard"},"age":47}` -}}
@@ -663,7 +663,7 @@ Age is {{ $age }}.
 ```
 {{/* 不带参数的httpGet */}}
 {{- $j := httpGet "http://110.42.142.69:8864/get" | toGJson -}}
-你的IP是：{{ coalesce ($j.Get "origin").String "获取失败" }}
+你的IP是：{{ coalesce (index (split ":" ($j.Get "origin").String) 0) "获取失败" }}
 ```
 
 ```
