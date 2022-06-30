@@ -304,21 +304,21 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 <details>
   <summary>点击查看详情</summary>
 
-- {{ float64 123 }}
+- `{{ float64 123 }}`
 
 转换参数为`float64`类型
 
-- {{ int 123 }}
+- `{{ int 123 }}`
 
 转换参数为`int`类型
 
 *int在32位和64位下表现不一致*
 
-- {{ int64 123}}
+- `{{ int64 123}}`
 
 转换参数为`int64`类型
 
-- {{ toString 123 }}
+- `{{ toString 123 }}`
 
 转换参数为`string`类型
 
@@ -333,23 +333,23 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 - add / addf
 
-{{ add 1 2}} 计算加法
+`{{ add 1 2}}` 计算加法
 
 - sub / subf
 
-{{ sub 1 2}} 计算减法
+`{{ sub 1 2}}` 计算减法
 
 - mul / mulf
 
-{{ mul 2 2 }} 计算乘法
+`{{ mul 2 2 }}` 计算乘法
 
 - div / divf
 
-{{ div 10 5 }} 计算除法
+`{{ div 10 5 }}` 计算除法
 
 - mod / modf
 
-{{ mod 10 5 }} 计算余数
+`{{ mod 10 5 }}` 计算余数
 
 </details>
 
@@ -362,11 +362,11 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 - max / maxf
 
-{{ max 1 2 3 4 5 }} 返回最大值
+`{{ max 1 2 3 4 5 }}` 返回最大值
 
 - min / minf
 
-{{ min 1 2 3 4 5 }} 返回最小值
+`{{ min 1 2 3 4 5 }}` 返回最小值
 
 </details>
 
@@ -377,27 +377,27 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 - base64encode
 
-{{ base64encode "hello world" }} base64的加密
+`{{ base64encode "hello world" }}` base64的加密
 
 - base64decode
 
-{{ base64decode "aGVsbG8gd29ybGQ=" }} base64的解密
+`{{ base64decode "aGVsbG8gd29ybGQ=" }}` base64的解密
 
 - md5sum
 
-{{ md5sum "hello world" }} md5加密
+`{{ md5sum "hello world" }}` md5加密
 
 - sha1sum
 
-{{ sha1sum "hello world" }} sha1加密
+`{{ sha1sum "hello world" }}` sha1加密
 
 - sha256sum
 
-{{ sha256sum "hellow world" }} sha256sum加密
+`{{ sha256sum "hellow world" }}` sha256sum加密
 
 - adler32sum
 
-{{ adler32sum "hellow world" }} adler32sum加密
+`{{ adler32sum "hellow world" }}` adler32sum加密
 
 - uuid
 
@@ -413,47 +413,102 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 - hasPrefix
 
-{{ hasPrefix "aaa" "aaabcd" }} 检查字符串是否有指定前缀
+`{{ hasPrefix "aaa" "aaabcd" }}` 检查字符串是否有指定前缀
 
 - hasSuffix
 
-{{ hasSuffix "aaa" "bcdaaa" }} 检查字符串是否有指定后缀
+`{{ hasSuffix "aaa" "bcdaaa" }}` 检查字符串是否有指定后缀
 
 - contains
 
-{{ contains "aaa" "bcdaaabcd" }} 检查字符串是否包含一个子字符串
+`{{ contains "aaa" "bcdaaabcd" }}` 检查字符串是否包含一个子字符串
 
 - trim
 
-{{ trim "   aaa   " }} 去掉字符串前后的空白字符
+`{{ trim "   aaa   " }}` 去掉字符串前后的空白字符
 
 - trimSuffix
 
-{{ trimSuffix "aaa" "bcdaaa" }} 去掉字符串的指定后缀，如果字符串没有指定后缀，则无效果
+`{{ trimSuffix "aaa" "bcdaaa" }}` 去掉字符串的指定后缀，如果字符串没有指定后缀，则无效果
 
 - trimPrefix
 
-{{ trimPrefix "aaa" "aaabcd" }} 去掉字符串的指定前缀，如果字符串没有指定前缀，则无效果
+`{{ trimPrefix "aaa" "aaabcd" }}` 去掉字符串的指定前缀，如果字符串没有指定前缀，则无效果
+
+- split
+
+`{{ split " " "foo bar baz" }}` 按照指定字符串分割字符串，返回一个list
+
+- join
+
+`{{ join " " (list "foor" "bar" "baz") }}` 按照指定字符串拼接字符串，返回一个字符串
+
+- trunc
+
+`{{ trunc 2 "abcde" }}` 按照长度截取字符串，如果长度大于字符串，则返回整个字符串
 
 - upper
 
-{{ upper "abc" }} 把字符串中所有英文字母改成大写
+`{{ upper "abc" }}` 把字符串中所有英文字母改成大写
 
 - lower
 
-{{ lower "ABC" }} 把字符串中所有英文字母改成小写
+`{{ lower "ABC" }}` 把字符串中所有英文字母改成小写
 
 - title
 
-{{ title "hello world" }} 把字符串中的英文单词改为首字母大写
+`{{ title "hello world" }}` 把字符串中的英文单词改为首字母大写
 
 - snakecase
 
-{{ snakecase "FirstName" }} 把字符串中所有命名改成蛇形命名法
+`{{ snakecase "FirstName" }}` 把字符串中所有命名改成蛇形命名法
 
 - camelcase
 
-{{ camelcase "first_name" }} 把字符串中所有命名改成驼峰式命名法
+`{{ camelcase "first_name" }}` 把字符串中所有命名改成驼峰式命名法
+
+</details>
+
+- 一组默认值与空值函数
+
+<details>
+  <summary>点击查看详情</summary>
+
+- empty
+
+`{{ if empty .args }}empty{{else}}not empty{{end}}`  检查变量是否是空值
+
+- nonEmpty
+
+`{{ if nonEmpty .args }}not empty{{else}}empty{{end}}`  检查变量是否不是空值
+
+- coalesce
+
+返回第一个非空的值，支持变长参数，常用于设置默认值
+
+```
+{{- $name := "" -}}
+{{- $name = coalesce $name "没有名字" -}}
+{{ $name }}
+```
+
+- ternary
+
+三元运算符的语法糖，当第三个参数为true时返回第一个参数，否则返回第二个参数
+
+`{{ ternary "有参数" "没有参数" (nonEmpty .args)}}`
+
+- all
+
+检查参数是否全部非空，支持变长参数
+
+`{{ if all "" 0 1}}all is not empty{{end}}`
+
+- any
+
+检查参数是否有一个非空，支持变长参数
+
+`{{ if any "" 0 1}}someone is not empty{{end}}`
 
 </details>
 
@@ -464,7 +519,7 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 - list
 
-{{ list "a" "b" "c" }} 创建一个list，返回创建的list
+`{{ list "a" "b" "c" }}` 创建一个list，返回创建的list
 
 - append
 
@@ -504,18 +559,16 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 - dict
 
-{{ dict "a" 1 "b" 2 "c" 3 }} 创建一个dict，其中key必须是字符串类型，返回创建的dict：
-
-```
-{"a": 1, "b": 2, "c": 3}
-```
+`{{ dict "a" 1 "b" 2 "c" 3 }}` 创建一个dict，其中key必须是字符串类型，返回创建的dict：
 
 - get
 
 从dict中获取值
 
+```
 {{ $d := dict "a" 1 "b" 2 "c" 3 }}
 {{ $value := get $d "a" }}
+```
 
 - set
 
@@ -578,6 +631,47 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 ```
 
 </details>
+
+- json处理
+
+json处理使用[gjson](github.com/tidwall/gjson)库实现，请参考对应文档。
+
+```
+{{- $data := `{"name":{"first":"Janet","last":"Prichard"},"age":47}` -}}
+{{- $j := toGJson $data -}}
+{{- $name := ($j.Get "name.first").String -}}
+{{- $age := ($j.Get "age").Int -}}
+
+Name is {{ $name }}.
+Age is {{ $age }}.  
+```
+
+- http请求
+
+目前仅支持get / post 请求。
+
+`httpGet` 用于发送get请求。
+
+`httpPostJson` 用于发送json格式的post请求
+
+`httpPostForm` 用于发送表单格式的post请求
+
+三个函数的用法相同：
+
+支持两个参数，第一个参数为url，第二个参数为请求参数（可选），请求参数的格式为dict，可使用dict创建。
+
+```
+{{/* 不带参数的httpGet */}}
+{{- $j := httpGet "http://110.42.142.69:8864/get" | toGJson -}}
+你的IP是：{{ coalesce ($j.Get "origin").String "获取失败" }}
+```
+
+```
+{{/* 带参数的httpGet */}}
+{{- $name := (member_info .group_code .member_code).name -}}
+{{- $j := httpGet "http://110.42.142.69:8864/get" (dict "name" $name) | toGJson -}}
+你好，{{ ($j.Get "args.name.0").String }}！
+```
 
 ## 当前支持的命令模板
 
