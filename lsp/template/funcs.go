@@ -159,6 +159,12 @@ func builtins() FuncMap {
 		"mustMergeOverwrite": mustMergeOverwrite,
 		"values":             values,
 
+		// list
+		"list":    list,
+		"append":  push,
+		"prepend": prepend,
+		"concat":  concat,
+
 		// Comparisons
 		"eq": eq, // ==
 		"ge": ge, // >=

@@ -457,6 +457,46 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 </details>
 
+- 一组list函数
+
+<details>
+  <summary>点击查看详情</summary>
+
+- list
+
+{{ list "a" "b" "c" }} 创建一个list，返回创建的list
+
+- append
+
+向list末尾添加一个元素，返回新的list
+
+```
+{{ $old := list "a" "b" "c" }}
+{{ $new := append $old "d" }}
+```
+
+- prepend
+
+向list开头添加一个元素，返回新的list
+
+```
+{{ $old := list "a" "b" "c" }}
+{{ $new := prepend $old "d" }}
+```
+
+- concat
+
+连接一组list，支持变长参数，返回新的list
+
+```
+{{ $l1 := list "a" }}
+{{ $l2 := list "b" }}
+{{ $l3 := list "c" }}
+{{ $new := concat $l1 $l2 $l3 }}
+```
+
+</details>
+
 - 一组dict函数
 
 <details>
@@ -537,10 +577,7 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 {{ $d2 := pick $d "a" "b" }}
 ```
 
-
-
 </details>
-
 
 ## 当前支持的命令模板
 
