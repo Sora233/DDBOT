@@ -662,14 +662,14 @@ Age is {{ $age }}.
 
 ```
 {{/* 不带参数的httpGet */}}
-{{- $j := httpGet "http://110.42.142.69:8864/get" | toGJson -}}
-你的IP是：{{ coalesce (index (split ":" ($j.Get "origin").String) 0) "获取失败" }}
+{{- $j := httpGet "https://httpbin.sora233.me/get" | toGJson -}}
+你的IP是：{{ coalesce ($j.Get "origin").String "获取失败" }}
 ```
 
 ```
 {{/* 带参数的httpGet */}}
 {{- $name := (member_info .group_code .member_code).name -}}
-{{- $j := httpGet "http://110.42.142.69:8864/get" (dict "name" $name) | toGJson -}}
+{{- $j := httpGet "https://httpbin.sora233.me/get" (dict "name" $name) | toGJson -}}
 你好，{{ ($j.Get "args.name.0").String }}！
 ```
 
