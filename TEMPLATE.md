@@ -663,7 +663,7 @@ Age is {{ $age }}.
 ```
 {{/* 不带参数的httpGet */}}
 {{- $j := httpGet "https://httpbin.sora233.me/get" | toGJson -}}
-你的IP是：{{ coalesce ($j.Get "origin").String "获取失败" }}
+机器人的IP是：{{ coalesce ($j.Get "origin").String "获取失败" }}
 ```
 
 ```
