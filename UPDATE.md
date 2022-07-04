@@ -22,6 +22,7 @@
     - 模板函数`pic`支持base64字符串格式的图片
     - 新增模板函数`httpGet` `httpPostJson` `httpPostForm`用于发送http get/post请求
     - 新增模板函数`toGJson`用于处理json
+    - 修复customCommandPrefix不支持大写字母的问题
 - 2022-05-17 v1.0.7
   - 通用：
     - 修复@时显示QQ号的问题（这次是真的）
