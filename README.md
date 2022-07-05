@@ -56,7 +56,7 @@ DDBOT是一个基于 [MiraiGO](https://github.com/Mrs4s/MiraiGo) 的QQ群推送�
 以下命令默认禁用，使用enable命令后才能使用
 
 - **随机图片**
-  - 由 [api.olicon.app](https://api.lolicon.app/#/) 提供
+  - 由 [api.lolicon.app](https://api.lolicon.app/#/) 提供
 
 </details>
 
@@ -160,6 +160,7 @@ DDBOT已实现消息模板功能，一些内置命令和推送可通过模板自
 | Darren Li    | 爱发电 | ￥5.00   |
 | Ed😓         | 爱发电 | ￥5.00   |
 | 殿九           | 爱发电 | ￥30.00  |
+| 爱发电用户_brgT   | 爱发电 | ￥50.00  |
 
 ## 鸣谢
 

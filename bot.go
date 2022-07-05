@@ -3,6 +3,7 @@ package DDBOT
 import (
 	"fmt"
 	"github.com/Sora233/DDBOT/lsp"
+	"github.com/Sora233/DDBOT/warn"
 	"github.com/Sora233/MiraiGo-Template/bot"
 	"github.com/Sora233/MiraiGo-Template/config"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
@@ -59,12 +60,12 @@ func Run() {
 			fmt.Println("警告：没有检测到device.json，正在生成，如果是第一次运行，可忽略")
 			bot.GenRandomDevice()
 		} else {
-			fmt.Printf("检查device.json文件失败 - %v", err)
+			warn.Warn(fmt.Sprintf("检查device.json文件失败 - %v", err))
 			os.Exit(1)
 		}
 	} else {
 		if fi.IsDir() {
-			fmt.Println("检测到device.json，但目标是一个文件夹！请手动确认并删除该文件夹！")
+			warn.Warn("检测到device.json，但目标是一个文件夹！请手动确认并删除该文件夹！")
 			os.Exit(1)
 		} else {
 			fmt.Println("检测到device.json，使用存在的device.json")
@@ -75,24 +76,34 @@ func Run() {
 		if os.IsNotExist(err) {
 			fmt.Println("警告：没有检测到配置文件application.yaml，正在生成，如果是第一次运行，可忽略")
 			if err := ioutil.WriteFile("application.yaml", []byte(exampleConfig), 0755); err != nil {
-				fmt.Printf("application.yaml生成失败 - %v\n", err)
+				warn.Warn(fmt.Sprintf("application.yaml生成失败 - %v", err))
 				os.Exit(1)
 			} else {
 				fmt.Println("最小配置application.yaml已生成，请按需修改，如需高级配置请查看帮助文档")
 			}
 		} else {
-			panic(fmt.Sprintf("检查application.yaml文件失败 - %v", err))
+			warn.Warn(fmt.Sprintf("检查application.yaml文件失败 - %v", err))
+			os.Exit(1)
 		}
 	} else {
 		if fi.IsDir() {
-			fmt.Printf("检测到application.yaml，但目标是一个文件夹！请手动确认并删除该文件夹！")
+			warn.Warn("检测到application.yaml，但目标是一个文件夹！请手动确认并删除该文件夹！")
 			os.Exit(1)
 		} else {
 			fmt.Println("检测到application.yaml，使用存在的application.yaml")
 		}
 	}
 
-	config.Init()
+	config.GlobalConfig.SetConfigName("application")
+	config.GlobalConfig.SetConfigType("yaml")
+	config.GlobalConfig.AddConfigPath(".")
+	config.GlobalConfig.AddConfigPath("./config")
+
+	err := config.GlobalConfig.ReadInConfig()
+	if err != nil {
+		warn.Warn(fmt.Sprintf("读取配置文件失败！请检查配置文件格式是否正确 - %v", err))
+		os.Exit(1)
+	}
 	config.GlobalConfig.WatchConfig()
 
 	// 快速初始化

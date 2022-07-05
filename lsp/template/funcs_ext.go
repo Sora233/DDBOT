@@ -1,11 +1,7 @@
 package template
 
 import (
-	"crypto/md5"
-	"crypto/sha1"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
@@ -13,15 +9,11 @@ import (
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/shopspring/decimal"
-	"github.com/spf13/cast"
-	"hash/adler32"
-	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
-	"time"
 )
 
 var funcsExt = make(FuncMap)
@@ -98,7 +90,7 @@ func at(uin int64) *mmsg.AtElement {
 	return mmsg.NewAt(uin)
 }
 
-func pic(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
+func picUri(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 	logger := logger.WithField("uri", uri)
 	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
 		e = mmsg.NewImageByUrlWithoutCache(uri)
@@ -147,6 +139,20 @@ func pic(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 		e.Alternative(alternative[0])
 	}
 	return e
+}
+
+func pic(input interface{}, alternative ...string) *mmsg.ImageBytesElement {
+	switch e := input.(type) {
+	case string:
+		if b, err := base64.StdEncoding.DecodeString(e); err == nil {
+			return mmsg.NewImage(b)
+		}
+		return picUri(e, alternative...)
+	case []byte:
+		return mmsg.NewImage(e)
+	default:
+		panic(fmt.Sprintf("invalid input %v", input))
+	}
 }
 
 func icon(uin int64, size ...uint) *mmsg.ImageBytesElement {
@@ -218,90 +224,6 @@ func choose(args ...reflect.Value) string {
 	panic("Internal: wrong rand")
 }
 
-func hour() int {
-	return time.Now().Hour()
-}
-
-func minute() int {
-	return time.Now().Minute()
-}
-
-func second() int {
-	return time.Now().Second()
-}
-
-func month() int {
-	return int(time.Now().Month())
-}
-
-func year() int {
-	return time.Now().Year()
-}
-
-func day() int {
-	return time.Now().Day()
-}
-
-func yearday() int {
-	return time.Now().YearDay()
-}
-
-func toFloat64(v interface{}) float64 {
-	return cast.ToFloat64(v)
-}
-
-func toInt(v interface{}) int {
-	return cast.ToInt(v)
-}
-
-func toInt64(v interface{}) int64 {
-	return cast.ToInt64(v)
-}
-
-func max(a interface{}, i ...interface{}) int64 {
-	return cast.ToInt64(maxf(a, i...))
-}
-
-func maxf(a interface{}, i ...interface{}) float64 {
-	aa := toFloat64(a)
-	for _, b := range i {
-		bb := toFloat64(b)
-		aa = math.Max(aa, bb)
-	}
-	return aa
-}
-
-func min(a interface{}, i ...interface{}) int64 {
-	return cast.ToInt64(minf(a, i...))
-}
-
-func minf(a interface{}, i ...interface{}) float64 {
-	aa := toFloat64(a)
-	for _, b := range i {
-		bb := toFloat64(b)
-		aa = math.Min(aa, bb)
-	}
-	return aa
-}
-
-func base64encode(v string) string {
-	return base64.StdEncoding.EncodeToString([]byte(v))
-}
-
-func base64decode(v string) string {
-	data, err := base64.StdEncoding.DecodeString(v)
-	if err != nil {
-		return err.Error()
-	}
-	return string(data)
-}
-
-func md5sum(s string) string {
-	h := md5.New()
-	h.Write([]byte(s))
-	return hex.EncodeToString(h.Sum(nil))
-}
-
 func execDecimalOp(a interface{}, b []interface{}, f func(d1, d2 decimal.Decimal) decimal.Decimal) float64 {
 	prt := decimal.NewFromFloat(toFloat64(a))
 	for _, x := range b {
@@ -310,44 +232,4 @@ func execDecimalOp(a interface{}, b []interface{}, f func(d1, d2 decimal.Decimal
 	}
 	rslt, _ := prt.Float64()
 	return rslt
-}
-
-func sha256sum(input string) string {
-	hash := sha256.Sum256([]byte(input))
-	return hex.EncodeToString(hash[:])
-}
-
-func sha1sum(input string) string {
-	hash := sha1.Sum([]byte(input))
-	return hex.EncodeToString(hash[:])
-}
-
-func adler32sum(input string) string {
-	hash := adler32.Checksum([]byte(input))
-	return fmt.Sprintf("%d", hash)
-}
-
-func strval(v interface{}) string {
-	switch v := v.(type) {
-	case string:
-		return v
-	case []byte:
-		return string(v)
-	case error:
-		return v.Error()
-	case fmt.Stringer:
-		return v.String()
-	default:
-		return fmt.Sprintf("%v", v)
-	}
-}
-
-func trunc(c int, s string) string {
-	if c < 0 && len(s)+c > 0 {
-		return s[len(s)+c:]
-	}
-	if c >= 0 && len(s) > c {
-		return s[:c]
-	}
-	return s
 }

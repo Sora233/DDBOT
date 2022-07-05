@@ -69,6 +69,7 @@ func builtins() FuncMap {
 		"year":    year,
 		"day":     day,
 		"yearday": yearday,
+		"weekday": weekday,
 
 		// cast
 		"float64": toFloat64,
@@ -134,6 +135,9 @@ func builtins() FuncMap {
 		"contains":   func(substr string, str string) bool { return strings.Contains(str, substr) },
 		"hasPrefix":  func(substr string, str string) bool { return strings.HasPrefix(str, substr) },
 		"hasSuffix":  func(substr string, str string) bool { return strings.HasSuffix(str, substr) },
+		"split":      func(sep, orig string) []string { return strings.Split(orig, sep) },
+		"join":       join,
+		"trunc":      trunc,
 
 		"snakecase": xstrings.ToSnakeCase,
 		"camelcase": xstrings.ToCamelCase,
@@ -141,6 +145,44 @@ func builtins() FuncMap {
 		"upper":     strings.ToUpper,
 		"lower":     strings.ToLower,
 		"title":     strings.Title,
+
+		// defaults
+		"empty":    empty,
+		"nonEmpty": nonEmpty,
+		"coalesce": coalesce,
+		"ternary":  ternary,
+		"all":      all,
+		"any":      any,
+
+		// dict
+		"dict":               dict,
+		"get":                get,
+		"set":                set,
+		"unset":              unset,
+		"hasKey":             hasKey,
+		"pluck":              pluck,
+		"keys":               keys,
+		"pick":               pick,
+		"omit":               omit,
+		"merge":              merge,
+		"mergeOverwrite":     mergeOverwrite,
+		"mustMerge":          mustMerge,
+		"mustMergeOverwrite": mustMergeOverwrite,
+		"values":             values,
+
+		// list
+		"list":    list,
+		"append":  push,
+		"prepend": prepend,
+		"concat":  concat,
+
+		// http
+		"httpGet":      httpGet,
+		"httpPostJson": httpPostJson,
+		"httpPostForm": httpPostForm,
+
+		// gjson
+		"toGJson": toGJson,
 
 		// Comparisons
 		"eq": eq, // ==

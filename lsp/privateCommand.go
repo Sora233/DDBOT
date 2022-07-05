@@ -117,7 +117,16 @@ func (c *LspPrivateCommand) Execute() {
 				log := c.DefaultLoggerWithCommand(c.CommandName()).WithField("CustomCommand", true)
 				log.Infof("run %v command", c.CommandName())
 				defer func() { log.Infof("%v command end", c.CommandName()) }()
-				c.sendChain(c.templateMsg(fmt.Sprintf("custom.command.private.%s.tmpl", c.CommandName()), nil))
+				c.sendChain(
+					c.templateMsg(
+						fmt.Sprintf("custom.command.private.%s.tmpl", c.CommandName()),
+						map[string]interface{}{
+							"cmd":       c.CommandName(),
+							"args":      c.GetArgs(),
+							"full_args": strings.Join(c.GetArgs(), " "),
+						},
+					),
+				)
 			}()
 		} else {
 			c.textReplyF("阁下似乎输入了一个无法识别的命令，请使用<%v>命令查看帮助。", c.l.CommandShowName(HelpCommand))
@@ -198,7 +207,7 @@ func (c *LspPrivateCommand) CleanConcernCommand() {
 
 	var cleanConcernCmd struct {
 		Abnormal   bool    `optional:"" help:"清除异常订阅"`
-		GroupCodes []int64 `optional:"" short:"g" help:"清除指定群的订阅，可指定多个"`
+		GroupCodes []int64 `optional:"" short:"g" help:"清除指定群的订阅，多个可用英文逗号隔开"`
 		Site       string  `optional:"" short:"s" help:"清除指定的网站订阅,默认为全部"`
 		Type       string  `optional:"" short:"t" help:"清除指定的订阅类型,默认为全部"`
 	}

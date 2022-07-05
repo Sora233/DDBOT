@@ -83,7 +83,10 @@ func HeaderOption(key, value string) Option {
 	}
 }
 
-func AddUAOption() Option {
+func AddUAOption(ua ...string) Option {
+	if len(ua) > 0 && len(ua[0]) > 0 {
+		return HeaderOption("user-agent", ua[0])
+	}
 	return HeaderOption("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
 }
 
@@ -101,6 +104,12 @@ func ProxyOption(prefer proxy_pool.Prefer) Option {
 		return func(o *option) {
 			o.Proxy = proxy.ProxyString()
 		}
+	}
+}
+
+func RawProxyOption(proxy string) Option {
+	return func(o *option) {
+		o.Proxy = proxy
 	}
 }
 
@@ -189,7 +198,7 @@ func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Opt
 		df.ResponseUse(opt.ResponseMiddleware...)
 	}
 	switch out.(type) {
-	case io.Writer, []byte, *string:
+	case io.Writer, []byte, *[]byte, *string:
 		df.BindBody(out)
 	default:
 		df.BindJSON(out)

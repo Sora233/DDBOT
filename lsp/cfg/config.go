@@ -3,6 +3,10 @@ package cfg
 import (
 	"errors"
 	"github.com/Sora233/MiraiGo-Template/config"
+	"github.com/ghodss/yaml"
+	"github.com/spf13/cast"
+	"go.uber.org/atomic"
+	"io/ioutil"
 	"strings"
 	"time"
 )
@@ -39,8 +43,37 @@ func GetCommandPrefix(commands ...string) string {
 	return prefix
 }
 
+var customCommandPrefixAtomic atomic.Value
+
+// ReloadCustomCommandPrefix TODO wtf
+func ReloadCustomCommandPrefix() {
+	var result map[string]string
+	defer func() {
+		customCommandPrefixAtomic.Store(result)
+	}()
+	data, err := ioutil.ReadFile("application.yaml")
+	if err != nil {
+		return
+	}
+	var all = make(map[string]interface{})
+
+	err = yaml.Unmarshal(data, &all)
+	if err != nil {
+		return
+	}
+	var a = all["customCommandPrefix"]
+	if a == nil {
+		return
+	}
+	result = cast.ToStringMapString(a)
+}
+
 func GetCustomCommandPrefix() map[string]string {
-	return config.GlobalConfig.GetStringMapString("customCommandPrefix")
+	var m = customCommandPrefixAtomic.Load()
+	if m == nil {
+		m = make(map[string]string)
+	}
+	return m.(map[string]string)
 }
 
 func GetEmitInterval() time.Duration {

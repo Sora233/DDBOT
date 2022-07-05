@@ -1,7 +1,7 @@
 //go:build windows
 // +build windows
 
-package main
+package warn
 
 import (
 	"fmt"
@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	kernel32 = syscall.NewLazyDLL("kernel32.dll")
 	user32   = syscall.NewLazyDLL("user32.dll")
+	kernel32 = syscall.NewLazyDLL("kernel32.dll")
 )
 
 func runningByDoubleClick() bool {
@@ -39,7 +39,7 @@ func boxW(hwnd uintptr, caption, title string, flags uint) int {
 	return int(ret)
 }
 
-func warn(content string) {
+func Warn(content string) {
 	if runningByDoubleClick() {
 		_ = boxW(0, content, "警告", 0x00000030|0x00000000)
 	} else {

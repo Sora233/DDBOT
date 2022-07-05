@@ -232,6 +232,10 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 *以下为v1.0.8新增*
 
+- {{ weekday }}
+
+返回当前时间是本周的第几天，1~7分别表示周一至周日，范围为[1,7]，类型为int
+
 - 变量 `{{ .at_targets }}`
 
 自定义命令现在支持@成员， 可以通过 {{ .at_targets }}来获取本次命令触发时@的成员的QQ号。
@@ -300,21 +304,21 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 <details>
   <summary>点击查看详情</summary>
 
-- {{ float64 123 }}
+- `{{ float64 123 }}`
 
 转换参数为`float64`类型
 
-- {{ int 123 }}
+- `{{ int 123 }}`
 
 转换参数为`int`类型
 
 *int在32位和64位下表现不一致*
 
-- {{ int64 123}}
+- `{{ int64 123}}`
 
 转换参数为`int64`类型
 
-- {{ toString 123 }}
+- `{{ toString 123 }}`
 
 转换参数为`string`类型
 
@@ -329,23 +333,23 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 - add / addf
 
-{{ add 1 2}} 计算加法
+`{{ add 1 2}}` 计算加法
 
 - sub / subf
 
-{{ sub 1 2}} 计算减法
+`{{ sub 1 2}}` 计算减法
 
 - mul / mulf
 
-{{ mul 2 2 }} 计算乘法
+`{{ mul 2 2 }}` 计算乘法
 
 - div / divf
 
-{{ div 10 5 }} 计算除法
+`{{ div 10 5 }}` 计算除法
 
 - mod / modf
 
-{{ mod 10 5 }} 计算余数
+`{{ mod 10 5 }}` 计算余数
 
 </details>
 
@@ -358,11 +362,11 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 - max / maxf
 
-{{ max 1 2 3 4 5 }} 返回最大值
+`{{ max 1 2 3 4 5 }}` 返回最大值
 
 - min / minf
 
-{{ min 1 2 3 4 5 }} 返回最小值
+`{{ min 1 2 3 4 5 }}` 返回最小值
 
 </details>
 
@@ -373,27 +377,27 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 - base64encode
 
-{{ base64encode "hello world" }} base64的加密
+`{{ base64encode "hello world" }}` base64的加密
 
 - base64decode
 
-{{ base64decode "aGVsbG8gd29ybGQ=" }} base64的解密
+`{{ base64decode "aGVsbG8gd29ybGQ=" }}` base64的解密
 
 - md5sum
 
-{{ md5sum "hello world" }} md5加密
+`{{ md5sum "hello world" }}` md5加密
 
 - sha1sum
 
-{{ sha1sum "hello world" }} sha1加密
+`{{ sha1sum "hello world" }}` sha1加密
 
 - sha256sum
 
-{{ sha256sum "hellow world" }} sha256sum加密
+`{{ sha256sum "hellow world" }}` sha256sum加密
 
 - adler32sum
 
-{{ adler32sum "hellow world" }} adler32sum加密
+`{{ adler32sum "hellow world" }}` adler32sum加密
 
 - uuid
 
@@ -409,49 +413,329 @@ DDBOT使用五个字段的Cron表达式，这意味着最小的定时粒度为`1
 
 - hasPrefix
 
-{{ hasPrefix "aaa" "aaabcd" }} 检查字符串是否有指定前缀
+`{{ hasPrefix "aaa" "aaabcd" }}` 检查字符串是否有指定前缀
 
 - hasSuffix
 
-{{ hasSuffix "aaa" "bcdaaa" }} 检查字符串是否有指定后缀
+`{{ hasSuffix "aaa" "bcdaaa" }}` 检查字符串是否有指定后缀
 
 - contains
 
-{{ contains "aaa" "bcdaaabcd" }} 检查字符串是否包含一个子字符串
+`{{ contains "aaa" "bcdaaabcd" }}` 检查字符串是否包含一个子字符串
 
 - trim
 
-{{ trim "   aaa   " }} 去掉字符串前后的空白字符
+`{{ trim "   aaa   " }}` 去掉字符串前后的空白字符
 
 - trimSuffix
 
-{{ trimSuffix "aaa" "bcdaaa" }} 去掉字符串的指定后缀，如果字符串没有指定后缀，则无效果
+`{{ trimSuffix "aaa" "bcdaaa" }}` 去掉字符串的指定后缀，如果字符串没有指定后缀，则无效果
 
 - trimPrefix
 
-{{ trimPrefix "aaa" "aaabcd" }} 去掉字符串的指定前缀，如果字符串没有指定前缀，则无效果
+`{{ trimPrefix "aaa" "aaabcd" }}` 去掉字符串的指定前缀，如果字符串没有指定前缀，则无效果
+
+- split
+
+`{{ split " " "foo bar baz" }}` 按照指定字符串分割字符串，返回一个list
+
+- join
+
+`{{ join " " (list "foor" "bar" "baz") }}` 按照指定字符串拼接字符串，返回一个字符串
+
+- trunc
+
+`{{ trunc 2 "abcde" }}` 按照长度截取字符串，如果长度大于字符串，则返回整个字符串
 
 - upper
 
-{{ upper "abc" }} 把字符串中所有英文字母改成大写
+`{{ upper "abc" }}` 把字符串中所有英文字母改成大写
 
 - lower
 
-{{ lower "ABC" }} 把字符串中所有英文字母改成小写
+`{{ lower "ABC" }}` 把字符串中所有英文字母改成小写
 
 - title
 
-{{ title "hello world" }} 把字符串中的英文单词改为首字母大写
+`{{ title "hello world" }}` 把字符串中的英文单词改为首字母大写
 
 - snakecase
 
-{{ snakecase "FirstName" }} 把字符串中所有命名改成蛇形命名法
+`{{ snakecase "FirstName" }}` 把字符串中所有命名改成蛇形命名法
 
 - camelcase
 
-{{ camelcase "first_name" }} 把字符串中所有命名改成驼峰式命名法
+`{{ camelcase "first_name" }}` 把字符串中所有命名改成驼峰式命名法
 
 </details>
+
+- 一组默认值与空值函数
+
+<details>
+  <summary>点击查看详情</summary>
+
+- empty
+
+`{{ if empty .args }}empty{{else}}not empty{{end}}`  检查变量是否是空值
+
+- nonEmpty
+
+`{{ if nonEmpty .args }}not empty{{else}}empty{{end}}`  检查变量是否不是空值
+
+- coalesce
+
+返回第一个非空的值，支持变长参数，常用于设置默认值
+
+```
+{{- $name := "" -}}
+{{- $name = coalesce $name "没有名字" -}}
+{{ $name }}
+```
+
+- ternary
+
+三元运算符的语法糖，当第三个参数为true时返回第一个参数，否则返回第二个参数
+
+`{{ ternary "有参数" "没有参数" (nonEmpty .args)}}`
+
+- all
+
+检查参数是否全部非空，支持变长参数
+
+`{{ if all "" 0 1}}all is not empty{{end}}`
+
+- any
+
+检查参数是否有一个非空，支持变长参数
+
+`{{ if any "" 0 1}}someone is not empty{{end}}`
+
+</details>
+
+- 一组list函数
+
+<details>
+  <summary>点击查看详情</summary>
+
+- list
+
+`{{ list "a" "b" "c" }}` 创建一个list，返回创建的list
+
+- append
+
+向list末尾添加一个元素，返回新的list
+
+```
+{{ $old := list "a" "b" "c" }}
+{{ $new := append $old "d" }}
+```
+
+- prepend
+
+向list开头添加一个元素，返回新的list
+
+```
+{{ $old := list "a" "b" "c" }}
+{{ $new := prepend $old "d" }}
+```
+
+- concat
+
+连接一组list，支持变长参数，返回新的list
+
+```
+{{ $l1 := list "a" }}
+{{ $l2 := list "b" }}
+{{ $l3 := list "c" }}
+{{ $new := concat $l1 $l2 $l3 }}
+```
+
+</details>
+
+- 一组dict函数
+
+<details>
+  <summary>点击查看详情</summary>
+
+- dict
+
+`{{ dict "a" 1 "b" 2 "c" 3 }}` 创建一个dict，其中key必须是字符串类型，返回创建的dict：
+
+- get
+
+从dict中获取值
+
+```
+{{ $d := dict "a" 1 "b" 2 "c" 3 }}
+{{ $value := get $d "a" }}
+```
+
+- set
+
+设置dict的值，其中key必须是字符串类型，返回dict
+
+```
+{{ $d := dict "a" 1 "b" 2 "c" 3 }}
+{{ set $d "a" 100 }}
+```
+
+- unset
+
+删除dict的值，返回dict
+
+```
+{{ $d := dict "a" 1 "b" 2 "c" 3 }}
+{{ unset $d "a" }}
+```
+
+- hasKey
+
+检查dict中是否有指定key
+
+```
+{{ $d := dict "a" 1 "b" 2 "c" 3 }}
+{{ if hasKey $d "a" }}Yes.{{ end }}
+```
+
+- merge
+
+合并dict，支持变长参数，不会覆盖已经存在的key，如果需要覆盖，请使用`mergeOverwrite`
+
+返回合并后的dict
+
+```
+{{ $d1 := dict "a" 1 "b" 2 "c" 3 }}
+{{ $d2 := dict "a" 2 "b" 3 "c" 4 }}
+{{ $d3 := merge $d1 $d2 }}
+```
+
+- mergeOverwrite
+
+合并dict，支持变长参数，会覆盖已经存在的key
+
+返回合并后的dict
+
+```
+{{ $d1 := dict "a" 1 "b" 2 "c" 3 }}
+{{ $d2 := dict "a" 2 "b" 3 "c" 4 }}
+{{ $d3 := mergeOverwrite $d1 $d2 }}
+```
+
+- pick
+
+从dict中取出指定的key创建新dict，支持变长参数，返回新创建的dict
+
+```
+{{ $d := dict "a" 1 "b" 2 "c" 3 }}
+{{ $d2 := pick $d "a" "b" }}
+```
+
+</details>
+
+- json处理
+
+json处理使用 [gjson](https://github.com/tidwall/gjson) 库实现，请参考对应文档。
+
+```
+{{- $data := `{"name":{"first":"Janet","last":"Prichard"},"age":47}` -}}
+{{- $j := toGJson $data -}}
+{{- $name := ($j.Get "name.first").String -}}
+{{- $age := ($j.Get "age").Int -}}
+
+Name is {{ $name }}.
+Age is {{ $age }}.  
+```
+
+- http请求
+
+目前仅支持get / post 请求。
+
+`httpGet` 用于发送get请求。
+
+`httpPostJson` 用于发送json格式的post请求
+
+`httpPostForm` 用于发送表单格式的post请求
+
+三个函数的用法相同：
+
+支持两个参数，第一个参数为url，第二个参数为请求参数（可选），请求参数的格式为dict，可使用dict创建。
+
+```
+{{/* 不带参数的httpGet */}}
+{{- $j := httpGet "https://httpbin.sora233.me/get" | toGJson -}}
+机器人的IP是：{{ coalesce ($j.Get "origin").String "获取失败" }}
+```
+
+```
+{{/* 带参数的httpGet */}}
+{{- $name := (member_info .group_code .member_code).name -}}
+{{- $j := httpGet "https://httpbin.sora233.me/get" (dict "name" $name) | toGJson -}}
+你好，{{ ($j.Get "args.name.0").String }}！
+```
+
+**http请求的特殊参数**
+
+http请求存在一些特殊的保留参数，用来控制http行为，这些参数不会真正发送出去，当前支持：
+
+- DDBOT_REQ_DEBUG
+
+会详细输出本次http请求的细节（可能含有隐私信息，请注意不要随便复制给别人），用于DEBUG
+
+- DDBOT_REQ_USER_AGENT
+
+设置本次http请求的user_agent字段，大部分情况下不用设置，使用默认设置即可，默认值为：
+
+```text
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36
+```
+
+- DDBOT_REQ_HEADER
+
+设置http请求的header，可以设置为list，每一项的格式为"A=B"，表示设置header名字为A，值为B
+
+- DDBOT_REQ_COOKIE **（警告：不正确使用可能导致ccokie泄漏）**
+
+设置http请求的cookie，可以设置为list，每一项的格式为"A=B"，表示设置cookie名字为A，值为B
+
+- DDBOT_REQ_PROXY
+
+用于控制请求代理，可以是：
+
+`prefer_mainland` 使用mainland代理（要求已经配置proxy_pool)
+
+`prefer_oversea` 使用oversea代理（要求已经配置proxy_pool)
+
+`prefer_none` 不使用代理
+
+`prefer_any` 随机选择mainland/oversea
+
+`直接的proxy地址（例如http://localhost:7890）` 直接使用指定的代理
+
+特殊参数的例子：
+
+```
+{{- /* 特殊参数的httpGet */ -}}
+
+{{- $d := dict -}}
+
+{{- /* 设置DDBOT_REQ_DEBUG，展示http 详细信息*/ -}}
+{{- $d = set $d "DDBOT_REQ_DEBUG" "1" -}}
+
+{{- /* 设置DDBOT_REQ_USER_AGENT，自定义USER_AGENT */ -}}
+{{- $d = set $d "DDBOT_REQ_USER_AGENT" "DDBOT TEMPLATE 100%" -}}
+
+{{- /* 设置DDBOT_REQ_HEADER，添加http自定义header */ -}}
+{{- $d = set $d "DDBOT_REQ_HEADER" (list "FROM_DDBOT=yes") -}}
+
+{{- /* 设置DDBOT_REQ_COOKIE，添加http自定义cookie */ -}}
+{{- $d = set $d "DDBOT_REQ_COOKIE" (list "DDBOT_COOKIE=cookie_value") -}}
+
+{{- /* 设置DDBOT_REQ_PROXY，不使用代理 */ -}}
+{{- $d = set $d "DDBOT_REQ_PROXY" "prefer_none" -}}
+
+{{- $_ := httpGet "https://httpbin.sora233.me/get" $d -}}
+请查看命令行内的详细输出
+```
 
 ## 当前支持的命令模板
 

@@ -211,7 +211,9 @@ func (l *Lsp) Init() {
 		log.Infof("已启用模板")
 		template.InitTemplateLoader()
 	}
+	cfg.ReloadCustomCommandPrefix()
 	config.GlobalConfig.OnConfigChange(func(in fsnotify.Event) {
+		go cfg.ReloadCustomCommandPrefix()
 		l.CronjobReload()
 	})
 }

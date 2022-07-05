@@ -1,10 +1,10 @@
 //go:build !windows
 // +build !windows
 
-package main
+package warn
 
 import "fmt"
 
-func warn(content string) {
+func Warn(content string) {
 	fmt.Println(content)
 }
