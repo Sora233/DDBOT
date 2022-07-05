@@ -9,10 +9,11 @@ import (
 )
 
 const (
-	DDBOT_REQ_DEBUG  = "DDBOT_REQ_DEBUG"
-	DDBOT_REQ_HEADER = "DDBOT_REQ_HEADER"
-	DDBOT_REQ_COOKIE = "DDBOT_REQ_COOKIE"
-	DDBOT_REQ_PROXY  = "DDBOT_REQ_PROXY"
+	DDBOT_REQ_DEBUG      = "DDBOT_REQ_DEBUG"
+	DDBOT_REQ_HEADER     = "DDBOT_REQ_HEADER"
+	DDBOT_REQ_COOKIE     = "DDBOT_REQ_COOKIE"
+	DDBOT_REQ_PROXY      = "DDBOT_REQ_PROXY"
+	DDBOT_REQ_USER_AGENT = "DDBOT_REQ_USER_AGENT"
 )
 
 func preProcess(oParams []map[string]interface{}) (map[string]interface{}, []requests.Option) {
@@ -106,9 +107,21 @@ func preProcess(oParams []map[string]interface{}) (map[string]interface{}, []req
 				}
 			},
 		},
+		{
+			DDBOT_REQ_USER_AGENT,
+			func() []requests.Option {
+				iua := params[DDBOT_REQ_USER_AGENT]
+				ua, ok := iua.(string)
+				if !ok {
+					logger.WithField("DDBOT_REQ_USER_AGENT", iua).Errorf("invalid ua format")
+					return nil
+				}
+				return []requests.Option{requests.AddUAOption(ua)}
+			},
+		},
 	}
 
-	var result []requests.Option
+	var result = []requests.Option{requests.AddUAOption()}
 	for _, i := range item {
 		result = append(result, fn(i.key, i.f)...)
 	}

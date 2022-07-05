@@ -681,6 +681,14 @@ http请求存在一些特殊的保留参数，用来控制http行为，这些参
 
 会详细输出本次http请求的细节（可能含有隐私信息，请注意不要随便复制给别人），用于DEBUG
 
+- DDBOT_REQ_USER_AGENT
+
+设置本次http请求的user_agent字段，大部分情况下不用设置，使用默认设置即可，默认值为：
+
+```text
+Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36
+```
+
 - DDBOT_REQ_HEADER
 
 设置http请求的header，可以设置为list，每一项的格式为"A=B"，表示设置header名字为A，值为B
@@ -712,6 +720,9 @@ http请求存在一些特殊的保留参数，用来控制http行为，这些参
 
 {{- /* 设置DDBOT_REQ_DEBUG，展示http 详细信息*/ -}}
 {{- $d = set $d "DDBOT_REQ_DEBUG" "1" -}}
+
+{{- /* 设置DDBOT_REQ_USER_AGENT，自定义USER_AGENT */ -}}
+{{- $d = set $d "DDBOT_REQ_USER_AGENT" "DDBOT TEMPLATE 100%" -}}
 
 {{- /* 设置DDBOT_REQ_HEADER，添加http自定义header */ -}}
 {{- $d = set $d "DDBOT_REQ_HEADER" (list "FROM_DDBOT=yes") -}}
