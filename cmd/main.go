@@ -15,6 +15,7 @@ import (
 	_ "github.com/Sora233/DDBOT/lsp/youtube"
 	_ "github.com/Sora233/DDBOT/miraigo-logging"
 	_ "github.com/Sora233/DDBOT/msg-marker"
+	"github.com/Sora233/DDBOT/warn"
 	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/alecthomas/kong"
 	"net/http"
@@ -42,9 +43,9 @@ func main() {
 
 	if err := localdb.InitBuntDB(""); err != nil {
 		if err == localdb.ErrLockNotHold {
-			warn("tryLock数据库失败：您可能重复启动了这个BOT！\n如果您确认没有重复启动，请删除.lsp.db.lock文件并重新运行。")
+			warn.Warn("tryLock数据库失败：您可能重复启动了这个BOT！\n如果您确认没有重复启动，请删除.lsp.db.lock文件并重新运行。")
 		} else {
-			warn("无法正常初始化数据库！请检查.lsp.db文件权限是否正确，如无问题则为数据库文件损坏，请阅读文档获得帮助。")
+			warn.Warn("无法正常初始化数据库！请检查.lsp.db文件权限是否正确，如无问题则为数据库文件损坏，请阅读文档获得帮助。")
 		}
 		return
 	}
@@ -54,7 +55,7 @@ func main() {
 			localdb.Close()
 		}); err != nil {
 			localdb.Close()
-			warn("无法正常初始化Windows环境！")
+			warn.Warn("无法正常初始化Windows环境！")
 			return
 		}
 	} else {
