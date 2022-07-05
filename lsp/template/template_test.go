@@ -12,6 +12,21 @@ import (
 	"testing"
 )
 
+func init() {
+	RegisterExtFunc("atrue", func(b bool) string {
+		if !b {
+			panic("not true")
+		}
+		return ""
+	})
+	RegisterExtFunc("afalse", func(b bool) string {
+		if b {
+			panic("not false")
+		}
+		return ""
+	})
+}
+
 func TestLoadTemplate(t *testing.T) {
 	InitTemplateLoader()
 	defer Close()
@@ -154,4 +169,102 @@ func TestCompareStringAndInt(t *testing.T) {
 	err = tmpl.Execute(m, map[string]interface{}{"target": "200"})
 	assert.Nil(t, err)
 	assert.EqualValues(t, "1234", m.Elements()[0].(*message.TextElement).Content)
+}
+
+func TestTemplateFuncs(t *testing.T) {
+	s, err := runTemplate(`{{- float64 1 -}}{{- int 1 -}}{{- int64 1 -}}{{- toString 1 -}}{{- toString "1" -}}`, map[string]interface{}{"target": 123456})
+	assert.Nil(t, err)
+	assert.EqualValues(t, "11111", s)
+
+	s, err = runTemplate(
+		`{{- max 1 2 -}}{{- maxf 1 2 -}}{{- min 1 2 -}}{{- minf 1 2 -}}`, nil)
+
+	assert.Nil(t, err)
+	assert.EqualValues(t, "2211", s)
+	s, err = runTemplate(
+		`{{- hour -}}{{- minute -}}{{- second -}}{{- month -}}{{- year -}}{{- day -}}{{- yearday -}}{{- weekday -}}`, nil)
+	assert.Nil(t, err)
+
+	s, err = runTemplate(`
+{{- $el := list -}}{{- $l := list 1 -}}{{- $ed := dict -}}{{- $d := dict 1 1 -}}
+{{- if empty $el -}}0{{- end -}}
+{{- if empty $l -}}1{{- end -}}
+{{- if empty $ed -}}2{{- end -}}
+{{- if empty $d -}}3{{- end -}}
+{{- if empty nil -}}4{{- end -}}
+{{- if empty 0 -}}5{{- end -}}
+{{- if empty 1 -}}6{{- end -}}
+{{- if empty 2.0 -}}7{{- end -}}
+{{- if empty "" -}}8{{- end -}}
+{{- if empty "0" -}}9{{- end -}}
+{{- if nonEmpty "0"}}10{{- end -}}
+`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "0245810", s)
+
+	s, err = runTemplate(`
+{{- if all 0 1 2 3 -}}0{{- end -}}
+{{- if all 1 2 3 -}}1{{- end -}}
+{{- coalesce 0 1 2 3 -}}
+{{- if any 0 1 2 3 -}}2{{- end -}}
+`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "112", s)
+
+	s, err = runTemplate(`
+{{- $d := dict -}}
+{{- if empty (get $d "100") -}}0{{- end -}}
+{{- $d = set $d "100" 100 -}}
+{{- atrue (hasKey $d "100") -}}
+{{- if empty (get $d "100") -}}1{{- end -}}
+{{- $d = unset $d "100" -}}
+{{- if empty (get $d "100") -}}2{{- end -}}
+{{- afalse (hasKey $d "100") -}}
+{{- $d = set $d "100" 100 -}}
+{{- atrue (eq (index (keys $d) 0) "100" ) -}}
+`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "02", s)
+
+	s, err = runTemplate(`
+{{ $d := base64encode "xx" }}
+{{ base64decode $d }}
+{{ md5sum "123 "}}
+{{ sha1sum "123" }}
+{{ sha256sum "123" }}
+{{ adler32sum "123"}}
+{{ uuid }}
+`, nil)
+	assert.Nil(t, err)
+
+	s, err = runTemplate(`
+{{- $l := list 1 2 3 -}}
+{{- atrue (eq (len $l) 3) -}}
+{{- $l = append $l 5 -}}
+{{- atrue (eq (index $l 3) 5) -}}
+{{- $l = prepend $l 10 -}}
+{{- atrue (eq (index $l 0) 10) -}}
+{{- $l2 := list 100 -}}
+{{- $l = concat $l2 $l -}}
+{{- atrue (eq (index $l 0) 100) -}}
+`, nil)
+
+	s, err = runTemplate("{{- $g := toGJson `{\"a\": \"b\"}` -}}{{- $g = toGJson $g -}}", nil)
+	assert.Nil(t, err)
+
+	s, err = runTemplate(`
+{{- $s := "abcdefghijkl" -}}
+{{- $s = trunc 2 $s -}}
+{{- atrue (eq "ab" $s) -}}
+{{- $l := list "ab" "cd" "ef" "g" 1 -}}
+{{- $s = join "_" $l -}}
+{{- atrue (eq "ab_cd_ef_g_1" $s) -}}
+`, nil)
+}
+
+func runTemplate(template string, data map[string]interface{}) (string, error) {
+	var m = mmsg.NewMSG()
+	var tmpl = Must(New("").Parse(template))
+	var err = tmpl.Execute(m, data)
+	return msgstringer.MsgToString(m.Elements()), err
 }
