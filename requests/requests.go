@@ -104,6 +104,12 @@ func ProxyOption(prefer proxy_pool.Prefer) Option {
 	}
 }
 
+func RawProxyOption(proxy string) Option {
+	return func(o *option) {
+		o.Proxy = proxy
+	}
+}
+
 func RetryOption(retry int) Option {
 	return func(o *option) {
 		o.Retry = retry

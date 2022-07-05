@@ -1,11 +1,18 @@
 package template
 
 import (
+	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
+	"github.com/spf13/cast"
+	"reflect"
+	"strings"
 )
 
 const (
-	DDBOT_REQ_DEBUG = "DDBOT_REQ_DEBUG"
+	DDBOT_REQ_DEBUG  = "DDBOT_REQ_DEBUG"
+	DDBOT_REQ_HEADER = "DDBOT_REQ_HEADER"
+	DDBOT_REQ_COOKIE = "DDBOT_REQ_COOKIE"
+	DDBOT_REQ_PROXY  = "DDBOT_REQ_PROXY"
 )
 
 func preProcess(oParams []map[string]interface{}) (map[string]interface{}, []requests.Option) {
@@ -27,7 +34,13 @@ func preProcess(oParams []map[string]interface{}) (map[string]interface{}, []req
 		return r
 	}
 
-	var result []requests.Option
+	collectStringSlice := func(i interface{}) []string {
+		v := reflect.ValueOf(i)
+		if v.Kind() == reflect.String {
+			return []string{v.String()}
+		}
+		return cast.ToStringSlice(i)
+	}
 
 	var item = []struct {
 		key string
@@ -39,8 +52,63 @@ func preProcess(oParams []map[string]interface{}) (map[string]interface{}, []req
 				return []requests.Option{requests.DebugOption()}
 			},
 		},
+		{
+			DDBOT_REQ_HEADER,
+			func() []requests.Option {
+				var result []requests.Option
+				var header = collectStringSlice(params[DDBOT_REQ_HEADER])
+				for _, h := range header {
+					spt := strings.SplitN(h, "=", 2)
+					if len(spt) >= 2 {
+						result = append(result, requests.HeaderOption(spt[0], spt[1]))
+					} else {
+						logger.WithField("DDBOT_REQ_HEADER", h).Errorf("invalid header format")
+					}
+				}
+				return result
+			},
+		},
+		{
+			DDBOT_REQ_COOKIE,
+			func() []requests.Option {
+				var result []requests.Option
+				var cookie = collectStringSlice(params[DDBOT_REQ_COOKIE])
+				for _, c := range cookie {
+					spt := strings.SplitN(c, "=", 2)
+					if len(spt) >= 2 {
+						result = append(result, requests.CookieOption(spt[0], spt[1]))
+					} else {
+						logger.WithField("DDBOT_REQ_COOKIE", c).Errorf("invalid cookie format")
+					}
+				}
+				return result
+			},
+		},
+		{
+			DDBOT_REQ_PROXY,
+			func() []requests.Option {
+				iproxy := params[DDBOT_REQ_PROXY]
+				proxy, ok := iproxy.(string)
+				if !ok {
+					logger.WithField("DDBOT_REQ_PROXY", iproxy).Errorf("invalid proxy format")
+					return nil
+				}
+				if proxy == "prefer_mainland" {
+					return []requests.Option{requests.ProxyOption(proxy_pool.PreferMainland)}
+				} else if proxy == "prefer_oversea" {
+					return []requests.Option{requests.ProxyOption(proxy_pool.PreferOversea)}
+				} else if proxy == "prefer_none" {
+					return nil
+				} else if proxy == "prefer_any" {
+					return []requests.Option{requests.ProxyOption(proxy_pool.PreferAny)}
+				} else {
+					return []requests.Option{requests.RawProxyOption(proxy)}
+				}
+			},
+		},
 	}
 
+	var result []requests.Option
 	for _, i := range item {
 		result = append(result, fn(i.key, i.f)...)
 	}

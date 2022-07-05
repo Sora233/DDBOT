@@ -673,6 +673,59 @@ Age is {{ $age }}.
 你好，{{ ($j.Get "args.name.0").String }}！
 ```
 
+**http请求的特殊参数**
+
+http请求存在一些特殊的保留参数，用来控制http行为，这些参数不会真正发送出去，当前支持：
+
+- DDBOT_REQ_DEBUG
+
+会详细输出本次http请求的细节（可能含有隐私信息，请注意不要随便复制给别人），用于DEBUG
+
+- DDBOT_REQ_HEADER
+
+设置http请求的header，可以设置为list，每一项的格式为"A=B"，表示设置header名字为A，值为B
+
+- DDBOT_REQ_COOKIE **（警告：不正确使用可能导致ccokie泄漏）**
+
+设置http请求的cookie，可以设置为list，每一项的格式为"A=B"，表示设置cookie名字为A，值为B
+
+- DDBOT_REQ_PROXY
+
+用于控制请求代理，可以是：
+
+`prefer_mainland` 使用mainland代理（要求已经配置proxy_pool)
+
+`prefer_oversea` 使用oversea代理（要求已经配置proxy_pool)
+
+`prefer_none` 不使用代理
+
+`prefer_any` 随机选择mainland/oversea
+
+`直接的proxy地址（例如http://localhost:7890）` 直接使用指定的代理
+
+特殊参数的例子：
+
+```
+{{- /* 特殊参数的httpGet */ -}}
+
+{{- $d := dict -}}
+
+{{- /* 设置DDBOT_REQ_DEBUG，展示http 详细信息*/ -}}
+{{- $d = set $d "DDBOT_REQ_DEBUG" "1" -}}
+
+{{- /* 设置DDBOT_REQ_HEADER，添加http自定义header */ -}}
+{{- $d = set $d "DDBOT_REQ_HEADER" (list "FROM_DDBOT=yes") -}}
+
+{{- /* 设置DDBOT_REQ_COOKIE，添加http自定义cookie */ -}}
+{{- $d = set $d "DDBOT_REQ_COOKIE" (list "DDBOT_COOKIE=cookie_value") -}}
+
+{{- /* 设置DDBOT_REQ_PROXY，不使用代理 */ -}}
+{{- $d = set $d "DDBOT_REQ_PROXY" "prefer_none" -}}
+
+{{- $_ := httpGet "https://httpbin.sora233.me/get" $d -}}
+请查看命令行内的详细输出
+```
+
 ## 当前支持的命令模板
 
 命令通用模板变量：
