@@ -7,8 +7,11 @@
 package template
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/dimchansky/utfbom"
 	"io/fs"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -165,6 +168,10 @@ func parseFS(t *Template, fsys fs.FS, patterns []string) (*Template, error) {
 func readFileOS(file string) (name string, b []byte, err error) {
 	name = filepath.Base(file)
 	b, err = os.ReadFile(file)
+	if err != nil {
+		return
+	}
+	b, err = ioutil.ReadAll(utfbom.SkipOnly(bytes.NewReader(b)))
 	return
 }
 
@@ -172,6 +179,10 @@ func readFileFS(fsys fs.FS) func(string) (string, []byte, error) {
 	return func(file string) (name string, b []byte, err error) {
 		name = path.Base(file)
 		b, err = fs.ReadFile(fsys, file)
+		if err != nil {
+			return
+		}
+		b, err = ioutil.ReadAll(utfbom.SkipOnly(bytes.NewReader(b)))
 		return
 	}
 }
