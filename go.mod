@@ -8,7 +8,7 @@ require (
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/Sora233/MiraiGo-Template v0.0.0-20220302025209-18af16201a7f
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
-	github.com/alecthomas/kong v0.2.17
+	github.com/alecthomas/kong v0.6.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dimchansky/utfbom v1.1.1
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
@@ -24,7 +24,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/mitchellh/copystructure v1.2.0
-	github.com/modern-go/gls v0.0.0-20190610040709-84558782a674
+	github.com/modern-go/gls v0.0.0-20220109145502-612d0167dce5
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/nobuf/cas v0.0.0-20211227073117-1f46a292d04a
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
