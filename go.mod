@@ -89,5 +89,6 @@ require (
 
 replace (
 	github.com/Mrs4s/MiraiGo => github.com/Sora233/MiraiGo v0.0.0-20220412152111-44e180be2e8c
+	github.com/modern-go/gls => github.com/Sora233/gls v0.0.0-20220707072711-02b5e73da034
 	github.com/willf/bitset v1.2.0 => github.com/bits-and-blooms/bitset v1.2.0
 )

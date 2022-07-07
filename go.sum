@@ -27,6 +27,8 @@ github.com/Sora233/MiraiGo v0.0.0-20220412152111-44e180be2e8c h1:4Y+RERI05QAapdq
 github.com/Sora233/MiraiGo v0.0.0-20220412152111-44e180be2e8c/go.mod h1:rtKLkhMEi2YjsrXaNztT4uagUOPBxf6a+TNREkG097I=
 github.com/Sora233/MiraiGo-Template v0.0.0-20220302025209-18af16201a7f h1:kphSWz5OHpHYIWkxkh3BJayLTAhjRruOPlD3ZQsT7JU=
 github.com/Sora233/MiraiGo-Template v0.0.0-20220302025209-18af16201a7f/go.mod h1:PdHJe9XcbCb9eMiA4IvilI/IWY6/of+Dp9FdIsj8MeI=
+github.com/Sora233/gls v0.0.0-20220707072711-02b5e73da034 h1:fm0xuqP3j+xIrQrC+1OXF78DJQUCmYf5uVPvyhP/JkU=
+github.com/Sora233/gls v0.0.0-20220707072711-02b5e73da034/go.mod h1:8qrYeXxNvqIMUItsKxNqDb8rWPcC/BSbyKoecrPOxv4=
 github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882 h1:WXXRCSYXZsFd3ETkh+imU6Gz/Xdm0lXgAQILgBau0XY=
 github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882/go.mod h1:Ne6TKi7A5rdDza+cg+7YpXK1wJx7XdFZsJDqGG3lszI=
 github.com/alecthomas/kong v0.6.1 h1:1kNhcFepkR+HmasQpbiKDLylIL8yh5B5y1zPp5bJimA=
@@ -226,8 +228,6 @@ github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w8PVh93nsPXa1VrQ6jlwL5oN8l14QlcNfg=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
-github.com/modern-go/gls v0.0.0-20220109145502-612d0167dce5 h1:uiS4zKYKJVj5F3ID+5iylfKPsEQmBEOucSD9Vgmn0i0=
-github.com/modern-go/gls v0.0.0-20220109145502-612d0167dce5/go.mod h1:I8AX+yW//L8Hshx6+a1m3bYkwXkpsVjA2795vP4f4oQ=
 github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
