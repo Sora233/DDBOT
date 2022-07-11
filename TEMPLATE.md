@@ -1087,7 +1087,7 @@ ACFUN-{{ .name }}直播结束了
 
 - bot收到好友私聊戳一戳
 
-模板名：`trigger.group.poke.tmpl`
+模板名：`trigger.private.poke.tmpl`
 
 | 模板变量        | 类型     | 含义          |
 |-------------|--------|-------------|
