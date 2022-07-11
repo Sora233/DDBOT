@@ -90,6 +90,11 @@ func at(uin int64) *mmsg.AtElement {
 	return mmsg.NewAt(uin)
 }
 
+// poke 戳一戳
+func poke(uin int64) *mmsg.PokeElement {
+	return mmsg.NewPoke(uin)
+}
+
 func picUri(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 	logger := logger.WithField("uri", uri)
 	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {

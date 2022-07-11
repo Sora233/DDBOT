@@ -737,6 +737,16 @@ Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)
 请查看命令行内的详细输出
 ```
 
+*以下为v1.0.9新增*
+
+- 发送戳一戳消息（只支持群聊）
+
+戳一戳QQ号123456的用户
+
+```
+{{ poke 123456 }}
+```
+
 ## 当前支持的命令模板
 
 命令通用模板变量：
@@ -1052,3 +1062,44 @@ ACFUN-{{ .name }}直播结束了
 
 </details>
 
+*以下为v1.0.9新增*
+
+- bot收到群戳一戳（只会受到bot被戳的消息，其他被戳的不会收到）
+
+模板名：`trigger.group.poke.tmpl`
+
+| 模板变量        | 类型     | 含义          |
+|-------------|--------|-------------|
+| group_code  | int64  | 收到戳一戳的群号码   |
+| group_name  | string | 收到戳一戳的群名称   |
+| member_code | int64  | 发送戳一戳的用户QQ号 |
+| member_name | string | 发送戳一戳的QQ昵称  |
+
+<details>
+  <summary>默认模板</summary>
+
+*该模板默认为空，即不发送消息*
+
+```text
+```
+
+</details>
+
+- bot收到好友私聊戳一戳
+
+模板名：`trigger.group.poke.tmpl`
+
+| 模板变量        | 类型     | 含义          |
+|-------------|--------|-------------|
+| member_code | int64  | 发送戳一戳的用户QQ号 |
+| member_name | string | 发送戳一戳的QQ昵称  |
+
+<details>
+  <summary>默认模板</summary>
+
+*该模板默认为空，即不发送消息*
+
+```text
+```
+
+</details>

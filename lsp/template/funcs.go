@@ -60,6 +60,7 @@ func builtins() FuncMap {
 		"at":          at,
 		"icon":        icon,
 		"member_info": memberInfo,
+		"poke":        poke,
 
 		// DDBOT common
 		"hour":    hour,

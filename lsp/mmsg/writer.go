@@ -143,6 +143,11 @@ func (m *MSG) AtAll() *MSG {
 	return m.Append(NewAt(0))
 }
 
+// Poke 戳一戳，只支持群聊，如果MSG发送给私聊，将自动忽略
+func (m *MSG) Poke(target int64) *MSG {
+	return m.Append(NewPoke(target))
+}
+
 func (m *MSG) ImageByLocalWithResize(filepath, alternative string, width, height uint) *MSG {
 	img := NewImageByLocal(filepath).Resize(width, height)
 	if len(alternative) > 0 {
