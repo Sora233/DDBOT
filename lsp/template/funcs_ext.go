@@ -95,6 +95,10 @@ func poke(uin int64) *mmsg.PokeElement {
 	return mmsg.NewPoke(uin)
 }
 
+func botUin() int64 {
+	return localutils.GetBot().GetUin()
+}
+
 func picUri(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 	logger := logger.WithField("uri", uri)
 	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {

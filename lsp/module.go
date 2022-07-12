@@ -453,21 +453,23 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 	bot.OnGroupNotify(func(qqClient *client.QQClient, ievent client.INotifyEvent) {
 		switch event := ievent.(type) {
 		case *client.GroupPokeNotifyEvent:
-			if event.Receiver == localutils.GetBot().GetUin() {
-				data := map[string]interface{}{
-					"member_code": event.Sender,
-					"group_code":  event.GroupCode,
+			data := map[string]interface{}{
+				"member_code":   event.Sender,
+				"receiver_code": event.Receiver,
+				"group_code":    event.GroupCode,
+			}
+			if gi := localutils.GetBot().FindGroup(event.GroupCode); gi != nil {
+				data["group_name"] = gi.Name
+				if fi := gi.FindMember(event.Sender); fi != nil {
+					data["member_name"] = fi.DisplayName()
 				}
-				if gi := localutils.GetBot().FindGroup(event.GroupCode); gi != nil {
-					data["group_name"] = gi.Name
-					if fi := gi.FindMember(event.Sender); fi != nil {
-						data["member_name"] = fi.DisplayName()
-					}
+				if fi := gi.FindMember(event.Receiver); fi != nil {
+					data["receiver_name"] = fi.DisplayName()
 				}
-				m, _ := template.LoadAndExec("trigger.group.poke.tmpl", data)
-				if m != nil {
-					l.SendMsg(m, mmsg.NewGroupTarget(event.GroupCode))
-				}
+			}
+			m, _ := template.LoadAndExec("trigger.group.poke.tmpl", data)
+			if m != nil {
+				l.SendMsg(m, mmsg.NewGroupTarget(event.GroupCode))
 			}
 		}
 	})

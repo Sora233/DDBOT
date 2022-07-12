@@ -747,6 +747,12 @@ Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)
 {{ poke 123456 }}
 ```
 
+- 获取bot的qq号码
+
+```
+{{ bot_uin }}
+```
+
 ## 当前支持的命令模板
 
 命令通用模板变量：
@@ -1064,16 +1070,20 @@ ACFUN-{{ .name }}直播结束了
 
 *以下为v1.0.9新增*
 
-- bot收到群戳一戳（只会受到bot被戳的消息，其他被戳的不会收到）
+- bot收到群戳一戳
 
 模板名：`trigger.group.poke.tmpl`
 
-| 模板变量        | 类型     | 含义          |
-|-------------|--------|-------------|
-| group_code  | int64  | 收到戳一戳的群号码   |
-| group_name  | string | 收到戳一戳的群名称   |
-| member_code | int64  | 发送戳一戳的用户QQ号 |
-| member_name | string | 发送戳一戳的QQ昵称  |
+| 模板变量          | 类型     | 含义           |
+|---------------|--------|--------------|
+| group_code    | int64  | 发生戳一戳的群号码    |
+| group_name    | string | 发生戳一戳的群名称    |
+| member_code   | int64  | 发送戳一戳的用户QQ号  |
+| member_name   | string | 发送戳一戳的用户QQ昵称 |
+| receiver_code | int64  | 被戳的用户QQ号     |
+| receiver_name | string | 被戳的用户QQ昵称    |
+
+注意群内所有的戳一戳消息都会受到，如果只想处理bot被戳的消息，需要使用`receiver_code`进行判断
 
 <details>
   <summary>默认模板</summary>
