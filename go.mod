@@ -16,7 +16,7 @@ require (
 	github.com/gofrs/flock v0.8.1
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
-	github.com/guonaihong/gout v0.2.12
+	github.com/guonaihong/gout v0.3.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/huandu/xstrings v1.3.2
 	github.com/imdario/mergo v0.3.13
