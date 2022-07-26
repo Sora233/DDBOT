@@ -64,14 +64,15 @@ func builtins() FuncMap {
 		"bot_uin":     botUin,
 
 		// DDBOT common
-		"hour":    hour,
-		"minute":  minute,
-		"second":  second,
-		"month":   month,
-		"year":    year,
-		"day":     day,
-		"yearday": yearday,
-		"weekday": weekday,
+		"hour":     hour,
+		"minute":   minute,
+		"second":   second,
+		"month":    month,
+		"year":     year,
+		"day":      day,
+		"yearday":  yearday,
+		"weekday":  weekday,
+		"cooldown": cooldown,
 
 		// cast
 		"float64": toFloat64,

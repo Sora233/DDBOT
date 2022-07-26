@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
@@ -14,6 +15,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"time"
 )
 
 var funcsExt = make(FuncMap)
@@ -241,4 +243,28 @@ func execDecimalOp(a interface{}, b []interface{}, f func(d1, d2 decimal.Decimal
 	}
 	rslt, _ := prt.Float64()
 	return rslt
+}
+
+func cooldown(ttlUnit string, keys ...interface{}) bool {
+	ttl, err := time.ParseDuration(ttlUnit)
+	if err != nil {
+		panic(fmt.Sprintf("ParseDuration: can not parse <%v>: %v", ttlUnit, err))
+	}
+	key := localdb.NamedKey("TemplateCooldown", keys)
+
+	if ttl <= 0 {
+		ttl = 5 * time.Minute
+	}
+
+	err = localdb.Set(key, "",
+		localdb.SetExpireOpt(ttl),
+		localdb.SetNoOverWriteOpt(),
+	)
+	if err == localdb.ErrRollback {
+		return false
+	} else if err != nil {
+		logger.Errorf("localdb.Set: cooldown set <%v> error %v", key, err)
+		panic(fmt.Sprintf("INTERNAL: db error"))
+	}
+	return true
 }

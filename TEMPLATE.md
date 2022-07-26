@@ -753,20 +753,71 @@ Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)
 {{ bot_uin }}
 ```
 
+- 设置命令冷却时间cooldown
+
+cooldown设置后，设定时间内只有第一次会返回true，后续函数将返回false。
+
+cooldown函数可以跨模板设置。
+
+cooldown函数第一个参数为时间单位，支持如下简写，数字可以自由更换：
+
+- 500ms（表示500毫秒）
+- 1s（表示1秒钟）
+- 20m（表示20分钟）
+- 1.5h（表示1.5小时）
+- 2h45m（表示2小时45分钟）
+
+**如果设置为0或者负数，将自动替换为5m（即5分钟）**
+
+cooldown函数的后续参数为设置cooldown的关键字，不同关键字的cooldown无任何关联，相同关键字的cooldown在时间范围内只能触发一次。
+
+例子：
+
+使用模板名作为关键字，实现单个模板所有人共享cooldown，不同模板独立cooldown：
+
+```
+{{- if (cooldown "10s" .template_name) -}}
+成功
+{{- else -}}
+失败，正在冷却
+{{- end -}}
+```
+
+把`.member_code`加入关键字，实现每个人对每个模板有独立cooldown：
+
+```
+{{- if (cooldown "10s" .member_code .template_name) -}}
+成功
+{{- else -}}
+失败，正在冷却
+{{- end -}}
+```
+
+使用固定关键字，实现不同模板共享cooldown：
+
+```
+{{- if (cooldown "10s" "my_cooldown_keyword_1") -}}
+成功
+{{- else -}}
+失败，正在冷却
+{{- end -}}
+```
+
 ## 当前支持的命令模板
 
 命令通用模板变量：
 
-| 模板变量        | 类型       | 含义                    | 备注            |
-|-------------|----------|-----------------------|---------------|
-| group_code  | int      | 本次命令触发的QQ群号码（私聊则为空）   |               |
-| group_name  | string   | 本次命令触发的QQ群名称（私聊则为空）   |               |
-| member_code | int      | 本次命令触发的成员QQ号          |               |
-| member_name | string   | 本次命令触发的成员QQ名称         |               |
-| cmd         | string   | 本次触发的命令名称             | 从v1.0.7版本开始支持 |
-| args        | []string | 本次命令触发时附带的参数数组（只支持文字） | 从v1.0.7版本开始支持 |
-| at_targets  | []int64  | 本次命令触发时附带的@成员的QQ号码    | 从v1.0.8版本开始支持 |
-| full_args   | string   | 本次命令触发时附带的完整参数（只支持文字） | 从v1.0.8版本开始支持 |
+| 模板变量          | 类型       | 含义                    | 备注            |
+|---------------|----------|-----------------------|---------------|
+| group_code    | int      | 本次命令触发的QQ群号码（私聊则为空）   |               |
+| group_name    | string   | 本次命令触发的QQ群名称（私聊则为空）   |               |
+| member_code   | int      | 本次命令触发的成员QQ号          |               |
+| member_name   | string   | 本次命令触发的成员QQ名称         |               |
+| cmd           | string   | 本次触发的命令名称             | 从v1.0.7版本开始支持 |
+| args          | []string | 本次命令触发时附带的参数数组（只支持文字） | 从v1.0.7版本开始支持 |
+| at_targets    | []int64  | 本次命令触发时附带的@成员的QQ号码    | 从v1.0.8版本开始支持 |
+| full_args     | string   | 本次命令触发时附带的完整参数（只支持文字） | 从v1.0.8版本开始支持 |
+| template_name | string   | 本次命令触发时的模板名字          | 从v1.0.9版本开始支持 |
 
 - /签到
 

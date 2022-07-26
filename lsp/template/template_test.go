@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func init() {
@@ -260,6 +261,48 @@ func TestTemplateFuncs(t *testing.T) {
 {{- $s = join "_" $l -}}
 {{- atrue (eq "ab_cd_ef_g_1" $s) -}}
 `, nil)
+}
+
+func TestTemplateCoolDown(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+	s, err := runTemplate(`
+{{- if (cooldown "2s" "test1") -}}
+true
+{{- else -}}
+false
+{{- end -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "true", s)
+
+	s, err = runTemplate(`
+{{- if (cooldown "2s" "test1") -}}
+true
+{{- else -}}
+false
+{{- end -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "false", s)
+
+	s, err = runTemplate(`
+{{- if (cooldown "2s" "test2") -}}
+true
+{{- else -}}
+false
+{{- end -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "true", s)
+
+	time.Sleep(time.Millisecond * 2500)
+
+	s, err = runTemplate(`
+{{- if (cooldown "2s" "test1") -}}
+true
+{{- else -}}
+false
+{{- end -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "true", s)
 }
 
 func runTemplate(template string, data map[string]interface{}) (string, error) {

@@ -1027,6 +1027,7 @@ func (lgc *LspGroupCommand) templateMsg(name string, data map[string]interface{}
 	for k, v := range data {
 		commonData[k] = v
 	}
+	commonData["template_name"] = name
 	m, err := template.LoadAndExec(name, commonData)
 	if err != nil {
 		logger.Errorf("LoadAndExec error %v", err)
