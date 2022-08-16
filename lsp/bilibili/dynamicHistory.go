@@ -14,9 +14,7 @@ const (
 
 type DynamicSrvDynamicHistoryRequest struct {
 	OffsetDynamicId string `json:"offset_dynamic_id"`
-	Platform        string `json:"platform"`
-	From            string `json:"from"`
-	Type            string `json:"type"`
+	TypeList        string `json:"type_list"`
 }
 
 func DynamicSvrDynamicHistory(offsetDynamicId string) (*DynamicSvrDynamicHistoryResponse, error) {
@@ -28,12 +26,10 @@ func DynamicSvrDynamicHistory(offsetDynamicId string) (*DynamicSvrDynamicHistory
 		ed := time.Now()
 		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
-	url := BPath(PathDynamicSrvDynamicNew)
+	url := BPath(PathDynamicSrvDynamicHistory)
 	params, err := utils.ToParams(&DynamicSrvDynamicHistoryRequest{
 		OffsetDynamicId: offsetDynamicId,
-		Platform:        "web",
-		From:            "weball",
-		Type:            "268435455", // 会变吗？
+		TypeList:        "268435455", // 会变吗？
 	})
 	if err != nil {
 		return nil, err
