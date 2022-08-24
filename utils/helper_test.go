@@ -249,4 +249,11 @@ func TestTimestampFormat(t *testing.T) {
 	assert.EqualValues(t, "1970-01-01 08:00:00", TimestampFormat(0))
 	config.GlobalConfig.Viper.Set("timezone", "America/New York")
 	assert.EqualValues(t, "1969-12-31 19:00:00", TimestampFormat(0))
+
+	localNow := time.Now()
+	expectedStr := localNow.Format("2006-01-02 15:04:05")
+	config.GlobalConfig.Viper.Set("timezone", "nowhere")
+	assert.EqualValues(t, expectedStr, TimestampFormat(localNow.Unix()))
+	config.GlobalConfig.Viper.Set("timezone", "")
+	assert.EqualValues(t, expectedStr, TimestampFormat(localNow.Unix()))
 }
