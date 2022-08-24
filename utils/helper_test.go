@@ -1,9 +1,6 @@
 package utils
 
 import (
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/guonaihong/gout"
-	"github.com/stretchr/testify/assert"
 	"html"
 	"io/ioutil"
 	"os"
@@ -11,6 +8,11 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/Sora233/DDBOT/internal/test"
+	"github.com/Sora233/MiraiGo-Template/config"
+	"github.com/guonaihong/gout"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestFilePathWalkDir(t *testing.T) {
@@ -240,4 +242,11 @@ func TestGroupLogFields(t *testing.T) {
 
 func TestFriendLogFields(t *testing.T) {
 	assert.NotNil(t, FriendLogFields(1))
+}
+
+func TestTimestampFormat(t *testing.T) {
+	config.GlobalConfig.Viper.Set("timezone", "Asia/Shanghai")
+	assert.EqualValues(t, "1970-01-01 08:00:00", TimestampFormat(0))
+	config.GlobalConfig.Viper.Set("timezone", "America/New York")
+	assert.EqualValues(t, "1969-12-31 19:00:00", TimestampFormat(0))
 }

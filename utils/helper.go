@@ -2,9 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"github.com/guonaihong/gout"
-	jsoniter "github.com/json-iterator/go"
-	"github.com/sirupsen/logrus"
 	"io/fs"
 	"net/url"
 	"path/filepath"
@@ -14,6 +11,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Sora233/MiraiGo-Template/config"
+	"github.com/guonaihong/gout"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/sirupsen/logrus"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -162,7 +164,7 @@ func PrefixMatch(opts []string, prefix string) (string, bool) {
 	)
 	for _, opt := range opts {
 		if strings.HasPrefix(opt, prefix) {
-			if found == true {
+			if found {
 				return "", false
 			}
 			found = true
@@ -178,6 +180,12 @@ func UnquoteString(s string) (string, error) {
 
 func TimestampFormat(ts int64) string {
 	t := time.Unix(ts, 0)
+	if tzStr := config.GlobalConfig.GetString("timezone"); tzStr != "" {
+		loc, _ := time.LoadLocation(tzStr)
+		if loc != nil {
+			t = t.In(loc)
+		}
+	}
 	return t.Format("2006-01-02 15:04:05")
 }
 
