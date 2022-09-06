@@ -32,8 +32,8 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cast v1.5.0
 	github.com/stretchr/testify v1.8.0
-	github.com/tidwall/buntdb v1.2.9
-	github.com/tidwall/gjson v1.14.2
+	github.com/tidwall/buntdb v1.2.10
+	github.com/tidwall/gjson v1.14.3
 	go.uber.org/atomic v1.10.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
@@ -70,7 +70,7 @@ require (
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/spf13/viper v1.7.1 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	github.com/tidwall/btree v1.1.0 // indirect
+	github.com/tidwall/btree v1.4.2 // indirect
 	github.com/tidwall/grect v0.1.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
