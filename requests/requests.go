@@ -87,7 +87,7 @@ func AddUAOption(ua ...string) Option {
 	if len(ua) > 0 && len(ua[0]) > 0 {
 		return HeaderOption("user-agent", ua[0])
 	}
-	return HeaderOption("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
+	return HeaderOption("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36")
 }
 
 func ProxyOption(prefer proxy_pool.Prefer) Option {
@@ -203,6 +203,7 @@ func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Opt
 	default:
 		df.BindJSON(out)
 	}
+	df.NotIgnoreEmpty = true
 	if opt.Retry > 0 {
 		err = df.F().Retry().Attempt(opt.Retry).Do()
 	} else {
