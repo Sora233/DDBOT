@@ -9,11 +9,11 @@ on:
 jobs:
   # run unittest
   test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        go: [ '1.17' ]
+        go: [ '1.19' ]
 
     steps:
       - uses: actions/setup-go@v1
@@ -35,7 +35,7 @@ jobs:
   build:
     needs: test
     name: Build binary CI
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         goos: [ linux, windows, darwin ]
