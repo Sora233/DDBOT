@@ -5,6 +5,9 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
+	"io"
+	"net/http/cookiejar"
+	"sync/atomic"
 	"time"
 )
 
@@ -17,6 +20,23 @@ type XSpaceAccInfoRequest struct {
 	Platform string `json:"platform"`
 	Jsonp    string `json:"jsonp"`
 	Token    string `json:"token"`
+}
+
+var cj atomic.Pointer[cookiejar.Jar]
+
+func refreshCookieJar() {
+	j, _ := cookiejar.New(nil)
+	err := requests.Get("https://bilibili.com", nil, io.Discard,
+		requests.WithCookieJar(j),
+		AddUAOption(),
+		requests.RequestAutoHostOption(),
+		requests.HeaderOption("accept", "application/json"),
+		requests.HeaderOption("accept-language", "zh-CN,zh;q=0.9"),
+	)
+	if err != nil {
+		logger.Errorf("bilibili: refreshCookieJar request error %v", err)
+	}
+	cj.Store(j)
 }
 
 func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
@@ -43,6 +63,7 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 		requests.HeaderOption("origin", "https://space.bilibili.com"),
 		requests.HeaderOption("referer", fmt.Sprintf("https://space.bilibili.com/%v", mid)),
 		requests.RequestAutoHostOption(),
+		requests.WithCookieJar(cj.Load()),
 		requests.NotIgnoreEmptyOption(),
 		delete412ProxyOption,
 	}
