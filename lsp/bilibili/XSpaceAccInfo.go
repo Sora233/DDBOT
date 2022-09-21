@@ -38,12 +38,12 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 		requests.ProxyOption(proxy_pool.PreferNone),
 		requests.TimeoutOption(time.Second * 15),
 		AddUAOption(),
-		requests.DebugOption(),
 		requests.HeaderOption("accept", "application/json"),
 		requests.HeaderOption("accept-language", "zh-CN,zh;q=0.9"),
-		requests.HeaderOption("host", "api.bilibili.com"),
 		requests.HeaderOption("origin", "https://space.bilibili.com"),
 		requests.HeaderOption("referer", fmt.Sprintf("https://space.bilibili.com/%v", mid)),
+		requests.RequestAutoHostOption(),
+		requests.NotIgnoreEmptyOption(),
 		delete412ProxyOption,
 	}
 	opts = append(opts, GetVerifyOption()...)

@@ -28,6 +28,8 @@ type option struct {
 	ProxyCallbackOption func(out interface{}, proxy string)
 	CookieJar           http.CookieJar
 	ResponseMiddleware  []middleware.ResponseMiddler
+	AutoHeaderHost      bool
+	NotIgnoreEmpty      bool
 }
 
 func (o *option) getGout() *gout.Client {
@@ -45,7 +47,11 @@ func (o *option) getGout() *gout.Client {
 			Jar: o.CookieJar,
 		}))
 	}
-	return gout.NewWithOpt(goutOpts...)
+	df := gout.NewWithOpt(goutOpts...)
+	if o.NotIgnoreEmpty {
+		df.NotIgnoreEmpty = true
+	}
+	return df
 }
 
 type Option func(o *option)
@@ -137,6 +143,18 @@ func DebugOption() Option {
 	}
 }
 
+func RequestAutoHostOption() Option {
+	return func(o *option) {
+		o.AutoHeaderHost = true
+	}
+}
+
+func NotIgnoreEmptyOption() Option {
+	return func(o *option) {
+		o.NotIgnoreEmpty = true
+	}
+}
+
 // WithCookieJar CookieJar可能导致Cookie泄漏，谨慎使用
 func WithCookieJar(jar http.CookieJar) Option {
 	return func(o *option) {
@@ -180,6 +198,11 @@ func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Opt
 	if opt.Debug {
 		df.Debug(true)
 	}
+	if opt.AutoHeaderHost {
+		if h, err := df.GetHost(); err == nil {
+			opt.Header["host"] = h
+		}
+	}
 	if len(opt.Cookies) > 0 {
 		df.SetCookies(opt.Cookies...)
 	}
@@ -203,7 +226,6 @@ func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Opt
 	default:
 		df.BindJSON(out)
 	}
-	df.NotIgnoreEmpty = true
 	if opt.Retry > 0 {
 		err = df.F().Retry().Attempt(opt.Retry).Do()
 	} else {
