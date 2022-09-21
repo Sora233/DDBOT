@@ -18,7 +18,7 @@ jobs:
           - goos: darwin
             goarch: "386"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Set env
         run: |
           echo BUILD_TIME=$(date --rfc-3339=seconds) >> ${GITHUB_ENV}
