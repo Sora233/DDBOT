@@ -277,3 +277,28 @@ func openFile(path string) []byte {
 	}
 	return data
 }
+
+type ddError struct {
+	ddErrType string
+	error
+}
+
+func (d *ddError) Error() string {
+	if d.error != nil {
+		return d.error.Error()
+	}
+	return ""
+}
+
+var errFin = &ddError{ddErrType: "fin"}
+
+func abort(msg ...string) interface{} {
+	if len(msg) > 0 {
+		panic(&ddError{ddErrType: "abort", error: fmt.Errorf(msg[0])})
+	}
+	panic(&ddError{ddErrType: "abort"})
+}
+
+func fin() interface{} {
+	panic(errFin)
+}

@@ -74,6 +74,8 @@ func builtins() FuncMap {
 		"weekday":  weekday,
 		"cooldown": cooldown,
 		"openFile": openFile,
+		"abort":    abort,
+		"fin":      fin,
 
 		// cast
 		"float64": toFloat64,

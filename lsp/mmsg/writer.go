@@ -37,6 +37,12 @@ func (m *MSG) Clone() *MSG {
 	}
 }
 
+func (m *MSG) Clear() *MSG {
+	m.flushText()
+	m.elements = nil
+	return m
+}
+
 func (m *MSG) Append(elems ...message.IMessageElement) *MSG {
 	if len(elems) == 0 {
 		return m

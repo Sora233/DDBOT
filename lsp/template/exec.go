@@ -158,6 +158,10 @@ func (s *state) writeError(err error) {
 func errRecover(errp *error) {
 	e := recover()
 	if e != nil {
+		if dde, ok := e.(*ddError); ok {
+			*errp = dde
+			return
+		}
 		switch err := e.(type) {
 		case runtime.Error:
 			panic(e)
@@ -201,6 +205,17 @@ func (t *Template) Execute(wr *mmsg.MSG, data interface{}) error {
 }
 
 func (t *Template) execute(wr *mmsg.MSG, data interface{}) (err error) {
+	defer func() {
+		if de, ok := err.(*ddError); ok {
+			switch de.ddErrType {
+			case "abort":
+				wr.Clear()
+				wr.Text(de.Error())
+			case "fin":
+			}
+			err = nil
+		}
+	}()
 	defer errRecover(&err)
 	value, ok := data.(reflect.Value)
 	if !ok {
@@ -720,7 +735,11 @@ func (s *state) evalCall(dot, fun reflect.Value, node parse.Node, name string, a
 	// error to the caller.
 	if err != nil {
 		s.at(node)
-		s.errorf("error calling %s: %w", name, err)
+		if _, ok := err.(*ddError); ok {
+			panic(err)
+		} else {
+			s.errorf("error calling %s: %w", name, err)
+		}
 	}
 	if v.Type() == reflectValueType {
 		v = v.Interface().(reflect.Value)
