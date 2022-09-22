@@ -268,3 +268,12 @@ func cooldown(ttlUnit string, keys ...interface{}) bool {
 	}
 	return true
 }
+
+func openFile(path string) []byte {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		logger.Errorf("template: openFile <%v> error %v", path, err)
+		return nil
+	}
+	return data
+}

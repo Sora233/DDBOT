@@ -73,6 +73,7 @@ func builtins() FuncMap {
 		"yearday":  yearday,
 		"weekday":  weekday,
 		"cooldown": cooldown,
+		"openFile": openFile,
 
 		// cast
 		"float64": toFloat64,
@@ -819,7 +820,9 @@ func ge(arg1, arg2 reflect.Value) (bool, error) {
 }
 
 // evalArgs formats the list of arguments into a string. It is therefore equivalent to
+//
 //	fmt.Sprint(args...)
+//
 // except that each argument is indirected (if a pointer), as required,
 // using the same rules as the default string evaluation during template
 // execution.
