@@ -5,9 +5,9 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
+	"go.uber.org/atomic"
 	"io"
 	"net/http/cookiejar"
-	"sync/atomic"
 	"time"
 )
 

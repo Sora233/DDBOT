@@ -56,8 +56,7 @@ type ICode interface {
 
 var (
 	ErrVerifyRequired = errors.New("账号信息缺失")
-	// atomicVerifyInfo is a *VerifyInfo
-	atomicVerifyInfo atomic.Value
+	atomicVerifyInfo  atomic.Pointer[VerifyInfo]
 
 	mux                  = new(sync.Mutex)
 	username             string
@@ -112,7 +111,7 @@ func SetVerify(_SESSDATA string, _biliJct string) {
 }
 
 func getVerify() *VerifyInfo {
-	return atomicVerifyInfo.Load().(*VerifyInfo)
+	return atomicVerifyInfo.Load()
 }
 
 func SetAccount(_username string, _password string) {
@@ -259,11 +258,7 @@ func IsCookieGiven() bool {
 	if v == nil {
 		return false
 	}
-	info, ok := v.(*VerifyInfo)
-	if !ok {
-		return false
-	}
-	return len(info.VerifyOpts) > 0
+	return len(v.VerifyOpts) > 0
 }
 
 func IsAccountGiven() bool {

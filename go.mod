@@ -35,7 +35,7 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/tidwall/buntdb v1.2.9
 	github.com/tidwall/gjson v1.14.1
-	go.uber.org/atomic v1.9.0
+	go.uber.org/atomic v1.10.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 )
 

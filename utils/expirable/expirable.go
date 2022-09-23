@@ -8,7 +8,7 @@ import (
 
 type Expirable struct {
 	d        time.Duration
-	deadline atomic.Value
+	deadline atomic.Pointer[time.Time]
 	mu       sync.Mutex
 	val      atomic.Value
 	f        func() interface{}
@@ -16,11 +16,12 @@ type Expirable struct {
 
 func (e *Expirable) Do() interface{} {
 	now := time.Now()
-	if e.deadline.Load().(time.Time).Before(now) {
+	if e.deadline.Load().Before(now) {
 		e.mu.Lock()
-		if e.deadline.Load().(time.Time).Before(now) {
+		if e.deadline.Load().Before(now) {
 			e.val.Store(e.f())
-			e.deadline.Store(now.Add(e.d))
+			newDdl := now.Add(e.d)
+			e.deadline.Store(&newDdl)
 		}
 		e.mu.Unlock()
 	}
@@ -32,6 +33,6 @@ func NewExpirable(duration time.Duration, action func() interface{}) *Expirable 
 		f: action,
 		d: duration,
 	}
-	e.deadline.Store(time.Time{})
+	e.deadline.Store(&time.Time{})
 	return e
 }
