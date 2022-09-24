@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/requests"
+	"github.com/samber/lo"
 	"strings"
 	"unicode"
 )
@@ -18,6 +19,18 @@ func NewMSG() *MSG {
 	return &MSG{}
 }
 
+func NewMSGFromGroupMessage(gm *message.GroupMessage) *MSG {
+	return &MSG{
+		elements: gm.Elements,
+	}
+}
+
+func NewMSGFromPrivateMessage(pm *message.PrivateMessage) *MSG {
+	return &MSG{
+		elements: pm.Elements,
+	}
+}
+
 func NewText(s string) *MSG {
 	msg := NewMSG()
 	msg.Text(s)
@@ -28,6 +41,15 @@ func NewTextf(format string, args ...interface{}) *MSG {
 	msg := NewMSG()
 	msg.Textf(format, args...)
 	return msg
+}
+
+// Drop predicate返回true的元素被去掉
+func (m *MSG) Drop(predicate func(e message.IMessageElement, index int) bool) *MSG {
+	m.flushText()
+	m.elements = lo.Filter(m.elements, func(e message.IMessageElement, index int) bool {
+		return !predicate(e, index)
+	})
+	return m
 }
 
 func (m *MSG) Clone() *MSG {
@@ -145,7 +167,12 @@ func (m *MSG) At(target int64) *MSG {
 	return m.Append(NewAt(target))
 }
 
-func (m *MSG) AtAll() *MSG {
+// AtAll 添加@全体成员，如果prepend设置为true，则会添加在消息最前面
+func (m *MSG) AtAll(prepend ...bool) *MSG {
+	if len(prepend) > 0 && prepend[0] {
+		m.elements = append([]message.IMessageElement{NewAt(0)}, m.elements...)
+		return m
+	}
 	return m.Append(NewAt(0))
 }
 

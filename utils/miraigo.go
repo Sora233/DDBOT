@@ -5,16 +5,13 @@ import (
 	"errors"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/MiraiGo-Template/bot"
+	"github.com/samber/lo"
 )
 
 func MessageFilter(msg []message.IMessageElement, filter func(message.IMessageElement) bool) []message.IMessageElement {
-	var result []message.IMessageElement
-	for _, e := range msg {
-		if filter(e) {
-			result = append(result, e)
-		}
-	}
-	return result
+	return lo.Filter(msg, func(e message.IMessageElement, _ int) bool {
+		return filter(e)
+	})
 }
 
 func UploadGroupImageByUrl(groupCode int64, url string, isNorm bool) (*message.GroupImageElement, error) {
