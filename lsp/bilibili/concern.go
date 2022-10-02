@@ -149,7 +149,7 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 			return nil, fmt.Errorf("查询用户信息失败 %v - %v", mid, err)
 		}
 		if infoResp.Code != 0 {
-			log.WithField("code", infoResp.Code).Errorf(infoResp.Message)
+			log.Errorf("XSpaceAccInfo code error %v - %v", infoResp.Code, infoResp.Message)
 			return nil, fmt.Errorf("查询用户信息失败 %v - %v %v", mid, infoResp.Code, infoResp.Message)
 		}
 

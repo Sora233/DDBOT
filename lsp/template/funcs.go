@@ -60,16 +60,22 @@ func builtins() FuncMap {
 		"at":          at,
 		"icon":        icon,
 		"member_info": memberInfo,
+		"poke":        poke,
+		"bot_uin":     botUin,
 
 		// DDBOT common
-		"hour":    hour,
-		"minute":  minute,
-		"second":  second,
-		"month":   month,
-		"year":    year,
-		"day":     day,
-		"yearday": yearday,
-		"weekday": weekday,
+		"hour":     hour,
+		"minute":   minute,
+		"second":   second,
+		"month":    month,
+		"year":     year,
+		"day":      day,
+		"yearday":  yearday,
+		"weekday":  weekday,
+		"cooldown": cooldown,
+		"openFile": openFile,
+		"abort":    abort,
+		"fin":      fin,
 
 		// cast
 		"float64": toFloat64,
@@ -816,7 +822,9 @@ func ge(arg1, arg2 reflect.Value) (bool, error) {
 }
 
 // evalArgs formats the list of arguments into a string. It is therefore equivalent to
+//
 //	fmt.Sprint(args...)
+//
 // except that each argument is indirected (if a pointer), as required,
 // using the same rules as the default string evaluation during template
 // execution.

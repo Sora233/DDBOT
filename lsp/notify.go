@@ -2,6 +2,7 @@ package lsp
 
 import (
 	"context"
+	"fmt"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/lsp/concern"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
@@ -103,6 +104,7 @@ func (l *Lsp) ConcernNotify() {
 					cfg.NotifyAfterCallback(inotify, nil)
 				}
 				if atBeforeHook.Pass {
+					var atIdsOnce bool
 					for _, msg := range msgs {
 						if msg.Id == -1 {
 							// 检查有没有@全体成员
@@ -112,15 +114,36 @@ func (l *Lsp) ConcernNotify() {
 							if len(e) == 0 {
 								continue
 							}
-							// @全体成员失败了，可能是次数到了，尝试@列表
-							ids := cfg.GetGroupConcernAt().GetAtSomeoneList(inotify.Type())
-							if len(ids) != 0 {
-								nLogger = nLogger.WithField("at_QQ", ids)
-								nLogger.Debug("notify atAll failed, try at someone")
-								l.SendMsg(newAtIdsMsg(mmsg.NewMSG(), ids), target)
-							} else {
-								nLogger.Debug("notify atAll failed, at someone not config")
+							// 2022/09/24 现在@全员不会再作为单独一条消息
+							// 有@全体成员的消息应该去掉之后重试
+							secondM := mmsg.NewMSGFromGroupMessage(msg)
+							secondM.Drop(func(e message.IMessageElement, _ int) bool {
+								return e.Type() == message.At && e.(*message.AtElement).Target == 0
+							})
+
+							secondRes := l.GM(l.SendMsg(secondM, target))
+							// secondRes一定是一条
+							if len(secondRes) != 1 {
+								panic(fmt.Sprintf("INTERNAL: len(secondRes) is %v", len(secondRes)))
 							}
+							if secondRes[0].Id == -1 {
+								// 去掉@全员还是发送失败
+								continue
+							}
+							if !atIdsOnce {
+								// 去掉@全员之后发送成功，可能是次数到了，尝试@列表
+								atIdsOnce = true
+							}
+						}
+					}
+					if atIdsOnce {
+						ids := cfg.GetGroupConcernAt().GetAtSomeoneList(inotify.Type())
+						if len(ids) != 0 {
+							nLogger = nLogger.WithField("at_QQ", ids)
+							nLogger.Debug("notify atAll failed, try at someone")
+							l.SendMsg(newAtIdsMsg(mmsg.NewMSG(), ids), target)
+						} else {
+							nLogger.Debug("notify atAll failed, at someone not config")
 						}
 					}
 				}
@@ -134,7 +157,7 @@ func (l *Lsp) NotifyMessage(inotify concern.Notify) *mmsg.MSG {
 }
 
 func newAtAllMsg(m *mmsg.MSG) *mmsg.MSG {
-	return m.Cut().AtAll()
+	return m.AtAll(true)
 }
 
 func newAtIdsMsg(m *mmsg.MSG, ids []int64) *mmsg.MSG {

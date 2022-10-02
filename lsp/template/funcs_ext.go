@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
+	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
@@ -14,6 +15,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"time"
 )
 
 var funcsExt = make(FuncMap)
@@ -90,7 +92,16 @@ func at(uin int64) *mmsg.AtElement {
 	return mmsg.NewAt(uin)
 }
 
-func picUri(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
+// poke 戳一戳
+func poke(uin int64) *mmsg.PokeElement {
+	return mmsg.NewPoke(uin)
+}
+
+func botUin() int64 {
+	return localutils.GetBot().GetUin()
+}
+
+func picUri(uri string) (e *mmsg.ImageBytesElement) {
 	logger := logger.WithField("uri", uri)
 	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
 		e = mmsg.NewImageByUrlWithoutCache(uri)
@@ -135,21 +146,22 @@ func picUri(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 			e = mmsg.NewImageByLocal(uri)
 		}
 	}
-	if len(alternative) > 0 && len(alternative[0]) > 0 {
-		e.Alternative(alternative[0])
-	}
 	return e
 }
 
 func pic(input interface{}, alternative ...string) *mmsg.ImageBytesElement {
+	var alt string
+	if len(alternative) > 0 && len(alternative[0]) > 0 {
+		alt = alternative[0]
+	}
 	switch e := input.(type) {
 	case string:
 		if b, err := base64.StdEncoding.DecodeString(e); err == nil {
-			return mmsg.NewImage(b)
+			return mmsg.NewImage(b).Alternative(alt)
 		}
-		return picUri(e, alternative...)
+		return picUri(e).Alternative(alt)
 	case []byte:
-		return mmsg.NewImage(e)
+		return mmsg.NewImage(e).Alternative(alt)
 	default:
 		panic(fmt.Sprintf("invalid input %v", input))
 	}
@@ -232,4 +244,73 @@ func execDecimalOp(a interface{}, b []interface{}, f func(d1, d2 decimal.Decimal
 	}
 	rslt, _ := prt.Float64()
 	return rslt
+}
+
+func cooldown(ttlUnit string, keys ...interface{}) bool {
+	ttl, err := time.ParseDuration(ttlUnit)
+	if err != nil {
+		panic(fmt.Sprintf("ParseDuration: can not parse <%v>: %v", ttlUnit, err))
+	}
+	key := localdb.NamedKey("TemplateCooldown", keys)
+
+	if ttl <= 0 {
+		ttl = 5 * time.Minute
+	}
+
+	err = localdb.Set(key, "",
+		localdb.SetExpireOpt(ttl),
+		localdb.SetNoOverWriteOpt(),
+	)
+	if err == localdb.ErrRollback {
+		return false
+	} else if err != nil {
+		logger.Errorf("localdb.Set: cooldown set <%v> error %v", key, err)
+		panic(fmt.Sprintf("INTERNAL: db error"))
+	}
+	return true
+}
+
+func openFile(path string) []byte {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		logger.Errorf("template: openFile <%v> error %v", path, err)
+		return nil
+	}
+	return data
+}
+
+type ddError struct {
+	ddErrType string
+	e         message.IMessageElement
+	err       error
+}
+
+func (d *ddError) Error() string {
+	if d.err != nil {
+		return d.Error()
+	}
+	return ""
+}
+
+var errFin = &ddError{ddErrType: "fin", err: fmt.Errorf("fin")}
+
+func abort(e ...interface{}) interface{} {
+	if len(e) > 0 {
+		i := e[0]
+		aerr := &ddError{ddErrType: "abort", err: fmt.Errorf("abort")}
+		switch s := i.(type) {
+		case string:
+			aerr.e = message.NewText(s)
+		case message.IMessageElement:
+			aerr.e = s
+		default:
+			panic("template: abort with invalid e")
+		}
+		panic(aerr)
+	}
+	panic(&ddError{ddErrType: "abort"})
+}
+
+func fin() interface{} {
+	panic(errFin)
 }

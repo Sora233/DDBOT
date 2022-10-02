@@ -28,6 +28,8 @@ type option struct {
 	ProxyCallbackOption func(out interface{}, proxy string)
 	CookieJar           http.CookieJar
 	ResponseMiddleware  []middleware.ResponseMiddler
+	AutoHeaderHost      bool
+	NotIgnoreEmpty      bool
 }
 
 func (o *option) getGout() *gout.Client {
@@ -45,7 +47,11 @@ func (o *option) getGout() *gout.Client {
 			Jar: o.CookieJar,
 		}))
 	}
-	return gout.NewWithOpt(goutOpts...)
+	df := gout.NewWithOpt(goutOpts...)
+	if o.NotIgnoreEmpty {
+		df.NotIgnoreEmpty = true
+	}
+	return df
 }
 
 type Option func(o *option)
@@ -87,7 +93,7 @@ func AddUAOption(ua ...string) Option {
 	if len(ua) > 0 && len(ua[0]) > 0 {
 		return HeaderOption("user-agent", ua[0])
 	}
-	return HeaderOption("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
+	return HeaderOption("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36")
 }
 
 func ProxyOption(prefer proxy_pool.Prefer) Option {
@@ -137,6 +143,18 @@ func DebugOption() Option {
 	}
 }
 
+func RequestAutoHostOption() Option {
+	return func(o *option) {
+		o.AutoHeaderHost = true
+	}
+}
+
+func NotIgnoreEmptyOption() Option {
+	return func(o *option) {
+		o.NotIgnoreEmpty = true
+	}
+}
+
 // WithCookieJar CookieJar可能导致Cookie泄漏，谨慎使用
 func WithCookieJar(jar http.CookieJar) Option {
 	return func(o *option) {
@@ -179,6 +197,11 @@ func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Opt
 	var df = f(opt.getGout())
 	if opt.Debug {
 		df.Debug(true)
+	}
+	if opt.AutoHeaderHost {
+		if h, err := df.GetHost(); err == nil {
+			opt.Header["host"] = h
+		}
 	}
 	if len(opt.Cookies) > 0 {
 		df.SetCookies(opt.Cookies...)

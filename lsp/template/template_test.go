@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func init() {
@@ -260,6 +261,103 @@ func TestTemplateFuncs(t *testing.T) {
 {{- $s = join "_" $l -}}
 {{- atrue (eq "ab_cd_ef_g_1" $s) -}}
 `, nil)
+}
+
+func TestTemplateCoolDown(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+	s, err := runTemplate(`
+{{- if (cooldown "2s" "test1") -}}
+true
+{{- else -}}
+false
+{{- end -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "true", s)
+
+	s, err = runTemplate(`
+{{- if (cooldown "2s" "test1") -}}
+true
+{{- else -}}
+false
+{{- end -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "false", s)
+
+	s, err = runTemplate(`
+{{- if (cooldown "2s" "test2") -}}
+true
+{{- else -}}
+false
+{{- end -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "true", s)
+
+	time.Sleep(time.Millisecond * 2500)
+
+	s, err = runTemplate(`
+{{- if (cooldown "2s" "test1") -}}
+true
+{{- else -}}
+false
+{{- end -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "true", s)
+}
+
+func TestAbort(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+	s, err := runTemplate(`abcd
+	cdef
+	{{- abort -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "", s)
+
+	s, err = runTemplate(`abcd
+	{{- if false -}}
+		{{- abort -}}
+	{{- end -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "abcd", s)
+
+	s, err = runTemplate(`abcd
+	{{- abort "tttt" -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "tttt", s)
+
+	s, err = runTemplate(`abcd
+	{{- abort (printf "%v-%v" 5 2) -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "5-2", s)
+
+	s, err = runTemplate(`{{- if eq 1 5 -}}
+	 {{- abort (printf "出现错误: %v居然等于%v" 1 5) -}}
+	{{- end -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "", s)
+
+	s, err = runTemplate(`{{- abort (pic "invalid") -}}`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "[Image]", s)
+}
+
+func TestFin(t *testing.T) {
+	test.InitBuntdb(t)
+	defer test.CloseBuntdb(t)
+	s, err := runTemplate(`abcd
+{{- fin -}}
+defg`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "abcd", s)
+
+	s, err = runTemplate(`abcd
+{{- if false -}}
+	{{- fin -}}
+{{- end -}}
+defg`, nil)
+	assert.Nil(t, err)
+	assert.EqualValues(t, "abcddefg", s)
 }
 
 func runTemplate(template string, data map[string]interface{}) (string, error) {

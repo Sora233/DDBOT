@@ -1,9 +1,13 @@
 package bilibili
 
 import (
+	"fmt"
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
+	"go.uber.org/atomic"
+	"io"
+	"net/http/cookiejar"
 	"time"
 )
 
@@ -12,7 +16,27 @@ const (
 )
 
 type XSpaceAccInfoRequest struct {
-	Mid int64 `json:"mid"`
+	Mid      int64  `json:"mid"`
+	Platform string `json:"platform"`
+	Jsonp    string `json:"jsonp"`
+	Token    string `json:"token"`
+}
+
+var cj atomic.Pointer[cookiejar.Jar]
+
+func refreshCookieJar() {
+	j, _ := cookiejar.New(nil)
+	err := requests.Get("https://bilibili.com", nil, io.Discard,
+		requests.WithCookieJar(j),
+		AddUAOption(),
+		requests.RequestAutoHostOption(),
+		requests.HeaderOption("accept", "application/json"),
+		requests.HeaderOption("accept-language", "zh-CN,zh;q=0.9"),
+	)
+	if err != nil {
+		logger.Errorf("bilibili: refreshCookieJar request error %v", err)
+	}
+	cj.Store(j)
 }
 
 func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
@@ -23,7 +47,9 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	}()
 	url := BPath(PathXSpaceAccInfo)
 	params, err := utils.ToParams(&XSpaceAccInfoRequest{
-		Mid: mid,
+		Mid:      mid,
+		Platform: "web",
+		Jsonp:    "jsonp",
 	})
 	if err != nil {
 		return nil, err
@@ -32,6 +58,13 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 		requests.ProxyOption(proxy_pool.PreferNone),
 		requests.TimeoutOption(time.Second * 15),
 		AddUAOption(),
+		requests.HeaderOption("accept", "application/json"),
+		requests.HeaderOption("accept-language", "zh-CN,zh;q=0.9"),
+		requests.HeaderOption("origin", "https://space.bilibili.com"),
+		requests.HeaderOption("referer", fmt.Sprintf("https://space.bilibili.com/%v", mid)),
+		requests.RequestAutoHostOption(),
+		requests.WithCookieJar(cj.Load()),
+		requests.NotIgnoreEmptyOption(),
 		delete412ProxyOption,
 	}
 	opts = append(opts, GetVerifyOption()...)
