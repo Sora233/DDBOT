@@ -1,6 +1,6 @@
 ## DDBOT最近更新日志
 
-- v1.0.9
+- 2022-10-02 v1.0.9
   - 通用：
     - 更新b站DynamicHistory接口
     - 修复b站XSpaceAccInfo接口-401错误
