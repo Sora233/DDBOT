@@ -101,7 +101,7 @@ func botUin() int64 {
 	return localutils.GetBot().GetUin()
 }
 
-func picUri(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
+func picUri(uri string) (e *mmsg.ImageBytesElement) {
 	logger := logger.WithField("uri", uri)
 	if strings.HasPrefix(uri, "http://") || strings.HasPrefix(uri, "https://") {
 		e = mmsg.NewImageByUrlWithoutCache(uri)
@@ -146,21 +146,22 @@ func picUri(uri string, alternative ...string) (e *mmsg.ImageBytesElement) {
 			e = mmsg.NewImageByLocal(uri)
 		}
 	}
-	if len(alternative) > 0 && len(alternative[0]) > 0 {
-		e.Alternative(alternative[0])
-	}
 	return e
 }
 
 func pic(input interface{}, alternative ...string) *mmsg.ImageBytesElement {
+	var alt string
+	if len(alternative) > 0 && len(alternative[0]) > 0 {
+		alt = alternative[0]
+	}
 	switch e := input.(type) {
 	case string:
 		if b, err := base64.StdEncoding.DecodeString(e); err == nil {
-			return mmsg.NewImage(b)
+			return mmsg.NewImage(b).Alternative(alt)
 		}
-		return picUri(e, alternative...)
+		return picUri(e).Alternative(alt)
 	case []byte:
-		return mmsg.NewImage(e)
+		return mmsg.NewImage(e).Alternative(alt)
 	default:
 		panic(fmt.Sprintf("invalid input %v", input))
 	}
@@ -280,21 +281,32 @@ func openFile(path string) []byte {
 
 type ddError struct {
 	ddErrType string
-	error
+	e         message.IMessageElement
+	err       error
 }
 
 func (d *ddError) Error() string {
-	if d.error != nil {
-		return d.error.Error()
+	if d.err != nil {
+		return d.Error()
 	}
 	return ""
 }
 
-var errFin = &ddError{ddErrType: "fin"}
+var errFin = &ddError{ddErrType: "fin", err: fmt.Errorf("fin")}
 
-func abort(msg ...string) interface{} {
-	if len(msg) > 0 {
-		panic(&ddError{ddErrType: "abort", error: fmt.Errorf(msg[0])})
+func abort(e ...interface{}) interface{} {
+	if len(e) > 0 {
+		i := e[0]
+		aerr := &ddError{ddErrType: "abort", err: fmt.Errorf("abort")}
+		switch s := i.(type) {
+		case string:
+			aerr.e = message.NewText(s)
+		case message.IMessageElement:
+			aerr.e = s
+		default:
+			panic("template: abort with invalid e")
+		}
+		panic(aerr)
 	}
 	panic(&ddError{ddErrType: "abort"})
 }

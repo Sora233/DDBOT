@@ -16,7 +16,7 @@ import (
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
+	"os"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -713,7 +713,7 @@ func (c *LspPrivateCommand) LogCommand() {
 		logCmd.Date = time.Now()
 	}
 	logName := fmt.Sprintf("%v.log", logCmd.Date.Format("2006-01-02"))
-	b, err := ioutil.ReadFile("logs/" + logName)
+	b, err := os.ReadFile("logs/" + logName)
 	if err != nil {
 		c.textSend(fmt.Sprintf("失败 - %v", err))
 		return

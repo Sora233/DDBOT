@@ -833,6 +833,12 @@ cooldown函数的后续参数为设置cooldown的关键字，不同关键字的c
 {{- end -}}
 ```
 
+abort也支持图片参数
+
+```
+{{ abort (pic "https://i2.hdslb.com/bfs/face/0bd7082c8c9a14ef460e64d5f74ee439c16c0e88.jpg" ) }}
+```
+
 
 - 结束处理当前模板`fin`
 

@@ -210,7 +210,7 @@ func (t *Template) execute(wr *mmsg.MSG, data interface{}) (err error) {
 			switch de.ddErrType {
 			case "abort":
 				wr.Clear()
-				wr.Text(de.Error())
+				wr.Append(de.e)
 			case "fin":
 			}
 			err = nil
