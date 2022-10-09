@@ -4,9 +4,9 @@ go 1.19
 
 require (
 	github.com/Jeffail/gabs/v2 v2.6.1
-	github.com/Mrs4s/MiraiGo v0.0.0-20220209092529-5d071b034c17
+	github.com/Mrs4s/MiraiGo v0.0.0-20220925082653-d3b8c5f700af
 	github.com/PuerkitoBio/goquery v1.8.0
-	github.com/Sora233/MiraiGo-Template v0.0.0-20220302025209-18af16201a7f
+	github.com/Sora233/MiraiGo-Template v0.0.0-20221009064207-d5510ce7df20
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/alecthomas/kong v0.6.1
 	github.com/davecgh/go-spew v1.1.1
@@ -37,59 +37,53 @@ require (
 	github.com/tidwall/buntdb v1.2.10
 	github.com/tidwall/gjson v1.14.3
 	go.uber.org/atomic v1.10.0
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
+	golang.org/x/sync v0.0.0-20220929204114-8fcdb60fdcc0
 )
 
 require (
-	github.com/Baozisoftware/qrcode-terminal-go v0.0.0-20170407111555-c0650d8dff0f // indirect
-	github.com/RomiChan/protobuf v0.0.0-20211223055824-048df49a8956 // indirect
+	github.com/RomiChan/protobuf v0.0.0-20220624030127-3310cba9dbc0 // indirect
+	github.com/RomiChan/syncx v0.0.0-20220404072119-d7ea0ae15a4c // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/fumiama/imgsz v0.0.2 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
-	github.com/gocq/qrcode v0.0.0-20211114040510-366b953fcd98 // indirect
-	github.com/gocq/rs v1.0.1 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/klauspost/compress v1.13.6 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/lestrrat-go/strftime v1.0.5 // indirect
-	github.com/magiconair/properties v1.8.1 // indirect
-	github.com/mattn/go-colorable v0.0.9 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/mitchellh/mapstructure v1.1.2 // indirect
+	github.com/lestrrat-go/strftime v1.0.6 // indirect
+	github.com/magiconair/properties v1.8.6 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.16 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/pelletier/go-toml v1.2.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.11 // indirect
+	github.com/pelletier/go-toml v1.9.5 // indirect
+	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
+	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e // indirect
-	github.com/spf13/afero v1.1.2 // indirect
-	github.com/spf13/jwalterweatherman v1.0.0 // indirect
-	github.com/spf13/pflag v1.0.3 // indirect
-	github.com/spf13/viper v1.7.1 // indirect
-	github.com/subosito/gotenv v1.2.0 // indirect
+	github.com/spf13/afero v1.9.2 // indirect
+	github.com/spf13/jwalterweatherman v1.1.0 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/viper v1.13.0 // indirect
+	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/tidwall/btree v1.4.4 // indirect
 	github.com/tidwall/grect v0.1.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/rtred v0.1.2 // indirect
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
+	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
-	golang.org/x/net v0.0.0-20211123203042-d83791d6bcd9 // indirect
-	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
-	golang.org/x/text v0.3.6 // indirect
-	google.golang.org/protobuf v1.27.1 // indirect
-	gopkg.in/ini.v1 v1.51.0 // indirect
-	gopkg.in/yaml.v2 v2.2.8 // indirect
+	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
+	golang.org/x/sys v0.0.0-20221006211917-84dc82d7e875 // indirect
+	golang.org/x/text v0.3.7 // indirect
+	google.golang.org/protobuf v1.28.0 // indirect
+	gopkg.in/ini.v1 v1.67.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace (
-	github.com/Mrs4s/MiraiGo => github.com/Sora233/MiraiGo v0.0.0-20220412152111-44e180be2e8c
-	github.com/willf/bitset v1.2.0 => github.com/bits-and-blooms/bitset v1.2.0
-)
+replace github.com/willf/bitset v1.2.0 => github.com/bits-and-blooms/bitset v1.2.0

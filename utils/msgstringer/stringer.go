@@ -58,7 +58,7 @@ func MsgToString(elements []message.IMessageElement) string {
 		case *message.ServiceElement:
 			res.WriteString("[Service]")
 			res.WriteString(e.Content)
-		case *message.VoiceElement, *message.PrivateVoiceElement, *message.GroupVoiceElement:
+		case *message.VoiceElement, *message.GroupVoiceElement:
 			res.WriteString("[Voice]")
 		case *mmsg.ImageBytesElement:
 			res.WriteString("[Image]")

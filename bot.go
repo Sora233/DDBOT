@@ -25,7 +25,6 @@ import (
 	_ "github.com/Sora233/DDBOT/lsp/twitcasting"
 	_ "github.com/Sora233/DDBOT/lsp/weibo"
 	_ "github.com/Sora233/DDBOT/lsp/youtube"
-	_ "github.com/Sora233/DDBOT/miraigo-logging"
 	_ "github.com/Sora233/DDBOT/msg-marker"
 )
 
