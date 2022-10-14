@@ -29,7 +29,7 @@ require (
 	github.com/nobuf/cas v0.0.0-20211227073117-1f46a292d04a
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/robfig/cron/v3 v3.0.1
-	github.com/samber/lo v1.28.2
+	github.com/samber/lo v1.33.0
 	github.com/shopspring/decimal v1.3.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cast v1.5.0
