@@ -619,7 +619,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 
 	var grantCmd struct {
 		Command string `optional:"" short:"c" xor:"1" help:"命令名"`
-		Role    string `optional:"" short:"r" xor:"1" enum:"Admin,GroupAdmin," help:"Admin / GroupAdmin"`
+		Role    string `optional:"" short:"r" xor:"1" default:"" enum:"Admin,GroupAdmin," help:"Admin / GroupAdmin"`
 		Delete  bool   `short:"d" help:"删除模式，执行删除权限操作"`
 		Target  int64  `arg:"" help:"目标qq号"`
 	}
