@@ -33,7 +33,7 @@ require (
 	github.com/shopspring/decimal v1.3.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cast v1.5.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	github.com/tidwall/buntdb v1.2.10
 	github.com/tidwall/gjson v1.14.3
 	go.uber.org/atomic v1.10.0
