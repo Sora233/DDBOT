@@ -19,7 +19,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/guonaihong/gout v0.3.1
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/huandu/xstrings v1.3.2
+	github.com/huandu/xstrings v1.3.3
 	github.com/imdario/mergo v0.3.13
 	github.com/json-iterator/go v1.1.12
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
