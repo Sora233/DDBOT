@@ -8,21 +8,26 @@ import (
 // TODO command需要重构成注册模式，然后把这个文件废弃
 
 var CommandMaps = map[string]string{
-	"RollCommand":          RollCommand,
-	"CheckinCommand":       CheckinCommand,
-	"ScoreCommand":         ScoreCommand,
-	"GrantCommand":         GrantCommand,
-	"LspCommand":           LspCommand,
-	"WatchCommand":         WatchCommand,
-	"UnwatchCommand":       UnwatchCommand,
-	"ListCommand":          ListCommand,
-	"SetuCommand":          SetuCommand,
-	"HuangtuCommand":       HuangtuCommand,
-	"EnableCommand":        EnableCommand,
-	"DisableCommand":       DisableCommand,
-	"ReverseCommand":       ReverseCommand,
-	"HelpCommand":          HelpCommand,
-	"ConfigCommand":        ConfigCommand,
+	// group commands
+	"RollCommand":    RollCommand,
+	"CheckinCommand": CheckinCommand,
+	"ScoreCommand":   ScoreCommand,
+	"GrantCommand":   GrantCommand,
+	"LspCommand":     LspCommand,
+	"WatchCommand":   WatchCommand,
+	"UnwatchCommand": UnwatchCommand,
+	"ListCommand":    ListCommand,
+	"SetuCommand":    SetuCommand,
+	"HuangtuCommand": HuangtuCommand,
+	"EnableCommand":  EnableCommand,
+	"DisableCommand": DisableCommand,
+	"ReverseCommand": ReverseCommand,
+	"HelpCommand":    HelpCommand,
+	"ConfigCommand":  ConfigCommand,
+
+	"WaifuCommand": WaifuCommand,
+
+	// private commands
 	"PingCommand":          PingCommand,
 	"LogCommand":           LogCommand,
 	"BlockCommand":         BlockCommand,
@@ -55,6 +60,8 @@ const (
 	ReverseCommand = "倒放"
 	HelpCommand    = "help"
 	ConfigCommand  = "config"
+
+	WaifuCommand = "老婆"
 )
 
 // private command
@@ -80,7 +87,7 @@ var allGroupCommand = [...]string{
 	LspCommand, WatchCommand, UnwatchCommand,
 	ListCommand, SetuCommand, HuangtuCommand,
 	EnableCommand, DisableCommand,
-	ReverseCommand, ConfigCommand,
+	ReverseCommand, ConfigCommand, WaifuCommand,
 	HelpCommand, ScoreCommand, AdminCommand,
 	SilenceCommand, NoUpdateCommand, CleanConcern,
 }
