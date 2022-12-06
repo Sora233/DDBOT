@@ -1126,15 +1126,12 @@ func (lgc *LspGroupCommand) FightCommand() {
 	var err error
 
 	// find if the message at someone
-	var atElement *message.AtElement
+	var atList []*message.AtElement
 	for _, e := range lgc.msg.Elements {
-		if atElement != nil {
-			break
-		}
 		if e.Type() == message.At {
 			switch ae := e.(type) {
 			case *message.AtElement:
-				atElement = ae
+				atList = append(atList, ae)
 			default:
 				log.Errorf("cast message element to AtElement failed")
 				lgc.textReply("打人失败 - 内部错误 可能是网线过不去")
@@ -1145,17 +1142,37 @@ func (lgc *LspGroupCommand) FightCommand() {
 
 	var victimInfo *mirai_client.GroupMemberInfo
 
-	if atElement != nil {
-		log.WithField("target", atElement.Target).
-			WithField("display", atElement.Display).
-			WithField("subtype", atElement.SubType).
-			Infof("atElement exists")
+	var msg *mmsg.MSG
+	if len(atList) != 0 {
+		msg = mmsg.NewMSG()
+		for _, ae := range atList {
+			log.WithField("target", ae.Target).
+				WithField("display", ae.Display).
+				WithField("subtype", ae.SubType).
+				Infof("atElement exists")
 
-		victimInfo, err = (*lgc.bot.Bot).GetMemberInfo(lgc.msg.GroupCode, atElement.Target)
-		if err != nil {
-			lgc.textSend("打人失败 - 内部错误")
-			log.Errorf("fight GetMemberInfo error: %v", err)
-			return
+			victimInfo, err = (*lgc.bot.Bot).GetMemberInfo(lgc.msg.GroupCode, ae.Target)
+			if err != nil {
+				lgc.textSend("打人失败 - 内部错误")
+				log.Errorf("fight GetMemberInfo error: %v", err)
+				return
+			}
+
+			var victimDisplayName string
+			if victimInfo.CardName != "" {
+				victimDisplayName = victimInfo.CardName
+			} else {
+				victimDisplayName = victimInfo.Nickname
+			}
+
+			victimMsg := lgc.templateMsg(
+				"command.group.fight.tmpl",
+				map[string]interface{}{
+					"victim_uin":         victimInfo.Uin,
+					"victim_displayname": victimDisplayName,
+				},
+			)
+			msg.Append(victimMsg.Elements()...)
 		}
 	} else {
 		// did not at, randomly pick a victim
@@ -1175,31 +1192,25 @@ func (lgc *LspGroupCommand) FightCommand() {
 		}
 
 		victimInfo = groupMembers[rand.Intn(len(groupMembers))]
-	}
 
-	log.
-		WithField("victim_uin", victimInfo.Uin).
-		WithField("victim_nickname", victimInfo.Nickname).
-		WithField("victim_cardname", victimInfo.CardName).
-		Infof("victim selected")
+		var victimDisplayName string
+		if victimInfo.CardName != "" {
+			victimDisplayName = victimInfo.CardName
+		} else {
+			victimDisplayName = victimInfo.Nickname
+		}
 
-	var victimDisplayName string
-	if victimInfo.CardName != "" {
-		victimDisplayName = victimInfo.CardName
-	} else {
-		victimDisplayName = victimInfo.Nickname
-	}
-
-	lgc.reply(
-		lgc.templateMsg(
+		msg = lgc.templateMsg(
 			"command.group.fight.tmpl",
 			map[string]interface{}{
 				"victim_uin":         victimInfo.Uin,
 				"victim_displayname": victimDisplayName,
 			},
-		),
-	)
+		)
+	}
 
+	lgc.reply(msg)
+	return
 }
 
 func (lgc *LspGroupCommand) DefaultLogger() *logrus.Entry {
