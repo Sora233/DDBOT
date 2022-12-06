@@ -27,6 +27,7 @@ var CommandMaps = map[string]string{
 
 	"WaifuCommand":      WaifuCommand,
 	"DivinationCommand": DivinationCommand,
+	"FightCommand":      FightCommand,
 
 	// private commands
 	"PingCommand":          PingCommand,
@@ -64,6 +65,7 @@ const (
 
 	WaifuCommand      = "老婆"
 	DivinationCommand = "占卜"
+	FightCommand      = "打人"
 )
 
 // private command
@@ -90,7 +92,7 @@ var allGroupCommand = [...]string{
 	ListCommand, SetuCommand, HuangtuCommand,
 	EnableCommand, DisableCommand,
 	ReverseCommand, ConfigCommand,
-	WaifuCommand, DivinationCommand,
+	WaifuCommand, DivinationCommand, FightCommand,
 	HelpCommand, ScoreCommand, AdminCommand,
 	SilenceCommand, NoUpdateCommand, CleanConcern,
 }
