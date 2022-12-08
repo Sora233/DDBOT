@@ -66,6 +66,8 @@ const (
 	WaifuCommand      = "老婆"
 	DivinationCommand = "占卜"
 	FightCommand      = "打人"
+	ChatCommandChn    = "，"
+	ChatCommandEng    = ","
 )
 
 // private command
