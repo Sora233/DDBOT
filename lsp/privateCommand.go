@@ -16,7 +16,7 @@ import (
 	"github.com/Sora233/sliceutil"
 	"github.com/alecthomas/kong"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
+	"os"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -557,8 +557,8 @@ func (c *LspPrivateCommand) GrantCommand() {
 
 	var grantCmd struct {
 		Group   int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
-		Command string `optional:"" short:"c" xor:"1" help:"命令名"`
-		Role    string `optional:"" short:"r" xor:"1" enum:"Admin,GroupAdmin," help:"Admin / GroupAdmin"`
+		Command string `required:"" short:"c" xor:"1" help:"命令名"`
+		Role    string `required:"" short:"r" xor:"1" enum:"Admin,GroupAdmin" help:"Admin / GroupAdmin"`
 		Delete  bool   `short:"d" help:"删除模式，执行删除权限操作"`
 		Target  int64  `arg:"" help:"目标qq号"`
 	}
@@ -713,7 +713,7 @@ func (c *LspPrivateCommand) LogCommand() {
 		logCmd.Date = time.Now()
 	}
 	logName := fmt.Sprintf("%v.log", logCmd.Date.Format("2006-01-02"))
-	b, err := ioutil.ReadFile("logs/" + logName)
+	b, err := os.ReadFile("logs/" + logName)
 	if err != nil {
 		c.textSend(fmt.Sprintf("失败 - %v", err))
 		return
@@ -1375,6 +1375,7 @@ func (c *LspPrivateCommand) templateMsg(name string, data map[string]interface{}
 	for k, v := range data {
 		commonData[k] = v
 	}
+	commonData["template_name"] = name
 	m, err := template.LoadAndExec(name, commonData)
 	if err != nil {
 		logger.Errorf("LoadAndExec error %v", err)

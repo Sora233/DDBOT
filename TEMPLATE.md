@@ -737,20 +737,134 @@ Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)
 请查看命令行内的详细输出
 ```
 
+*以下为v1.0.9新增*
+
+- 发送戳一戳消息（只支持群聊）
+
+戳一戳QQ号123456的用户
+
+```
+{{ poke 123456 }}
+```
+
+- 获取bot的qq号码
+
+```
+{{ bot_uin }}
+```
+
+- 设置命令冷却时间cooldown
+
+cooldown设置后，设定时间内只有第一次会返回true，后续函数将返回false。
+
+cooldown函数可以跨模板设置。
+
+cooldown函数第一个参数为时间单位，支持如下简写，数字可以自由更换：
+
+- 500ms（表示500毫秒）
+- 1s（表示1秒钟）
+- 20m（表示20分钟）
+- 1.5h（表示1.5小时）
+- 2h45m（表示2小时45分钟）
+
+**如果设置为0或者负数，将自动替换为5m（即5分钟）**
+
+cooldown函数的后续参数为设置cooldown的关键字，不同关键字的cooldown无任何关联，相同关键字的cooldown在时间范围内只能触发一次。
+
+例子：
+
+使用模板名作为关键字，实现单个模板所有人共享cooldown，不同模板独立cooldown：
+
+```
+{{- if (cooldown "10s" .template_name) -}}
+成功
+{{- else -}}
+失败，正在冷却
+{{- end -}}
+```
+
+把`.member_code`加入关键字，实现每个人对每个模板有独立cooldown：
+
+```
+{{- if (cooldown "10s" .member_code .template_name) -}}
+成功
+{{- else -}}
+失败，正在冷却
+{{- end -}}
+```
+
+使用固定关键字，实现不同模板共享cooldown：
+
+```
+{{- if (cooldown "10s" "my_cooldown_keyword_1") -}}
+成功
+{{- else -}}
+失败，正在冷却
+{{- end -}}
+```
+
+- 读取本地文件`openFile`
+
+**警告：该函数并不会对参数做安全检查，在任何情况下都绝对不要把用户输入作为函数参数。**
+
+返回值为`[]byte` ，例子：
+
+```
+{{ $data := openFile "path/myfile" }}
+```
+
+- 强制退出当前模板`abort`
+
+退出当前模板并且丢弃已经产生的内容，如果有参数，则会发送参数
+
+例子：
+
+```
+{{- abort -}}
+```
+
+```
+{{- abort "出现错误" -}}
+```
+
+```
+{{- if eq 1 5 -}}
+  {{- abort (printf "出现错误: %v居然等于%v" 1 5) -}}
+{{- end -}}
+```
+
+abort也支持图片参数
+
+```
+{{ abort (pic "https://i2.hdslb.com/bfs/face/0bd7082c8c9a14ef460e64d5f74ee439c16c0e88.jpg" ) }}
+```
+
+
+- 结束处理当前模板`fin`
+
+退出当前模板并且发送已经产生的内容，未被处理的模板代码将被跳过
+
+```
+这句话会输出
+{{- fin -}}
+这句话不会输出
+```
+
 ## 当前支持的命令模板
 
 命令通用模板变量：
 
-| 模板变量        | 类型       | 含义                    | 备注            |
-|-------------|----------|-----------------------|---------------|
-| group_code  | int      | 本次命令触发的QQ群号码（私聊则为空）   |               |
-| group_name  | string   | 本次命令触发的QQ群名称（私聊则为空）   |               |
-| member_code | int      | 本次命令触发的成员QQ号          |               |
-| member_name | string   | 本次命令触发的成员QQ名称         |               |
-| cmd         | string   | 本次触发的命令名称             | 从v1.0.7版本开始支持 |
-| args        | []string | 本次命令触发时附带的参数数组（只支持文字） | 从v1.0.7版本开始支持 |
-| at_targets  | []int64  | 本次命令触发时附带的@成员的QQ号码    | 从v1.0.8版本开始支持 |
-| full_args   | string   | 本次命令触发时附带的完整参数（只支持文字） | 从v1.0.8版本开始支持 |
+| 模板变量          | 类型       | 含义                    | 备注            |
+|---------------|----------|-----------------------|---------------|
+| group_code    | int      | 本次命令触发的QQ群号码（私聊则为空）   |               |
+| group_name    | string   | 本次命令触发的QQ群名称（私聊则为空）   |               |
+| member_code   | int      | 本次命令触发的成员QQ号          |               |
+| member_name   | string   | 本次命令触发的成员QQ名称         |               |
+| cmd           | string   | 本次触发的命令名称             | 从v1.0.7版本开始支持 |
+| args          | []string | 本次命令触发时附带的参数数组（只支持文字） | 从v1.0.7版本开始支持 |
+| at_targets    | []int64  | 本次命令触发时附带的@成员的QQ号码    | 从v1.0.8版本开始支持 |
+| full_args     | string   | 本次命令触发时附带的完整参数（只支持文字） | 从v1.0.8版本开始支持 |
+| template_name | string   | 本次命令触发时的模板名字          | 从v1.0.9版本开始支持 |
 
 - /签到
 
@@ -1052,3 +1166,48 @@ ACFUN-{{ .name }}直播结束了
 
 </details>
 
+*以下为v1.0.9新增*
+
+- bot收到群戳一戳
+
+模板名：`trigger.group.poke.tmpl`
+
+| 模板变量          | 类型     | 含义           |
+|---------------|--------|--------------|
+| group_code    | int64  | 发生戳一戳的群号码    |
+| group_name    | string | 发生戳一戳的群名称    |
+| member_code   | int64  | 发送戳一戳的用户QQ号  |
+| member_name   | string | 发送戳一戳的用户QQ昵称 |
+| receiver_code | int64  | 被戳的用户QQ号     |
+| receiver_name | string | 被戳的用户QQ昵称    |
+
+注意群内所有的戳一戳消息都会受到，如果只想处理bot被戳的消息，需要使用`receiver_code`进行判断
+
+<details>
+  <summary>默认模板</summary>
+
+*该模板默认为空，即不发送消息*
+
+```text
+```
+
+</details>
+
+- bot收到好友私聊戳一戳
+
+模板名：`trigger.private.poke.tmpl`
+
+| 模板变量        | 类型     | 含义          |
+|-------------|--------|-------------|
+| member_code | int64  | 发送戳一戳的用户QQ号 |
+| member_name | string | 发送戳一戳的QQ昵称  |
+
+<details>
+  <summary>默认模板</summary>
+
+*该模板默认为空，即不发送消息*
+
+```text
+```
+
+</details>

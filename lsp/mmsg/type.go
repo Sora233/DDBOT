@@ -9,6 +9,7 @@ const (
 	Typed
 	Cut
 	At
+	Poke
 )
 
 type CustomElement interface {

@@ -6,7 +6,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cast"
 	"go.uber.org/atomic"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 )
@@ -51,7 +51,7 @@ func ReloadCustomCommandPrefix() {
 	defer func() {
 		customCommandPrefixAtomic.Store(result)
 	}()
-	data, err := ioutil.ReadFile("application.yaml")
+	data, err := os.ReadFile("application.yaml")
 	if err != nil {
 		return
 	}

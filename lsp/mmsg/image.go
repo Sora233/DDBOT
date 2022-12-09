@@ -4,7 +4,7 @@ import (
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
-	"io/ioutil"
+	"os"
 )
 
 type ImageBytesElement struct {
@@ -44,7 +44,7 @@ func NewImageByUrlWithoutCache(url string, opts ...requests.Option) *ImageBytesE
 
 func NewImageByLocal(filepath string) *ImageBytesElement {
 	var img = NewImage(nil)
-	b, err := ioutil.ReadFile(filepath)
+	b, err := os.ReadFile(filepath)
 	if err == nil {
 		img.Buf = b
 	} else {
