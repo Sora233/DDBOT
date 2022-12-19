@@ -17,7 +17,7 @@ require (
 	github.com/gofrs/flock v0.8.1
 	github.com/golang/protobuf v1.5.2
 	github.com/google/uuid v1.3.0
-	github.com/guonaihong/gout v0.3.1
+	github.com/guonaihong/gout v0.3.3
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/huandu/xstrings v1.3.2
 	github.com/imdario/mergo v0.3.13
@@ -43,6 +43,7 @@ require (
 require (
 	github.com/Baozisoftware/qrcode-terminal-go v0.0.0-20170407111555-c0650d8dff0f // indirect
 	github.com/RomiChan/protobuf v0.0.0-20211223055824-048df49a8956 // indirect
+	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/fumiama/imgsz v0.0.2 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
