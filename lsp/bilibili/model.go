@@ -1,16 +1,18 @@
 package bilibili
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
+	"strings"
+	"sync"
+
 	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/Sora233/DDBOT/lsp/template"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/DDBOT/utils/blockCache"
+
+	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/sirupsen/logrus"
-	"strings"
-	"sync"
 )
 
 type NewsInfo struct {
@@ -95,6 +97,7 @@ type LiveInfo struct {
 	Status    LiveStatus `json:"status"`
 	LiveTitle string     `json:"live_title"`
 	Cover     string     `json:"cover"`
+	TimeStamp int64      `json:"time_stamp"`
 
 	once              sync.Once
 	msgCache          *mmsg.MSG
@@ -187,7 +190,7 @@ func NewUserInfo(mid, roomId int64, name, url string) *UserInfo {
 	}
 }
 
-func NewLiveInfo(userInfo *UserInfo, liveTitle string, cover string, status LiveStatus) *LiveInfo {
+func NewLiveInfo(userInfo *UserInfo, liveTitle string, cover string, status LiveStatus, timeStamp int64) *LiveInfo {
 	if userInfo == nil {
 		return nil
 	}
@@ -196,6 +199,7 @@ func NewLiveInfo(userInfo *UserInfo, liveTitle string, cover string, status Live
 		Status:    status,
 		LiveTitle: liveTitle,
 		Cover:     cover,
+		TimeStamp: timeStamp,
 	}
 }
 
