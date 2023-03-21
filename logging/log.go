@@ -175,35 +175,35 @@ func logDisconnect(event *client.ClientDisconnectedEvent) {
 }
 
 func registerLog(b *bot.Bot) {
-	b.OnGroupMessageRecalled(func(qqClient *client.QQClient, event *client.GroupMessageRecalledEvent) {
+	b.GroupMessageRecalledEvent.Subscribe(func(qqClient *client.QQClient, event *client.GroupMessageRecalledEvent) {
 		logGroupMessageRecallEvent(event)
 	})
 
-	b.OnGroupMessage(func(qqClient *client.QQClient, groupMessage *message.GroupMessage) {
+	b.GroupMessageEvent.Subscribe(func(qqClient *client.QQClient, groupMessage *message.GroupMessage) {
 		logGroupMessage(groupMessage)
 	})
 
-	b.OnGroupMuted(func(qqClient *client.QQClient, event *client.GroupMuteEvent) {
+	b.GroupMuteEvent.Subscribe(func(qqClient *client.QQClient, event *client.GroupMuteEvent) {
 		logGroupMuteEvent(event)
 	})
 
-	b.OnPrivateMessage(func(qqClient *client.QQClient, privateMessage *message.PrivateMessage) {
+	b.PrivateMessageEvent.Subscribe(func(qqClient *client.QQClient, privateMessage *message.PrivateMessage) {
 		logPrivateMessage(privateMessage)
 	})
 
-	b.OnFriendMessageRecalled(func(qqClient *client.QQClient, event *client.FriendMessageRecalledEvent) {
+	b.FriendMessageRecalledEvent.Subscribe(func(qqClient *client.QQClient, event *client.FriendMessageRecalledEvent) {
 		logFriendMessageRecallEvent(event)
 	})
 
-	b.OnDisconnected(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
+	b.DisconnectedEvent.Subscribe(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
 		logDisconnect(event)
 	})
 
-	b.OnSelfGroupMessage(func(qqClient *client.QQClient, groupMessage *message.GroupMessage) {
+	b.SelfGroupMessageEvent.Subscribe(func(qqClient *client.QQClient, groupMessage *message.GroupMessage) {
 		logGroupMessage(groupMessage)
 	})
 
-	b.OnSelfPrivateMessage(func(qqClient *client.QQClient, privateMessage *message.PrivateMessage) {
+	b.SelfPrivateMessageEvent.Subscribe(func(qqClient *client.QQClient, privateMessage *message.PrivateMessage) {
 		logPrivateMessage(privateMessage)
 	})
 }
