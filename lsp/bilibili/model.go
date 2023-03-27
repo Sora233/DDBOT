@@ -115,6 +115,7 @@ func (l *LiveInfo) GetMSG() *mmsg.MSG {
 	}
 	l.once.Do(func() {
 		var data = map[string]interface{}{
+			"uid":    l.Mid,
 			"title":  l.LiveTitle,
 			"name":   l.Name,
 			"url":    cleanRoomUrl(l.RoomUrl),

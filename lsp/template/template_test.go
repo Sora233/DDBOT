@@ -38,14 +38,21 @@ func TestLoadTemplate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Contains(t, msgstringer.MsgToString(m.Elements()), "DDBOT")
 
+	data := map[string]interface{}{
+		"command": map[string]string{
+			"WatchCommand":   "watch",
+			"ConfigCommand":  "config",
+			"SilenceCommand": "silence",
+		},
+	}
 	m = mmsg.NewMSG()
-	m, err = LoadAndExec("command.private.help.tmpl", nil)
+	m, err = LoadAndExec("command.private.help.tmpl", data)
 	assert.Nil(t, err)
 	assert.Contains(t, msgstringer.MsgToString(m.Elements()), "755612788")
 
 	m = mmsg.NewMSG()
 	tmpl = LoadTemplate("command.private.help.tmpl")
-	err = tmpl.ExecuteTemplate(m, "command.private.help.tmpl", nil)
+	err = tmpl.ExecuteTemplate(m, "command.private.help.tmpl", data)
 	assert.Nil(t, err)
 	assert.Contains(t, msgstringer.MsgToString(m.Elements()), "755612788")
 

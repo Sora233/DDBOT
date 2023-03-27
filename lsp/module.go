@@ -222,7 +222,7 @@ func (l *Lsp) PostInit() {
 }
 
 func (l *Lsp) Serve(bot *bot.Bot) {
-	bot.OnGroupMemberJoined(func(qqClient *client.QQClient, event *client.MemberJoinGroupEvent) {
+	bot.GroupMemberJoinEvent.Subscribe(func(qqClient *client.QQClient, event *client.MemberJoinGroupEvent) {
 		if err := localdb.Set(localdb.Key("OnGroupMemberJoined", event.Group.Code, event.Member.Uin, event.Member.JoinTime), "",
 			localdb.SetExpireOpt(time.Minute*2), localdb.SetNoOverWriteOpt()); err != nil {
 			return
@@ -237,7 +237,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			l.SendMsg(m, mmsg.NewGroupTarget(event.Group.Code))
 		}
 	})
-	bot.OnGroupMemberLeaved(func(qqClient *client.QQClient, event *client.MemberLeaveGroupEvent) {
+	bot.GroupMemberLeaveEvent.Subscribe(func(qqClient *client.QQClient, event *client.MemberLeaveGroupEvent) {
 		if err := localdb.Set(localdb.Key("OnGroupMemberLeaved", event.Group.Code, event.Member.Uin, event.Member.JoinTime), "",
 			localdb.SetExpireOpt(time.Minute*2), localdb.SetNoOverWriteOpt()); err != nil {
 			return
@@ -252,7 +252,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			l.SendMsg(m, mmsg.NewGroupTarget(event.Group.Code))
 		}
 	})
-	bot.OnGroupInvited(func(qqClient *client.QQClient, request *client.GroupInvitedRequest) {
+	bot.GroupInvitedEvent.Subscribe(func(qqClient *client.QQClient, request *client.GroupInvitedRequest) {
 		log := logger.WithFields(logrus.Fields{
 			"GroupCode":   request.GroupCode,
 			"GroupName":   request.GroupName,
@@ -320,7 +320,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 	})
 
-	bot.OnNewFriendRequest(func(qqClient *client.QQClient, request *client.NewFriendRequest) {
+	bot.NewFriendRequestEvent.Subscribe(func(qqClient *client.QQClient, request *client.NewFriendRequest) {
 		log := logger.WithFields(logrus.Fields{
 			"RequesterUin":  request.RequesterUin,
 			"RequesterNick": request.RequesterNick,
@@ -352,7 +352,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 	})
 
-	bot.OnNewFriendAdded(func(qqClient *client.QQClient, event *client.NewFriendEvent) {
+	bot.NewFriendEvent.Subscribe(func(qqClient *client.QQClient, event *client.NewFriendEvent) {
 		log := logger.WithFields(logrus.Fields{
 			"Uin":      event.Friend.Uin,
 			"Nickname": event.Friend.Nickname,
@@ -383,14 +383,13 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 	})
 
-	bot.OnJoinGroup(func(qqClient *client.QQClient, info *client.GroupInfo) {
+	bot.GroupJoinEvent.Subscribe(func(qqClient *client.QQClient, info *client.GroupInfo) {
 		l.FreshIndex()
 		log := logger.WithFields(logrus.Fields{
 			"GroupCode":   info.Code,
 			"MemberCount": info.MemberCount,
 			"GroupName":   info.Name,
 			"OwnerUin":    info.OwnerUin,
-			"Memo":        info.Memo,
 		})
 		log.Info("进入新群聊")
 
@@ -427,7 +426,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		})
 	})
 
-	bot.OnLeaveGroup(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
+	bot.GroupLeaveEvent.Subscribe(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
 		log := logger.WithField("GroupCode", event.Group.Code).
 			WithField("GroupName", event.Group.Name).
 			WithField("MemberCount", event.Group.MemberCount)
@@ -450,7 +449,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		l.RemoveAllByGroup(event.Group.Code)
 	})
 
-	bot.OnGroupNotify(func(qqClient *client.QQClient, ievent client.INotifyEvent) {
+	bot.GroupNotifyEvent.Subscribe(func(qqClient *client.QQClient, ievent client.INotifyEvent) {
 		switch event := ievent.(type) {
 		case *client.GroupPokeNotifyEvent:
 			data := map[string]interface{}{
@@ -474,7 +473,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 	})
 
-	bot.OnFriendNotify(func(qqClient *client.QQClient, ievent client.INotifyEvent) {
+	bot.FriendNotifyEvent.Subscribe(func(qqClient *client.QQClient, ievent client.INotifyEvent) {
 		switch event := ievent.(type) {
 		case *client.FriendPokeNotifyEvent:
 			if event.Receiver == localutils.GetBot().GetUin() {
@@ -492,7 +491,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 	})
 
-	bot.OnGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {
+	bot.GroupMessageEvent.Subscribe(func(qqClient *client.QQClient, msg *message.GroupMessage) {
 		if len(msg.Elements) <= 0 {
 			return
 		}
@@ -511,7 +510,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 	})
 
-	bot.OnSelfGroupMessage(func(qqClient *client.QQClient, msg *message.GroupMessage) {
+	bot.SelfGroupMessageEvent.Subscribe(func(qqClient *client.QQClient, msg *message.GroupMessage) {
 		if len(msg.Elements) <= 0 {
 			return
 		}
@@ -520,13 +519,13 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 	})
 
-	bot.OnGroupMuted(func(qqClient *client.QQClient, event *client.GroupMuteEvent) {
+	bot.GroupMuteEvent.Subscribe(func(qqClient *client.QQClient, event *client.GroupMuteEvent) {
 		if err := l.LspStateManager.Muted(event.GroupCode, event.TargetUin, event.Time); err != nil {
 			logger.Errorf("Muted failed %v", err)
 		}
 	})
 
-	bot.OnPrivateMessage(func(qqClient *client.QQClient, msg *message.PrivateMessage) {
+	bot.PrivateMessageEvent.Subscribe(func(qqClient *client.QQClient, msg *message.PrivateMessage) {
 		if !l.started.Load() {
 			return
 		}
@@ -539,7 +538,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 		go cmd.Execute()
 	})
-	bot.OnDisconnected(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
+	bot.DisconnectedEvent.Subscribe(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
 		logger.Errorf("收到OnDisconnected事件 %v", event.Message)
 		if config.GlobalConfig.GetString("bot.onDisconnected") == "exit" {
 			logger.Fatalf("onDisconnected设置为exit，bot将自动退出")
@@ -787,7 +786,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 		logger.WithFields(localutils.GroupLogFields(groupCode)).Debug("send with empty message")
 		return &message.GroupMessage{Id: -1}
 	}
-	res = bot.Instance.SendGroupMessage(groupCode, msg, cfg.GetFramMessage())
+	res = bot.Instance.SendGroupMessage(groupCode, msg)
 	if res == nil || res.Id == -1 {
 		if msg.Count(func(e message.IMessageElement) bool {
 			return e.Type() == message.At && e.(*message.AtElement).Target == 0

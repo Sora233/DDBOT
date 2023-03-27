@@ -41,12 +41,12 @@ func (m *marker) Serve(bot *bot.Bot) {
 		return
 	}
 	logger.Debug("自动已读已开启")
-	bot.OnGroupMessage(func(client *client.QQClient, message *message.GroupMessage) {
+	bot.GroupMessageEvent.Subscribe(func(client *client.QQClient, message *message.GroupMessage) {
 		if message.Sender.Uin != client.Uin {
 			client.MarkGroupMessageReaded(message.GroupCode, int64(message.Id))
 		}
 	})
-	bot.OnPrivateMessage(func(qqClient *client.QQClient, privateMessage *message.PrivateMessage) {
+	bot.PrivateMessageEvent.Subscribe(func(qqClient *client.QQClient, privateMessage *message.PrivateMessage) {
 		if privateMessage.Sender.Uin != qqClient.Uin {
 			qqClient.MarkPrivateMessageReaded(privateMessage.Sender.Uin, int64(privateMessage.Time))
 		}

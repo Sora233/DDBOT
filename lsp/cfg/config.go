@@ -118,10 +118,6 @@ func GetCustomPrivateCommand() []string {
 	return config.GlobalConfig.GetStringSlice("autoreply.private.command")
 }
 
-func GetFramMessage() bool {
-	return config.GlobalConfig.GetBool("bot.framMessage")
-}
-
 func GetBilibiliMinFollowerCap() int {
 	return config.GlobalConfig.GetInt("bilibili.minFollowerCap")
 }

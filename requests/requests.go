@@ -6,7 +6,7 @@ import (
 	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/guonaihong/gout"
 	"github.com/guonaihong/gout/dataflow"
-	middleware "github.com/guonaihong/gout/interface"
+	"github.com/guonaihong/gout/middler"
 	"io"
 	"net/http"
 	"strings"
@@ -27,7 +27,7 @@ type option struct {
 	Retry               int
 	ProxyCallbackOption func(out interface{}, proxy string)
 	CookieJar           http.CookieJar
-	ResponseMiddleware  []middleware.ResponseMiddler
+	ResponseMiddleware  []middler.ResponseMiddler
 	AutoHeaderHost      bool
 	NotIgnoreEmpty      bool
 }
@@ -162,7 +162,7 @@ func WithCookieJar(jar http.CookieJar) Option {
 	}
 }
 
-func WithResponseMiddleware(middler middleware.ResponseMiddler) Option {
+func WithResponseMiddleware(middler middler.ResponseMiddler) Option {
 	return func(o *option) {
 		o.ResponseMiddleware = append(o.ResponseMiddleware, middler)
 	}
@@ -172,7 +172,7 @@ func GetResponseCookieOption(cookies *[]*http.Cookie) Option {
 	if cookies == nil {
 		return empty
 	}
-	return WithResponseMiddleware(middleware.WithResponseMiddlerFunc(
+	return WithResponseMiddleware(middler.WithResponseMiddlerFunc(
 		func(response *http.Response) error {
 			*cookies = response.Cookies()
 			return nil

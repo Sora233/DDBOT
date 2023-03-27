@@ -14,3 +14,4 @@ DDBOT
 /session.token
 /dist/
 /template
+/version*.json
