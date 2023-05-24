@@ -231,18 +231,28 @@ func (m *MSG) ToMessage(target Target) []*message.SendingMessage {
 	}
 	cleanText := func(m *message.SendingMessage) {
 		var lastText *message.TextElement
-		for _, e := range m.Elements {
+		lastIdx := -1
+		for idx, e := range m.Elements {
 			if t, ok := e.(*message.TextElement); ok {
 				lastText = t
+				lastIdx = idx
 			}
 		}
 		if lastText != nil {
 			lastText.Content = strings.TrimRightFunc(lastText.Content, unicode.IsSpace)
 		}
+		if lastText.Content == "" {
+			m.Elements = lo.Filter(m.Elements, func(_ message.IMessageElement, index int) bool {
+				return index != lastIdx
+			})
+		}
 	}
 	if len(result) > 0 {
 		cleanText(result[len(result)-1])
 	}
+	result = lo.Filter(result, func(item *message.SendingMessage, _ int) bool {
+		return len(item.Elements) > 0
+	})
 	return result
 }
 
