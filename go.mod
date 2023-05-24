@@ -4,14 +4,13 @@ go 1.20
 
 require (
 	github.com/Jeffail/gabs/v2 v2.7.0
-	github.com/Mrs4s/MiraiGo v0.0.0-20230319092203-62d60f132203
+	github.com/Mrs4s/MiraiGo v0.0.0-20230401072048-f8d9841755b5
 	github.com/PuerkitoBio/goquery v1.8.1
-	github.com/Sora233/MiraiGo-Template v0.0.0-20230524142346-470ab79ec54e
+	github.com/Sora233/MiraiGo-Template v0.0.0-20230524171658-56e7d83ca8e4
 	github.com/Sora233/sliceutil v0.0.0-20210120043858-459badd8d882
 	github.com/alecthomas/kong v0.7.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dimchansky/utfbom v1.1.1
-	github.com/eddycjy/fake-useragent v0.2.0
 	github.com/ericpauley/go-quantize v0.0.0-20200331213906-ae555eb2afa4
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/ghodss/yaml v1.0.0
@@ -42,7 +41,6 @@ require (
 )
 
 require (
-	github.com/EDDYCJY/fake-useragent v0.2.0 // indirect
 	github.com/RomiChan/protobuf v0.1.1-0.20230204044148-2ed269a2e54d // indirect
 	github.com/RomiChan/syncx v0.0.0-20221202055724-5f842c53020e // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
