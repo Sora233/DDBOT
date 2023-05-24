@@ -15,6 +15,8 @@ import (
 
 var logger = utils.GetModuleLogger("request")
 
+var defaultUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
+
 type option struct {
 	Timeout            time.Duration
 	InsecureSkipVerify bool
@@ -93,7 +95,11 @@ func AddUAOption(ua ...string) Option {
 	if len(ua) > 0 && len(ua[0]) > 0 {
 		return HeaderOption("user-agent", ua[0])
 	}
-	return HeaderOption("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36")
+	return HeaderOption("user-agent", defaultUA)
+}
+
+func AddRandomUAOption(entry FakeUAEntry) Option {
+	return HeaderOption("user-agent", RandomUA(entry))
 }
 
 func ProxyOption(prefer proxy_pool.Prefer) Option {

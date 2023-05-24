@@ -55,6 +55,7 @@ func FeedList(opt ...FeedOpt) (*FeedListResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	signWbi(params)
 	var opts []requests.Option
 	opts = append(opts,
 		requests.ProxyOption(proxy_pool.PreferNone),

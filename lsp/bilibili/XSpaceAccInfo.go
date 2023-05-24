@@ -12,14 +12,15 @@ import (
 )
 
 const (
-	PathXSpaceAccInfo = "/x/space/acc/info"
+	PathXSpaceAccInfo = "/x/space/wbi/acc/info"
 )
 
 type XSpaceAccInfoRequest struct {
-	Mid      int64  `json:"mid"`
-	Platform string `json:"platform"`
-	Jsonp    string `json:"jsonp"`
-	Token    string `json:"token"`
+	Mid         int64  `json:"mid"`
+	Platform    string `json:"platform"`
+	Jsonp       string `json:"jsonp"`
+	Token       string `json:"token"`
+	WebLocation string `json:"web_location"`
 }
 
 var cj atomic.Pointer[cookiejar.Jar]
@@ -47,13 +48,15 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 	}()
 	url := BPath(PathXSpaceAccInfo)
 	params, err := utils.ToParams(&XSpaceAccInfoRequest{
-		Mid:      mid,
-		Platform: "web",
-		Jsonp:    "jsonp",
+		Mid:         mid,
+		Platform:    "web",
+		Jsonp:       "jsonp",
+		WebLocation: "1550101",
 	})
 	if err != nil {
 		return nil, err
 	}
+	signWbi(params)
 	var opts = []requests.Option{
 		requests.ProxyOption(proxy_pool.PreferNone),
 		requests.TimeoutOption(time.Second * 15),

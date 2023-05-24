@@ -448,8 +448,8 @@ message WebInterfaceNavResponse {
       string text = 1;
     }
     message WbiImg {
-      string ImgUrl = 1;
-      string SubUrl = 2;
+      string img_url = 1;
+      string sub_url = 2;
     }
     bool isLogin = 1;
     int64 mid = 2;

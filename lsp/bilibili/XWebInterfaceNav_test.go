@@ -6,6 +6,8 @@ import (
 )
 
 func TestXWebInterfaceNav(t *testing.T) {
-	_, err := XWebInterfaceNav()
-	assert.NotNil(t, err)
+	resp, err := XWebInterfaceNav(false)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp.GetData().GetWbiImg().GetImgUrl())
+	assert.NotNil(t, resp.GetData().GetWbiImg().GetSubUrl())
 }
