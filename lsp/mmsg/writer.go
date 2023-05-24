@@ -240,11 +240,11 @@ func (m *MSG) ToMessage(target Target) []*message.SendingMessage {
 		}
 		if lastText != nil {
 			lastText.Content = strings.TrimRightFunc(lastText.Content, unicode.IsSpace)
-		}
-		if lastText.Content == "" {
-			m.Elements = lo.Filter(m.Elements, func(_ message.IMessageElement, index int) bool {
-				return index != lastIdx
-			})
+			if lastText.Content == "" {
+				m.Elements = lo.Filter(m.Elements, func(_ message.IMessageElement, index int) bool {
+					return index != lastIdx
+				})
+			}
 		}
 	}
 	if len(result) > 0 {
