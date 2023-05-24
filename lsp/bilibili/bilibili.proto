@@ -1,7 +1,7 @@
 syntax = "proto3";
 package bilibili;
 
-option go_package = "bilibili";
+option go_package = "lsp/bilibili";
 
 enum LiveStatus {
   NoLiving = 0;
@@ -447,11 +447,16 @@ message WebInterfaceNavResponse {
     message VipLabel {
       string text = 1;
     }
+    message WbiImg {
+      string ImgUrl = 1;
+      string SubUrl = 2;
+    }
     bool isLogin = 1;
     int64 mid = 2;
     string uname = 3;
     LevelInfo level_info = 4;
     VipLabel vip_label = 5;
+    WbiImg wbi_img = 6;
   }
   Data data = 4;
 }

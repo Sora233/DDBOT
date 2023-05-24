@@ -4,6 +4,7 @@ COMMIT_ID := $(shell git rev-parse HEAD)
 LDFLAGS = -X "github.com/Sora233/DDBOT/lsp.BuildTime='"$(BUILD_TIME)"'" -X "github.com/Sora233/DDBOT/lsp.CommitId='"$(COMMIT_ID)"'"
 
 SRC := $(shell find . -type f -name '*.go') lsp/template/default/*
+PROTO := $(shell find . -type f -name '*.proto')
 COV := .coverage.out
 TARGET := DDBOT
 
@@ -15,6 +16,9 @@ $(TARGET): $(SRC) go.mod go.sum
 	go build -ldflags '$(LDFLAGS)' -o $(TARGET) github.com/Sora233/DDBOT/cmd
 
 build: $(TARGET)
+
+proto: $(PROTO)
+	protoc --go_out=. $(PROTO)
 
 test: $(COV)
 

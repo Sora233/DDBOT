@@ -1,7 +1,7 @@
 syntax = "proto3";
 package acfun;
 
-option go_package = "acfun";
+option go_package = "lsp/acfun";
 
 message ApiChannelListResponse {
   message ChannelListData {

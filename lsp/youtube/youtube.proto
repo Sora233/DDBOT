@@ -1,7 +1,7 @@
 syntax = "proto3";
 package youtube;
 
-option go_package = "youtube";
+option go_package = "lsp/youtube";
 
 enum VideoStatus {
     Waiting = 0;
