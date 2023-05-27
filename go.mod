@@ -19,7 +19,7 @@ require (
 	github.com/guonaihong/gout v0.3.7
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/huandu/xstrings v1.4.0
-	github.com/imdario/mergo v0.3.14
+	github.com/imdario/mergo v0.3.16
 	github.com/json-iterator/go v1.1.12
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/mitchellh/copystructure v1.2.0
