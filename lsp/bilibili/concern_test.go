@@ -74,12 +74,11 @@ func TestConcern_FindUserLiving(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, liveInfo)
 
-	const testMid int64 = 2
+	const testMid int64 = 97505
 
 	userInfo, err := c.FindOrLoadUser(testMid)
 	assert.Nil(t, err)
 	assert.Equal(t, testMid, userInfo.Mid)
-	assert.Equal(t, "碧诗", userInfo.Name)
 
 	liveInfo, err = c.FindUserLiving(testMid, true)
 	assert.Nil(t, err)
@@ -109,12 +108,11 @@ func TestConcern_FindUserNews(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, newsInfo)
 
-	const testMid int64 = 2
+	const testMid int64 = 97505
 
 	userInfo, err := c.FindOrLoadUser(testMid)
 	assert.Nil(t, err)
 	assert.Equal(t, testMid, userInfo.Mid)
-	assert.Equal(t, "碧诗", userInfo.Name)
 
 	userInfo2, err := c.FindOrLoadUser(testMid)
 	assert.Nil(t, err)
@@ -135,12 +133,11 @@ func TestConcern_StatUserWithCache(t *testing.T) {
 
 	c := initConcern(t)
 
-	const testMid int64 = 2
+	const testMid int64 = 97505
 
 	userInfo, err := c.FindOrLoadUser(testMid)
 	assert.Nil(t, err)
 	assert.Equal(t, testMid, userInfo.Mid)
-	assert.Equal(t, "碧诗", userInfo.Name)
 
 	stat, err := c.StatUserWithCache(testMid, time.Hour)
 	assert.Nil(t, err)

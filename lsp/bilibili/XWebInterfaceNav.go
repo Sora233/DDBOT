@@ -7,9 +7,9 @@ import (
 	"github.com/Sora233/DDBOT/proxy_pool"
 	"github.com/Sora233/DDBOT/requests"
 	"github.com/Sora233/DDBOT/utils"
-	"github.com/guonaihong/gout"
 	"github.com/samber/lo"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -40,30 +40,36 @@ func getWbi() (imgKey string, subKey string) {
 	subKey = getKey(wbi.SubUrl)
 	return
 }
-
-func signWbi(params gout.H) {
-	imgKey, subKey := getWbi()
-	var sb strings.Builder
-	var orig = imgKey + subKey
-	for _, r := range mixinKeyEncTab {
-		sb.WriteRune(rune(orig[r]))
+func getMixinKey(orig string) string {
+	var str strings.Builder
+	for _, v := range mixinKeyEncTab {
+		if v < len(orig) {
+			str.WriteByte(orig[v])
+		}
 	}
-	salt := sb.String()[:32]
-	params["wts"] = time.Now().Unix()
-	p := lo.MapToSlice(params, func(key string, value any) lo.Tuple2[string, any] {
-		return lo.Tuple2[string, any]{A: key, B: value}
-	})
-	sort.Slice(p, func(i, j int) bool {
-		return p[i].A < p[j].A
-	})
+	return str.String()[:32]
+}
 
-	query := strings.Join(lo.Map(p, func(item lo.Tuple2[string, any], _ int) string {
-		return fmt.Sprintf("%v=%v", item.A, item.B)
-	}), "&")
-	hash := md5.New()
-	hash.Write([]byte(query + salt))
-	wbiSign := hex.EncodeToString(hash.Sum(nil))
-	params["w_rid"] = wbiSign
+func signWbi(params map[string]string) map[string]string {
+	imgKey, subKey := getWbi()
+	mixinKey := getMixinKey(imgKey + subKey)
+	currTime := strconv.FormatInt(time.Now().Unix(), 10)
+	params["wts"] = currTime
+	// Sort keys
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	// Build URL parameters
+	var str strings.Builder
+	for _, k := range keys {
+		str.WriteString(fmt.Sprintf("%s=%s&", k, params[k]))
+	}
+	query := strings.TrimSuffix(str.String(), "&")
+	hash := md5.Sum([]byte(query + mixinKey))
+	params["w_rid"] = hex.EncodeToString(hash[:])
+	return params
 }
 
 func XWebInterfaceNav(login bool) (*WebInterfaceNavResponse, error) {

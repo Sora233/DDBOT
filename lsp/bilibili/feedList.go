@@ -48,7 +48,7 @@ func FeedList(opt ...FeedOpt) (*FeedListResponse, error) {
 	}
 
 	url := BPath(PathRelationFeedList)
-	params, err := utils.ToParams(&RelationFeedRequest{
+	params, err := utils.ToDatas(&RelationFeedRequest{
 		Page:     p["page"],
 		PageSize: p["pageSize"],
 	})

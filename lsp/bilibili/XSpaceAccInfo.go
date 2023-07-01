@@ -18,7 +18,6 @@ const (
 type XSpaceAccInfoRequest struct {
 	Mid         int64  `json:"mid"`
 	Platform    string `json:"platform"`
-	Jsonp       string `json:"jsonp"`
 	Token       string `json:"token"`
 	WebLocation string `json:"web_location"`
 }
@@ -47,10 +46,9 @@ func XSpaceAccInfo(mid int64) (*XSpaceAccInfoResponse, error) {
 		logger.WithField("FuncName", utils.FuncName()).Tracef("cost %v", ed.Sub(st))
 	}()
 	url := BPath(PathXSpaceAccInfo)
-	params, err := utils.ToParams(&XSpaceAccInfoRequest{
+	params, err := utils.ToDatas(&XSpaceAccInfoRequest{
 		Mid:         mid,
 		Platform:    "web",
-		Jsonp:       "jsonp",
 		WebLocation: "1550101",
 	})
 	if err != nil {

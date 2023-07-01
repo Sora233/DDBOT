@@ -249,7 +249,7 @@ func Do(f func(*gout.Client) *dataflow.DataFlow, out interface{}, options ...Opt
 	return nil
 }
 
-func Get(url string, params gout.H, out interface{}, options ...Option) error {
+func Get(url string, params interface{}, out interface{}, options ...Option) error {
 	return Do(func(gcli *gout.Client) *dataflow.DataFlow {
 		return gcli.GET(url).SetQuery(params)
 	}, out, options...)
