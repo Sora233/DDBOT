@@ -1,5 +1,12 @@
 ## DDBOT最近更新日志
 
+- 2023-07-01 v1.1.2
+  - 更新登录代码 
+```
+# 本版本需要配置签名服务器，详情请看https://github.com/Mrs4s/go-cqhttp/issues/2242
+# 请在application.yaml文件中添加配置:
+sign-server: "你的签名服务器"
+```
 - 2023-05-27 v1.1.1
   - 更新登录代码
   - 更新b站接口签名

@@ -128,6 +128,7 @@ func Run() {
 var exampleConfig = func() string {
 	s := `
 # 注意，填写时请把井号及后面的内容删除，并且冒号后需要加一个空格
+sign-server: ""
 bot:
   account:  # 你bot的qq号，不填则使用扫码登陆
   password: # 你bot的qq密码
