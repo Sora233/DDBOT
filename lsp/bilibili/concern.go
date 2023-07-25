@@ -2,6 +2,10 @@ package bilibili
 
 import (
 	"fmt"
+	"strings"
+	"sync"
+	"time"
+
 	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/Sora233/DDBOT/lsp/cfg"
 	"github.com/Sora233/DDBOT/lsp/concern"
@@ -9,13 +13,11 @@ import (
 	"github.com/Sora233/DDBOT/lsp/mmsg"
 	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/Sora233/DDBOT/utils/expirable"
+
 	"github.com/Sora233/MiraiGo-Template/config"
 	"github.com/Sora233/MiraiGo-Template/utils"
 	"github.com/tidwall/buntdb"
 	"go.uber.org/atomic"
-	"strings"
-	"sync"
-	"time"
 )
 
 var logger = utils.GetModuleLogger("bilibili-concern")
@@ -337,6 +339,7 @@ func (c *Concern) FindUser(mid int64, load bool) (*UserInfo, error) {
 			resp.GetData().GetLiveRoom().GetTitle(),
 			resp.GetData().GetLiveRoom().GetCover(),
 			resp.GetData().GetLiveRoom().GetLiveStatus(),
+			time.Now().Unix(),
 		)
 		// AddLiveInfo 会顺便添加UserInfo
 		err = c.StateManager.AddLiveInfo(newLiveInfo)
