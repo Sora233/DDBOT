@@ -269,6 +269,8 @@ customCommandPrefix:
   命令1: "Q"
   命令2: ""
 
+timezone: Asia/Shanghai # 使用TZ database name自定义通知消息时间戳的时区，默认为部署服务器的本地时区
+
 logLevel: info # 日志等级
 ```
 
