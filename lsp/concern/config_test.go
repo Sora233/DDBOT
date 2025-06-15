@@ -1,12 +1,14 @@
 package concern
 
 import (
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"testing"
+
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"testing"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
 )
 
 func TestGroupConcernAtConfig_CheckAtAll(t *testing.T) {
@@ -287,7 +289,7 @@ func (t *testInfo) Logger() *logrus.Entry {
 	return logrus.WithField("Site", t.Site())
 }
 
-func (t *testInfo) GetGroupCode() int64 {
+func (t *testInfo) GetGroupCode() uint32 {
 	return t.groupCode
 }
 

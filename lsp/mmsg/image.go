@@ -1,10 +1,12 @@
 package mmsg
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/requests"
-	"github.com/Sora233/DDBOT/utils"
 	"os"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+
+	"github.com/Sora233/DDBOT/v2/requests"
+	"github.com/Sora233/DDBOT/v2/utils"
 )
 
 type ImageBytesElement struct {

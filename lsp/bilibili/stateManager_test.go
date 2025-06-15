@@ -2,13 +2,15 @@ package bilibili
 
 import (
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/internal/test"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/stretchr/testify/assert"
-	"github.com/tidwall/buntdb"
 	"testing"
 	"time"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/buntdb"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
 )
 
 func initStateManager(t *testing.T) *StateManager {

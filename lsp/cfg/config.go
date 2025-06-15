@@ -2,13 +2,15 @@ package cfg
 
 import (
 	"errors"
-	"github.com/Sora233/MiraiGo-Template/config"
-	"github.com/ghodss/yaml"
-	"github.com/spf13/cast"
-	"go.uber.org/atomic"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/ghodss/yaml"
+	"github.com/spf13/cast"
+	"go.uber.org/atomic"
+
+	"github.com/Sora233/MiraiGo-Template/config"
 )
 
 func MatchCmdWithPrefix(cmd string) (prefix string, command string, err error) {
@@ -92,8 +94,8 @@ type CronJob struct {
 	Cron         string `yaml:"cron"`
 	TemplateName string `yaml:"templateName"`
 	Target       struct {
-		Group   []int64 `yaml:"group"`
-		Private []int64 `yaml:"private"`
+		Group   []uint32 `yaml:"group"`
+		Private []uint32 `yaml:"private"`
 	} `yaml:"target"`
 }
 

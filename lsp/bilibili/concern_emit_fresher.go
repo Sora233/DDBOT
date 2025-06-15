@@ -1,9 +1,10 @@
 package bilibili
 
 import (
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
 	"time"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
 )
 
 func (c *Concern) emitQueueFresher() concern.FreshFunc {

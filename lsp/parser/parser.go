@@ -1,20 +1,23 @@
 package parser
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/lsp/cfg"
-	"github.com/Sora233/DDBOT/utils"
 	"strings"
 	"sync"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/samber/lo"
+
+	"github.com/Sora233/DDBOT/v2/lsp/cfg"
+	"github.com/Sora233/DDBOT/v2/utils"
 )
 
 type Parser struct {
 	Command string
 	Args    []string
 	// AtTarget 记录消息开头的@
-	AtTarget int64
+	AtTarget uint32
 	// AtArgs 记录命令后的@
-	AtArgs []int64
+	AtArgs []uint32
 
 	commandName   string
 	commandPrefix string
@@ -34,13 +37,13 @@ func (p *Parser) Parse(elems []message.IMessageElement) {
 			search = elems[:]
 		}
 		if len(search) > 0 && search[0].Type() == message.At {
-			p.AtTarget = search[0].(*message.AtElement).Target
+			p.AtTarget = search[0].(*message.AtElement).TargetUin
 			search = search[1:]
 		}
 		var afterCmd = false
 		for _, e := range search {
 			if afterCmd && e.Type() == message.At {
-				p.AtArgs = append(p.AtArgs, e.(*message.AtElement).Target)
+				p.AtArgs = append(p.AtArgs, e.(*message.AtElement).TargetUin)
 			}
 			if !afterCmd && e.Type() != message.At {
 				afterCmd = true
@@ -48,9 +51,7 @@ func (p *Parser) Parse(elems []message.IMessageElement) {
 		}
 	}
 	var buf strings.Builder
-	textElems := utils.MessageFilter(elems, func(element message.IMessageElement) bool {
-		return element.Type() == message.Text
-	})
+	textElems := lo.Filter(elems, func(element message.IMessageElement, _ int) bool { return element.Type() == message.Text })
 	for _, element := range textElems {
 		if te, ok := element.(*message.TextElement); ok {
 			text := strings.TrimSpace(strings.Replace(te.Content, " ", " ", -1))
@@ -79,7 +80,7 @@ func (p *Parser) GetArgs() []string {
 	return p.Args
 }
 
-func (p *Parser) GetAtArgs() []int64 {
+func (p *Parser) GetAtArgs() []uint32 {
 	return p.AtArgs
 }
 

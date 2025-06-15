@@ -2,15 +2,17 @@ package template
 
 import (
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/utils/msgstringer"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/DDBOT/v2/utils/msgstringer"
 )
 
 func init() {

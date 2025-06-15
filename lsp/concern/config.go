@@ -1,15 +1,16 @@
 package concern
 
 import (
-	"github.com/Sora233/DDBOT/utils/msgstringer"
 	"strings"
+
+	"github.com/Sora233/DDBOT/v2/utils/msgstringer"
 )
 
 // IConfig 定义了Config的通用接口
 // TODO 需要一种支持自定义配置的方法，要怎么样做呢
 type IConfig interface {
 	Validate() error
-	GetGroupConcernAt() *GroupConcernAtConfig
+	GetGroupConcernAt() *GroupConcernAtConfig[uint32]
 	GetGroupConcernNotify() *GroupConcernNotifyConfig
 	GetGroupConcernFilter() *GroupConcernFilterConfig
 	ICallback
@@ -20,9 +21,9 @@ type IConfig interface {
 // 如果 Notify 有实现 NotifyLiveExt，则会使用默认逻辑
 type GroupConcernConfig struct {
 	DefaultCallback
-	GroupConcernAt     GroupConcernAtConfig     `json:"group_concern_at"`
-	GroupConcernNotify GroupConcernNotifyConfig `json:"group_concern_notify"`
-	GroupConcernFilter GroupConcernFilterConfig `json:"group_concern_filter"`
+	GroupConcernAt     GroupConcernAtConfig[uint32] `json:"group_concern_at"`
+	GroupConcernNotify GroupConcernNotifyConfig     `json:"group_concern_notify"`
+	GroupConcernFilter GroupConcernFilterConfig     `json:"group_concern_filter"`
 }
 
 // Validate 可以在此自定义config校验，每次对config修改后会在同一个事务中调用，如果返回non-nil，则改动会回滚，此次操作失败
@@ -118,7 +119,7 @@ func (g *GroupConcernConfig) ShouldSendHook(notify Notify) *HookResult {
 }
 
 // GetGroupConcernAt 返回 GroupConcernAtConfig，总是返回 non-nil
-func (g *GroupConcernConfig) GetGroupConcernAt() *GroupConcernAtConfig {
+func (g *GroupConcernConfig) GetGroupConcernAt() *GroupConcernAtConfig[uint32] {
 	return &g.GroupConcernAt
 }
 

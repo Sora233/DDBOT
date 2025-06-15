@@ -1,16 +1,18 @@
 package bilibili
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/lsp/template"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/DDBOT/utils/blockCache"
-	"github.com/Sora233/MiraiGo-Template/config"
-	"github.com/sirupsen/logrus"
 	"strings"
 	"sync"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/sirupsen/logrus"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/DDBOT/v2/lsp/template"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
+	"github.com/Sora233/DDBOT/v2/utils/blockCache"
+	"github.com/Sora233/MiraiGo-Template/config"
 )
 
 type NewsInfo struct {
@@ -39,7 +41,7 @@ func (n *NewsInfo) Logger() *logrus.Entry {
 }
 
 type ConcernNewsNotify struct {
-	GroupCode int64 `json:"group_code"`
+	GroupCode uint32 `json:"group_code"`
 	*UserInfo
 	Card *CacheCard
 
@@ -58,7 +60,7 @@ func (notify *ConcernNewsNotify) Living() bool {
 }
 
 type ConcernLiveNotify struct {
-	GroupCode int64 `json:"group_code"`
+	GroupCode uint32 `json:"group_code"`
 	*LiveInfo
 }
 
@@ -226,7 +228,7 @@ func NewNewsInfoWithDetail(userInfo *UserInfo, cards []*Card) *NewsInfo {
 	}
 }
 
-func NewConcernNewsNotify(groupCode int64, newsInfo *NewsInfo, c *Concern) []*ConcernNewsNotify {
+func NewConcernNewsNotify(groupCode uint32, newsInfo *NewsInfo, c *Concern) []*ConcernNewsNotify {
 	if newsInfo == nil {
 		return nil
 	}
@@ -242,7 +244,7 @@ func NewConcernNewsNotify(groupCode int64, newsInfo *NewsInfo, c *Concern) []*Co
 	return result
 }
 
-func NewConcernLiveNotify(groupCode int64, liveInfo *LiveInfo) *ConcernLiveNotify {
+func NewConcernLiveNotify(groupCode uint32, liveInfo *LiveInfo) *ConcernLiveNotify {
 	if liveInfo == nil {
 		return nil
 	}
@@ -265,7 +267,7 @@ func (notify *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
 		m = mmsg.NewMSG()
 		msg, _ := notify.concern.GetNotifyMsg(notify.GroupCode, notify.compactKey)
 		if msg != nil {
-			m.Append(message.NewReply(msg))
+			m.Append(message.NewGroupReply(msg))
 		}
 		log.WithField("compact_key", notify.compactKey).Debug("compact notify")
 		switch notify.Card.GetDesc().GetType() {
@@ -301,7 +303,7 @@ func (notify *ConcernNewsNotify) Site() string {
 	return Site
 }
 
-func (notify *ConcernNewsNotify) GetGroupCode() int64 {
+func (notify *ConcernNewsNotify) GetGroupCode() uint32 {
 	return notify.GroupCode
 }
 func (notify *ConcernNewsNotify) GetUid() interface{} {
@@ -335,7 +337,7 @@ func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
 		WithFields(localutils.GroupLogFields(notify.GroupCode))
 }
 
-func (notify *ConcernLiveNotify) GetGroupCode() int64 {
+func (notify *ConcernLiveNotify) GetGroupCode() uint32 {
 	return notify.GroupCode
 }
 

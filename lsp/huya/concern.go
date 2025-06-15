@@ -2,14 +2,16 @@ package huya
 
 import (
 	"fmt"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/MiraiGo-Template/utils"
+
 	jsoniter "github.com/json-iterator/go"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
+	"github.com/Sora233/MiraiGo-Template/utils"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -54,7 +56,7 @@ func (c *Concern) Start() error {
 	return c.StateManager.Start()
 }
 
-func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode uint32, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	var err error
 	log := logger.WithFields(localutils.GroupLogFields(groupCode)).WithField("id", id)
 
@@ -75,7 +77,7 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype c
 	return liveInfo, nil
 }
 
-func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode uint32, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	id := _id.(string)
 	identity, _ := c.Get(id)
 	_, err := c.StateManager.RemoveGroupConcern(groupCode, id, ctype)
@@ -125,7 +127,7 @@ func (c *Concern) FindOrLoadRoom(roomId string) (*LiveInfo, error) {
 }
 
 func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
-	return func(groupCode int64, event concern.Event) []concern.Notify {
+	return func(groupCode uint32, event concern.Event) []concern.Notify {
 		switch info := event.(type) {
 		case *LiveInfo:
 			if info.Living() {

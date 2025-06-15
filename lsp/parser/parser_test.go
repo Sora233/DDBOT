@@ -1,11 +1,13 @@
 package parser
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/Sora233/DDBOT/utils"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	"github.com/Sora233/DDBOT/v2/utils"
 )
 
 func TestNewParser(t *testing.T) {
@@ -46,7 +48,7 @@ func TestParser_Parse2(t *testing.T) {
 		[]message.IMessageElement{
 			message.NewText(" "),
 			message.NewText("/a -b 1 -c 2"),
-			&message.GroupImageElement{},
+			&message.ImageElement{},
 			message.NewText("-d 3"),
 			message.NewAt(test.UID1),
 			message.NewAt(test.UID2),
@@ -56,5 +58,5 @@ func TestParser_Parse2(t *testing.T) {
 	assert.EqualValues(t, "/a", p.GetCmd())
 	assert.EqualValues(t, []string{"-b", "1", "-c", "2", "-d", "3", "-e", "4"}, p.GetArgs())
 	assert.EqualValues(t, []string{"/a", "-b", "1", "-c", "2", "-d", "3", "-e", "4"}, p.GetCmdArgs())
-	assert.EqualValues(t, []int64{test.UID1, test.UID2}, p.GetAtArgs())
+	assert.EqualValues(t, []uint32{test.UID1, test.UID2}, p.GetAtArgs())
 }

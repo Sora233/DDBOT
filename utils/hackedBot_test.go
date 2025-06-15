@@ -1,10 +1,12 @@
 package utils
 
 import (
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/LagrangeDev/LagrangeGo/client/entity"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
 )
 
 func TestGetBot(t *testing.T) {
@@ -24,10 +26,10 @@ func TestGetBot(t *testing.T) {
 	bot.TESTAddGroup(123)
 	bot.TESTAddGroup(test.G2)
 	bot.TESTAddGroup(test.G1)
-	bot.TESTAddMember(test.G1, test.UID1, client.Administrator)
-	bot.TESTAddMember(test.G1, test.UID2, client.Administrator)
-	bot.TESTAddMember(test.G1, test.UID1, client.Administrator)
-	bot.TESTAddMember(test.G2, test.UID2, client.Administrator)
+	bot.TESTAddMember(test.G1, test.UID1, entity.Admin)
+	bot.TESTAddMember(test.G1, test.UID2, entity.Admin)
+	bot.TESTAddMember(test.G1, test.UID1, entity.Admin)
+	bot.TESTAddMember(test.G2, test.UID2, entity.Admin)
 	assert.Len(t, bot.GetGroupList(), 3)
 	bot.TESTReset()
 	assert.Empty(t, bot.GetGroupList())

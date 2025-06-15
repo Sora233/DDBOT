@@ -1,6 +1,6 @@
 package lsp
 
-import "github.com/Sora233/DDBOT/lsp/version"
+import "github.com/Sora233/DDBOT/v2/lsp/version"
 
 const LspVersionName = "lsp"
 const LspSupportVersion int64 = 1

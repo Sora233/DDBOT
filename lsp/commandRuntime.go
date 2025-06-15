@@ -2,17 +2,19 @@ package lsp
 
 import (
 	"fmt"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/parser"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/alecthomas/kong"
 	"io"
 	"strings"
+
+	"github.com/alecthomas/kong"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/parser"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
 )
 
 type Runtime struct {
-	bot *localutils.HackedBot
+	bot *localutils.HackedBot[uint32, uint32]
 	l   *Lsp
 	*parser.Parser
 

@@ -1,13 +1,15 @@
 package youtube
 
 import (
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/DDBOT/requests"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/sirupsen/logrus"
 	"sync"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/DDBOT/v2/proxy_pool"
+	"github.com/Sora233/DDBOT/v2/requests"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
 )
 
 type UserInfo struct {
@@ -156,10 +158,10 @@ func NewInfo(vinfo []*VideoInfo) *Info {
 
 type ConcernNotify struct {
 	*VideoInfo
-	GroupCode int64 `json:"group_code"`
+	GroupCode uint32 `json:"group_code"`
 }
 
-func (notify *ConcernNotify) GetGroupCode() int64 {
+func (notify *ConcernNotify) GetGroupCode() uint32 {
 	return notify.GroupCode
 }
 
@@ -174,7 +176,7 @@ func (notify *ConcernNotify) Logger() *logrus.Entry {
 	return notify.VideoInfo.Logger().WithFields(localutils.GroupLogFields(notify.GroupCode))
 }
 
-func NewConcernNotify(groupCode int64, info *VideoInfo) *ConcernNotify {
+func NewConcernNotify(groupCode uint32, info *VideoInfo) *ConcernNotify {
 	if info == nil {
 		return nil
 	}

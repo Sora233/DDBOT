@@ -1,18 +1,22 @@
 package logging
 
 import (
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/message"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/DDBOT/utils/msgstringer"
-	"github.com/Sora233/MiraiGo-Template/config"
-	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	"github.com/rifflock/lfshook"
-	"github.com/sirupsen/logrus"
 	"io"
 	"path"
 	"sync"
 	"time"
+
+	"github.com/LagrangeDev/LagrangeGo/client"
+	"github.com/LagrangeDev/LagrangeGo/client/event"
+	"github.com/LagrangeDev/LagrangeGo/message"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/rifflock/lfshook"
+	"github.com/samber/lo"
+	"github.com/sirupsen/logrus"
+
+	localutils "github.com/Sora233/DDBOT/v2/utils"
+	"github.com/Sora233/DDBOT/v2/utils/msgstringer"
+	"github.com/Sora233/MiraiGo-Template/config"
 
 	"github.com/Sora233/MiraiGo-Template/bot"
 )
@@ -94,72 +98,81 @@ func (m *logging) Stop(b *bot.Bot, wg *sync.WaitGroup) {
 }
 
 func logGroupMessage(msg *message.GroupMessage) {
-	logger.WithFields(localutils.GroupLogFields(msg.GroupCode)).
-		WithFields(logrus.Fields{
-			"From":       "GroupMessage",
-			"MessageID":  msg.Id,
-			"MessageIID": msg.InternalId,
-			"SenderID":   msg.Sender.Uin,
-			"SenderName": msg.Sender.DisplayName(),
-		}).Info(msgstringer.MsgToString(msg.Elements))
+	logger.
+		WithField("from", "GroupMessage").
+		WithField("MessageID", msg.ID).
+		WithField("MessageIID", msg.InternalID).
+		WithField("GroupCode", msg.GroupUin).
+		WithField("SenderUin", msg.Sender.Uin).
+		WithField("SenderName", lo.CoalesceOrEmpty(msg.Sender.CardName, msg.Sender.Nickname)).
+		Info(msg.ToString())
 }
 
 func logPrivateMessage(msg *message.PrivateMessage) {
 	logger.WithFields(logrus.Fields{
 		"From":       "PrivateMessage",
-		"MessageID":  msg.Id,
-		"MessageIID": msg.InternalId,
+		"MessageID":  msg.ID,
+		"MessageIID": msg.InternalID,
 		"SenderID":   msg.Sender.Uin,
-		"SenderName": msg.Sender.DisplayName(),
+		"SenderName": lo.CoalesceOrEmpty(msg.Sender.CardName, msg.Sender.Nickname),
 		"Target":     msg.Target,
 	}).Info(msgstringer.MsgToString(msg.Elements))
 }
 
-func logFriendMessageRecallEvent(event *client.FriendMessageRecalledEvent) {
-	logger.WithFields(logrus.Fields{
+func logFriendMessageRecallEvent(event *event.FriendRecall) {
+	l := logger.WithFields(logrus.Fields{
 		"From":      "FriendsMessageRecall",
-		"MessageID": event.MessageId,
-		"SenderID":  event.FriendUin,
-	}).Info("好友消息撤回")
+		"MessageID": event.Sequence,
+		"SenderID":  event.FromUin,
+	})
+	if fi := localutils.GetBot().FindFriend(event.FromUin); fi != nil {
+		l = l.WithField("SenderName", fi.Nickname)
+	}
+	l.Info("好友消息撤回")
 }
 
-func logGroupMessageRecallEvent(event *client.GroupMessageRecalledEvent) {
-	logger.WithFields(localutils.GroupLogFields(event.GroupCode)).
+func logGroupMessageRecallEvent(event *event.GroupRecall) {
+	l := logger.WithFields(localutils.GroupLogFields(event.GroupUin)).
 		WithFields(logrus.Fields{
 			"From":       "GroupMessageRecall",
-			"MessageID":  event.MessageId,
-			"SenderID":   event.AuthorUin,
+			"MessageID":  event.Sequence,
+			"SenderID":   event.UserUin,
 			"OperatorID": event.OperatorUin,
-		}).Info("群消息撤回")
+		})
+	if fi := localutils.GetBot().FindGroupMember(event.GroupUin, event.UserUin); fi != nil {
+		l = l.WithField("SenderName", fi.Nickname)
+	}
+	if fi := localutils.GetBot().FindGroupMember(event.GroupUin, event.OperatorUin); fi != nil {
+		l = l.WithField("OperatorName", fi.Nickname)
+	}
+	l.Info("群消息撤回")
 }
 
-func logGroupMuteEvent(event *client.GroupMuteEvent) {
-	muteLogger := logger.WithFields(localutils.GroupLogFields(event.GroupCode)).
+func logGroupMuteEvent(event *event.GroupMute) {
+	muteLogger := logger.WithFields(localutils.GroupLogFields(event.GroupUin)).
 		WithFields(logrus.Fields{
 			"From":        "GroupMute",
-			"TargetUin":   event.TargetUin,
+			"TargetUin":   event.UserUin,
 			"OperatorUin": event.OperatorUin,
 		})
-	if event.TargetUin == 0 {
-		if event.Time != 0 {
+	if event.UserUin != 0 {
+		if fi := localutils.GetBot().FindGroupMember(event.GroupUin, event.UserUin); fi != nil {
+			muteLogger = muteLogger.WithField("TargetName", fi.Nickname)
+		}
+	}
+	if event.OperatorUin != 0 {
+		if fi := localutils.GetBot().FindGroupMember(event.GroupUin, event.OperatorUin); fi != nil {
+			muteLogger = muteLogger.WithField("OperatorName", fi.Nickname)
+		}
+	}
+	if event.UserUin == 0 {
+		if event.Duration != 0 {
 			muteLogger.Debug("开启了全体禁言")
 		} else {
 			muteLogger.Debug("关闭了全体禁言")
 		}
 	} else {
-		gi := bot.Instance.FindGroup(event.GroupCode)
-		var mi *client.GroupMemberInfo
-		if gi != nil {
-			mi = gi.FindMember(event.TargetUin)
-			if mi != nil {
-				muteLogger = muteLogger.WithField("TargetName", mi.DisplayName())
-			}
-			mi = gi.FindMember(event.OperatorUin)
-			if mi != nil {
-				muteLogger = muteLogger.WithField("OperatorName", mi.DisplayName())
-			}
-		}
-		if event.Time > 0 {
+		if event.Duration > 0 {
 			muteLogger.Debug("用户被禁言")
 		} else {
 			muteLogger.Debug("用户被取消禁言")
@@ -167,7 +180,7 @@ func logGroupMuteEvent(event *client.GroupMuteEvent) {
 	}
 }
 
-func logDisconnect(event *client.ClientDisconnectedEvent) {
+func logDisconnect(event *client.DisconnectedEvent) {
 	logger.WithFields(logrus.Fields{
 		"From":   "Disconnected",
 		"Reason": event.Message,
@@ -175,7 +188,7 @@ func logDisconnect(event *client.ClientDisconnectedEvent) {
 }
 
 func registerLog(b *bot.Bot) {
-	b.GroupMessageRecalledEvent.Subscribe(func(qqClient *client.QQClient, event *client.GroupMessageRecalledEvent) {
+	b.GroupRecallEvent.Subscribe(func(qqClient *client.QQClient, event *event.GroupRecall) {
 		logGroupMessageRecallEvent(event)
 	})
 
@@ -183,7 +196,7 @@ func registerLog(b *bot.Bot) {
 		logGroupMessage(groupMessage)
 	})
 
-	b.GroupMuteEvent.Subscribe(func(qqClient *client.QQClient, event *client.GroupMuteEvent) {
+	b.GroupMuteEvent.Subscribe(func(qqClient *client.QQClient, event *event.GroupMute) {
 		logGroupMuteEvent(event)
 	})
 
@@ -191,11 +204,11 @@ func registerLog(b *bot.Bot) {
 		logPrivateMessage(privateMessage)
 	})
 
-	b.FriendMessageRecalledEvent.Subscribe(func(qqClient *client.QQClient, event *client.FriendMessageRecalledEvent) {
+	b.FriendRecallEvent.Subscribe(func(qqClient *client.QQClient, event *event.FriendRecall) {
 		logFriendMessageRecallEvent(event)
 	})
 
-	b.DisconnectedEvent.Subscribe(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
+	b.DisconnectedEvent.Subscribe(func(qqClient *client.QQClient, event *client.DisconnectedEvent) {
 		logDisconnect(event)
 	})
 

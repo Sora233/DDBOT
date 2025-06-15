@@ -1,10 +1,12 @@
 package acfun
 
 import (
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	localutils "github.com/Sora233/DDBOT/v2/utils"
 )
 
 func TestApiChannelList(t *testing.T) {

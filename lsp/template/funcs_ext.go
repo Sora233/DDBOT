@@ -3,19 +3,21 @@ package template
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/message"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/cfg"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/shopspring/decimal"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/LagrangeDev/LagrangeGo/client/entity"
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/shopspring/decimal"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/cfg"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
 )
 
 var funcsExt = make(FuncMap)
@@ -26,33 +28,33 @@ func RegisterExtFunc(name string, fn interface{}) {
 	funcsExt[name] = fn
 }
 
-func memberInfo(groupCode int64, uin int64) map[string]interface{} {
+func memberInfo(groupCode uint32, uin uint32) map[string]interface{} {
 	var result = make(map[string]interface{})
 	gi := localutils.GetBot().FindGroup(groupCode)
 	if gi == nil {
 		return result
 	}
-	fi := gi.FindMember(uin)
+	fi := localutils.GetBot().FindGroupMember(groupCode, uin)
 	if fi == nil {
 		return result
 	}
 	result["name"] = fi.DisplayName()
 	switch fi.Permission {
-	case client.Owner:
+	case entity.Owner:
 		// 群主
 		result["permission"] = 10
-	case client.Administrator:
+	case entity.Admin:
 		// 管理员
 		result["permission"] = 5
 	default:
 		// 其他
 		result["permission"] = 1
 	}
-	switch fi.Gender {
-	case 0:
+	switch fi.Sex {
+	case 1:
 		// 男
 		result["gender"] = 2
-	case 1:
+	case 2:
 		// 女
 		result["gender"] = 1
 	default:
@@ -80,7 +82,7 @@ func reply(msg interface{}) *message.ReplyElement {
 	}
 	switch e := msg.(type) {
 	case *message.GroupMessage:
-		return message.NewReply(e)
+		return message.NewGroupReply(e)
 	case *message.PrivateMessage:
 		return message.NewPrivateReply(e)
 	default:
@@ -88,16 +90,16 @@ func reply(msg interface{}) *message.ReplyElement {
 	}
 }
 
-func at(uin int64) *mmsg.AtElement {
+func at(uin uint32) *mmsg.AtElement {
 	return mmsg.NewAt(uin)
 }
 
 // poke 戳一戳
-func poke(uin int64) *mmsg.PokeElement {
+func poke(uin uint32) *mmsg.PokeElement {
 	return mmsg.NewPoke(uin)
 }
 
-func botUin() int64 {
+func botUin() uint32 {
 	return localutils.GetBot().GetUin()
 }
 

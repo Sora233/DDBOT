@@ -1,9 +1,11 @@
 package local_proxy_pool
 
 import (
-	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/proxy_pool"
 )
 
 func TestProxy(t *testing.T) {

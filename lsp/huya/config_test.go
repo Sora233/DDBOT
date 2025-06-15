@@ -1,10 +1,12 @@
 package huya
 
 import (
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
 )
 
 func newLiveInfo(roomId string, live bool, liveStatusChanged bool, liveTitleChanged bool) *ConcernLiveNotify {

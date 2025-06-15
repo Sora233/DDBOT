@@ -3,15 +3,17 @@ package bilibili
 import (
 	"errors"
 	"fmt"
-	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/DDBOT/requests"
-	"github.com/Sora233/MiraiGo-Template/config"
-	jsoniter "github.com/json-iterator/go"
-	"go.uber.org/atomic"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	jsoniter "github.com/json-iterator/go"
+	"go.uber.org/atomic"
+
+	"github.com/Sora233/DDBOT/v2/proxy_pool"
+	"github.com/Sora233/DDBOT/v2/requests"
+	"github.com/Sora233/MiraiGo-Template/config"
 )
 
 const (

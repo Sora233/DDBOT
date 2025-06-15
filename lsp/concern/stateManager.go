@@ -4,18 +4,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/cfg"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/MiraiGo-Template/utils"
-	"github.com/sirupsen/logrus"
-	"github.com/tidwall/buntdb"
-	"go.uber.org/atomic"
 	"runtime"
 	"runtime/debug"
 	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/tidwall/buntdb"
+	"go.uber.org/atomic"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/cfg"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
+	"github.com/Sora233/MiraiGo-Template/utils"
 )
 
 var logger = utils.GetModuleLogger("concern")
@@ -27,7 +29,7 @@ var ErrMaxGroupConcernExceed = errors.New("本群已达到订阅上限")
 //
 // 使用 StateManager 时，在 StateManager.Start 之前，
 // 必须使用 StateManager.UseNotifyGeneratorFunc 来指定一个 NotifyGeneratorFunc, 否则会发生 panic
-type NotifyGeneratorFunc func(groupCode int64, event Event) []Notify
+type NotifyGeneratorFunc func(groupCode uint32, event Event) []Notify
 
 // DispatchFunc 是 IStateManager.Dispatch 函数的具体逻辑
 // 它从event channel中获取 Event，把 Event 转变成（可能多个） Notify 并发送到notify channel
@@ -43,26 +45,25 @@ type DispatchFunc func(event <-chan Event, notify chan<- Notify)
 type FreshFunc func(ctx context.Context, eventChan chan<- Event)
 
 type IStateManager interface {
-	GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig IConfig)
-	OperateGroupConcernConfig(groupCode int64, id interface{}, cfg IConfig, f func(concernConfig IConfig) bool) error
+	GetGroupConcernConfig(groupCode uint32, id interface{}) (concernConfig IConfig)
+	OperateGroupConcernConfig(groupCode uint32, id interface{}, cfg IConfig, f func(concernConfig IConfig) bool) error
 
-	GetGroupConcern(groupCode int64, id interface{}) (result concern_type.Type, err error)
+	GetGroupConcern(groupCode uint32, id interface{}) (result concern_type.Type, err error)
 	GetConcern(id interface{}) (result concern_type.Type, err error)
 
-	CheckAndSetAtAllMark(groupCode int64, id interface{}) (result bool)
-	CheckGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) error
+	CheckAndSetAtAllMark(groupCode uint32, id interface{}) (result bool)
+	CheckGroupConcern(groupCode uint32, id interface{}, ctype concern_type.Type) error
 	CheckConcern(id interface{}, ctype concern_type.Type) error
 
-	AddGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error)
-	RemoveGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error)
-	RemoveAllByGroupCode(groupCode int64) (keys []string, err error)
+	AddGroupConcern(groupCode uint32, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error)
+	RemoveGroupConcern(groupCode uint32, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error)
+	RemoveAllByGroupCode(groupCode uint32) (keys []string, err error)
 
-	ListConcernState(filter func(groupCode int64, id interface{}, p concern_type.Type) bool) (idGroups []int64,
-		ids []interface{}, idTypes []concern_type.Type, err error)
+	ListConcernState(filter func(groupCode uint32, id interface{}, p concern_type.Type) bool) (idGroups []uint32, ids []interface{}, idTypes []concern_type.Type, err error)
 	GroupTypeById(ids []interface{}, types []concern_type.Type) ([]interface{}, []concern_type.Type, error)
 
 	// NotifyGenerator 从 Event 产生多个 Notify
-	NotifyGenerator(groupCode int64, event Event) []Notify
+	NotifyGenerator(groupCode uint32, event Event) []Notify
 	// Fresh 是一个长生命周期的函数，它产生 Event
 	Fresh(wg *sync.WaitGroup, eventChan chan<- Event)
 	// Dispatch 是一个长生命周期的函数，它从event channel中获取 Event， 并产生 Notify 发送到notify channel
@@ -99,7 +100,7 @@ type StateManager struct {
 	largeNotifyCount    atomic.Int32
 }
 
-func (c *StateManager) getGroupConcernConfig(groupCode int64, id interface{}) (concernConfig *GroupConcernConfig) {
+func (c *StateManager) getGroupConcernConfig(groupCode uint32, id interface{}) (concernConfig *GroupConcernConfig) {
 	val, err := c.Get(c.GroupConcernConfigKey(groupCode, id), localdb.IgnoreNotFoundOpt())
 	if err != nil {
 		c.Logger().WithFields(localutils.GroupLogFields(groupCode)).
@@ -120,12 +121,12 @@ func (c *StateManager) getGroupConcernConfig(groupCode int64, id interface{}) (c
 }
 
 // GetGroupConcernConfig 总是返回non-nil
-func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) IConfig {
+func (c *StateManager) GetGroupConcernConfig(groupCode uint32, id interface{}) IConfig {
 	return c.getGroupConcernConfig(groupCode, id)
 }
 
 // OperateGroupConcernConfig 在一个rw事务中获取GroupConcernConfig并交给函数，如果返回true，就保存GroupConcernConfig，否则就回滚。
-func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}, cfg IConfig, f func(concernConfig IConfig) bool) error {
+func (c *StateManager) OperateGroupConcernConfig(groupCode uint32, id interface{}, cfg IConfig, f func(concernConfig IConfig) bool) error {
 	err := c.RWCover(func() error {
 		if !f(cfg) {
 			return localdb.ErrRollback
@@ -144,14 +145,14 @@ func (c *StateManager) OperateGroupConcernConfig(groupCode int64, id interface{}
 
 // CheckAndSetAtAllMark 检查@全体标记是否过期，未设置过或已过期返回true，并重置标记，否则返回false。
 // 因为@全体有次数限制，并且较为恼人，故设置标记，两次@全体之间必须有间隔。
-func (c *StateManager) CheckAndSetAtAllMark(groupCode int64, id interface{}) (result bool) {
+func (c *StateManager) CheckAndSetAtAllMark(groupCode uint32, id interface{}) (result bool) {
 	err := c.Set(c.GroupAtAllMarkKey(groupCode, id), "",
 		localdb.SetExpireOpt(time.Hour*2), localdb.SetNoOverWriteOpt())
 	return err == nil
 }
 
 // CheckGroupConcern 检查group是否已经添加过id的ctype订阅，如果添加过，返回 ErrAlreadyExists
-func (c *StateManager) CheckGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) error {
+func (c *StateManager) CheckGroupConcern(groupCode uint32, id interface{}, ctype concern_type.Type) error {
 	state, _ := c.GetGroupConcern(groupCode, id)
 	if state.ContainAll(ctype) {
 		return ErrAlreadyExists
@@ -173,7 +174,7 @@ func (c *StateManager) CheckConcern(id interface{}, ctype concern_type.Type) err
 
 // AddGroupConcern 在group内添加id的ctype订阅，多次添加同样的订阅会返回 ErrAlreadyExists，如果超过订阅上限，则会返回 ErrMaxGroupConcernExceed。
 // 订阅上限可以使用 SetMaxGroupConcern 设置。
-func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
+func (c *StateManager) AddGroupConcern(groupCode uint32, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
 	err = c.RWCover(func() error {
 		var err error
 		if c.CheckGroupConcern(groupCode, id, ctype) == ErrAlreadyExists {
@@ -181,7 +182,7 @@ func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype co
 		}
 
 		if c.maxGroupConcern > 0 {
-			_, ids, ctypes, err := c.ListConcernState(func(_groupCode int64, id interface{}, p concern_type.Type) bool {
+			_, ids, ctypes, err := c.ListConcernState(func(_groupCode uint32, id interface{}, p concern_type.Type) bool {
 				return _groupCode == groupCode
 			})
 			if err != nil {
@@ -215,7 +216,7 @@ func (c *StateManager) AddGroupConcern(groupCode int64, id interface{}, ctype co
 }
 
 // RemoveGroupConcern 在group内删除id的ctype订阅，并返回删除后当前id的在群内的ctype，删除不存在的订阅会返回 buntdb.ErrNotFound
-func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
+func (c *StateManager) RemoveGroupConcern(groupCode uint32, id interface{}, ctype concern_type.Type) (newCtype concern_type.Type, err error) {
 	err = c.RWCoverTx(func(tx *buntdb.Tx) error {
 		var err error
 		if c.CheckGroupConcern(groupCode, id, ctype) != ErrAlreadyExists {
@@ -244,7 +245,7 @@ func (c *StateManager) RemoveGroupConcern(groupCode int64, id interface{}, ctype
 }
 
 // RemoveAllByGroupCode 删除一个group内所有订阅
-func (c *StateManager) RemoveAllByGroupCode(groupCode int64) (keys []string, err error) {
+func (c *StateManager) RemoveAllByGroupCode(groupCode uint32) (keys []string, err error) {
 	var indexKey = []string{
 		c.GroupConcernStateKey(),
 		c.GroupConcernConfigKey(),
@@ -282,7 +283,7 @@ func (c *StateManager) RemoveAllById(_id interface{}) (err error) {
 }
 
 // GetGroupConcern 返回一个id在群内的所有 concern_type.Type
-func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result concern_type.Type, err error) {
+func (c *StateManager) GetGroupConcern(groupCode uint32, id interface{}) (result concern_type.Type, err error) {
 	val, err := c.Get(c.GroupConcernStateKey(groupCode, id))
 	if err != nil {
 		return
@@ -294,7 +295,7 @@ func (c *StateManager) GetGroupConcern(groupCode int64, id interface{}) (result 
 // GetConcern 查询一个id在所有group内的 concern_type.Type
 func (c *StateManager) GetConcern(id interface{}) (result concern_type.Type, err error) {
 	var ctypes []concern_type.Type
-	_, _, ctypes, err = c.ListConcernState(func(groupCode int64, _id interface{}, p concern_type.Type) bool {
+	_, _, ctypes, err = c.ListConcernState(func(groupCode uint32, _id interface{}, p concern_type.Type) bool {
 		return id == _id
 	})
 	result = concern_type.Empty.Add(ctypes...)
@@ -302,11 +303,11 @@ func (c *StateManager) GetConcern(id interface{}) (result concern_type.Type, err
 }
 
 // ListConcernState 遍历所有订阅，并根据 filter 返回需要的订阅
-func (c *StateManager) ListConcernState(filter func(groupCode int64, id interface{}, p concern_type.Type) bool) (groupCodes []int64, ids []interface{}, idTypes []concern_type.Type, err error) {
+func (c *StateManager) ListConcernState(filter func(groupCode uint32, id interface{}, p concern_type.Type) bool) (groupCodes []uint32, ids []interface{}, idTypes []concern_type.Type, err error) {
 	err = c.RCoverTx(func(tx *buntdb.Tx) error {
 		var iterErr error
 		err := tx.Ascend(c.GroupConcernStateKey(), func(key, value string) bool {
-			var groupCode int64
+			var groupCode uint32
 			var id interface{}
 			groupCode, id, iterErr = c.ParseGroupConcernStateKey(key)
 			if iterErr != nil {
@@ -388,23 +389,23 @@ func (c *StateManager) SetMaxGroupConcern(maxGroupConcern int) {
 
 // FreshIndex 刷新 group 的 index，通常不需要用户主动调用
 // 在单元测试中有时候需要主动刷新 index，否则遍历时会返回 buntdb.ErrNotFound
-func (c *StateManager) FreshIndex(groups ...int64) {
+func (c *StateManager) FreshIndex(groups ...uint32) {
 	for _, pattern := range []localdb.KeyPatternFunc{
 		c.GroupConcernStateKey, c.GroupConcernConfigKey,
 	} {
 		c.CreatePatternIndex(pattern, nil)
 	}
-	var groupSet = make(map[int64]interface{})
+	var groupSet = make(map[uint32]interface{})
 	if len(groups) == 0 {
 		for _, groupInfo := range localutils.GetBot().GetGroupList() {
-			groupSet[groupInfo.Code] = struct{}{}
+			groupSet[groupInfo.GroupUin] = struct{}{}
 		}
 	} else {
 		for _, g := range groups {
 			groupSet[g] = struct{}{}
 		}
 	}
-	c.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+	c.ListConcernState(func(groupCode uint32, id interface{}, p concern_type.Type) bool {
 		groupSet[groupCode] = struct{}{}
 		return true
 	})
@@ -488,7 +489,7 @@ func (c *StateManager) Start() error {
 	}
 	if c.useEmit {
 		c.emitQueue.Start()
-		_, ids, ctypes, err := c.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+		_, ids, ctypes, err := c.ListConcernState(func(groupCode uint32, id interface{}, p concern_type.Type) bool {
 			return true
 		})
 		if err != nil {
@@ -572,7 +573,7 @@ func (c *StateManager) Dispatch(wg *sync.WaitGroup, eventChan <-chan Event, noti
 	c.dispatchFunc(eventChan, notifyChan)
 }
 
-func (c *StateManager) NotifyGenerator(groupCode int64, event Event) []Notify {
+func (c *StateManager) NotifyGenerator(groupCode uint32, event Event) []Notify {
 	return c.notifyGeneratorFunc(groupCode, event)
 }
 
@@ -608,7 +609,7 @@ func (c *StateManager) DefaultDispatch() DispatchFunc {
 	return func(eventChan <-chan Event, notifyChan chan<- Notify) {
 		for event := range eventChan {
 			log := event.Logger()
-			groups, _, _, err := c.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+			groups, _, _, err := c.ListConcernState(func(groupCode uint32, id interface{}, p concern_type.Type) bool {
 				return event.GetUid() == id && p.ContainAll(event.Type())
 			})
 			if err != nil {
@@ -616,7 +617,7 @@ func (c *StateManager) DefaultDispatch() DispatchFunc {
 				continue
 			}
 			var notifies []Notify
-			var filteredGroups = make(map[int64]interface{})
+			var filteredGroups = make(map[uint32]interface{})
 			for _, groupCode := range groups {
 				for _, n := range c.NotifyGenerator(groupCode, event) {
 					if c.filterNotify(n) {

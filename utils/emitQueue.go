@@ -2,10 +2,12 @@ package utils
 
 import (
 	"container/list"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"go.uber.org/atomic"
 	"sync"
 	"time"
+
+	"go.uber.org/atomic"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
 )
 
 type EmitE struct {

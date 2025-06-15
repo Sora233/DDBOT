@@ -4,23 +4,26 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/message"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/DDBOT/lsp/template"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/MiraiGo-Template/config"
-	"github.com/Sora233/sliceutil"
-	"github.com/alecthomas/kong"
-	"github.com/sirupsen/logrus"
 	"os"
 	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/alecthomas/kong"
+	"github.com/samber/lo"
+	"github.com/sirupsen/logrus"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/DDBOT/v2/lsp/permission"
+	"github.com/Sora233/DDBOT/v2/lsp/template"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
+	"github.com/Sora233/MiraiGo-Template/bot"
+	"github.com/Sora233/MiraiGo-Template/config"
 )
 
 type LspPrivateCommand struct {
@@ -199,17 +202,17 @@ func (c *LspPrivateCommand) CleanConcernCommand() {
 	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	if !c.l.PermissionStateManager.RequireAny(
-		permission.AdminRoleRequireOption(c.uin()),
+		permission.AdminRoleRequireOption[uint32](c.uin()),
 	) {
 		c.noPermission()
 		return
 	}
 
 	var cleanConcernCmd struct {
-		Abnormal   bool    `optional:"" help:"清除异常订阅"`
-		GroupCodes []int64 `optional:"" short:"g" help:"清除指定群的订阅，多个可用英文逗号隔开"`
-		Site       string  `optional:"" short:"s" help:"清除指定的网站订阅,默认为全部"`
-		Type       string  `optional:"" short:"t" help:"清除指定的订阅类型,默认为全部"`
+		Abnormal   bool     `optional:"" help:"清除异常订阅"`
+		GroupCodes []uint32 `optional:"" short:"g" help:"清除指定群的订阅，多个可用英文逗号隔开"`
+		Site       string   `optional:"" short:"s" help:"清除指定的网站订阅,默认为全部"`
+		Type       string   `optional:"" short:"t" help:"清除指定的订阅类型,默认为全部"`
 	}
 
 	_, output := c.parseCommandSyntax(&cleanConcernCmd, c.CommandName())
@@ -264,7 +267,7 @@ func (c *LspPrivateCommand) ListCommand() {
 	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	var listCmd struct {
-		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Group uint32 `optional:"" short:"g" help:"要操作的QQ群号码"`
 		Site  string `optional:"" short:"s" help:"网站参数"`
 	}
 	_, output := c.parseCommandSyntax(&listCmd, c.CommandName())
@@ -291,10 +294,10 @@ func (c *LspPrivateCommand) ConfigCommand() {
 
 	var configCmd struct {
 		At struct {
-			Site   string  `optional:"" short:"s" default:"bilibili" help:"网站参数"`
-			Id     string  `arg:"" help:"配置的主播id"`
-			Action string  `arg:"" enum:"add,remove,clear,show" help:"add / remove / clear / show"`
-			QQ     []int64 `arg:"" optional:"" help:"需要@的成员QQ号码"`
+			Site   string   `optional:"" short:"s" default:"bilibili" help:"网站参数"`
+			Id     string   `arg:"" help:"配置的主播id"`
+			Action string   `arg:"" enum:"add,remove,clear,show" help:"add / remove / clear / show"`
+			QQ     []uint32 `arg:"" optional:"" help:"需要@的成员QQ号码"`
 		} `cmd:"" help:"配置推送时的@人员列表，默认为空" name:"at"`
 		AtAll struct {
 			Site   string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
@@ -332,7 +335,7 @@ func (c *LspPrivateCommand) ConfigCommand() {
 				Id string `arg:"" help:"配置的主播id"`
 			} `cmd:"" help:"查看当前过滤器" name:"show" group:"filter"`
 		} `cmd:"" help:"配置动态过滤器" name:"filter"`
-		Group int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Group uint32 `optional:"" short:"g" help:"要操作的QQ群号码"`
 	}
 
 	kongCtx, output := c.parseCommandSyntax(&configCmd, c.CommandName(),
@@ -439,7 +442,7 @@ func (c *LspPrivateCommand) WatchCommand(remove bool) {
 	var watchCmd struct {
 		Site  string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
 		Type  string `optional:"" short:"t" default:"" help:"类型参数"`
-		Group int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Group uint32 `optional:"" short:"g" help:"要操作的QQ群号码"`
 		Id    string `arg:""`
 	}
 
@@ -479,7 +482,7 @@ func (c *LspPrivateCommand) EnableCommand(disable bool) {
 	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	var enableCmd struct {
-		Group   int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Group   uint32 `optional:"" short:"g" help:"要操作的QQ群号码"`
 		Command string `arg:"" optional:"" help:"命令名"`
 		Global  bool   `optional:"" help:"系统级操作，对所有群生效"`
 	}
@@ -556,11 +559,11 @@ func (c *LspPrivateCommand) GrantCommand() {
 	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	var grantCmd struct {
-		Group   int64  `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Group   uint32 `optional:"" short:"g" help:"要操作的QQ群号码"`
 		Command string `required:"" short:"c" xor:"1" help:"命令名"`
 		Role    string `required:"" short:"r" xor:"1" enum:"Admin,GroupAdmin" help:"Admin / GroupAdmin"`
 		Delete  bool   `short:"d" help:"删除模式，执行删除权限操作"`
-		Target  int64  `arg:"" help:"目标qq号"`
+		Target  uint32 `arg:"" help:"目标qq号"`
 	}
 	_, output := c.parseCommandSyntax(&grantCmd, c.CommandName())
 	if output != "" {
@@ -616,9 +619,9 @@ func (c *LspPrivateCommand) BlockCommand() {
 	}
 
 	var blockCmd struct {
-		Uin    int64 `arg:"" required:"" help:"要block的qq号或者qq群"`
-		Days   int   `optional:"" help:"要block的天数，默认是永久"`
-		Delete bool  `optional:"" short:"d" help:"取消block"`
+		Uin    uint32 `arg:"" required:"" help:"要block的qq号或者qq群"`
+		Days   int    `optional:"" help:"要block的天数，默认是永久"`
+		Delete bool   `optional:"" short:"d" help:"取消block"`
 	}
 
 	_, output := c.parseCommandSyntax(&blockCmd, c.CommandName())
@@ -641,13 +644,13 @@ func (c *LspPrivateCommand) BlockCommand() {
 
 	var name string
 
-	if fi := localutils.GetBot().FindFriend(blockCmd.Uin); fi != nil {
+	if fi := c.bot.FindFriend(blockCmd.Uin); fi != nil {
 		name = fi.Nickname
 		log = log.WithField("TargetName", name)
 	}
 
-	if gi := localutils.GetBot().FindGroup(blockCmd.Uin); gi != nil {
-		name = gi.Name
+	if gi := c.bot.FindGroup(blockCmd.Uin); gi != nil {
+		name = gi.GroupName
 		log = log.WithField("TargetGroupName", name)
 	}
 
@@ -760,8 +763,8 @@ func (c *LspPrivateCommand) QuitCommand() {
 	}
 
 	var quitCmd struct {
-		GroupCode int64 `arg:"" optional:"" help:"要退出的群号"`
-		Force     bool  `optional:"" short:"f" help:"强制清除"`
+		GroupCode uint32 `arg:"" optional:"" help:"要退出的群号"`
+		Force     bool   `optional:"" short:"f" help:"强制清除"`
 	}
 
 	_, output := c.parseCommandSyntax(&quitCmd, c.CommandName())
@@ -783,9 +786,9 @@ func (c *LspPrivateCommand) QuitCommand() {
 	gi := c.bot.FindGroup(quitCmd.GroupCode)
 	var displayName string
 	if gi == nil {
-		displayName = strconv.FormatInt(quitCmd.GroupCode, 10)
+		displayName = strconv.FormatInt(int64(quitCmd.GroupCode), 10)
 	} else {
-		displayName = gi.Name
+		displayName = gi.GroupName
 	}
 	if gi == nil {
 		if quitCmd.Force {
@@ -797,7 +800,7 @@ func (c *LspPrivateCommand) QuitCommand() {
 			return
 		}
 	} else {
-		gi.Quit()
+		bot.QQClient.SetGroupLeave(quitCmd.GroupCode)
 		log.Debugf("已退出群【%v】", displayName)
 		c.textSend(fmt.Sprintf("已退出群【%v】", displayName))
 	}
@@ -882,7 +885,7 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 	}
 
 	var groupRequestCmd struct {
-		RequestId int64    `arg:"" optional:"" help:"要处理的请求的RequestId"`
+		RequestId uint64   `arg:"" optional:"" help:"要处理的请求的RequestId"`
 		Reject    bool     `optional:"" short:"r" help:"拒绝请求"`
 		All       bool     `optional:"" short:"a" help:"处理全部"`
 		Message   []string `arg:"" optional:"" help:"拒绝理由"`
@@ -929,9 +932,9 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 			// 拒绝全部！
 			log.Info("确认拒绝全部加群邀请")
 			for _, req := range requests {
-				log.Debugf("正在拒绝%v(%v)的加群%v(%v)邀请", req.InvitorNick, req.InvitorUin, req.GroupName, req.GroupCode)
+				log.Debugf("正在拒绝%v(%v)的加群%v(%v)邀请", req.InvitorNick, req.InvitorUin, req.GroupName, req.GroupUin)
 				c.bot.SolveGroupJoinRequest(req, false, false, rmsg)
-				if err := c.l.LspStateManager.DeleteGroupInvitedRequest(req.RequestId); err != nil {
+				if err := c.l.LspStateManager.DeleteGroupInvitedRequest(req.RequestSeq); err != nil {
 					log.Errorf("DeleteGroupInvitedRequest error %v", err)
 				}
 			}
@@ -943,15 +946,15 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 		if groupRequestCmd.All {
 			// 接受全部！
 			for _, req := range requests {
-				log.Infof("正在接受%v(%v)的加群%v(%v)邀请", req.InvitorNick, req.InvitorUin, req.GroupName, req.GroupCode)
+				log.Infof("正在接受%v(%v)的加群%v(%v)邀请", req.InvitorNick, req.InvitorUin, req.GroupName, req.GroupUin)
 				c.bot.SolveGroupJoinRequest(req, true, false, "")
-				if err := c.l.LspStateManager.DeleteGroupInvitedRequest(req.RequestId); err != nil {
+				if err := c.l.LspStateManager.DeleteGroupInvitedRequest(req.RequestSeq); err != nil {
 					log.Errorf("DeleteGroupInvitedRequest error %v", err)
 				}
-				if err := c.l.PermissionStateManager.GrantGroupRole(req.GroupCode, req.InvitorUin, permission.GroupAdmin); err != nil {
+				if err := c.l.PermissionStateManager.GrantGroupRole(req.GroupUin, req.InvitorUin, permission.GroupAdmin); err != nil {
 					log.Errorf("设置群管理员权限失败 - %v", err)
 				}
-				if err := c.l.PermissionStateManager.DeleteBlockList(req.GroupCode); err != nil {
+				if err := c.l.PermissionStateManager.DeleteBlockList(req.GroupUin); err != nil {
 					log.Errorf("DeleteBlockList error %v", err)
 				}
 			}
@@ -963,7 +966,7 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 		// 展示加群邀请
 		var sb strings.Builder
 		for _, req := range requests {
-			sb.WriteString(fmt.Sprintf("ID:%v %v(%v) 邀请加入群 %v(%v)\n", req.RequestId, req.InvitorNick, req.InvitorUin, req.GroupName, req.GroupCode))
+			sb.WriteString(fmt.Sprintf("ID:%v %v(%v) 邀请加入群 %v(%v)\n", req.RequestSeq, req.InvitorNick, req.InvitorUin, req.GroupName, req.GroupUin))
 		}
 		log.Infof("查询到%v个加群邀请", len(requests))
 		c.textReply(sb.String())
@@ -980,26 +983,26 @@ func (c *LspPrivateCommand) GroupRequestCommand() {
 		}
 		log := log.WithFields(logrus.Fields{
 			"GroupName":   request.GroupName,
-			"GroupCode":   request.GroupCode,
+			"GroupCode":   request.GroupUin,
 			"InvitorUin":  request.InvitorUin,
 			"InvitorNick": request.InvitorNick,
 		})
 		if groupRequestCmd.Reject {
 			c.bot.SolveGroupJoinRequest(request, false, false, rmsg)
 			log.Info("拒绝加群邀请成功")
-			c.textReply(fmt.Sprintf("成功- 已拒绝 %v(%v) 邀请加群 %v(%v)", request.InvitorNick, request.InvitorUin, request.GroupName, request.GroupCode))
+			c.textReply(fmt.Sprintf("成功- 已拒绝 %v(%v) 邀请加群 %v(%v)", request.InvitorNick, request.InvitorUin, request.GroupName, request.GroupUin))
 		} else {
 			c.bot.SolveGroupJoinRequest(request, true, false, "")
-			if err := c.l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
+			if err := c.l.PermissionStateManager.GrantGroupRole(request.GroupUin, request.InvitorUin, permission.GroupAdmin); err != nil {
 				log.Errorf("设置群管理员权限失败 - %v", err)
 			}
-			if err := c.l.PermissionStateManager.DeleteBlockList(request.GroupCode); err != nil {
+			if err := c.l.PermissionStateManager.DeleteBlockList(request.GroupUin); err != nil {
 				log.Errorf("DeleteBlockList error %v", err)
 			}
 			log.Info("接受加群请求成功")
-			c.textReply(fmt.Sprintf("成功 - 已接受 %v(%v) 邀请加群 %v(%v)", request.InvitorNick, request.InvitorUin, request.GroupName, request.GroupCode))
+			c.textReply(fmt.Sprintf("成功 - 已接受 %v(%v) 邀请加群 %v(%v)", request.InvitorNick, request.InvitorUin, request.GroupName, request.GroupUin))
 		}
-		if err := c.l.LspStateManager.DeleteGroupInvitedRequest(request.RequestId); err != nil {
+		if err := c.l.LspStateManager.DeleteGroupInvitedRequest(request.RequestSeq); err != nil {
 			log.Errorf("DeleteGroupInvitedRequest error %v", err)
 		}
 	}
@@ -1018,9 +1021,9 @@ func (c *LspPrivateCommand) FriendRequestCommand() {
 	}
 
 	var friendRequestCmd struct {
-		RequestId int64 `arg:"" optional:"" help:"要处理的请求的RequestId"`
-		Reject    bool  `optional:"" short:"r" help:"拒绝请求"`
-		All       bool  `optional:"" short:"a" help:"处理全部"`
+		RequestId string `arg:"" optional:"" help:"要处理的请求的RequestId"`
+		Reject    bool   `optional:"" short:"r" help:"拒绝请求"`
+		All       bool   `optional:"" short:"a" help:"处理全部"`
 	}
 
 	_, output := c.parseCommandSyntax(&friendRequestCmd, c.CommandName(), kong.Description("处理好友请求"), kong.UsageOnError())
@@ -1037,7 +1040,7 @@ func (c *LspPrivateCommand) FriendRequestCommand() {
 		"All":       friendRequestCmd.All,
 	})
 
-	if friendRequestCmd.RequestId == 0 {
+	if friendRequestCmd.RequestId == "" {
 		requests, err := c.l.LspStateManager.ListNewFriendRequest()
 		if err != nil {
 			log.Errorf("ListNewFriendRequest error - %v", err)
@@ -1059,9 +1062,9 @@ func (c *LspPrivateCommand) FriendRequestCommand() {
 			}
 			log.Info("确认拒绝全部好友申请")
 			for _, req := range requests {
-				log.Debugf("正在拒绝%v(%v)的好友申请", req.RequesterNick, req.RequesterUin)
+				log.Debugf("正在拒绝%v(%v)的好友申请", req.SourceNick, req.SourceUin)
 				c.bot.SolveFriendRequest(req, false)
-				if err := c.l.LspStateManager.DeleteNewFriendRequest(req.RequestId); err != nil {
+				if err := c.l.LspStateManager.DeleteNewFriendRequest(req.Source); err != nil {
 					log.Errorf("DeleteNewFriendRequest error %v", err)
 				}
 			}
@@ -1073,9 +1076,9 @@ func (c *LspPrivateCommand) FriendRequestCommand() {
 		if friendRequestCmd.All {
 			// 接受全部！
 			for _, req := range requests {
-				log.Debugf("正在接受%v(%v)的好友申请", req.RequesterNick, req.RequesterUin)
+				log.Debugf("正在接受%v(%v)的好友申请", req.SourceNick, req.SourceUin)
 				c.bot.SolveFriendRequest(req, true)
-				if err := c.l.LspStateManager.DeleteNewFriendRequest(req.RequestId); err != nil {
+				if err := c.l.LspStateManager.DeleteNewFriendRequest(req.Source); err != nil {
 					log.Errorf("DeleteNewFriendRequest error %v", err)
 				}
 			}
@@ -1087,7 +1090,7 @@ func (c *LspPrivateCommand) FriendRequestCommand() {
 		// 展示好友申请
 		var sb strings.Builder
 		for _, req := range requests {
-			sb.WriteString(fmt.Sprintf("ID:%v %v(%v)申请好友\n", req.RequestId, req.RequesterNick, req.RequesterUin))
+			sb.WriteString(fmt.Sprintf("ID:%v %v(%v)申请好友\n", req.Source, req.SourceNick, req.SourceUin))
 		}
 		log.Infof("查询到%v个好友申请", len(requests))
 		c.textReply(sb.String())
@@ -1104,20 +1107,20 @@ func (c *LspPrivateCommand) FriendRequestCommand() {
 		}
 
 		log := log.WithFields(logrus.Fields{
-			"RequesterNick": request.RequesterNick,
-			"RequesterUin":  request.RequesterUin,
+			"RequesterNick": request.SourceNick,
+			"RequesterUin":  request.SourceUin,
 		})
 
 		if friendRequestCmd.Reject {
 			c.bot.SolveFriendRequest(request, false)
 			log.Info("拒绝好友申请")
-			c.textReply(fmt.Sprintf("成功 - 已拒绝 %v(%v) 的好友申请", request.RequesterNick, request.RequesterUin))
+			c.textReply(fmt.Sprintf("成功 - 已拒绝 %v(%v) 的好友申请", request.SourceNick, request.SourceUin))
 		} else {
 			c.bot.SolveFriendRequest(request, true)
 			log.Info("接受好友申请")
-			c.textReply(fmt.Sprintf("成功 - 已接受 %v(%v) 的好友申请", request.RequesterNick, request.RequesterUin))
+			c.textReply(fmt.Sprintf("成功 - 已接受 %v(%v) 的好友申请", request.SourceNick, request.SourceUin))
 		}
-		if err := c.l.LspStateManager.DeleteNewFriendRequest(request.RequestId); err != nil {
+		if err := c.l.LspStateManager.DeleteNewFriendRequest(request.Source); err != nil {
 			log.Errorf("DeleteNewFriendRequest error %v", err)
 		}
 	}
@@ -1129,7 +1132,7 @@ func (c *LspPrivateCommand) AdminCommand() {
 	defer func() { log.Infof("%v command end", c.CommandName()) }()
 
 	var adminCmd struct {
-		Group int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Group uint32 `optional:"" short:"g" help:"要操作的QQ群号码"`
 	}
 
 	_, output := c.parseCommandSyntax(&adminCmd, c.CommandName(), kong.Description("查看当前Admin权限"), kong.UsageOnError())
@@ -1193,9 +1196,8 @@ func (c *LspPrivateCommand) AdminCommand() {
 			} else {
 				var name string
 				for _, id := range ids {
-					fi := gi.FindMember(id)
-					if fi != nil {
-						name = fi.Nickname
+					if fi := c.bot.FindGroupMember(adminCmd.Group, id); fi != nil {
+						name = fi.DisplayName()
 					} else {
 						name = "未知"
 					}
@@ -1220,8 +1222,8 @@ func (c *LspPrivateCommand) SilenceCommand() {
 	}
 
 	var silenceCmd struct {
-		Group  int64 `optional:"" short:"g" help:"要操作的QQ群号码"`
-		Delete bool  `optional:"" short:"d" help:"取消设置"`
+		Group  uint32 `optional:"" short:"g" help:"要操作的QQ群号码"`
+		Delete bool   `optional:"" short:"d" help:"取消设置"`
 	}
 
 	_, output := c.parseCommandSyntax(&silenceCmd, c.CommandName(), kong.Description("设置沉默模式"), kong.UsageOnError())
@@ -1288,7 +1290,7 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 	m.Textf("当前群组数：%v\n", len(c.bot.GetGroupList()))
 	for index, cm := range concern.ListConcern() {
 		_, ids, ctypes, err := cm.GetStateManager().ListConcernState(
-			func(groupCode int64, id interface{}, p concern_type.Type) bool {
+			func(groupCode uint32, id interface{}, p concern_type.Type) bool {
 				return true
 			})
 		if index > 0 {
@@ -1307,7 +1309,7 @@ func (c *LspPrivateCommand) SysinfoCommand() {
 func (c *LspPrivateCommand) DebugCheck() bool {
 	var ok bool
 	if c.debug {
-		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.uin"), c.msg.Sender) {
+		if lo.Contains(config.GlobalConfig.GetStringSlice("debug.uin"), strconv.Itoa(int(c.msg.Sender.Uin))) {
 			ok = true
 		}
 	} else {
@@ -1365,7 +1367,7 @@ func (c *LspPrivateCommand) commonTemplateData() map[string]interface{} {
 	return map[string]interface{}{
 		"msg":         c.msg,
 		"member_code": c.sender().Uin,
-		"member_name": c.sender().DisplayName(),
+		"member_name": lo.CoalesceOrEmpty(c.sender().CardName, c.sender().Nickname),
 		"command":     CommandMaps,
 	}
 }
@@ -1388,12 +1390,12 @@ func (c *LspPrivateCommand) templateMsg(name string, data map[string]interface{}
 func (c *LspPrivateCommand) sender() *message.Sender {
 	return c.msg.Sender
 }
-func (c *LspPrivateCommand) uin() int64 {
+func (c *LspPrivateCommand) uin() uint32 {
 	return c.sender().Uin
 }
 
 func (c *LspPrivateCommand) name() string {
-	return c.sender().DisplayName()
+	return lo.CoalesceOrEmpty(c.sender().CardName, c.sender().Nickname)
 }
 
 func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext {
@@ -1420,7 +1422,7 @@ func (c *LspPrivateCommand) NewMessageContext(log *logrus.Entry) *MessageContext
 	return ctx
 }
 
-func (c *LspPrivateCommand) checkGroupCode(groupCode int64) error {
+func (c *LspPrivateCommand) checkGroupCode(groupCode uint32) error {
 	if groupCode == 0 {
 		return fmt.Errorf("没有指定QQ群号码，请使用-g参数指定QQ群，例如对QQ群123456进行操作：%v %v %v", c.GetCmd(), "-g 123456", strings.Join(c.GetArgs(), " "))
 	}
@@ -1432,7 +1434,7 @@ func (c *LspPrivateCommand) checkGroupCode(groupCode int64) error {
 		if group == nil {
 			return fmt.Errorf("没有找到QQ群<%v>，请确认bot是否在群内", groupCode)
 		}
-		member := group.FindMember(c.uin())
+		member := c.bot.FindGroupMember(groupCode, c.uin())
 		if member == nil {
 			return fmt.Errorf("没有在QQ群<%v>内找到您，请确认您是否在群内", groupCode)
 		}

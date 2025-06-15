@@ -1,6 +1,6 @@
 package youtube
 
-import "github.com/Sora233/DDBOT/lsp/buntdb"
+import "github.com/Sora233/DDBOT/v2/lsp/buntdb"
 
 type KeySet struct {
 }
@@ -21,7 +21,7 @@ func (k *KeySet) FreshKey(keys ...interface{}) string {
 	return buntdb.YoutubeFreshKey(keys...)
 }
 
-func (k *KeySet) ParseGroupConcernStateKey(key string) (int64, interface{}, error) {
+func (k *KeySet) ParseGroupConcernStateKey(key string) (uint32, interface{}, error) {
 	return buntdb.ParseConcernStateKeyWithString(key)
 }
 

@@ -1,9 +1,6 @@
 package utils
 
 import (
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/guonaihong/gout"
-	"github.com/stretchr/testify/assert"
 	"html"
 	"io/ioutil"
 	"os"
@@ -11,6 +8,11 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/guonaihong/gout"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
 )
 
 func TestFilePathWalkDir(t *testing.T) {

@@ -1,7 +1,7 @@
 package mmsg
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/LagrangeDev/LagrangeGo/message"
 	"github.com/sirupsen/logrus"
 )
 

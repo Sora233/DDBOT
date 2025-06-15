@@ -3,12 +3,14 @@ package huya
 import (
 	"bytes"
 	"errors"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/DDBOT/requests"
-	"github.com/Sora233/DDBOT/utils"
 	"strings"
 	"time"
+
+	"github.com/PuerkitoBio/goquery"
+
+	"github.com/Sora233/DDBOT/v2/proxy_pool"
+	"github.com/Sora233/DDBOT/v2/requests"
+	"github.com/Sora233/DDBOT/v2/utils"
 )
 
 func RoomPage(roomId string) (*LiveInfo, error) {

@@ -2,12 +2,14 @@ package buntdb
 
 import (
 	"errors"
-	"github.com/Sora233/MiraiGo-Template/utils"
-	"github.com/modern-go/gls"
-	"github.com/tidwall/buntdb"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/modern-go/gls"
+	"github.com/tidwall/buntdb"
+
+	"github.com/Sora233/MiraiGo-Template/utils"
 )
 
 // ShortCut 包含了许多数据库的读写helper，只需嵌入即可使用，如果不想嵌入，也可以通过包名调用
@@ -188,6 +190,21 @@ func (s *ShortCut) SetInt64(key string, value int64, opt ...OptionFunc) error {
 	return s.Set(key, strconv.FormatInt(value, 10), opt...)
 }
 
+func (s *ShortCut) DeleteUint32(key string, opt ...OptionFunc) (uint32, error) {
+	return s.uint32Wrapper(s.Delete(key, opt...))
+}
+
+// SetUint32 通过key设置uint32格式的value
+// 支持 SetExpireOpt SetKeepLastExpireOpt SetNoOverWriteOpt SetGetIsOverwriteOpt
+// SetGetPreviousValueStringOpt SetGetPreviousValueInt64Opt SetGetPreviousValueJsonObjectOpt
+func (s *ShortCut) SetUint32(key string, value uint32, opt ...OptionFunc) error {
+	return s.Set(key, strconv.FormatUint(uint64(value), 10), opt...)
+}
+
+func (s *ShortCut) GetUint32(key string, opt ...OptionFunc) (uint32, error) {
+	return s.uint32Wrapper(s.Get(key, opt...))
+}
+
 // Delete 删除key，并返回key上的值
 // 支持 IgnoreNotFoundOpt
 func (s *ShortCut) Delete(key string, opt ...OptionFunc) (string, error) {
@@ -310,6 +327,17 @@ func (s *ShortCut) int64Wrapper(result string, err error) (int64, error) {
 		return 0, nil
 	}
 	return strconv.ParseInt(result, 10, 64)
+}
+
+func (s *ShortCut) uint32Wrapper(result string, err error) (uint32, error) {
+	if err != nil {
+		return 0, err
+	}
+	if len(result) == 0 {
+		return 0, nil
+	}
+	t, err := strconv.ParseUint(result, 10, 32)
+	return uint32(t), err
 }
 
 func (s *ShortCut) CreatePatternIndex(patternFunc KeyPatternFunc, suffix []interface{}, less ...func(a, b string) bool) error {

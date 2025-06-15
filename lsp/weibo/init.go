@@ -1,11 +1,12 @@
 package weibo
 
 import (
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/requests"
-	localutils "github.com/Sora233/DDBOT/utils"
 	"net/http"
 	"time"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/requests"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
 )
 
 func init() {

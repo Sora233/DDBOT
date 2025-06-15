@@ -1,9 +1,10 @@
 package weibo
 
 import (
-	"github.com/Sora233/DDBOT/requests"
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/atomic"
+
+	"github.com/Sora233/DDBOT/v2/requests"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary

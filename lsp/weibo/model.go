@@ -1,13 +1,15 @@
 package weibo
 
 import (
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/sirupsen/logrus"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
 )
 
 const (
@@ -59,7 +61,7 @@ func (n *NewsInfo) Logger() *logrus.Entry {
 }
 
 type ConcernNewsNotify struct {
-	GroupCode int64 `json:"group_code"`
+	GroupCode uint32 `json:"group_code"`
 	*UserInfo
 	Card *CacheCard
 }
@@ -68,7 +70,7 @@ func (c *ConcernNewsNotify) Type() concern_type.Type {
 	return News
 }
 
-func (c *ConcernNewsNotify) GetGroupCode() int64 {
+func (c *ConcernNewsNotify) GetGroupCode() uint32 {
 	return c.GroupCode
 }
 
@@ -80,7 +82,7 @@ func (c *ConcernNewsNotify) ToMessage() (m *mmsg.MSG) {
 	return c.Card.GetMSG()
 }
 
-func NewConcernNewsNotify(groupCode int64, info *NewsInfo) []*ConcernNewsNotify {
+func NewConcernNewsNotify(groupCode uint32, info *NewsInfo) []*ConcernNewsNotify {
 	var result []*ConcernNewsNotify
 	for _, card := range info.Cards {
 		result = append(result, &ConcernNewsNotify{

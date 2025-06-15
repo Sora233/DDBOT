@@ -1,6 +1,6 @@
 package concern
 
-import "github.com/Mrs4s/MiraiGo/message"
+import "github.com/LagrangeDev/LagrangeGo/message"
 
 // ICallback 定义了一些针对 Notify 推送前后的 callback
 type ICallback interface {

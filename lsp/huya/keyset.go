@@ -1,6 +1,6 @@
 package huya
 
-import "github.com/Sora233/DDBOT/lsp/buntdb"
+import "github.com/Sora233/DDBOT/v2/lsp/buntdb"
 
 type keySet struct {
 }
@@ -21,7 +21,7 @@ func (l *keySet) FreshKey(keys ...interface{}) string {
 	return buntdb.HuyaFreshKey(keys...)
 }
 
-func (l *keySet) ParseGroupConcernStateKey(key string) (int64, interface{}, error) {
+func (l *keySet) ParseGroupConcernStateKey(key string) (uint32, interface{}, error) {
 	return buntdb.ParseConcernStateKeyWithString(key)
 }
 

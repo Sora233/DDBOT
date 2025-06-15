@@ -1,10 +1,12 @@
 package mmsg
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
 )
 
 func TestTyped(t *testing.T) {

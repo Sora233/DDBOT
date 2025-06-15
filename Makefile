@@ -1,7 +1,7 @@
 BUILD_TIME := $(shell date --rfc-3339=seconds)
 COMMIT_ID := $(shell git rev-parse HEAD)
 
-LDFLAGS = -X "github.com/Sora233/DDBOT/lsp.BuildTime='"$(BUILD_TIME)"'" -X "github.com/Sora233/DDBOT/lsp.CommitId='"$(COMMIT_ID)"'"
+LDFLAGS = -X "github.com/Sora233/DDBOT/v2/lsp.BuildTime='"$(BUILD_TIME)"'" -X "github.com/Sora233/DDBOT/v2/lsp.CommitId='"$(COMMIT_ID)"'"
 
 SRC := $(shell find . -type f -name '*.go') lsp/template/default/*
 PROTO := $(shell find . -type f -name '*.proto')
@@ -13,7 +13,7 @@ $(COV): $(SRC)
 
 
 $(TARGET): $(SRC) go.mod go.sum
-	go build -ldflags '$(LDFLAGS)' -o $(TARGET) github.com/Sora233/DDBOT/cmd
+	go build -ldflags '$(LDFLAGS)' -o $(TARGET) github.com/Sora233/DDBOT/v2/cmd
 
 build: $(TARGET)
 

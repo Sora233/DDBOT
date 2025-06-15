@@ -1,39 +1,45 @@
 package lsp
 
 import (
+	"errors"
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/image_pool"
-	"github.com/Sora233/DDBOT/image_pool/local_pool"
-	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/cfg"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/DDBOT/lsp/template"
-	"github.com/Sora233/DDBOT/lsp/version"
-	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/DDBOT/proxy_pool/local_proxy_pool"
-	"github.com/Sora233/DDBOT/proxy_pool/py"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/DDBOT/utils/msgstringer"
-	"github.com/Sora233/MiraiGo-Template/bot"
-	"github.com/Sora233/MiraiGo-Template/config"
-	"github.com/fsnotify/fsnotify"
-	jsoniter "github.com/json-iterator/go"
-	"github.com/robfig/cron/v3"
-	"github.com/sirupsen/logrus"
-	"github.com/tidwall/buntdb"
-	"go.uber.org/atomic"
-	"golang.org/x/sync/semaphore"
+	"math"
 	"os"
 	"reflect"
 	"runtime/debug"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	"github.com/LagrangeDev/LagrangeGo/client"
+	"github.com/LagrangeDev/LagrangeGo/client/event"
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/fsnotify/fsnotify"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/robfig/cron/v3"
+	"github.com/samber/lo"
+	"github.com/sirupsen/logrus"
+	"github.com/tidwall/buntdb"
+	"golang.org/x/sync/semaphore"
+
+	"github.com/Sora233/DDBOT/v2/image_pool"
+	"github.com/Sora233/DDBOT/v2/image_pool/local_pool"
+	"github.com/Sora233/DDBOT/v2/image_pool/lolicon_pool"
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/cfg"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/DDBOT/v2/lsp/permission"
+	"github.com/Sora233/DDBOT/v2/lsp/template"
+	"github.com/Sora233/DDBOT/v2/lsp/version"
+	"github.com/Sora233/DDBOT/v2/proxy_pool"
+	"github.com/Sora233/DDBOT/v2/proxy_pool/local_proxy_pool"
+	"github.com/Sora233/DDBOT/v2/proxy_pool/py"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
+	"github.com/Sora233/DDBOT/v2/utils/msgstringer"
+	"github.com/Sora233/MiraiGo-Template/bot"
+	"github.com/Sora233/MiraiGo-Template/config"
 )
 
 const ModuleName = "me.sora233.Lsp"
@@ -54,7 +60,7 @@ type Lsp struct {
 	msgLimit      *semaphore.Weighted
 	cron          *cron.Cron
 
-	PermissionStateManager *permission.StateManager
+	PermissionStateManager *permission.StateManager[uint32, uint32]
 	LspStateManager        *StateManager
 	started                atomic.Bool
 }
@@ -221,40 +227,52 @@ func (l *Lsp) Init() {
 func (l *Lsp) PostInit() {
 }
 
+func (l *Lsp) reject(request *event.GroupInvite, reason string) {
+
+}
+
+func (l *Lsp) accept(request *event.GroupInvite) {
+
+}
+
 func (l *Lsp) Serve(bot *bot.Bot) {
-	bot.GroupMemberJoinEvent.Subscribe(func(qqClient *client.QQClient, event *client.MemberJoinGroupEvent) {
-		if err := localdb.Set(localdb.Key("OnGroupMemberJoined", event.Group.Code, event.Member.Uin, event.Member.JoinTime), "",
+	bot.GroupMemberJoinEvent.Subscribe(func(qqClient *client.QQClient, event *event.GroupMemberIncrease) {
+		if err := localdb.Set(localdb.Key("OnGroupMemberJoined", event.GroupUin, event.UserUin, ""), "",
 			localdb.SetExpireOpt(time.Minute*2), localdb.SetNoOverWriteOpt()); err != nil {
 			return
 		}
+		groupInfo := lo.FromPtr(qqClient.GetCachedGroupInfo(event.GroupUin))
+		memberInfo := lo.FromPtr(qqClient.GetCachedMemberInfo(event.UserUin, event.GroupUin))
 		m, _ := template.LoadAndExec("trigger.group.member_in.tmpl", map[string]interface{}{
-			"group_code":  event.Group.Code,
-			"group_name":  event.Group.Name,
-			"member_code": event.Member.Uin,
-			"member_name": event.Member.DisplayName(),
+			"group_code":  event.GroupUin,
+			"group_name":  groupInfo.GroupName,
+			"member_code": event.UserUin,
+			"member_name": memberInfo.DisplayName(),
 		})
 		if m != nil {
-			l.SendMsg(m, mmsg.NewGroupTarget(event.Group.Code))
+			l.SendMsg(m, mmsg.NewGroupTarget(event.GroupUin))
 		}
 	})
-	bot.GroupMemberLeaveEvent.Subscribe(func(qqClient *client.QQClient, event *client.MemberLeaveGroupEvent) {
-		if err := localdb.Set(localdb.Key("OnGroupMemberLeaved", event.Group.Code, event.Member.Uin, event.Member.JoinTime), "",
+	bot.GroupMemberLeaveEvent.Subscribe(func(qqClient *client.QQClient, event *event.GroupMemberDecrease) {
+		if err := localdb.Set(localdb.Key("OnGroupMemberLeaved", event.GroupUin, event.UserUin, ""), "",
 			localdb.SetExpireOpt(time.Minute*2), localdb.SetNoOverWriteOpt()); err != nil {
 			return
 		}
+		groupInfo := lo.FromPtr(qqClient.GetCachedGroupInfo(event.GroupUin))
+		memberInfo := lo.FromPtr(qqClient.GetCachedMemberInfo(event.UserUin, event.GroupUin))
 		m, _ := template.LoadAndExec("trigger.group.member_out.tmpl", map[string]interface{}{
-			"group_code":  event.Group.Code,
-			"group_name":  event.Group.Name,
-			"member_code": event.Member.Uin,
-			"member_name": event.Member.DisplayName(),
+			"group_code":  event.GroupUin,
+			"group_name":  groupInfo.GroupName,
+			"member_code": event.UserUin,
+			"member_name": memberInfo.DisplayName(),
 		})
 		if m != nil {
-			l.SendMsg(m, mmsg.NewGroupTarget(event.Group.Code))
+			l.SendMsg(m, mmsg.NewGroupTarget(event.GroupUin))
 		}
 	})
-	bot.GroupInvitedEvent.Subscribe(func(qqClient *client.QQClient, request *client.GroupInvitedRequest) {
+	bot.GroupInvitedEvent.Subscribe(func(qqClient *client.QQClient, request *event.GroupInvite) {
 		log := logger.WithFields(logrus.Fields{
-			"GroupCode":   request.GroupCode,
+			"GroupCode":   request.GroupUin,
 			"GroupName":   request.GroupName,
 			"InvitorUin":  request.InvitorUin,
 			"InvitorNick": request.InvitorNick,
@@ -262,100 +280,100 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 
 		if l.PermissionStateManager.CheckBlockList(request.InvitorUin) {
 			log.Debug("收到加群邀请，该用户在block列表中，将拒绝加群邀请")
-			l.PermissionStateManager.AddBlockList(request.GroupCode, 0)
-			request.Reject(false, "")
+			l.PermissionStateManager.AddBlockList(request.GroupUin, 0)
+			l.reject(request, "")
 			return
 		}
 
-		fi := bot.FindFriend(request.InvitorUin)
+		fi := bot.GetCachedFriendInfo(request.InvitorUin)
 		if fi == nil {
 			log.Error("收到加群邀请，无法找到好友信息，将拒绝加群邀请")
-			l.PermissionStateManager.AddBlockList(request.GroupCode, 0)
-			request.Reject(false, "未找到阁下的好友信息，请添加好友进行操作")
+			l.PermissionStateManager.AddBlockList(request.GroupUin, 0)
+			l.reject(request, "未找到阁下的好友信息，请添加好友进行操作")
 			return
 		}
 
 		if l.PermissionStateManager.CheckAdmin(request.InvitorUin) {
 			log.Info("收到管理员的加群邀请，将同意加群邀请")
-			l.PermissionStateManager.DeleteBlockList(request.GroupCode)
-			request.Accept()
+			l.PermissionStateManager.DeleteBlockList(request.GroupUin)
+			l.accept(request)
 			return
 		}
 
 		switch l.LspStateManager.GetCurrentMode() {
 		case PrivateMode:
 			log.Info("收到加群邀请，当前BOT处于私有模式，将拒绝加群邀请")
-			l.PermissionStateManager.AddBlockList(request.GroupCode, 0)
-			request.Reject(false, "当前BOT处于私有模式")
+			l.PermissionStateManager.AddBlockList(request.GroupUin, 0)
+			l.reject(request, "当前BOT处于私有模式")
 		case ProtectMode:
 			if err := l.LspStateManager.SaveGroupInvitedRequest(request); err != nil {
 				log.Errorf("收到加群邀请，但记录申请失败，将拒绝该申请，请将该问题反馈给开发者 - error %v", err)
-				request.Reject(false, "内部错误")
+				l.reject(request, "内部错误")
 			} else {
 				log.Info("收到加群邀请，当前BOT处于审核模式，将保留加群邀请")
 			}
 		case PublicMode:
-			request.Accept()
-			l.PermissionStateManager.DeleteBlockList(request.GroupCode)
+			l.accept(request)
+			l.PermissionStateManager.DeleteBlockList(request.GroupUin)
 			log.Info("收到加群邀请，当前BOT处于公开模式，将接受加群邀请")
 			m, _ := template.LoadAndExec("trigger.private.group_invited.tmpl", map[string]interface{}{
 				"member_code": request.InvitorUin,
 				"member_name": request.InvitorNick,
-				"group_code":  request.GroupCode,
+				"group_code":  request.GroupUin,
 				"group_name":  request.GroupName,
 				"command":     CommandMaps,
 			})
 			if m != nil {
 				l.SendMsg(m, mmsg.NewPrivateTarget(request.InvitorUin))
 			}
-			if err := l.PermissionStateManager.GrantGroupRole(request.GroupCode, request.InvitorUin, permission.GroupAdmin); err != nil {
-				if err != permission.ErrPermissionExist {
+			if err := l.PermissionStateManager.GrantGroupRole(request.GroupUin, request.InvitorUin, permission.GroupAdmin); err != nil {
+				if !errors.Is(err, permission.ErrPermissionExist) {
 					log.Errorf("设置群管理员权限失败 - %v", err)
 				}
 			}
 		default:
 			// impossible
 			log.Errorf("收到加群邀请，当前BOT处于未知模式，将拒绝加群邀请，请将该问题反馈给开发者")
-			request.Reject(false, "内部错误")
+			l.reject(request, "内部错误")
 		}
 	})
 
-	bot.NewFriendRequestEvent.Subscribe(func(qqClient *client.QQClient, request *client.NewFriendRequest) {
+	bot.NewFriendRequestEvent.Subscribe(func(qqClient *client.QQClient, request *event.NewFriendRequest) {
 		log := logger.WithFields(logrus.Fields{
-			"RequesterUin":  request.RequesterUin,
-			"RequesterNick": request.RequesterNick,
-			"Message":       request.Message,
+			"RequesterUin":  request.SourceUin,
+			"RequesterNick": request.SourceNick,
+			"Message":       request.Msg,
 		})
-		if l.PermissionStateManager.CheckBlockList(request.RequesterUin) {
+		if l.PermissionStateManager.CheckBlockList(request.SourceUin) {
 			log.Info("收到好友申请，该用户在block列表中，将拒绝好友申请")
-			request.Reject()
+			bot.SetFriendRequest(false, request.SourceUID)
 			return
 		}
 		switch l.LspStateManager.GetCurrentMode() {
 		case PrivateMode:
 			log.Info("收到好友申请，当前BOT处于私有模式，将拒绝好友申请")
-			request.Reject()
+			bot.SetFriendRequest(false, request.SourceUID)
 		case ProtectMode:
 			if err := l.LspStateManager.SaveNewFriendRequest(request); err != nil {
 				log.Errorf("收到好友申请，但记录申请失败，将拒绝该申请，请将该问题反馈给开发者 - error %v", err)
-				request.Reject()
+				bot.SetFriendRequest(false, request.SourceUID)
 			} else {
 				log.Info("收到好友申请，当前BOT处于审核模式，将保留好友申请")
 			}
 		case PublicMode:
 			log.Info("收到好友申请，当前BOT处于公开模式，将通过好友申请")
-			request.Accept()
+			bot.SetFriendRequest(true, request.SourceUID)
 		default:
 			// impossible
 			log.Errorf("收到好友申请，当前BOT处于未知模式，将拒绝好友申请，请将该问题反馈给开发者")
-			request.Reject()
+			bot.SetFriendRequest(false, request.SourceUID)
 		}
 	})
 
-	bot.NewFriendEvent.Subscribe(func(qqClient *client.QQClient, event *client.NewFriendEvent) {
+	bot.NewFriendEvent.Subscribe(func(qqClient *client.QQClient, event *event.NewFriend) {
 		log := logger.WithFields(logrus.Fields{
-			"Uin":      event.Friend.Uin,
-			"Nickname": event.Friend.Nickname,
+			"Uin":      event.FromUin,
+			"Nickname": event.FromNick,
 		})
 		log.Info("添加新好友")
 
@@ -366,30 +384,34 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 				return err
 			}
 			for _, req := range requests {
-				if req.RequesterUin == event.Friend.Uin {
-					l.LspStateManager.DeleteNewFriendRequest(req.RequestId)
+				if req.SourceUin == event.FromUin {
+					l.LspStateManager.DeleteNewFriendRequest(req.Source)
 				}
 			}
 			return nil
 		})
 
 		m, _ := template.LoadAndExec("trigger.private.new_friend_added.tmpl", map[string]interface{}{
-			"member_code": event.Friend.Uin,
-			"member_name": event.Friend.Nickname,
+			"member_code": event.FromUin,
+			"member_name": event.FromNick,
 			"command":     CommandMaps,
 		})
 		if m != nil {
-			l.SendMsg(m, mmsg.NewPrivateTarget(event.Friend.Uin))
+			l.SendMsg(m, mmsg.NewPrivateTarget(event.FromUin))
 		}
 	})
 
-	bot.GroupJoinEvent.Subscribe(func(qqClient *client.QQClient, info *client.GroupInfo) {
+	bot.GroupJoinEvent.Subscribe(func(qqClient *client.QQClient, info *event.GroupMemberIncrease) {
+		if info.UserUin != bot.Uin {
+			return
+		}
 		l.FreshIndex()
+		group := lo.FromPtr(localutils.GetBot().FindGroup(info.GroupUin))
 		log := logger.WithFields(logrus.Fields{
-			"GroupCode":   info.Code,
-			"MemberCount": info.MemberCount,
-			"GroupName":   info.Name,
-			"OwnerUin":    info.OwnerUin,
+			"GroupCode":   info.GroupUin,
+			"MemberCount": group.MemberCount,
+			"GroupName":   group.GroupName,
+			"OwnerUin":    group.GroupOwner,
 		})
 		log.Info("进入新群聊")
 
@@ -398,10 +420,7 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 			if len(rename) > 60 {
 				rename = rename[:60]
 			}
-			minfo := info.FindMember(bot.Uin)
-			if minfo != nil {
-				minfo.EditCard(rename)
-			}
+			qqClient.SetGroupMemberName(info.GroupUin, bot.Uin, rename)
 		}
 
 		l.LspStateManager.RWCover(func() error {
@@ -411,12 +430,12 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 				return err
 			}
 			for _, req := range requests {
-				if req.GroupCode == info.Code {
-					if err = l.LspStateManager.DeleteGroupInvitedRequest(req.RequestId); err != nil {
-						log.WithField("RequestId", req.RequestId).Errorf("DeleteGroupInvitedRequest error %v", err)
+				if req.GroupUin == info.GroupUin {
+					if err = l.LspStateManager.DeleteGroupInvitedRequest(req.RequestSeq); err != nil {
+						log.WithField("RequestSeq", req.RequestSeq).Errorf("DeleteGroupInvitedRequest error %v", err)
 					}
-					if err = l.PermissionStateManager.GrantGroupRole(info.Code, req.InvitorUin, permission.GroupAdmin); err != nil {
-						if err != permission.ErrPermissionExist {
+					if err = l.PermissionStateManager.GrantGroupRole(info.GroupUin, req.InvitorUin, permission.GroupAdmin); err != nil {
+						if !errors.Is(err, permission.ErrPermissionExist) {
 							log.WithField("target", req.InvitorUin).Errorf("设置群管理员权限失败 - %v", err)
 						}
 					}
@@ -426,14 +445,18 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		})
 	})
 
-	bot.GroupLeaveEvent.Subscribe(func(qqClient *client.QQClient, event *client.GroupLeaveEvent) {
-		log := logger.WithField("GroupCode", event.Group.Code).
-			WithField("GroupName", event.Group.Name).
-			WithField("MemberCount", event.Group.MemberCount)
+	bot.GroupLeaveEvent.Subscribe(func(qqClient *client.QQClient, event *event.GroupMemberDecrease) {
+		if event.UserUin != bot.Uin {
+			return
+		}
+		groupInfo := lo.FromPtr(localutils.GetBot().FindGroup(event.GroupUin))
+		log := logger.WithField("GroupCode", event.GroupUin).
+			WithField("GroupName", groupInfo.GroupName).
+			WithField("MemberCount", groupInfo.MemberCount)
 		for _, c := range concern.ListConcern() {
 			_, ids, _, err := c.GetStateManager().ListConcernState(
-				func(groupCode int64, id interface{}, p concern_type.Type) bool {
-					return groupCode == event.Group.Code
+				func(groupCode uint32, id interface{}, p concern_type.Type) bool {
+					return groupCode == event.GroupUin
 				})
 			if err != nil {
 				log = log.WithField(fmt.Sprintf("%v订阅", c.Site()), "查询失败")
@@ -441,41 +464,43 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 				log = log.WithField(fmt.Sprintf("%v订阅", c.Site()), len(ids))
 			}
 		}
-		if event.Operator == nil {
+		if !event.IsKicked() {
 			log.Info("退出群聊")
 		} else {
-			log.Infof("被 %v 踢出群聊", event.Operator.DisplayName())
+			memberInfo := qqClient.GetCachedMemberInfo(event.OperatorUin, event.GroupUin)
+			log.Infof("被 %v 踢出群聊", memberInfo.DisplayName())
 		}
-		l.RemoveAllByGroup(event.Group.Code)
+		l.RemoveAllByGroup(event.GroupUin)
 	})
 
-	bot.GroupNotifyEvent.Subscribe(func(qqClient *client.QQClient, ievent client.INotifyEvent) {
+	bot.GroupNotifyEvent.Subscribe(func(qqClient *client.QQClient, ievent event.INotifyEvent) {
 		switch event := ievent.(type) {
-		case *client.GroupPokeNotifyEvent:
+		case *event.GroupPokeEvent:
 			data := map[string]interface{}{
-				"member_code":   event.Sender,
+				"member_code":   event.UserUID,
 				"receiver_code": event.Receiver,
-				"group_code":    event.GroupCode,
+				"group_code":    event.GroupUin,
 			}
-			if gi := localutils.GetBot().FindGroup(event.GroupCode); gi != nil {
-				data["group_name"] = gi.Name
-				if fi := gi.FindMember(event.Sender); fi != nil {
+			if gi := localutils.GetBot().FindGroup(event.GroupUin); gi != nil {
+				data["group_name"] = gi.GroupName
+
+				if fi := localutils.GetBot().FindGroupMember(gi.GroupUin, event.UserUin); fi != nil {
 					data["member_name"] = fi.DisplayName()
 				}
-				if fi := gi.FindMember(event.Receiver); fi != nil {
+				if fi := localutils.GetBot().FindGroupMember(gi.GroupUin, event.Receiver); fi != nil {
 					data["receiver_name"] = fi.DisplayName()
 				}
 			}
 			m, _ := template.LoadAndExec("trigger.group.poke.tmpl", data)
 			if m != nil {
-				l.SendMsg(m, mmsg.NewGroupTarget(event.GroupCode))
+				l.SendMsg(m, mmsg.NewGroupTarget(event.GroupUin))
 			}
 		}
 	})
 
-	bot.FriendNotifyEvent.Subscribe(func(qqClient *client.QQClient, ievent client.INotifyEvent) {
+	bot.FriendNotifyEvent.Subscribe(func(qqClient *client.QQClient, ievent event.INotifyEvent) {
 		switch event := ievent.(type) {
-		case *client.FriendPokeNotifyEvent:
+		case *event.FriendPokeEvent:
 			if event.Receiver == localutils.GetBot().GetUin() {
 				data := map[string]interface{}{
 					"member_code": event.Sender,
@@ -495,9 +520,6 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if len(msg.Elements) <= 0 {
 			return
 		}
-		if err := l.LspStateManager.SaveMessageImageUrl(msg.GroupCode, msg.Id, msg.Elements); err != nil {
-			logger.Errorf("SaveMessageImageUrl failed %v", err)
-		}
 		if !l.started.Load() {
 			return
 		}
@@ -505,22 +527,13 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		if Debug {
 			cmd.Debug()
 		}
-		if !l.LspStateManager.IsMuted(msg.GroupCode, bot.Uin) {
+		if !l.LspStateManager.IsMuted(msg.GroupUin, bot.Uin) {
 			go cmd.Execute()
 		}
 	})
 
-	bot.SelfGroupMessageEvent.Subscribe(func(qqClient *client.QQClient, msg *message.GroupMessage) {
-		if len(msg.Elements) <= 0 {
-			return
-		}
-		if err := l.LspStateManager.SaveMessageImageUrl(msg.GroupCode, msg.Id, msg.Elements); err != nil {
-			logger.Errorf("SaveMessageImageUrl failed %v", err)
-		}
-	})
-
-	bot.GroupMuteEvent.Subscribe(func(qqClient *client.QQClient, event *client.GroupMuteEvent) {
-		if err := l.LspStateManager.Muted(event.GroupCode, event.TargetUin, event.Time); err != nil {
+	bot.GroupMuteEvent.Subscribe(func(qqClient *client.QQClient, event *event.GroupMute) {
+		if err := l.LspStateManager.Muted(event.GroupUin, event.UserUin, event.Duration); err != nil {
 			logger.Errorf("Muted failed %v", err)
 		}
 	})
@@ -538,14 +551,11 @@ func (l *Lsp) Serve(bot *bot.Bot) {
 		}
 		go cmd.Execute()
 	})
-	bot.DisconnectedEvent.Subscribe(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
-		logger.Errorf("收到OnDisconnected事件 %v", event.Message)
-		if config.GlobalConfig.GetString("bot.onDisconnected") == "exit" {
-			logger.Fatalf("onDisconnected设置为exit，bot将自动退出")
+	bot.DisconnectedEvent.Subscribe(func(qqClient *client.QQClient, event *client.DisconnectedEvent) {
+		if config.GlobalConfig.GetString("bot.onDisconnected") != "exit" && config.GlobalConfig.GetString("bot.onDisconnected") != "" {
+			logger.Errorf("bot.onDisconnected配置已经不再支持")
 		}
-		if err := bot.ReLogin(event); err != nil {
-			logger.Fatalf("重连时发生错误%v，bot将自动退出", err)
-		}
+		logger.Fatalf("收到OnDisconnected事件 %v，bot将自动退出", event.Message)
 	})
 
 }
@@ -632,7 +642,7 @@ func (l *Lsp) NewVersionNotify(newVersionChan <-chan string) {
 			continue
 		}
 		m := mmsg.NewMSG()
-		m.Textf("DDBOT管理员您好，DDBOT有可用更新版本【%v】，请前往 https://github.com/Sora233/DDBOT/releases 查看详细信息\n\n", newVersion)
+		m.Textf("DDBOT管理员您好，DDBOT有可用更新版本【%v】，请前往 https://github.com/Sora233/DDBOT/v2/releases 查看详细信息\n\n", newVersion)
 		m.Textf("如果您不想接收更新消息，请输入<%v>(不含括号)", l.CommandShowName(NoUpdateCommand))
 		for _, admin := range l.PermissionStateManager.ListAdmin() {
 			if localdb.Exist(localdb.DDBotNoUpdateKey(admin)) {
@@ -655,7 +665,7 @@ func (l *Lsp) FreshIndex() {
 	l.LspStateManager.FreshIndex()
 }
 
-func (l *Lsp) RemoveAllByGroup(groupCode int64) {
+func (l *Lsp) RemoveAllByGroup(groupCode uint32) {
 	for _, c := range concern.ListConcern() {
 		c.GetStateManager().RemoveAllByGroupCode(groupCode)
 	}
@@ -685,16 +695,16 @@ func (l *Lsp) SendMsg(m *mmsg.MSG, target mmsg.Target) (res []interface{}) {
 	if len(msgs) == 0 {
 		switch target.TargetType() {
 		case mmsg.TargetPrivate:
-			res = append(res, &message.PrivateMessage{Id: -1})
+			res = append(res, &message.PrivateMessage{ID: 0})
 		case mmsg.TargetGroup:
-			res = append(res, &message.GroupMessage{Id: -1})
+			res = append(res, &message.GroupMessage{ID: 0})
 		}
 		return
 	}
 	for idx, msg := range msgs {
 		r := l.send(msg, target)
 		res = append(res, r)
-		if reflect.ValueOf(r).Elem().FieldByName("Id").Int() == -1 {
+		if reflect.ValueOf(r).Elem().FieldByName("ID").Uint() == math.MaxUint32 {
 			break
 		}
 		if idx > 1 {
@@ -720,36 +730,36 @@ func (l *Lsp) PM(res []interface{}) []*message.PrivateMessage {
 	return result
 }
 
-func (l *Lsp) sendPrivateMessage(uin int64, msg *message.SendingMessage) (res *message.PrivateMessage) {
-	if bot.Instance == nil || !bot.Instance.Online.Load() {
-		return &message.PrivateMessage{Id: -1, Elements: msg.Elements}
+func (l *Lsp) sendPrivateMessage(uin uint32, msg *message.SendingMessage) (res *message.PrivateMessage) {
+	if !localutils.GetBot().IsOnline() {
+		return &message.PrivateMessage{ID: math.MaxUint32, Elements: msg.Elements}
 	}
+
 	if msg == nil {
 		logger.WithFields(localutils.FriendLogFields(uin)).Debug("send with nil message")
-		return &message.PrivateMessage{Id: -1}
+		return &message.PrivateMessage{ID: math.MaxUint32}
 	}
-	msg.Elements = localutils.MessageFilter(msg.Elements, func(element message.IMessageElement) bool {
-		return element != nil
-	})
+	msg.Elements = lo.Compact(msg.Elements)
 	if len(msg.Elements) == 0 {
 		logger.WithFields(localutils.FriendLogFields(uin)).Debug("send with empty message")
-		return &message.PrivateMessage{Id: -1}
+		return &message.PrivateMessage{ID: math.MaxUint32}
 	}
-	res = bot.Instance.SendPrivateMessage(uin, msg)
-	if res == nil || res.Id == -1 {
+	res, err := bot.QQClient.SendPrivateMessage(uin, msg.Elements)
+	if err != nil || res == nil || res.ID == math.MaxUint32 {
 		logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
+			WithError(err).
 			WithFields(localutils.GroupLogFields(uin)).
 			Errorf("发送消息失败")
 	}
 	if res == nil {
-		res = &message.PrivateMessage{Id: -1, Elements: msg.Elements}
+		res = &message.PrivateMessage{ID: math.MaxUint32, Elements: msg.Elements}
 	}
 	return res
 }
 
 // sendGroupMessage 发送一条消息，返回值总是非nil，Id为-1表示发送失败
 // miraigo偶尔发送消息会panic？！
-func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, recovered ...bool) (res *message.GroupMessage) {
+func (l *Lsp) sendGroupMessage(groupCode uint32, msg *message.SendingMessage, recovered ...bool) (res *message.GroupMessage) {
 	defer func() {
 		if e := recover(); e != nil {
 			if len(recovered) == 0 {
@@ -761,35 +771,33 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 				logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
 					WithField("stack", string(debug.Stack())).
 					Errorf("sendGroupMessage panic recovered but panic again %v", e)
-				res = &message.GroupMessage{Id: -1, Elements: msg.Elements}
+				res = &message.GroupMessage{ID: math.MaxUint32, Elements: msg.Elements}
 			}
 		}
 	}()
 
-	if bot.Instance == nil || !bot.Instance.Online.Load() {
-		return &message.GroupMessage{Id: -1, Elements: msg.Elements}
+	if !localutils.GetBot().IsOnline() {
+		return &message.GroupMessage{ID: math.MaxUint32, Elements: msg.Elements}
 	}
-	if l.LspStateManager.IsMuted(groupCode, bot.Instance.Uin) {
+	if l.LspStateManager.IsMuted(groupCode, localutils.GetBot().GetUin()) {
 		logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
 			WithFields(localutils.GroupLogFields(groupCode)).
 			Debug("BOT被禁言无法发送群消息")
-		return &message.GroupMessage{Id: -1, Elements: msg.Elements}
+		return &message.GroupMessage{ID: math.MaxUint32, Elements: msg.Elements}
 	}
 	if msg == nil {
 		logger.WithFields(localutils.GroupLogFields(groupCode)).Debug("send with nil message")
-		return &message.GroupMessage{Id: -1}
+		return &message.GroupMessage{ID: math.MaxUint32}
 	}
-	msg.Elements = localutils.MessageFilter(msg.Elements, func(element message.IMessageElement) bool {
-		return element != nil
-	})
+	msg.Elements = lo.Compact(msg.Elements)
 	if len(msg.Elements) == 0 {
 		logger.WithFields(localutils.GroupLogFields(groupCode)).Debug("send with empty message")
-		return &message.GroupMessage{Id: -1}
+		return &message.GroupMessage{ID: math.MaxUint32}
 	}
-	res = bot.Instance.SendGroupMessage(groupCode, msg)
-	if res == nil || res.Id == -1 {
-		if msg.Count(func(e message.IMessageElement) bool {
-			return e.Type() == message.At && e.(*message.AtElement).Target == 0
+	res, err := bot.QQClient.SendGroupMessage(groupCode, msg.Elements)
+	if err != nil || res == nil || res.ID == math.MaxUint32 {
+		if lo.CountBy(msg.Elements, func(e message.IMessageElement) bool {
+			return e.Type() == message.At && e.(*message.AtElement).TargetUin == 0
 		}) > 0 {
 			logger.WithField("content", msgstringer.MsgToString(msg.Elements)).
 				WithFields(localutils.GroupLogFields(groupCode)).
@@ -801,7 +809,7 @@ func (l *Lsp) sendGroupMessage(groupCode int64, msg *message.SendingMessage, rec
 		}
 	}
 	if res == nil {
-		res = &message.GroupMessage{Id: -1, Elements: msg.Elements}
+		res = &message.GroupMessage{ID: math.MaxUint32, Elements: msg.Elements}
 	}
 	return res
 }
@@ -811,7 +819,7 @@ var Instance = &Lsp{
 	stop:                   make(chan interface{}),
 	status:                 NewStatus(),
 	msgLimit:               semaphore.NewWeighted(3),
-	PermissionStateManager: permission.NewStateManager(),
+	PermissionStateManager: permission.NewStateManager[uint32, uint32](),
 	LspStateManager:        NewStateManager(),
 	cron:                   cron.New(cron.WithLogger(cron.VerbosePrintfLogger(cronLog))),
 }

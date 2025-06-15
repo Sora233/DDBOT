@@ -2,11 +2,13 @@ package mmsg
 
 import (
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/requests"
-	"github.com/samber/lo"
 	"strings"
 	"unicode"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/samber/lo"
+
+	"github.com/Sora233/DDBOT/v2/requests"
 )
 
 // MSG 线程不安全
@@ -163,7 +165,7 @@ func (m *MSG) ImageByLocalWithNorm(filepath, alternative string) *MSG {
 	return m.Append(img)
 }
 
-func (m *MSG) At(target int64) *MSG {
+func (m *MSG) At(target uint32) *MSG {
 	return m.Append(NewAt(target))
 }
 
@@ -176,8 +178,8 @@ func (m *MSG) AtAll(prepend ...bool) *MSG {
 	return m.Append(NewAt(0))
 }
 
-// Poke 戳一戳，只支持群聊，如果MSG发送给私聊，将自动忽略
-func (m *MSG) Poke(target int64) *MSG {
+// Poke 戳一戳
+func (m *MSG) Poke(target uint32) *MSG {
 	return m.Append(NewPoke(target))
 }
 

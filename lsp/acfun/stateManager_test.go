@@ -1,12 +1,14 @@
 package acfun
 
 import (
-	"github.com/Sora233/DDBOT/internal/test"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
-	"testing"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
 )
 
 func initStateManager(t *testing.T, notifyChan chan<- concern.Notify) *StateManager {

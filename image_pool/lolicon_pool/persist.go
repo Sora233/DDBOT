@@ -1,9 +1,10 @@
 package lolicon_pool
 
 import (
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/tidwall/buntdb"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary

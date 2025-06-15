@@ -2,11 +2,14 @@ package bilibili
 
 import (
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/message"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern"
+	"math"
 	"strconv"
 	"strings"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
 )
 
 type GroupConcernConfig struct {
@@ -41,21 +44,21 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 	case DynamicDescType_WithVideo:
 		// 解决联合投稿的时候刷屏
 		notify.compactKey = notify.Card.GetDesc().GetBvid()
-		err := g.concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
+		err := g.concern.SetGroupCompactMarkIfNotExist(uint32(notify.GetGroupCode()), notify.compactKey)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	case DynamicDescType_WithOrigin:
 		// 解决一起转发的时候刷屏
 		notify.compactKey = notify.Card.GetDesc().GetOrigDyIdStr()
-		err := g.concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.compactKey)
+		err := g.concern.SetGroupCompactMarkIfNotExist(uint32(notify.GetGroupCode()), notify.compactKey)
 		if localdb.IsRollback(err) {
 			notify.shouldCompact = true
 		}
 	default:
 		// 其他动态也设置一下
 		notify.compactKey = notify.Card.GetDesc().GetDynamicIdStr()
-		err := g.concern.SetGroupCompactMarkIfNotExist(notify.GetGroupCode(), notify.Card.GetDesc().GetDynamicIdStr())
+		err := g.concern.SetGroupCompactMarkIfNotExist(uint32(notify.GetGroupCode()), notify.Card.GetDesc().GetDynamicIdStr())
 		if err != nil && !localdb.IsRollback(err) {
 			logger.Errorf("SetGroupOriginMarkIfNotExist error %v", err)
 		}
@@ -63,7 +66,7 @@ func (g *GroupConcernConfig) NotifyBeforeCallback(inotify concern.Notify) {
 }
 
 func (g *GroupConcernConfig) NotifyAfterCallback(inotify concern.Notify, msg *message.GroupMessage) {
-	if inotify.Type() != News || msg == nil || msg.Id == -1 {
+	if inotify.Type() != News || msg == nil || msg.ID == math.MaxUint32 {
 		return
 	}
 	notify := inotify.(*ConcernNewsNotify)

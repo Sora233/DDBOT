@@ -2,9 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"github.com/guonaihong/gout"
-	jsoniter "github.com/json-iterator/go"
-	"github.com/sirupsen/logrus"
 	"io/fs"
 	"net/url"
 	"path/filepath"
@@ -14,6 +11,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/guonaihong/gout"
+	jsoniter "github.com/json-iterator/go"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/exp/constraints"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -200,16 +202,16 @@ func ArgSplit(str string) (result []string) {
 	return
 }
 
-func GroupLogFields(groupCode int64) logrus.Fields {
+func GroupLogFields[GT constraints.Integer](groupCode GT) logrus.Fields {
 	var fields = make(logrus.Fields)
 	fields["GroupCode"] = groupCode
-	if groupInfo := GetBot().FindGroup(groupCode); groupInfo != nil {
-		fields["GroupName"] = groupInfo.Name
+	if groupInfo := GetBot().FindGroup(uint32(groupCode)); groupInfo != nil {
+		fields["GroupName"] = groupInfo.GroupName
 	}
 	return fields
 }
 
-func FriendLogFields(uin int64) logrus.Fields {
+func FriendLogFields(uin uint32) logrus.Fields {
 	var fields = make(logrus.Fields)
 	fields["FriendUin"] = uin
 	if info := GetBot().FindFriend(uin); info != nil {
@@ -223,9 +225,21 @@ func Switch2Bool(s string) bool {
 }
 
 func JoinInt64(ele []int64, sep string) string {
+	return JoinInt(ele, sep)
+}
+
+func JoinInt[T constraints.Signed](ele []T, sep string) string {
 	var s []string
 	for _, e := range ele {
-		s = append(s, strconv.FormatInt(e, 10))
+		s = append(s, strconv.FormatInt(int64(e), 10))
+	}
+	return strings.Join(s, sep)
+}
+
+func JoinUint[T constraints.Unsigned](ele []T, sep string) string {
+	var s []string
+	for _, e := range ele {
+		s = append(s, strconv.FormatUint(uint64(e), 10))
 	}
 	return strings.Join(s, sep)
 }

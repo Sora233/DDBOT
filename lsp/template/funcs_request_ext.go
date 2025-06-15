@@ -1,11 +1,13 @@
 package template
 
 import (
-	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/DDBOT/requests"
-	"github.com/spf13/cast"
 	"reflect"
 	"strings"
+
+	"github.com/spf13/cast"
+
+	"github.com/Sora233/DDBOT/v2/proxy_pool"
+	"github.com/Sora233/DDBOT/v2/requests"
 )
 
 const (

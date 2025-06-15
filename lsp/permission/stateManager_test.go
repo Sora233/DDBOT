@@ -1,11 +1,13 @@
 package permission
 
 import (
-	"github.com/Sora233/DDBOT/internal/test"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
 )
 
 func initStateManager(t *testing.T) *StateManager {

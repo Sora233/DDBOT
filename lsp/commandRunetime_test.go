@@ -1,12 +1,14 @@
 package lsp
 
 import (
-	"github.com/Sora233/DDBOT/internal/test"
-	tc "github.com/Sora233/DDBOT/internal/test_concern"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	tc "github.com/Sora233/DDBOT/v2/internal/test_concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
 )
 
 func TestNewRuntime(t *testing.T) {

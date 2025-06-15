@@ -1,7 +1,7 @@
 package version
 
 import (
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
 )
 
 func GetCurrentVersion(name string) int64 {

@@ -1,12 +1,15 @@
 package lsp
 
 import (
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/version"
 	"strconv"
 	"strings"
+
+	"github.com/samber/lo"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/version"
 )
 
 type oldType int64
@@ -77,7 +80,7 @@ func (v *V1) configMigrate(key, value string) string {
 	var ng concern.GroupConcernConfig
 	ng.GroupConcernAt.AtAll = g.GroupConcernAt.AtAll.ToNewType()
 	for _, atone := range g.GroupConcernAt.AtSomeone {
-		ng.GroupConcernAt.MergeAtSomeoneList(atone.Ctype.ToNewType(), atone.AtList)
+		ng.GroupConcernAt.MergeAtSomeoneList(atone.Ctype.ToNewType(), lo.Map(atone.AtList, func(item int64, _ int) uint32 { return uint32(item) }))
 	}
 
 	ng.GroupConcernFilter.Config = g.GroupConcernFilter.Config

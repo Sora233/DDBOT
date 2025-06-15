@@ -3,20 +3,22 @@ package lsp
 import (
 	"context"
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/internal/test"
-	tc "github.com/Sora233/DDBOT/internal/test_concern"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/lsp/permission"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/DDBOT/utils/msgstringer"
-	"github.com/stretchr/testify/assert"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/LagrangeDev/LagrangeGo/client"
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	tc "github.com/Sora233/DDBOT/v2/internal/test_concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/DDBOT/v2/lsp/permission"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
+	"github.com/Sora233/DDBOT/v2/utils/msgstringer"
 )
 
 const (
@@ -30,7 +32,7 @@ const (
 func initLsp(t *testing.T) {
 	test.InitMirai()
 	test.InitBuntdb(t)
-	Instance.PermissionStateManager = permission.NewStateManager()
+	Instance.PermissionStateManager = permission.NewStateManager[uint32, uint32]()
 	Instance.LspStateManager = NewStateManager()
 }
 
@@ -242,7 +244,7 @@ func TestIGrantRole(t *testing.T) {
 	result := <-msgChan
 	assert.Contains(t, msgstringer.MsgToString(result.ToCombineMessage(target).Elements), noPermission)
 
-	assert.Nil(t, Instance.PermissionStateManager.GrantGroupRole(test.G1, test.Sender1.Uin, permission.GroupAdmin))
+	assert.Nil(t, Instance.PermissionStateManager.GrantGroupRole(test.G1, int64(test.Sender1.Uin), permission.GroupAdmin))
 
 	IGrantRole(ctx, test.G1, permission.RoleType(-1), test.UID2, false)
 	result = <-msgChan

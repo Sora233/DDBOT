@@ -2,13 +2,15 @@ package bilibili
 
 import (
 	"context"
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/utils/msgstringer"
-	"github.com/stretchr/testify/assert"
-	"github.com/tidwall/buntdb"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/buntdb"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/utils/msgstringer"
 )
 
 func initConcern(t *testing.T) *Concern {

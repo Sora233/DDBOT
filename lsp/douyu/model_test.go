@@ -1,9 +1,11 @@
 package douyu
 
 import (
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
 )
 
 func TestLiveInfo(t *testing.T) {

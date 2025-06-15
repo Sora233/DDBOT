@@ -3,14 +3,18 @@ package lsp
 import (
 	"context"
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/DDBOT/utils/msgstringer"
-	"github.com/sirupsen/logrus"
+	"math"
 	"runtime/debug"
 	"time"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/samber/lo"
+	"github.com/sirupsen/logrus"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/DDBOT/v2/utils"
+	"github.com/Sora233/DDBOT/v2/utils/msgstringer"
 )
 
 func (l *Lsp) ConcernNotify() {
@@ -32,10 +36,10 @@ func (l *Lsp) ConcernNotify() {
 				continue
 			}
 			var inotify = _inotify
-			target := mmsg.NewGroupTarget(inotify.GetGroupCode())
+			target := mmsg.NewGroupTarget(uint32(inotify.GetGroupCode()))
 			nLogger := inotify.Logger()
 
-			if l.LspStateManager.IsMuted(inotify.GetGroupCode(), utils.GetBot().GetUin()) {
+			if l.LspStateManager.IsMuted(uint32(inotify.GetGroupCode()), utils.GetBot().GetUin()) {
 				nLogger.Info("BOT群内被禁言，跳过本次推送")
 				continue
 			}
@@ -45,7 +49,7 @@ func (l *Lsp) ConcernNotify() {
 				nLogger.Errorf("GetConcernBySiteAndType error %v", err)
 				continue
 			}
-			cfg := c.GetStateManager().GetGroupConcernConfig(inotify.GetGroupCode(), inotify.GetUid())
+			cfg := c.GetStateManager().GetGroupConcernConfig(uint32(inotify.GetGroupCode()), inotify.GetUid())
 			cfg.NotifyBeforeCallback(inotify)
 
 			// 注意notify可能会缓存MSG
@@ -58,11 +62,11 @@ func (l *Lsp) ConcernNotify() {
 			} else {
 				// 有@全体成员 或者 @Someone
 				var qqadmin = atBeforeHook.Pass &&
-					l.PermissionStateManager.CheckGroupAdministrator(inotify.GetGroupCode(), utils.GetBot().GetUin())
+					l.PermissionStateManager.CheckGroupAdministrator(uint32(inotify.GetGroupCode()), utils.GetBot().GetUin())
 				var checkAtAll = qqadmin &&
 					cfg.GetGroupConcernAt().CheckAtAll(inotify.Type())
 				var atAllMark = checkAtAll &&
-					c.GetStateManager().CheckAndSetAtAllMark(inotify.GetGroupCode(), inotify.GetUid())
+					c.GetStateManager().CheckAndSetAtAllMark(uint32(inotify.GetGroupCode()), inotify.GetUid())
 				nLogger.WithFields(logrus.Fields{
 					"qqAdmin":    qqadmin,
 					"checkAtAll": checkAtAll,
@@ -106,10 +110,13 @@ func (l *Lsp) ConcernNotify() {
 				if atBeforeHook.Pass {
 					var atIdsOnce bool
 					for _, msg := range msgs {
-						if msg.Id == -1 {
+						if msg.ID == 0 {
 							// 检查有没有@全体成员
-							e := utils.MessageFilter(msg.Elements, func(element message.IMessageElement) bool {
-								return element.Type() == message.At && element.(*message.AtElement).Target == 0
+							//e := utils.MessageFilter(msg.Elements, func(element message.IMessageElement) bool {
+							//	return element.Type() == message.At && element.(*message.AtElement).Target == 0
+							//})
+							e := lo.Filter(msg.Elements, func(element message.IMessageElement, _ int) bool {
+								return element.Type() == message.At && element.(*message.AtElement).TargetUin == 0
 							})
 							if len(e) == 0 {
 								continue
@@ -118,7 +125,7 @@ func (l *Lsp) ConcernNotify() {
 							// 有@全体成员的消息应该去掉之后重试
 							secondM := mmsg.NewMSGFromGroupMessage(msg)
 							secondM.Drop(func(e message.IMessageElement, _ int) bool {
-								return e.Type() == message.At && e.(*message.AtElement).Target == 0
+								return e.Type() == message.At && e.(*message.AtElement).TargetUin == 0
 							})
 
 							secondRes := l.GM(l.SendMsg(secondM, target))
@@ -126,7 +133,7 @@ func (l *Lsp) ConcernNotify() {
 							if len(secondRes) != 1 {
 								panic(fmt.Sprintf("INTERNAL: len(secondRes) is %v", len(secondRes)))
 							}
-							if secondRes[0].Id == -1 {
+							if secondRes[0].ID == math.MaxUint32 {
 								// 去掉@全员还是发送失败
 								continue
 							}
@@ -160,7 +167,7 @@ func newAtAllMsg(m *mmsg.MSG) *mmsg.MSG {
 	return m.AtAll(true)
 }
 
-func newAtIdsMsg(m *mmsg.MSG, ids []int64) *mmsg.MSG {
+func newAtIdsMsg(m *mmsg.MSG, ids []uint32) *mmsg.MSG {
 	if len(ids) > 0 {
 		m.Cut()
 		for _, id := range ids {

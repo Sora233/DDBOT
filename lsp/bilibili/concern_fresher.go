@@ -3,17 +3,19 @@ package bilibili
 import (
 	"context"
 	"fmt"
-	"github.com/Sora233/DDBOT/lsp/cfg"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/MiraiGo-Template/config"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
 	"go.uber.org/atomic"
 	"golang.org/x/sync/errgroup"
-	"strconv"
-	"strings"
-	"time"
+
+	"github.com/Sora233/DDBOT/v2/lsp/cfg"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/MiraiGo-Template/config"
 )
 
 // fresh 这个fresh不能启动多个
@@ -74,7 +76,7 @@ func (c *Concern) fresh() concern.FreshFunc {
 				}
 
 				_, ids, types, err := c.StateManager.ListConcernState(
-					func(groupCode int64, id interface{}, p concern_type.Type) bool {
+					func(groupCode uint32, id interface{}, p concern_type.Type) bool {
 						return p.ContainAny(Live)
 					})
 				if err != nil {

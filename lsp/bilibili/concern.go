@@ -2,20 +2,22 @@ package bilibili
 
 import (
 	"fmt"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/cfg"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/DDBOT/utils/expirable"
-	"github.com/Sora233/MiraiGo-Template/config"
-	"github.com/Sora233/MiraiGo-Template/utils"
-	"github.com/tidwall/buntdb"
-	"go.uber.org/atomic"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/tidwall/buntdb"
+	"go.uber.org/atomic"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/cfg"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
+	"github.com/Sora233/DDBOT/v2/utils/expirable"
+	"github.com/Sora233/MiraiGo-Template/config"
+	"github.com/Sora233/MiraiGo-Template/utils"
 )
 
 var logger = utils.GetModuleLogger("bilibili-concern")
@@ -124,8 +126,7 @@ func (c *Concern) Start() error {
 	return c.StateManager.Start()
 }
 
-func (c *Concern) Add(ctx mmsg.IMsgCtx,
-	groupCode int64, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Add(ctx mmsg.IMsgCtx, groupCode uint32, _id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := _id.(int64)
 	selfUid := accountUid.Load()
 	var watchSelf = selfUid != 0 && selfUid == mid
@@ -252,8 +253,7 @@ func (c *Concern) Add(ctx mmsg.IMsgCtx,
 	return userInfo, nil
 }
 
-func (c *Concern) Remove(ctx mmsg.IMsgCtx,
-	groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (c *Concern) Remove(ctx mmsg.IMsgCtx, groupCode uint32, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	mid := id.(int64)
 	var identityInfo concern.IdentityInfo
 	var allCtype concern_type.Type
@@ -295,7 +295,7 @@ func (c *Concern) Get(id interface{}) (concern.IdentityInfo, error) {
 }
 
 func (c *Concern) notifyGenerator() concern.NotifyGeneratorFunc {
-	return func(groupCode int64, ievent concern.Event) (result []concern.Notify) {
+	return func(groupCode uint32, ievent concern.Event) (result []concern.Notify) {
 		log := ievent.Logger()
 		switch event := ievent.(type) {
 		case *LiveInfo:
@@ -407,7 +407,7 @@ func (c *Concern) SyncSub() {
 	}
 	var midSet = make(map[int64]bool)
 	var attentionMidSet = make(map[int64]bool)
-	_, _, _, err = c.StateManager.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+	_, _, _, err = c.StateManager.ListConcernState(func(groupCode uint32, id interface{}, p concern_type.Type) bool {
 		midSet[id.(int64)] = true
 		return true
 	})
@@ -506,7 +506,7 @@ func (c *Concern) FindUserNews(mid int64, load bool) (*NewsInfo, error) {
 	return c.StateManager.GetNewsInfo(mid)
 }
 
-func (c *Concern) GroupWatchNotify(groupCode, mid int64) {
+func (c *Concern) GroupWatchNotify(groupCode uint32, mid int64) {
 	liveInfo, _ := c.GetLiveInfo(mid)
 	if liveInfo.Living() {
 		liveInfo.liveStatusChanged = true
@@ -514,7 +514,7 @@ func (c *Concern) GroupWatchNotify(groupCode, mid int64) {
 	}
 }
 
-func (c *Concern) RemoveAllByGroupCode(groupCode int64) ([]string, error) {
+func (c *Concern) RemoveAllByGroupCode(groupCode uint32) ([]string, error) {
 	keys, err := c.StateManager.RemoveAllByGroupCode(groupCode)
 	if cfg.GetBilibiliUnsub() {
 		var changedIdSet = make(map[int64]interface{})

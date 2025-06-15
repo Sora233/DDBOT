@@ -1,11 +1,13 @@
 package concern
 
 import (
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/sirupsen/logrus"
 	"testing"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
 )
 
 type testNotify struct {
@@ -27,7 +29,7 @@ func (t *testNotify) Logger() *logrus.Entry {
 	return logrus.WithField("Site", t.Site())
 }
 
-func (t *testNotify) GetGroupCode() int64 {
+func (t *testNotify) GetGroupCode() uint32 {
 	return test.G1
 }
 

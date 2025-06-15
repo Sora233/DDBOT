@@ -1,12 +1,14 @@
 package lsp
 
 import (
-	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/DDBOT/requests"
-	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/Sora233/DDBOT/v2/proxy_pool"
+	"github.com/Sora233/DDBOT/v2/requests"
 )
 
 var (
@@ -45,7 +47,7 @@ func CheckUpdate() string {
 	latestTagName := m["tag_name"].(string)
 
 	if compareVersion(Tags, latestTagName) {
-		logrus.Infof("更新检测完成：DDBOT有可用更新版本【%v】，请前往 https://github.com/Sora233/DDBOT/releases 查看详细信息\n", latestTagName)
+		logrus.Infof("更新检测完成：DDBOT有可用更新版本【%v】，请前往 https://github.com/Sora233/DDBOT/v2/releases 查看详细信息\n", latestTagName)
 		return latestTagName
 	} else {
 		logrus.Debug("更新检测完成：当前为DDBOT最新版本")

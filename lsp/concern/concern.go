@@ -1,9 +1,10 @@
 package concern
 
 import (
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
 )
 
 // Event 是对事件的一个抽象，它可以表示发表动态，发表微博，发布文章，发布视频，是订阅对象做出的行为
@@ -22,7 +23,7 @@ type Event interface {
 // DDBOT目前只支持向QQ群推送
 type Notify interface {
 	Event
-	GetGroupCode() int64
+	GetGroupCode() uint32
 	ToMessage() *mmsg.MSG
 }
 
@@ -45,16 +46,16 @@ type Concern interface {
 	ParseId(string) (interface{}, error)
 
 	// Add 添加一个订阅
-	Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error)
+	Add(ctx mmsg.IMsgCtx, groupCode uint32, id interface{}, ctype concern_type.Type) (IdentityInfo, error)
 	// Remove 删除一个订阅
-	Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error)
+	Remove(ctx mmsg.IMsgCtx, groupCode uint32, id interface{}, ctype concern_type.Type) (IdentityInfo, error)
 	// Get 获取一个订阅信息
 	Get(id interface{}) (IdentityInfo, error)
 
 	// GetStateManager 获取 IStateManager
 	GetStateManager() IStateManager
 	// FreshIndex 刷新 group 的 index，通常不需要用户主动调用，StateManager.FreshIndex 有默认实现。
-	FreshIndex(groupCode ...int64)
+	FreshIndex(groupCode ...uint32)
 }
 
 // IdentityInfo 表示订阅对象的信息，包括名字，ID

@@ -2,12 +2,14 @@ package weibo
 
 import (
 	"context"
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
 )
 
 const testId int64 = 1

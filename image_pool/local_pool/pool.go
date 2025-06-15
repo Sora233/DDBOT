@@ -2,14 +2,15 @@ package local_pool
 
 import (
 	"errors"
-	"github.com/Sora233/DDBOT/image_pool"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/MiraiGo-Template/utils"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/Sora233/DDBOT/v2/image_pool"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
+	"github.com/Sora233/MiraiGo-Template/utils"
 )
 
 var logger = utils.GetModuleLogger("local_pool")

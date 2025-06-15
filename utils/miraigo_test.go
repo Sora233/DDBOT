@@ -1,16 +1,19 @@
 package utils
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/samber/lo"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
 )
 
 func TestSerializationGroupMsg(t *testing.T) {
 	msg := &message.GroupMessage{
-		Id:        1,
-		GroupCode: test.G1,
+		ID:       1,
+		GroupUin: test.G1,
 		Sender: &message.Sender{
 			Uin: test.ID1,
 		},
@@ -18,8 +21,8 @@ func TestSerializationGroupMsg(t *testing.T) {
 		Elements: []message.IMessageElement{
 			message.NewText("qwe"),
 			message.NewText("asd"),
-			&message.GroupImageElement{ImageId: "1231we"},
-			&message.FriendImageElement{ImageId: "qwe"},
+			&message.ImageElement{ImageID: "1231we"},
+			&message.ImageElement{ImageID: "qwe"},
 		},
 	}
 
@@ -33,21 +36,21 @@ func TestSerializationGroupMsg(t *testing.T) {
 func TestMessageFilter(t *testing.T) {
 	var e = []message.IMessageElement{
 		message.NewText("asd"),
-		&message.GroupImageElement{},
-		&message.ServiceElement{},
+		&message.ImageElement{},
+		&message.XMLElement{},
 		&message.AtElement{},
 	}
-	c := MessageFilter(e, func(element message.IMessageElement) bool {
+	c := lo.Filter(e, func(element message.IMessageElement, _ int) bool {
 		return element.Type() == message.Text
 	})
 	assert.Len(t, c, 1)
 
-	c = MessageFilter(e, func(element message.IMessageElement) bool {
+	c = lo.Filter(e, func(element message.IMessageElement, _ int) bool {
 		return element.Type() == message.Text || element.Type() == message.Service
 	})
 	assert.Len(t, c, 2)
 
-	c = MessageFilter(e, func(element message.IMessageElement) bool {
+	c = lo.Filter(e, func(element message.IMessageElement, _ int) bool {
 		return element.Type() == message.At
 	})
 	assert.Len(t, c, 1)

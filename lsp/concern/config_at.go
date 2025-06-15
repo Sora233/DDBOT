@@ -1,26 +1,30 @@
 package concern
 
-import "github.com/Sora233/DDBOT/lsp/concern_type"
+import (
+	"golang.org/x/exp/constraints"
 
-type AtSomeone struct {
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+)
+
+type AtSomeone[UT constraints.Integer] struct {
 	Ctype  concern_type.Type `json:"ctype"`
-	AtList []int64           `json:"at_list"`
+	AtList []UT              `json:"at_list"`
 }
 
 // GroupConcernAtConfig @配置
-type GroupConcernAtConfig struct {
+type GroupConcernAtConfig[UT constraints.Integer] struct {
 	AtAll     concern_type.Type `json:"at_all"`
-	AtSomeone []*AtSomeone      `json:"at_someone"`
+	AtSomeone []*AtSomeone[UT]  `json:"at_someone"`
 }
 
-func (g *GroupConcernAtConfig) CheckAtAll(ctype concern_type.Type) bool {
+func (g *GroupConcernAtConfig[UT]) CheckAtAll(ctype concern_type.Type) bool {
 	if g == nil {
 		return false
 	}
 	return g.AtAll.ContainAll(ctype)
 }
 
-func (g *GroupConcernAtConfig) GetAtSomeoneList(ctype concern_type.Type) []int64 {
+func (g *GroupConcernAtConfig[UT]) GetAtSomeoneList(ctype concern_type.Type) []UT {
 	if g == nil {
 		return nil
 	}
@@ -32,7 +36,7 @@ func (g *GroupConcernAtConfig) GetAtSomeoneList(ctype concern_type.Type) []int64
 	return nil
 }
 
-func (g *GroupConcernAtConfig) SetAtSomeoneList(ctype concern_type.Type, ids []int64) {
+func (g *GroupConcernAtConfig[UT]) SetAtSomeoneList(ctype concern_type.Type, ids []UT) {
 	if g == nil {
 		return
 	}
@@ -44,14 +48,14 @@ func (g *GroupConcernAtConfig) SetAtSomeoneList(ctype concern_type.Type, ids []i
 		}
 	}
 	if !found {
-		g.AtSomeone = append(g.AtSomeone, &AtSomeone{
+		g.AtSomeone = append(g.AtSomeone, &AtSomeone[UT]{
 			Ctype:  ctype,
 			AtList: ids,
 		})
 	}
 }
 
-func (g *GroupConcernAtConfig) MergeAtSomeoneList(ctype concern_type.Type, ids []int64) {
+func (g *GroupConcernAtConfig[UT]) MergeAtSomeoneList(ctype concern_type.Type, ids []UT) {
 	if g == nil {
 		return
 	}
@@ -59,7 +63,7 @@ func (g *GroupConcernAtConfig) MergeAtSomeoneList(ctype concern_type.Type, ids [
 	for _, at := range g.AtSomeone {
 		if at.Ctype.ContainAll(ctype) {
 			found = true
-			var qqSet = make(map[int64]bool)
+			var qqSet = make(map[UT]bool)
 			for _, id := range at.AtList {
 				qqSet[id] = true
 			}
@@ -73,20 +77,20 @@ func (g *GroupConcernAtConfig) MergeAtSomeoneList(ctype concern_type.Type, ids [
 		}
 	}
 	if !found {
-		g.AtSomeone = append(g.AtSomeone, &AtSomeone{
+		g.AtSomeone = append(g.AtSomeone, &AtSomeone[UT]{
 			Ctype:  ctype,
 			AtList: ids,
 		})
 	}
 }
 
-func (g *GroupConcernAtConfig) RemoveAtSomeoneList(ctype concern_type.Type, ids []int64) {
+func (g *GroupConcernAtConfig[UT]) RemoveAtSomeoneList(ctype concern_type.Type, ids []UT) {
 	if g == nil {
 		return
 	}
 	for _, at := range g.AtSomeone {
 		if at.Ctype.ContainAll(ctype) {
-			var qqSet = make(map[int64]bool)
+			var qqSet = make(map[UT]bool)
 			for _, id := range at.AtList {
 				qqSet[id] = true
 			}
@@ -101,11 +105,11 @@ func (g *GroupConcernAtConfig) RemoveAtSomeoneList(ctype concern_type.Type, ids 
 	}
 }
 
-func (g *GroupConcernAtConfig) ClearAtSomeoneList(ctype concern_type.Type) {
+func (g *GroupConcernAtConfig[UT]) ClearAtSomeoneList(ctype concern_type.Type) {
 	if g == nil {
 		return
 	}
-	var newList []*AtSomeone
+	var newList []*AtSomeone[UT]
 	for _, at := range g.AtSomeone {
 		if at.Ctype.ContainAll(ctype) {
 			continue

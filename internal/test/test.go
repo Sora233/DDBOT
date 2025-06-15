@@ -2,31 +2,33 @@ package test
 
 import (
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/message"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/MiraiGo-Template/bot"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/LagrangeDev/LagrangeGo/client"
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/stretchr/testify/assert"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/MiraiGo-Template/bot"
 )
 
 // 这个包只允许在单元测试中使用
 
 const (
-	ROOMID1    int64 = 1
-	ROOMID2    int64 = 2
-	UID1       int64 = 777
-	UID2       int64 = 778
-	UID3       int64 = 779
-	DynamicID1 int64 = 1001
-	DynamicID2 int64 = 1002
-	MessageID1 int32 = 5001
-	MessageID2 int32 = 5002
-	G1         int64 = 123456
-	G2         int64 = 654321
-	TIMESTAMP1 int64 = 1624126814
-	TIMESTAMP2 int64 = 1624126914
+	ROOMID1    int64  = 1
+	ROOMID2    int64  = 2
+	UID1       uint32 = 777
+	UID2       uint32 = 778
+	UID3       uint32 = 779
+	DynamicID1 int64  = 1001
+	DynamicID2 int64  = 1002
+	MessageID1 int32  = 5001
+	MessageID2 int32  = 5002
+	G1         uint32 = 123456
+	G2         uint32 = 654321
+	TIMESTAMP1 int64  = 1624126814
+	TIMESTAMP2 int64  = 1624126914
 
 	NAME1 = "name1"
 	NAME2 = "name2"
@@ -65,12 +67,12 @@ const (
 
 var (
 	Sender1 = &message.Sender{
-		Uin:      UID1,
+		Uin:      uint32(UID1),
 		Nickname: NAME1,
 	}
 
 	Sender2 = &message.Sender{
-		Uin:      UID2,
+		Uin:      uint32(UID2),
 		Nickname: NAME2,
 	}
 )
@@ -90,11 +92,11 @@ func FakeImage(size int) string {
 }
 
 func InitMirai() {
-	bot.Instance = &bot.Bot{
+	bot.QQClient = &bot.Bot{
 		QQClient: client.NewClient(123456, "fake"),
 	}
 }
 
 func CloseMirai() {
-	bot.Instance = nil
+	bot.QQClient = nil
 }

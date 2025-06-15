@@ -2,16 +2,18 @@ package twitcasting
 
 import (
 	"fmt"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/DDBOT/requests"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/MiraiGo-Template/config"
-	"github.com/nobuf/cas"
-	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
+
+	"github.com/nobuf/cas"
+	"github.com/sirupsen/logrus"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/DDBOT/v2/proxy_pool"
+	"github.com/Sora233/DDBOT/v2/requests"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
+	"github.com/Sora233/MiraiGo-Template/config"
 )
 
 type LiveEvent struct {
@@ -38,11 +40,11 @@ func (e *LiveEvent) Logger() *logrus.Entry {
 }
 
 type LiveNotify struct {
-	groupCode int64
+	groupCode uint32
 	LiveEvent
 }
 
-func (n *LiveNotify) GetGroupCode() int64 {
+func (n *LiveNotify) GetGroupCode() uint32 {
 	return n.groupCode
 }
 

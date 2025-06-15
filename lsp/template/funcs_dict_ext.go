@@ -1,7 +1,7 @@
 package template
 
 import (
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"github.com/mitchellh/copystructure"
 )
 

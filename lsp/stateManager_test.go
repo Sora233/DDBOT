@@ -1,14 +1,18 @@
 package lsp
 
 import (
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/internal/test"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"cmp"
+	"slices"
+	"sort"
+	"strconv"
+	"testing"
+
+	"github.com/LagrangeDev/LagrangeGo/client/event"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
-	"sort"
-	"testing"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
 )
 
 func newStateManager(t *testing.T) *StateManager {
@@ -62,31 +66,6 @@ func TestStateManager_IsMuted(t *testing.T) {
 	assert.Nil(t, sm.Muted(test.G1, 0, -1))
 	assert.True(t, sm.IsMuted(test.G1, 0))
 	assert.Nil(t, sm.Muted(test.G1, test.UID1, -1))
-}
-
-func TestStateManager_GetMessageImageUrl(t *testing.T) {
-	test.InitBuntdb(t)
-	defer test.CloseBuntdb(t)
-
-	sm := newStateManager(t)
-	assert.NotNil(t, sm)
-
-	assert.Nil(t, sm.SaveMessageImageUrl(test.G1, test.MessageID1, []message.IMessageElement{}))
-	assert.Len(t, sm.GetMessageImageUrl(test.G1, test.MessageID1), 0)
-
-	assert.Nil(t, sm.SaveMessageImageUrl(test.G1, test.MessageID1, []message.IMessageElement{
-		&message.GroupImageElement{
-			Url: "image1",
-		},
-		&message.GroupImageElement{
-			Url: "image2",
-		},
-		&message.FriendImageElement{
-			Url: "image3",
-		},
-	}))
-
-	assert.Len(t, sm.GetMessageImageUrl(test.G1, test.MessageID1), 3)
 }
 
 func TestStateManager_GetCurrentMode(t *testing.T) {
@@ -144,41 +123,41 @@ func TestStateManager_GetNewFriendRequest(t *testing.T) {
 	sm := newStateManager(t)
 	assert.NotNil(t, sm)
 
-	_, err := sm.GetNewFriendRequest(0)
+	_, err := sm.GetNewFriendRequest("0")
 	assert.NotNil(t, err)
 
-	var expected = []*client.NewFriendRequest{
+	var expected = []*event.NewFriendRequest{
 		{
-			RequestId:     test.ID1,
-			Message:       "test1",
-			RequesterUin:  test.UID1,
-			RequesterNick: "uid1",
+			SourceUin:  test.UID1,
+			SourceNick: "uid1",
+			Msg:        "test1",
+			Source:     strconv.Itoa(test.ID1),
 		},
 		{
-			RequestId:     test.ID2,
-			Message:       "test2",
-			RequesterUin:  test.UID2,
-			RequesterNick: "uid2",
+			SourceUin:  test.UID2,
+			SourceNick: "uid2",
+			Msg:        "test2",
+			Source:     strconv.Itoa(test.ID2),
 		},
 	}
 
 	for _, exp := range expected {
 		err := sm.SaveNewFriendRequest(exp)
 		assert.Nil(t, err)
-		act, err := sm.GetNewFriendRequest(exp.RequestId)
+		act, err := sm.GetNewFriendRequest(exp.Source)
 		assert.Nil(t, err)
 		assert.EqualValues(t, exp, act)
 	}
 
 	act, err := sm.ListNewFriendRequest()
 	assert.Nil(t, err)
-	sort.Slice(act, func(i, j int) bool {
-		return act[i].RequestId < act[j].RequestId
+	slices.SortFunc(act, func(i, j *event.NewFriendRequest) int {
+		return cmp.Compare(i.Source, j.Source)
 	})
 	assert.EqualValues(t, expected, act)
 
-	assert.Nil(t, sm.DeleteNewFriendRequest(test.ID1))
-	_, err = sm.GetNewFriendRequest(test.ID1)
+	assert.Nil(t, sm.DeleteNewFriendRequest(strconv.Itoa(test.ID1)))
+	_, err = sm.GetNewFriendRequest(strconv.Itoa(test.ID1))
 	assert.NotNil(t, err)
 
 	act, err = sm.ListNewFriendRequest()
@@ -186,8 +165,8 @@ func TestStateManager_GetNewFriendRequest(t *testing.T) {
 	assert.Len(t, act, 1)
 	assert.EqualValues(t, expected[1], act[0])
 
-	assert.NotNil(t, sm.DeleteNewFriendRequest(test.ID1))
-	assert.Nil(t, sm.DeleteNewFriendRequest(test.ID2))
+	assert.NotNil(t, sm.DeleteNewFriendRequest(strconv.Itoa(test.ID1)))
+	assert.Nil(t, sm.DeleteNewFriendRequest(strconv.Itoa(test.ID2)))
 
 	act, err = sm.ListNewFriendRequest()
 	assert.Nil(t, err)
@@ -204,26 +183,26 @@ func TestStateManager_GetGroupInvitedRequest(t *testing.T) {
 	_, err := sm.GetGroupInvitedRequest(0)
 	assert.NotNil(t, err)
 
-	var expected = []*client.GroupInvitedRequest{
+	var expected = []*event.GroupInvite{
 		{
-			RequestId:   test.ID1,
+			RequestSeq:  test.ID1,
 			InvitorUin:  test.UID1,
 			InvitorNick: "uid1",
-			GroupCode:   test.G1,
+			GroupUin:    test.G1,
 			GroupName:   "test1",
 		},
 		{
-			RequestId:   test.ID2,
+			RequestSeq:  test.ID2,
 			InvitorUin:  test.UID2,
 			InvitorNick: "uid2",
-			GroupCode:   test.G2,
+			GroupUin:    test.G2,
 			GroupName:   "test2",
 		},
 	}
 	for _, exp := range expected {
 		err := sm.SaveGroupInvitedRequest(exp)
 		assert.Nil(t, err)
-		act, err := sm.GetGroupInvitedRequest(exp.RequestId)
+		act, err := sm.GetGroupInvitedRequest(exp.RequestSeq)
 		assert.Nil(t, err)
 		assert.EqualValues(t, exp, act)
 	}
@@ -231,7 +210,7 @@ func TestStateManager_GetGroupInvitedRequest(t *testing.T) {
 	act, err := sm.ListGroupInvitedRequest()
 	assert.Nil(t, err)
 	sort.Slice(act, func(i, j int) bool {
-		return act[i].RequestId < act[j].RequestId
+		return act[i].RequestSeq < act[j].RequestSeq
 	})
 	assert.EqualValues(t, expected, act)
 

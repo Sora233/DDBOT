@@ -1,8 +1,9 @@
 package msgstringer
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
 	"testing"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
 )
 
 func TestMsgToString(t *testing.T) {

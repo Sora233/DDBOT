@@ -2,11 +2,13 @@ package lsp
 
 import (
 	"fmt"
-	"github.com/Sora233/DDBOT/lsp/cfg"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/lsp/template"
-	"github.com/sirupsen/logrus"
 	"sync"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/Sora233/DDBOT/v2/lsp/cfg"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/DDBOT/v2/lsp/template"
 )
 
 var cronLog = logrus.WithField("module", "cronjob")

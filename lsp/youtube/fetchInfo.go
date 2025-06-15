@@ -5,14 +5,16 @@ import (
 	"container/list"
 	"errors"
 	"fmt"
-	"github.com/Jeffail/gabs/v2"
-	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/DDBOT/requests"
-	"github.com/Sora233/DDBOT/utils"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Jeffail/gabs/v2"
+
+	"github.com/Sora233/DDBOT/v2/proxy_pool"
+	"github.com/Sora233/DDBOT/v2/requests"
+	"github.com/Sora233/DDBOT/v2/utils"
 )
 
 const VideoPath = "https://www.youtube.com/channel/%s/videos?view=57&flow=grid"

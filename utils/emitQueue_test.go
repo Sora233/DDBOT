@@ -1,10 +1,12 @@
 package utils
 
 import (
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
 )
 
 func TestEmitQueue(t *testing.T) {

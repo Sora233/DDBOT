@@ -1,11 +1,12 @@
 package lolicon_pool
 
 import (
-	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/DDBOT/requests"
-	"github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/MiraiGo-Template/config"
 	"time"
+
+	"github.com/Sora233/DDBOT/v2/proxy_pool"
+	"github.com/Sora233/DDBOT/v2/requests"
+	"github.com/Sora233/DDBOT/v2/utils"
+	"github.com/Sora233/MiraiGo-Template/config"
 )
 
 const Host = "https://api.lolicon.app/setu"

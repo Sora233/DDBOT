@@ -1,7 +1,7 @@
 package mmsg
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/LagrangeDev/LagrangeGo/message"
 )
 
 // TypedElement 根据TargetType选择不同的element，不解决循环问题，使用不当可能导致堆栈溢出

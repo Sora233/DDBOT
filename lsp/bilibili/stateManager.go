@@ -2,12 +2,15 @@ package bilibili
 
 import (
 	"errors"
-	"github.com/Mrs4s/MiraiGo/message"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/tidwall/buntdb"
 	"time"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/samber/lo"
+	"github.com/tidwall/buntdb"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
 )
 
 type StateManager struct {
@@ -16,7 +19,7 @@ type StateManager struct {
 	concern *Concern
 }
 
-func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+func (c *StateManager) GetGroupConcernConfig(groupCode uint32, id interface{}) (concernConfig concern.IConfig) {
 	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id), c.concern)
 }
 
@@ -187,7 +190,7 @@ func (c *StateManager) GetUidFirstTimestamp(uid int64) (timestamp int64, err err
 	return c.GetInt64(c.UidFirstTimestamp(uid))
 }
 
-func (c *StateManager) SetGroupCompactMarkIfNotExist(groupCode int64, compactKey string) error {
+func (c *StateManager) SetGroupCompactMarkIfNotExist(groupCode uint32, compactKey string) error {
 	return c.Set(c.CompactMarkKey(groupCode, compactKey), "",
 		localdb.SetExpireOpt(CompactExpireTime), localdb.SetNoOverWriteOpt())
 }
@@ -219,11 +222,11 @@ func (c *StateManager) GetLatestActive(mid int64) (int64, error) {
 
 func (c *StateManager) SetNotifyMsg(notifyKey string, msg *message.GroupMessage) error {
 	tmp := &message.GroupMessage{
-		Id:        msg.Id,
-		GroupCode: msg.GroupCode,
-		Sender:    msg.Sender,
-		Time:      msg.Time,
-		Elements: localutils.MessageFilter(msg.Elements, func(e message.IMessageElement) bool {
+		ID:       msg.ID,
+		GroupUin: msg.GroupUin,
+		Sender:   msg.Sender,
+		Time:     msg.Time,
+		Elements: lo.Filter(msg.Elements, func(e message.IMessageElement, _ int) bool {
 			return e.Type() == message.Text || e.Type() == message.Image
 		}),
 	}
@@ -231,11 +234,11 @@ func (c *StateManager) SetNotifyMsg(notifyKey string, msg *message.GroupMessage)
 	if err != nil {
 		return err
 	}
-	return c.Set(c.NotifyMsgKey(tmp.GroupCode, notifyKey), value,
+	return c.Set(c.NotifyMsgKey(tmp.GroupUin, notifyKey), value,
 		localdb.SetExpireOpt(CompactExpireTime), localdb.SetNoOverWriteOpt())
 }
 
-func (c *StateManager) GetNotifyMsg(groupCode int64, notifyKey string) (*message.GroupMessage, error) {
+func (c *StateManager) GetNotifyMsg(groupCode uint32, notifyKey string) (*message.GroupMessage, error) {
 	value, err := c.Get(c.NotifyMsgKey(groupCode, notifyKey))
 	if err != nil {
 		return nil, err

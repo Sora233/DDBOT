@@ -2,13 +2,6 @@ package DDBOT
 
 import (
 	"fmt"
-	"github.com/Sora233/DDBOT/lsp"
-	"github.com/Sora233/DDBOT/warn"
-	"github.com/Sora233/MiraiGo-Template/bot"
-	"github.com/Sora233/MiraiGo-Template/config"
-	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
-	"github.com/rifflock/lfshook"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -18,14 +11,24 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/Sora233/DDBOT/logging"
-	_ "github.com/Sora233/DDBOT/lsp/acfun"
-	_ "github.com/Sora233/DDBOT/lsp/douyu"
-	_ "github.com/Sora233/DDBOT/lsp/huya"
-	_ "github.com/Sora233/DDBOT/lsp/twitcasting"
-	_ "github.com/Sora233/DDBOT/lsp/weibo"
-	_ "github.com/Sora233/DDBOT/lsp/youtube"
-	_ "github.com/Sora233/DDBOT/msg-marker"
+	"github.com/Sora233/DDBOT/v2/lsp"
+	"github.com/Sora233/DDBOT/v2/warn"
+	"github.com/Sora233/MiraiGo-Template/bot"
+	"github.com/Sora233/MiraiGo-Template/config"
+	"github.com/Sora233/MiraiGo-Template/utils"
+
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/rifflock/lfshook"
+	"github.com/sirupsen/logrus"
+
+	_ "github.com/Sora233/DDBOT/v2/logging"
+	_ "github.com/Sora233/DDBOT/v2/lsp/acfun"
+	_ "github.com/Sora233/DDBOT/v2/lsp/douyu"
+	_ "github.com/Sora233/DDBOT/v2/lsp/huya"
+	_ "github.com/Sora233/DDBOT/v2/lsp/twitcasting"
+	_ "github.com/Sora233/DDBOT/v2/lsp/weibo"
+	_ "github.com/Sora233/DDBOT/v2/lsp/youtube"
+	_ "github.com/Sora233/DDBOT/v2/msg-marker"
 )
 
 // SetUpLog 使用默认的日志格式配置，会写入到logs文件夹内，日志会保留七天
@@ -54,23 +57,6 @@ func SetUpLog() {
 
 // Run 启动bot，这个函数会阻塞直到收到退出信号
 func Run() {
-	if fi, err := os.Stat("device.json"); err != nil {
-		if os.IsNotExist(err) {
-			fmt.Println("警告：没有检测到device.json，正在生成，如果是第一次运行，可忽略")
-			bot.GenRandomDevice()
-		} else {
-			warn.Warn(fmt.Sprintf("检查device.json文件失败 - %v", err))
-			os.Exit(1)
-		}
-	} else {
-		if fi.IsDir() {
-			warn.Warn("检测到device.json，但目标是一个文件夹！请手动确认并删除该文件夹！")
-			os.Exit(1)
-		} else {
-			fmt.Println("检测到device.json，使用存在的device.json")
-		}
-	}
-
 	if fi, err := os.Stat("application.yaml"); err != nil {
 		if os.IsNotExist(err) {
 			fmt.Println("警告：没有检测到配置文件application.yaml，正在生成，如果是第一次运行，可忽略")
@@ -106,7 +92,7 @@ func Run() {
 	config.GlobalConfig.WatchConfig()
 
 	// 快速初始化
-	bot.Init()
+	bot.Init(&utils.ProtocolLogger{})
 
 	// 初始化 Modules
 	bot.StartService()
@@ -114,10 +100,10 @@ func Run() {
 	// 登录
 	bot.Login()
 
-	// 刷新好友列表，群列表
-	bot.RefreshList()
+	lsp.Instance.PostStart(bot.QQClient)
 
-	lsp.Instance.PostStart(bot.Instance)
+	defer bot.Dumpsig()
+	defer bot.QQClient.Release()
 
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)

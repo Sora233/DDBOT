@@ -6,12 +6,14 @@ package template
 
 import (
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
 	"reflect"
 	"runtime"
 	"strings"
 	"text/template/parse"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
 )
 
 // maxExecDepth specifies the maximum stack depth of templates within

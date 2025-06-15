@@ -1,128 +1,160 @@
 package utils
 
 import (
-	"github.com/Mrs4s/MiraiGo/client"
+	"github.com/LagrangeDev/LagrangeGo/client/entity"
+	"github.com/LagrangeDev/LagrangeGo/client/event"
+	"github.com/samber/lo"
+	"golang.org/x/exp/constraints"
+
 	miraiBot "github.com/Sora233/MiraiGo-Template/bot"
 )
 
 // HackedBot 拦截一些方法方便测试
-type HackedBot struct {
-	Bot        **miraiBot.Bot
-	testGroups []*client.GroupInfo
-	testUin    int64
+type HackedBot[UT, GT constraints.Integer] struct {
+	Bot              **miraiBot.Bot
+	testGroups       []*entity.Group
+	testGroupMembers map[GT][]*entity.GroupMember
+	testUin          UT
 }
 
-func (h *HackedBot) valid() bool {
+func (h *HackedBot[UT, GT]) valid() bool {
 	if h == nil || h.Bot == nil || *h.Bot == nil || !(*h.Bot).Online.Load() {
 		return false
 	}
 	return true
 }
 
-func (h *HackedBot) FindFriend(uin int64) *client.FriendInfo {
+func (h *HackedBot[UT, GT]) FindFriend(uin UT) *entity.User {
 	if !h.valid() {
 		return nil
 	}
-	return (*h.Bot).FindFriend(uin)
+	return (*h.Bot).GetCachedFriendInfo(uint32(uin))
 }
 
-func (h *HackedBot) FindGroup(code int64) *client.GroupInfo {
+func (h *HackedBot[UT, GT]) FindGroup(code GT) *entity.Group {
 	if !h.valid() {
 		for _, gi := range h.testGroups {
-			if gi.Code == code {
+			if gi.GroupUin == uint32(code) {
 				return gi
 			}
 		}
 		return nil
 	}
-	return (*h.Bot).FindGroup(code)
+	return (*h.Bot).GetCachedGroupInfo(uint32(code))
 }
 
-func (h *HackedBot) SolveFriendRequest(req *client.NewFriendRequest, accept bool) {
+func (h *HackedBot[UT, GT]) FindGroupMember(groupCode GT, uin UT) *entity.GroupMember {
+	if !h.valid() {
+		for _, gm := range h.testGroupMembers[groupCode] {
+			if gm.User.Uin == uint32(uin) {
+				return gm
+			}
+		}
+		return nil
+	}
+	return (*h.Bot).GetCachedMemberInfo(uint32(groupCode), uint32(uin))
+}
+
+func (h *HackedBot[UT, GT]) SolveFriendRequest(req *event.NewFriendRequest, accept bool) {
 	if !h.valid() {
 		return
 	}
-	(*h.Bot).SolveFriendRequest(req, accept)
+	(*h.Bot).SetFriendRequest(accept, req.SourceUID)
 }
 
-func (h *HackedBot) SolveGroupJoinRequest(i interface{}, accept, block bool, reason string) {
+func (h *HackedBot[UT, GT]) SolveGroupJoinRequest(i *event.GroupInvite, accept, _ bool, reason string) {
 	if !h.valid() {
 		return
 	}
-	(*h.Bot).SolveGroupJoinRequest(i, accept, block, reason)
+	b := (*h.Bot)
+	msgs, err := b.GetGroupSystemMessages(false, 20, i.GroupUin)
+	if err != nil {
+		logger.Errorf("获取群系统消息失败: %v", err)
+		return
+	}
+	filteredmsgs, err := b.GetGroupSystemMessages(true, 20)
+	if err != nil {
+		logger.Errorf("获取群系统消息失败: %v", err)
+		return
+	}
+	for _, req := range append(msgs.InvitedRequests[:], filteredmsgs.InvitedRequests[:]...) {
+		if req.Sequence != i.RequestSeq {
+			continue
+		}
+		if req.Checked {
+			logger.Warnf("处理群系统消息失败: 无法操作已处理的消息.")
+			return
+		}
+		if accept {
+			_ = b.SetGroupRequest(req.IsFiltered, entity.GroupRequestOperateAllow, req.Sequence, uint32(req.EventType), req.GroupUin, "")
+		} else {
+			_ = b.SetGroupRequest(req.IsFiltered, entity.GroupRequestOperateDeny, req.Sequence, uint32(req.EventType), req.GroupUin, reason)
+		}
+	}
 }
 
-func (h *HackedBot) GetGroupList() []*client.GroupInfo {
+func (h *HackedBot[UT, GT]) GetGroupList() []*entity.Group {
 	if !h.valid() {
 		return h.testGroups
 	}
-	return (*h.Bot).GroupList
+	g, _ := (*h.Bot).GetAllGroupsInfo()
+	return lo.Values(g)
 }
 
-func (h *HackedBot) GetFriendList() []*client.FriendInfo {
+func (h *HackedBot[UT, GT]) GetFriendList() []*entity.User {
 	if !h.valid() {
 		return nil
 	}
-	return (*h.Bot).FriendList
+	return lo.Values((*h.Bot).GetCachedAllFriendsInfo())
 }
 
-func (h *HackedBot) IsOnline() bool {
+func (h *HackedBot[UT, GT]) IsOnline() bool {
 	return h.valid()
 }
 
-func (h *HackedBot) GetUin() int64 {
+func (h *HackedBot[UT, GT]) GetUin() UT {
 	if !h.valid() {
 		return h.testUin
 	}
-	return (*h.Bot).Uin
+	return UT((*h.Bot).Uin)
 }
 
-var hackedBot = &HackedBot{Bot: &miraiBot.Instance}
+var hackedBot = &HackedBot[uint32, uint32]{Bot: &miraiBot.QQClient, testGroupMembers: map[uint32][]*entity.GroupMember{}}
 
-func GetBot() *HackedBot {
+func GetBot() *HackedBot[uint32, uint32] {
 	return hackedBot
 }
 
 // TESTSetUin 仅可用于测试
-func (h *HackedBot) TESTSetUin(uin int64) {
+func (h *HackedBot[UT, GT]) TESTSetUin(uin UT) {
 	h.testUin = uin
 }
 
 // TESTAddGroup 仅可用于测试
-func (h *HackedBot) TESTAddGroup(groupCode int64) {
+func (h *HackedBot[UT, GT]) TESTAddGroup(groupCode GT) {
 	for _, g := range h.testGroups {
-		if g.Code == groupCode {
+		if g.GroupUin == uint32(groupCode) {
 			return
 		}
 	}
-	h.testGroups = append(h.testGroups, &client.GroupInfo{
-		Uin:  groupCode,
-		Code: groupCode,
+	h.testGroups = append(h.testGroups, &entity.Group{
+		GroupUin: uint32(groupCode),
 	})
 }
 
 // TESTAddMember 仅可用于测试
-func (h *HackedBot) TESTAddMember(groupCode int64, uin int64, permission client.MemberPermission) {
+func (h *HackedBot[UT, GT]) TESTAddMember(groupCode GT, uin UT, permission entity.GroupMemberPermission) {
 	h.TESTAddGroup(groupCode)
-	for _, g := range h.testGroups {
-		if g.Code != groupCode {
-			continue
-		}
-		for _, m := range g.Members {
-			if m.Uin == uin {
-				return
-			}
-		}
-		g.Members = append(g.Members, &client.GroupMemberInfo{
-			Group:      g,
-			Uin:        uin,
-			Permission: permission,
-		})
-	}
+	h.testGroupMembers[groupCode] = append(h.testGroupMembers[groupCode], &entity.GroupMember{
+		User: entity.User{
+			Uin: uint32(uin),
+		},
+		Permission: permission,
+	})
 }
 
 // TESTReset 仅可用于测试
-func (h *HackedBot) TESTReset() {
+func (h *HackedBot[UT, GT]) TESTReset() {
 	h.testGroups = nil
 	h.testUin = 0
 }

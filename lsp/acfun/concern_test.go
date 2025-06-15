@@ -2,12 +2,14 @@ package acfun
 
 import (
 	"context"
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
 )
 
 func TestNewConcern(t *testing.T) {
@@ -42,7 +44,7 @@ func TestNewConcern(t *testing.T) {
 	assert.EqualValues(t, 123, _id)
 
 	origUserInfo := &UserInfo{
-		Uid:  test.UID1,
+		Uid:  int64(test.UID1),
 		Name: test.NAME1,
 	}
 	origLiveInfo := &LiveInfo{
@@ -87,7 +89,7 @@ func TestNewConcern(t *testing.T) {
 	_, err = c.StateManager.AddGroupConcern(test.G2, test.UID2, Live)
 	assert.Nil(t, err)
 	err = c.StateManager.AddUserInfo(&UserInfo{
-		Uid:  test.UID2,
+		Uid:  int64(test.UID2),
 		Name: test.NAME2,
 	})
 	assert.Nil(t, err)
@@ -109,7 +111,7 @@ func TestNewConcern(t *testing.T) {
 		}
 	}
 
-	go c.GroupWatchNotify(test.G2, test.UID1)
+	go c.GroupWatchNotify(test.G2, int64(test.UID1))
 	select {
 	case notify := <-testNotifyChan:
 		assert.NotNil(t, notify)

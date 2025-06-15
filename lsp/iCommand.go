@@ -1,22 +1,25 @@
 package lsp
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/sliceutil"
+	"slices"
+	"strings"
+
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/buntdb"
-	"sort"
-	"strings"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/DDBOT/v2/lsp/permission"
+	"github.com/Sora233/DDBOT/v2/utils"
 )
 
-func IList(c *MessageContext, groupCode int64, site string) {
+func IList(c *MessageContext, groupCode uint32, site string) {
 	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ListCommand) {
 		c.DisabledReply()
 		return
@@ -39,7 +42,7 @@ func IList(c *MessageContext, groupCode int64, site string) {
 		targetCM = concern.ListConcern()
 	}
 	for _, c := range targetCM {
-		_, ids, ctypes, err := c.GetStateManager().ListConcernState(func(_groupCode int64, _ interface{}, _ concern_type.Type) bool {
+		_, ids, ctypes, err := c.GetStateManager().ListConcernState(func(_groupCode uint32, _ interface{}, _ concern_type.Type) bool {
 			return groupCode == _groupCode
 		})
 		if err == nil {
@@ -79,7 +82,7 @@ func IList(c *MessageContext, groupCode int64, site string) {
 	c.Send(listMsg)
 }
 
-func IWatch(c *MessageContext, groupCode int64, id string, site string, watchType concern_type.Type, remove bool) {
+func IWatch(c *MessageContext, groupCode uint32, id string, site string, watchType concern_type.Type, remove bool) {
 	log := c.Log
 
 	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, WatchCommand) {
@@ -151,7 +154,7 @@ func IWatch(c *MessageContext, groupCode int64, id string, site string, watchTyp
 	return
 }
 
-func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
+func IEnable(c *MessageContext, groupCode uint32, command string, disable bool) {
 	var err error
 	log := c.Log
 
@@ -201,7 +204,7 @@ func IEnable(c *MessageContext, groupCode int64, command string, disable bool) {
 	c.TextReply("成功")
 }
 
-func IGrantRole(c *MessageContext, groupCode int64, grantRole permission.RoleType, grantTo int64, del bool) {
+func IGrantRole(c *MessageContext, groupCode uint32, grantRole permission.RoleType, grantTo uint32, del bool) {
 	var err error
 	log := c.Log.WithField("role", grantRole.String()).WithFields(utils.GroupLogFields(groupCode))
 	switch grantRole {
@@ -213,7 +216,7 @@ func IGrantRole(c *MessageContext, groupCode int64, grantRole permission.RoleTyp
 			c.NoPermissionReply()
 			return
 		}
-		if gi := utils.GetBot().FindGroup(groupCode); gi != nil && gi.FindMember(grantTo) != nil {
+		if gi := utils.GetBot().FindGroup(groupCode); gi != nil && utils.GetBot().FindGroupMember(groupCode, grantTo) != nil {
 			if del {
 				err = c.Lsp.PermissionStateManager.UngrantGroupRole(groupCode, grantTo, grantRole)
 			} else {
@@ -253,7 +256,7 @@ func IGrantRole(c *MessageContext, groupCode int64, grantRole permission.RoleTyp
 	c.TextReply("成功")
 }
 
-func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64, del bool) {
+func IGrantCmd(c *MessageContext, groupCode uint32, command string, grantTo uint32, del bool) {
 	var err error
 	command = CombineCommand(command)
 	log := c.Log.WithField("command", command)
@@ -273,7 +276,7 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 		return
 	}
 
-	if gi := utils.GetBot().FindGroup(groupCode); gi != nil && gi.FindMember(grantTo) != nil {
+	if gi := utils.GetBot().FindGroup(groupCode); gi != nil && utils.GetBot().FindGroupMember(groupCode, grantTo) != nil {
 		if del {
 			err = c.Lsp.PermissionStateManager.UngrantPermission(groupCode, grantTo, command)
 		} else {
@@ -302,7 +305,7 @@ func IGrantCmd(c *MessageContext, groupCode int64, command string, grantTo int64
 	c.TextReply("成功")
 }
 
-func ISilenceCmd(c *MessageContext, groupCode int64, delete bool) {
+func ISilenceCmd(c *MessageContext, groupCode uint32, delete bool) {
 	var err error
 	if groupCode == 0 {
 		if !c.Lsp.PermissionStateManager.RequireAny(
@@ -349,7 +352,7 @@ func ISilenceCmd(c *MessageContext, groupCode int64, delete bool) {
 	}
 }
 
-func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, action string, QQ []int64) {
+func IConfigAtCmd(c *MessageContext, groupCode uint32, id string, site string, ctype concern_type.Type, action string, QQ []uint32) {
 	err := configCmdGroupCommonCheck(c, groupCode)
 	if err == nil {
 		if action != "show" && action != "clear" && len(QQ) == 0 {
@@ -357,21 +360,21 @@ func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ct
 			return
 		}
 		if action == "add" {
-			g := utils.GetBot().FindGroup(groupCode)
+			g := utils.GetBot().FindGroup(uint32(groupCode))
 			if g == nil {
 				c.TextReply("失败 - 无法找到这个群的信息，如果看到这个信息表示bot出现了一些问题")
 				// 可能没找到吗
 				return
 			}
-			var failed []int64
+			var failed []uint32
 			for _, qq := range QQ {
-				member := g.FindMember(qq)
+				member := utils.GetBot().FindGroupMember(groupCode, qq)
 				if member == nil {
 					failed = append(failed, qq)
 				}
 			}
 			if len(failed) != 0 {
-				c.TextReply(fmt.Sprintf("失败 - 没有找到QQ号：\n%v", utils.JoinInt64(failed, "\n")))
+				c.TextReply(fmt.Sprintf("失败 - 没有找到QQ号：\n%v", utils.JoinUint(failed, "\n")))
 				return
 			}
 		}
@@ -389,7 +392,7 @@ func IConfigAtCmd(c *MessageContext, groupCode int64, id string, site string, ct
 	}
 }
 
-func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, on bool) {
+func IConfigAtAllCmd(c *MessageContext, groupCode uint32, id string, site string, ctype concern_type.Type, on bool) {
 	err := iConfigCmd(c, groupCode, id, site, ctype, operateAtAllConcernConfig(c, ctype, on))
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
@@ -401,7 +404,7 @@ func IConfigAtAllCmd(c *MessageContext, groupCode int64, id string, site string,
 	}
 }
 
-func IConfigTitleNotifyCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, on bool) {
+func IConfigTitleNotifyCmd(c *MessageContext, groupCode uint32, id string, site string, ctype concern_type.Type, on bool) {
 	err := iConfigCmd(c, groupCode, id, site, ctype, operateNotifyConcernConfig(c, ctype, on))
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
@@ -413,7 +416,7 @@ func IConfigTitleNotifyCmd(c *MessageContext, groupCode int64, id string, site s
 	}
 }
 
-func IConfigOfflineNotifyCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, on bool) {
+func IConfigOfflineNotifyCmd(c *MessageContext, groupCode uint32, id string, site string, ctype concern_type.Type, on bool) {
 	err := iConfigCmd(c, groupCode, id, site, ctype, operateOfflineNotifyConcernConfig(c, ctype, on))
 	if localdb.IsRollback(err) || permission.IsPermissionError(err) {
 		return
@@ -425,7 +428,7 @@ func IConfigOfflineNotifyCmd(c *MessageContext, groupCode int64, id string, site
 	}
 }
 
-func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, types []string) {
+func IConfigFilterCmdType(c *MessageContext, groupCode uint32, id string, site string, ctype concern_type.Type, types []string) {
 	err := configCmdGroupCommonCheck(c, groupCode)
 	if err == nil {
 		if len(types) == 0 {
@@ -449,7 +452,7 @@ func IConfigFilterCmdType(c *MessageContext, groupCode int64, id string, site st
 	}
 }
 
-func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, types []string) {
+func IConfigFilterCmdNotType(c *MessageContext, groupCode uint32, id string, site string, ctype concern_type.Type, types []string) {
 	err := configCmdGroupCommonCheck(c, groupCode)
 	if err == nil {
 
@@ -474,7 +477,7 @@ func IConfigFilterCmdNotType(c *MessageContext, groupCode int64, id string, site
 	}
 }
 
-func IConfigFilterCmdText(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, keywords []string) {
+func IConfigFilterCmdText(c *MessageContext, groupCode uint32, id string, site string, ctype concern_type.Type, keywords []string) {
 	err := configCmdGroupCommonCheck(c, groupCode)
 	if err == nil {
 		if len(keywords) == 0 {
@@ -498,7 +501,7 @@ func IConfigFilterCmdText(c *MessageContext, groupCode int64, id string, site st
 	}
 }
 
-func IConfigFilterCmdClear(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type) {
+func IConfigFilterCmdClear(c *MessageContext, groupCode uint32, id string, site string, ctype concern_type.Type) {
 	err := iConfigCmd(c, groupCode, id, site, ctype, func(config concern.IConfig) bool {
 		*config.GetGroupConcernFilter() = concern.GroupConcernFilterConfig{}
 		return true
@@ -513,7 +516,7 @@ func IConfigFilterCmdClear(c *MessageContext, groupCode int64, id string, site s
 	}
 }
 
-func IConfigFilterCmdShow(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type) {
+func IConfigFilterCmdShow(c *MessageContext, groupCode uint32, id string, site string, ctype concern_type.Type) {
 	err := iConfigCmd(c, groupCode, id, site, ctype, func(config concern.IConfig) bool {
 		if config.GetGroupConcernFilter().Empty() {
 			c.TextReply("当前配置为空")
@@ -564,11 +567,11 @@ func IConfigFilterCmdShow(c *MessageContext, groupCode int64, id string, site st
 	}
 }
 
-func iConfigCmd(c *MessageContext, groupCode int64, id string, site string, ctype concern_type.Type, f func(config concern.IConfig) bool) (err error) {
+func iConfigCmd(c *MessageContext, groupCode uint32, id string, site string, ctype concern_type.Type, f func(config concern.IConfig) bool) (err error) {
 	if err = configCmdGroupCommonCheck(c, groupCode); err != nil {
 		return err
 	}
-	if !sliceutil.Contains(concern.ListSite(), site) {
+	if !lo.Contains(concern.ListSite(), site) {
 		return concern.ErrSiteNotSupported
 	}
 	cm, err := concern.GetConcernBySiteAndType(site, ctype)
@@ -617,14 +620,14 @@ func ReplyUserInfo(c *MessageContext, id string, site string, ctype concern_type
 	c.TextReply(fmt.Sprintf("成功 - %v用户 %v", site, info.GetName()))
 }
 
-func configCmdGroupCommonCheck(c *MessageContext, groupCode int64) error {
+func configCmdGroupCommonCheck(c *MessageContext, groupCode uint32) error {
 	if c.Lsp.PermissionStateManager.CheckGroupCommandDisabled(groupCode, ConfigCommand) {
 		c.DisabledReply()
 		return permission.ErrDisabled
 	}
 
 	if !c.Lsp.PermissionStateManager.RequireAny(
-		permission.AdminRoleRequireOption(c.Sender.Uin),
+		permission.AdminRoleRequireOption[uint32](c.Sender.Uin),
 		permission.GroupAdminRoleRequireOption(groupCode, c.Sender.Uin),
 		permission.QQAdminRequireOption(groupCode, c.Sender.Uin),
 		permission.GroupCommandRequireOption(groupCode, c.Sender.Uin, ConfigCommand),
@@ -635,7 +638,7 @@ func configCmdGroupCommonCheck(c *MessageContext, groupCode int64) error {
 	return nil
 }
 
-func operateAtConcernConfig(c *MessageContext, ctype concern_type.Type, action string, QQ []int64) func(concernConfig concern.IConfig) bool {
+func operateAtConcernConfig(c *MessageContext, ctype concern_type.Type, action string, QQ []uint32) func(concernConfig concern.IConfig) bool {
 	return func(concernConfig concern.IConfig) bool {
 		switch action {
 		case "add":
@@ -653,7 +656,7 @@ func operateAtConcernConfig(c *MessageContext, ctype concern_type.Type, action s
 				c.TextReply("当前配置为空")
 				return false
 			}
-			c.TextReply(fmt.Sprintf("当前配置：\n%v", utils.JoinInt64(qqList, "\n")))
+			c.TextReply(fmt.Sprintf("当前配置：\n%v", utils.JoinUint(qqList, "\n")))
 			return false
 		default:
 			c.Log.Errorf("unknown action")
@@ -742,20 +745,20 @@ func operateOfflineNotifyConcernConfig(c *MessageContext, ctype concern_type.Typ
 
 func IAbnormalConcernCheck(c *MessageContext) {
 	if !c.Lsp.PermissionStateManager.RequireAny(
-		permission.AdminRoleRequireOption(c.Sender.Uin),
+		permission.AdminRoleRequireOption[uint32](c.Sender.Uin),
 	) {
 		c.NoPermissionReply()
 		return
 	}
 
-	var allGroups = make(map[int64]bool)
+	var allGroups = make(map[uint32]bool)
 	for _, groups := range utils.GetBot().GetGroupList() {
-		allGroups[groups.Code] = true
+		allGroups[groups.GroupUin] = true
 	}
 
-	var allConcernGroups = make(map[int64]int)
+	var allConcernGroups = make(map[uint32]int)
 	for _, cm := range concern.ListConcern() {
-		_, _, _, err := cm.GetStateManager().ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+		_, _, _, err := cm.GetStateManager().ListConcernState(func(groupCode uint32, id interface{}, p concern_type.Type) bool {
 			allConcernGroups[groupCode] += 1
 			return true
 		})
@@ -764,11 +767,11 @@ func IAbnormalConcernCheck(c *MessageContext) {
 			return
 		}
 	}
-	var unknownGroups [][2]int64
+	var unknownGroups []lo.Tuple2[uint32, int]
 
 	for groupCode, number := range allConcernGroups {
 		if _, found := allGroups[groupCode]; !found {
-			unknownGroups = append(unknownGroups, [2]int64{groupCode, int64(number)})
+			unknownGroups = append(unknownGroups, lo.T2(groupCode, number))
 		}
 	}
 
@@ -782,19 +785,19 @@ func IAbnormalConcernCheck(c *MessageContext) {
 		m.Textf("没有查询到异常群号")
 	} else {
 		// 让结果稳定
-		sort.Slice(unknownGroups, func(i, j int) bool {
-			return unknownGroups[i][0] < unknownGroups[j][0]
+		slices.SortFunc(unknownGroups, func(e, e2 lo.Tuple2[uint32, int]) int {
+			return cmp.Compare(e.B, e2.B)
 		})
 		m.Textf("共查询到%v个异常群号:\n", len(unknownGroups))
 		for _, pair := range unknownGroups {
-			m.Textf("群 %v - %v个订阅\n", pair[0], pair[1])
+			m.Textf("群 %v - %v个订阅\n", pair.A, pair.B)
 		}
 		m.Textf("可以使用<%v --abnormal>命令清除异常群订阅", c.Lsp.CommandShowName(CleanConcern))
 	}
 	c.Send(m)
 }
 
-func ICleanConcern(c *MessageContext, abnormal bool, groupCodes []int64, rawSite string, rawType string) {
+func ICleanConcern(c *MessageContext, abnormal bool, groupCodes []uint32, rawSite string, rawType string) {
 	log := c.GetLog()
 
 	log = log.WithFields(logrus.Fields{
@@ -816,7 +819,7 @@ func ICleanConcern(c *MessageContext, abnormal bool, groupCodes []int64, rawSite
 		}
 	}
 	type cleanItem struct {
-		groupCode int64
+		groupCode uint32
 		id        interface{}
 		tp        concern_type.Type
 	}
@@ -827,8 +830,8 @@ func ICleanConcern(c *MessageContext, abnormal bool, groupCodes []int64, rawSite
 	}
 
 	var (
-		cleanGroupCode = make(map[int64]bool)
-		allGroups      = make(map[int64]bool)
+		cleanGroupCode = make(map[uint32]bool)
+		allGroups      = make(map[uint32]bool)
 		site           string
 		err            error
 		tp             concern_type.Type
@@ -841,7 +844,7 @@ func ICleanConcern(c *MessageContext, abnormal bool, groupCodes []int64, rawSite
 	}
 
 	for _, groups := range utils.GetBot().GetGroupList() {
-		allGroups[groups.Code] = true
+		allGroups[uint32(groups.GroupUin)] = true
 	}
 
 	for _, cm := range concern.ListConcern() {
@@ -869,7 +872,7 @@ func ICleanConcern(c *MessageContext, abnormal bool, groupCodes []int64, rawSite
 			site: site,
 			tp:   tp,
 		})
-		_, _, _, err = cm.GetStateManager().ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+		_, _, _, err = cm.GetStateManager().ListConcernState(func(groupCode uint32, id interface{}, p concern_type.Type) bool {
 			var itp = p.Intersection(tp)
 			if itp.Empty() {
 				return true

@@ -1,8 +1,9 @@
 package version
 
 import (
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
 	"github.com/tidwall/buntdb"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
 )
 
 // ChainMigration 将多个 MigrationFunc 组合成一个 MigrationFunc ，每个 MigrationFunc 会按顺序执行

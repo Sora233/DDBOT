@@ -2,9 +2,10 @@ package huya
 
 import (
 	"errors"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern"
 	"time"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
 )
 
 type StateManager struct {
@@ -33,7 +34,7 @@ func (c *StateManager) DeleteLiveInfo(id string) error {
 	return err
 }
 
-func (c *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+func (c *StateManager) GetGroupConcernConfig(groupCode uint32, id interface{}) (concernConfig concern.IConfig) {
 	return NewGroupConcernConfig(c.StateManager.GetGroupConcernConfig(groupCode, id))
 }
 

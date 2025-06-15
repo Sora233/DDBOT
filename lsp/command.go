@@ -1,8 +1,9 @@
 package lsp
 
 import (
-	"github.com/Sora233/DDBOT/lsp/cfg"
-	"github.com/Sora233/sliceutil"
+	"github.com/samber/lo"
+
+	"github.com/Sora233/DDBOT/v2/lsp/cfg"
 )
 
 // TODO command需要重构成注册模式，然后把这个文件废弃
@@ -20,7 +21,6 @@ var CommandMaps = map[string]string{
 	"HuangtuCommand":       HuangtuCommand,
 	"EnableCommand":        EnableCommand,
 	"DisableCommand":       DisableCommand,
-	"ReverseCommand":       ReverseCommand,
 	"HelpCommand":          HelpCommand,
 	"ConfigCommand":        ConfigCommand,
 	"PingCommand":          PingCommand,
@@ -52,7 +52,6 @@ const (
 	HuangtuCommand = "黄图"
 	EnableCommand  = "enable"
 	DisableCommand = "disable"
-	ReverseCommand = "倒放"
 	HelpCommand    = "help"
 	ConfigCommand  = "config"
 )
@@ -79,8 +78,7 @@ var allGroupCommand = [...]string{
 	RollCommand, CheckinCommand, GrantCommand,
 	LspCommand, WatchCommand, UnwatchCommand,
 	ListCommand, SetuCommand, HuangtuCommand,
-	EnableCommand, DisableCommand,
-	ReverseCommand, ConfigCommand,
+	EnableCommand, DisableCommand, ConfigCommand,
 	HelpCommand, ScoreCommand, AdminCommand,
 	SilenceCommand, NoUpdateCommand, CleanConcern,
 }
@@ -106,19 +104,19 @@ var nonOprateable = [...]string{
 }
 
 func CheckValidCommand(command string) bool {
-	return sliceutil.Contains(allGroupCommand, command)
+	return lo.Contains(allGroupCommand[:], command)
 }
 
 func CheckCustomGroupCommand(command string) bool {
-	return sliceutil.Contains(cfg.GetCustomGroupCommand(), command)
+	return lo.Contains(cfg.GetCustomGroupCommand(), command)
 }
 
 func CheckCustomPrivateCommand(command string) bool {
-	return sliceutil.Contains(cfg.GetCustomPrivateCommand(), command)
+	return lo.Contains(cfg.GetCustomPrivateCommand(), command)
 }
 
 func CheckOperateableCommand(command string) bool {
-	return (sliceutil.Contains(allGroupCommand, command) || CheckCustomGroupCommand(command)) && !sliceutil.Contains(nonOprateable, command)
+	return (lo.Contains(allGroupCommand[:], command) || CheckCustomGroupCommand(command)) && !lo.Contains(nonOprateable[:], command)
 }
 
 func CombineCommand(command string) string {

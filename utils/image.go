@@ -4,10 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/Sora233/DDBOT/requests"
-	"github.com/Sora233/DDBOT/utils/blockCache"
-	"github.com/ericpauley/go-quantize/quantize"
-	"github.com/nfnt/resize"
 	"image"
 	"image/draw"
 	"image/gif"
@@ -16,6 +12,12 @@ import (
 	"io"
 	"strings"
 	"time"
+
+	"github.com/ericpauley/go-quantize/quantize"
+	"github.com/nfnt/resize"
+
+	"github.com/Sora233/DDBOT/v2/requests"
+	"github.com/Sora233/DDBOT/v2/utils/blockCache"
 )
 
 func encodeImage(img image.Image, format string, resizedImageBuffer *bytes.Buffer) (err error) {

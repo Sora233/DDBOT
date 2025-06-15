@@ -2,14 +2,16 @@ package utils
 
 import (
 	"bytes"
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/stretchr/testify/assert"
 	"image"
 	_ "image/draw"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
 )
 
 var imageUrl = "https://user-images.githubusercontent.com/11474360/111737379-78fbe200-88ba-11eb-9e7e-ecc9f2440dd8.jpg"

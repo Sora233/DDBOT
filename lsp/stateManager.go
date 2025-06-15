@@ -2,13 +2,14 @@ package lsp
 
 import (
 	"fmt"
-	"github.com/Mrs4s/MiraiGo/client"
-	"github.com/Mrs4s/MiraiGo/message"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/utils"
-	"github.com/tidwall/buntdb"
-	"strings"
+	"math"
+	"strconv"
 	"time"
+
+	"github.com/LagrangeDev/LagrangeGo/client/event"
+	"github.com/tidwall/buntdb"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
 )
 
 type KeySet struct{}
@@ -38,45 +39,13 @@ type StateManager struct {
 	KeySet
 }
 
-func (s *StateManager) SaveMessageImageUrl(groupCode int64, messageID int32, msgs []message.IMessageElement) error {
-	imgs := utils.MessageFilter(msgs, func(e message.IMessageElement) bool {
-		return e.Type() == message.Image
-	})
-	var urls []string
-	for _, img := range imgs {
-		switch i := img.(type) {
-		case *message.GroupImageElement:
-			if i.Url != "" {
-				urls = append(urls, i.Url)
-			}
-		case *message.FriendImageElement:
-			if i.Url != "" {
-				urls = append(urls, i.Url)
-			}
-		}
-	}
-	if len(urls) == 0 {
-		return nil
-	}
-	return s.Set(s.GroupMessageImageKey(groupCode, messageID), strings.Join(urls, " "), localdb.SetExpireOpt(time.Hour*8))
-}
-
-func (s *StateManager) GetMessageImageUrl(groupCode int64, messageID int32) []string {
-	var result []string
-	val, err := s.Get(s.GroupMessageImageKey(groupCode, messageID))
-	if err == nil {
-		result = strings.Split(val, " ")
-	}
-	return result
-}
-
-func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
+func (s *StateManager) Muted(groupCode uint32, uin uint32, t uint32) error {
 	return s.RWCoverTx(func(tx *buntdb.Tx) error {
 		var err error
 		key := s.GroupMuteKey(groupCode, uin)
 		if t == 0 {
 			_, err = s.Delete(key)
-		} else if t < 0 {
+		} else if t == math.MaxUint32 {
 			// 开启全体禁言
 			err = s.Set(key, "")
 		} else { // t > 0
@@ -86,20 +55,20 @@ func (s *StateManager) Muted(groupCode int64, uin int64, t int32) error {
 	})
 }
 
-func (s *StateManager) IsMuted(groupCode int64, uin int64) bool {
+func (s *StateManager) IsMuted(groupCode, uin uint32) bool {
 	return s.Exist(s.GroupMuteKey(groupCode, uin))
 }
 
-func (s *StateManager) SaveGroupInvitor(groupCode int64, uin int64) error {
-	err := s.SetInt64(localdb.GroupInvitorKey(groupCode), uin, localdb.SetNoOverWriteOpt())
+func (s *StateManager) SaveGroupInvitor(groupCode uint32, uin uint32) error {
+	err := s.SetUint32(localdb.GroupInvitorKey(groupCode), uin, localdb.SetNoOverWriteOpt())
 	if localdb.IsRollback(err) {
 		return localdb.ErrKeyExist
 	}
 	return err
 }
 
-func (s *StateManager) PopGroupInvitor(groupCode int64) (int64, error) {
-	return s.DeleteInt64(localdb.GroupInvitorKey(groupCode))
+func (s *StateManager) PopGroupInvitor(groupCode uint32) (uint32, error) {
+	return s.DeleteUint32(localdb.GroupInvitorKey(groupCode))
 }
 
 func (s *StateManager) FreshIndex() {
@@ -154,21 +123,21 @@ func (s *StateManager) GetCurrentMode() Mode {
 	return result
 }
 
-func (s *StateManager) SaveGroupInvitedRequest(request *client.GroupInvitedRequest) error {
-	return s.saveRequest(request.RequestId, request, s.GroupInvitedKey)
+func (s *StateManager) SaveGroupInvitedRequest(request *event.GroupInvite) error {
+	return s.saveRequest(strconv.FormatUint(request.RequestSeq, 10), request, s.GroupInvitedKey)
 }
 
-func (s *StateManager) SaveNewFriendRequest(request *client.NewFriendRequest) error {
-	return s.saveRequest(request.RequestId, request, s.NewFriendRequestKey)
+func (s *StateManager) SaveNewFriendRequest(request *event.NewFriendRequest) error {
+	return s.saveRequest(request.SourceUID, request, s.NewFriendRequestKey)
 }
 
-func (s *StateManager) ListNewFriendRequest() (results []*client.NewFriendRequest, err error) {
+func (s *StateManager) ListNewFriendRequest() (results []*event.NewFriendRequest, err error) {
 	err = s.RCoverTx(func(tx *buntdb.Tx) error {
 		var (
 			iterErr, err error
 		)
 		err = tx.Ascend(s.NewFriendRequestKey(), func(key, value string) bool {
-			var item = new(client.NewFriendRequest)
+			var item = new(event.NewFriendRequest)
 			iterErr = s.GetJson(key, &item)
 			if iterErr == nil {
 				results = append(results, item)
@@ -187,13 +156,13 @@ func (s *StateManager) ListNewFriendRequest() (results []*client.NewFriendReques
 	return
 }
 
-func (s *StateManager) ListGroupInvitedRequest() (results []*client.GroupInvitedRequest, err error) {
+func (s *StateManager) ListGroupInvitedRequest() (results []*event.GroupInvite, err error) {
 	err = s.RCoverTx(func(tx *buntdb.Tx) error {
 		var (
 			iterErr, err error
 		)
 		err = tx.Ascend(s.GroupInvitedKey(), func(key, value string) bool {
-			var item = new(client.GroupInvitedRequest)
+			var item = new(event.GroupInvite)
 			iterErr = s.GetJson(key, &item)
 			if iterErr == nil {
 				results = append(results, item)
@@ -212,31 +181,31 @@ func (s *StateManager) ListGroupInvitedRequest() (results []*client.GroupInvited
 	return
 }
 
-func (s *StateManager) DeleteNewFriendRequest(requestId int64) (err error) {
+func (s *StateManager) DeleteNewFriendRequest(requestId string) (err error) {
 	_, err = s.Delete(s.NewFriendRequestKey(requestId))
 	return
 }
 
-func (s *StateManager) DeleteGroupInvitedRequest(requestId int64) (err error) {
+func (s *StateManager) DeleteGroupInvitedRequest(requestId uint64) (err error) {
 	_, err = s.Delete(s.GroupInvitedKey(requestId))
 	return
 }
 
-func (s *StateManager) GetNewFriendRequest(requestId int64) (result *client.NewFriendRequest, err error) {
+func (s *StateManager) GetNewFriendRequest(requestId string) (result *event.NewFriendRequest, err error) {
 	err = s.getRequest(requestId, &result, s.NewFriendRequestKey)
 	return
 }
 
-func (s *StateManager) GetGroupInvitedRequest(requestId int64) (result *client.GroupInvitedRequest, err error) {
-	err = s.getRequest(requestId, &result, s.GroupInvitedKey)
+func (s *StateManager) GetGroupInvitedRequest(requestId uint64) (result *event.GroupInvite, err error) {
+	err = s.getRequest(strconv.FormatUint(requestId, 10), &result, s.GroupInvitedKey)
 	return
 }
 
-func (s *StateManager) saveRequest(requestId int64, request interface{}, keyFunc localdb.KeyPatternFunc) error {
+func (s *StateManager) saveRequest(requestId string, request interface{}, keyFunc localdb.KeyPatternFunc) error {
 	return s.SetJson(keyFunc(requestId), request)
 }
 
-func (s *StateManager) getRequest(requestId int64, request interface{}, keyFunc localdb.KeyPatternFunc) error {
+func (s *StateManager) getRequest(requestId string, request interface{}, keyFunc localdb.KeyPatternFunc) error {
 	return s.GetJson(keyFunc(requestId), request)
 }
 

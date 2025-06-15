@@ -3,12 +3,14 @@ package template
 import (
 	"embed"
 	"fmt"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/fsnotify/fsnotify"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/fsnotify/fsnotify"
+
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
 )
 
 const templateDir = "template"

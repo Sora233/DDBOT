@@ -1,12 +1,14 @@
 package huya
 
 import (
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/lsp/template"
-	localutils "github.com/Sora233/DDBOT/utils"
-	"github.com/sirupsen/logrus"
 	"sync"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/DDBOT/v2/lsp/template"
+	localutils "github.com/Sora233/DDBOT/v2/utils"
 )
 
 type LiveInfo struct {
@@ -100,10 +102,10 @@ func (m *LiveInfo) GetMSG() *mmsg.MSG {
 
 type ConcernLiveNotify struct {
 	*LiveInfo
-	GroupCode int64 `json:"group_code"`
+	GroupCode uint32 `json:"group_code"`
 }
 
-func (notify *ConcernLiveNotify) GetGroupCode() int64 {
+func (notify *ConcernLiveNotify) GetGroupCode() uint32 {
 	return notify.GroupCode
 }
 
@@ -118,7 +120,7 @@ func (notify *ConcernLiveNotify) Logger() *logrus.Entry {
 	return notify.LiveInfo.Logger().WithFields(localutils.GroupLogFields(notify.GroupCode))
 }
 
-func NewConcernLiveNotify(groupCode int64, l *LiveInfo) *ConcernLiveNotify {
+func NewConcernLiveNotify(groupCode uint32, l *LiveInfo) *ConcernLiveNotify {
 	if l == nil {
 		return nil
 	}

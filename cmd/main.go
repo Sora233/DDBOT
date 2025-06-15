@@ -2,34 +2,36 @@ package main
 
 import (
 	"fmt"
-	"github.com/Sora233/DDBOT"
-	_ "github.com/Sora233/DDBOT/logging"
-	"github.com/Sora233/DDBOT/lsp"
-	_ "github.com/Sora233/DDBOT/lsp/acfun"
-	"github.com/Sora233/DDBOT/lsp/bilibili"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	_ "github.com/Sora233/DDBOT/lsp/douyu"
-	_ "github.com/Sora233/DDBOT/lsp/huya"
-	"github.com/Sora233/DDBOT/lsp/permission"
-	_ "github.com/Sora233/DDBOT/lsp/weibo"
-	_ "github.com/Sora233/DDBOT/lsp/youtube"
-	_ "github.com/Sora233/DDBOT/msg-marker"
-	"github.com/Sora233/DDBOT/warn"
-	"github.com/Sora233/MiraiGo-Template/config"
-	"github.com/alecthomas/kong"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"runtime"
+
+	"github.com/alecthomas/kong"
+
+	"github.com/Sora233/DDBOT/v2"
+	_ "github.com/Sora233/DDBOT/v2/logging"
+	"github.com/Sora233/DDBOT/v2/lsp"
+	_ "github.com/Sora233/DDBOT/v2/lsp/acfun"
+	"github.com/Sora233/DDBOT/v2/lsp/bilibili"
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	_ "github.com/Sora233/DDBOT/v2/lsp/douyu"
+	_ "github.com/Sora233/DDBOT/v2/lsp/huya"
+	"github.com/Sora233/DDBOT/v2/lsp/permission"
+	_ "github.com/Sora233/DDBOT/v2/lsp/weibo"
+	_ "github.com/Sora233/DDBOT/v2/lsp/youtube"
+	_ "github.com/Sora233/DDBOT/v2/msg-marker"
+	"github.com/Sora233/DDBOT/v2/warn"
+	"github.com/Sora233/MiraiGo-Template/config"
 )
 
 func main() {
 	var cli struct {
-		Play         bool  `optional:"" help:"运行play函数，适用于测试和开发"`
-		Debug        bool  `optional:"" help:"启动debug模式"`
-		SetAdmin     int64 `optional:"" xor:"c" help:"设置admin权限"`
-		Version      bool  `optional:"" xor:"c" short:"v" help:"打印版本信息"`
-		SyncBilibili bool  `optional:"" xor:"c" help:"同步b站帐号的关注，适用于更换或迁移b站帐号的时候"`
+		Play         bool   `optional:"" help:"运行play函数，适用于测试和开发"`
+		Debug        bool   `optional:"" help:"启动debug模式"`
+		SetAdmin     uint32 `optional:"" xor:"c" help:"设置admin权限"`
+		Version      bool   `optional:"" xor:"c" short:"v" help:"打印版本信息"`
+		SyncBilibili bool   `optional:"" xor:"c" help:"同步b站帐号的关注，适用于更换或迁移b站帐号的时候"`
 	}
 	kong.Parse(&cli)
 
@@ -62,7 +64,7 @@ func main() {
 	}
 
 	if cli.SetAdmin != 0 {
-		sm := permission.NewStateManager()
+		sm := permission.NewStateManager[uint32, uint32]()
 		err := sm.GrantRole(cli.SetAdmin, permission.Admin)
 		if err != nil {
 			fmt.Printf("设置Admin权限失败 %v\n", err)

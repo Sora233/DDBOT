@@ -2,9 +2,11 @@ package acfun
 
 import (
 	"errors"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern"
+
 	"github.com/tidwall/buntdb"
+
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
 )
 
 type StateManager struct {
@@ -12,7 +14,7 @@ type StateManager struct {
 	extraKey
 }
 
-func (s *StateManager) GetGroupConcernConfig(groupCode int64, id interface{}) (concernConfig concern.IConfig) {
+func (s *StateManager) GetGroupConcernConfig(groupCode uint32, id interface{}) (concernConfig concern.IConfig) {
 	return NewGroupConcernConfig(s.StateManager.GetGroupConcernConfig(groupCode, id))
 }
 

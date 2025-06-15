@@ -1,11 +1,13 @@
 package version
 
 import (
-	"github.com/Sora233/DDBOT/internal/test"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
-	"testing"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
 )
 
 func TestGetCurrentVersion(t *testing.T) {

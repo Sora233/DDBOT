@@ -1,6 +1,8 @@
 package permission
 
-import "errors"
+import (
+	"errors"
+)
 
 var (
 	ErrPermissionExist    = errors.New("already exist")
@@ -12,7 +14,8 @@ var (
 )
 
 func IsPermissionError(err error) bool {
-	if err == ErrDisabled || err == ErrPermissionDenied || err == ErrPermissionExist || err == ErrPermissionNotExist {
+	if errors.Is(err, ErrDisabled) || errors.Is(err, ErrPermissionDenied) ||
+		errors.Is(err, ErrPermissionExist) || errors.Is(err, ErrPermissionNotExist) {
 		return true
 	}
 	return false

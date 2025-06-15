@@ -17,37 +17,37 @@ func (t TargetType) IsPrivate() bool {
 
 type Target interface {
 	TargetType() TargetType
-	TargetCode() int64
+	TargetCode() uint32
 }
 
 type PrivateTarget struct {
-	Uin int64 `json:"uin"`
+	Uin uint32 `json:"uin"`
 }
 
 func (t *PrivateTarget) TargetType() TargetType {
 	return TargetPrivate
 }
 
-func (t *PrivateTarget) TargetCode() int64 {
+func (t *PrivateTarget) TargetCode() uint32 {
 	return t.Uin
 }
 
 type GroupTarget struct {
-	GroupCode int64 `json:"group_code"`
+	GroupCode uint32 `json:"group_code"`
 }
 
 func (t *GroupTarget) TargetType() TargetType {
 	return TargetGroup
 }
 
-func (t *GroupTarget) TargetCode() int64 {
+func (t *GroupTarget) TargetCode() uint32 {
 	return t.GroupCode
 }
 
-func NewGroupTarget(groupCode int64) *GroupTarget {
+func NewGroupTarget(groupCode uint32) *GroupTarget {
 	return &GroupTarget{GroupCode: groupCode}
 }
 
-func NewPrivateTarget(uin int64) *PrivateTarget {
+func NewPrivateTarget(uin uint32) *PrivateTarget {
 	return &PrivateTarget{Uin: uin}
 }

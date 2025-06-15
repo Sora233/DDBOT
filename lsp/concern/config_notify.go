@@ -1,6 +1,6 @@
 package concern
 
-import "github.com/Sora233/DDBOT/lsp/concern_type"
+import "github.com/Sora233/DDBOT/v2/lsp/concern_type"
 
 // GroupConcernNotifyConfig 推送配置
 type GroupConcernNotifyConfig struct {

@@ -1,16 +1,18 @@
 package lsp
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/internal/test"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/DDBOT/utils/msgstringer"
+	"testing"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"testing"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/DDBOT/v2/lsp/permission"
+	"github.com/Sora233/DDBOT/v2/utils/msgstringer"
 )
 
 func TestLsp_ConcernNotify(t *testing.T) {

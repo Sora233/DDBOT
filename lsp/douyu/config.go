@@ -1,7 +1,7 @@
 package douyu
 
 import (
-	"github.com/Sora233/DDBOT/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
 )
 
 type GroupConcernConfig struct {

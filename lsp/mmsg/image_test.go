@@ -1,9 +1,10 @@
 package mmsg
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestImage(t *testing.T) {

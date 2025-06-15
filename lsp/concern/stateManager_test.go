@@ -3,16 +3,18 @@ package concern
 import (
 	"context"
 	"errors"
-	"github.com/Sora233/DDBOT/internal/test"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"testing"
+	"time"
+
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/buntdb"
 	"go.uber.org/atomic"
-	"testing"
-	"time"
+
+	"github.com/Sora233/DDBOT/v2/internal/test"
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
 )
 
 const testSite = "test"
@@ -39,16 +41,16 @@ func (t *testKeySet) GroupAtAllMarkKey(keys ...interface{}) string {
 	return localdb.NamedKey("test4", keys)
 }
 
-func (t *testKeySet) ParseGroupConcernStateKey(key string) (groupCode int64, id interface{}, err error) {
+func (t *testKeySet) ParseGroupConcernStateKey(key string) (groupCode uint32, id interface{}, err error) {
 	return localdb.ParseConcernStateKeyWithInt64(key)
 }
 
 type testEvent struct {
 	id        int64
-	groupCode int64
+	groupCode uint32
 }
 
-func (t *testEvent) GetGroupCode() int64 {
+func (t *testEvent) GetGroupCode() uint32 {
 	return t.groupCode
 }
 
@@ -115,7 +117,7 @@ func TestNewStateManager(t *testing.T) {
 	assert.Panics(t, func() {
 		sm.Start()
 	})
-	sm.UseNotifyGeneratorFunc(func(groupCode int64, event Event) []Notify {
+	sm.UseNotifyGeneratorFunc(func(groupCode uint32, event Event) []Notify {
 		return nil
 	})
 	sm.UseEmitQueue()
@@ -169,7 +171,7 @@ func TestNewStateManager2(t *testing.T) {
 			panic("error")
 		}
 	})
-	sm.UseNotifyGeneratorFunc(func(groupCode int64, event Event) []Notify {
+	sm.UseNotifyGeneratorFunc(func(groupCode uint32, event Event) []Notify {
 		return nil
 	})
 	assert.Nil(t, sm.Start())
@@ -186,7 +188,7 @@ func TestStateManagerNotify(t *testing.T) {
 	testEventChan := make(chan Event, 16)
 	testNotifyChan := make(chan Notify, 16)
 	sm.notifyChan = testNotifyChan
-	sm.UseNotifyGeneratorFunc(func(groupCode int64, event Event) []Notify {
+	sm.UseNotifyGeneratorFunc(func(groupCode uint32, event Event) []Notify {
 		event.(*testEvent).groupCode = groupCode
 		return []Notify{
 			event.(*testEvent),
@@ -414,7 +416,7 @@ func TestStateManager_GroupConcern(t *testing.T) {
 	assert.EqualValues(t, ErrAlreadyExists, sm.CheckGroupConcern(test.G2, test.UID1, test.HuyaLive))
 
 	// 列出所有有hlive的记录，应该只有UID G2
-	groups, ids, ctypes, err := sm.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+	groups, ids, ctypes, err := sm.ListConcernState(func(groupCode uint32, id interface{}, p concern_type.Type) bool {
 		return p.ContainAny(test.HuyaLive)
 	})
 	assert.Nil(t, err)
@@ -497,7 +499,7 @@ func TestStateManager_GroupConcern2(t *testing.T) {
 
 func listIds(sm *StateManager) ([]interface{}, error) {
 	var m = make(map[interface{}]interface{})
-	_, _, _, err := sm.ListConcernState(func(groupCode int64, id interface{}, p concern_type.Type) bool {
+	_, _, _, err := sm.ListConcernState(func(groupCode uint32, id interface{}, p concern_type.Type) bool {
 		m[id] = struct{}{}
 		return true
 	})

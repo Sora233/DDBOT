@@ -1,8 +1,10 @@
 package permission
 
 import (
-	localutils "github.com/Sora233/DDBOT/utils"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/exp/constraints"
+
+	localutils "github.com/Sora233/DDBOT/v2/utils"
 )
 
 type RoleType int64
@@ -44,15 +46,15 @@ func NewRoleFromString(s string) RoleType {
 	}
 }
 
-type RequireOption interface {
-	Validate(s *StateManager) bool
+type RequireOption[UT, GT constraints.Integer] interface {
+	Validate(s *StateManager[UT, GT]) bool
 }
 
-type adminRoleRequireOption struct {
-	uin int64
+type adminRoleRequireOption[UT, _ constraints.Integer] struct {
+	uin UT
 }
 
-func (r *adminRoleRequireOption) Validate(s *StateManager) bool {
+func (r *adminRoleRequireOption[UT, GT]) Validate(s *StateManager[UT, GT]) bool {
 	if s.CheckRole(r.uin, Admin) {
 		logger.WithFields(logrus.Fields{
 			"type": "AdminRole",
@@ -63,16 +65,16 @@ func (r *adminRoleRequireOption) Validate(s *StateManager) bool {
 	return false
 }
 
-func AdminRoleRequireOption(uin int64) RequireOption {
-	return &adminRoleRequireOption{uin}
+func AdminRoleRequireOption[UT constraints.Integer](uin UT) RequireOption[UT, uint32] {
+	return &adminRoleRequireOption[UT, uint32]{uin}
 }
 
-type groupAdminRoleRequireOption struct {
-	groupCode int64
-	uin       int64
+type groupAdminRoleRequireOption[UT, GT constraints.Integer] struct {
+	groupCode GT
+	uin       UT
 }
 
-func (g *groupAdminRoleRequireOption) Validate(s *StateManager) bool {
+func (g *groupAdminRoleRequireOption[UT, GT]) Validate(s *StateManager[UT, GT]) bool {
 	uin := g.uin
 	groupCode := g.groupCode
 	if s.CheckGroupRole(groupCode, uin, GroupAdmin) {
@@ -86,16 +88,16 @@ func (g *groupAdminRoleRequireOption) Validate(s *StateManager) bool {
 	return false
 }
 
-func GroupAdminRoleRequireOption(groupCode int64, uin int64) RequireOption {
-	return &groupAdminRoleRequireOption{groupCode: groupCode, uin: uin}
+func GroupAdminRoleRequireOption[UT, GT constraints.Integer](groupCode GT, uin UT) RequireOption[UT, GT] {
+	return &groupAdminRoleRequireOption[UT, GT]{groupCode: groupCode, uin: uin}
 }
 
-type qqAdminRequireOption struct {
-	groupCode int64
-	uin       int64
+type qqAdminRequireOption[UT, GT constraints.Integer] struct {
+	groupCode GT
+	uin       UT
 }
 
-func (g *qqAdminRequireOption) Validate(s *StateManager) bool {
+func (g *qqAdminRequireOption[UT, GT]) Validate(s *StateManager[UT, GT]) bool {
 	uin := g.uin
 	groupCode := g.groupCode
 	if s.CheckGroupAdministrator(groupCode, uin) {
@@ -109,20 +111,20 @@ func (g *qqAdminRequireOption) Validate(s *StateManager) bool {
 	return false
 }
 
-func QQAdminRequireOption(groupCode int64, uin int64) RequireOption {
-	return &qqAdminRequireOption{
+func QQAdminRequireOption[UT, GT constraints.Integer](groupCode GT, uin UT) RequireOption[UT, GT] {
+	return &qqAdminRequireOption[UT, GT]{
 		groupCode: groupCode,
 		uin:       uin,
 	}
 }
 
-type groupCommandRequireOption struct {
-	groupCode int64
-	uin       int64
+type groupCommandRequireOption[UT, GT constraints.Integer] struct {
+	groupCode GT
+	uin       UT
 	command   string
 }
 
-func (g *groupCommandRequireOption) Validate(s *StateManager) bool {
+func (g *groupCommandRequireOption[UT, GT]) Validate(s *StateManager[UT, GT]) bool {
 	uin := g.uin
 	groupCode := g.groupCode
 	cmd := g.command
@@ -138,8 +140,8 @@ func (g *groupCommandRequireOption) Validate(s *StateManager) bool {
 	return false
 }
 
-func GroupCommandRequireOption(groupCode int64, uin int64, command string) RequireOption {
-	return &groupCommandRequireOption{
+func GroupCommandRequireOption[UT, GT constraints.Integer](groupCode GT, uin UT, command string) RequireOption[UT, GT] {
+	return &groupCommandRequireOption[UT, GT]{
 		groupCode: groupCode,
 		uin:       uin,
 		command:   command,

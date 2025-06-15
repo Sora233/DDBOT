@@ -1,9 +1,10 @@
 package lsp
 
 import (
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
+	"github.com/LagrangeDev/LagrangeGo/message"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
 )
 
 type MessageContext struct {

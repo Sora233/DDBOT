@@ -4,14 +4,16 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"github.com/Sora233/DDBOT/proxy_pool"
-	"github.com/Sora233/DDBOT/requests"
-	"github.com/Sora233/DDBOT/utils"
-	"github.com/samber/lo"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/samber/lo"
+
+	"github.com/Sora233/DDBOT/v2/proxy_pool"
+	"github.com/Sora233/DDBOT/v2/requests"
+	"github.com/Sora233/DDBOT/v2/utils"
 )
 
 const PathXWebInterfaceNav = "/x/web-interface/nav"

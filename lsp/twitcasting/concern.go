@@ -2,15 +2,17 @@ package twitcasting
 
 import (
 	"fmt"
-	"github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/MiraiGo-Template/config"
-	"github.com/Sora233/MiraiGo-Template/utils"
-	"github.com/nobuf/cas"
 	"strings"
 	"sync"
+
+	"github.com/nobuf/cas"
+
+	"github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/MiraiGo-Template/config"
+	"github.com/Sora233/MiraiGo-Template/utils"
 )
 
 var logger = utils.GetModuleLogger("twitcasting-concern")
@@ -63,7 +65,7 @@ type tcStateManager struct {
 	*concern.StateManager
 }
 
-func (tc *tcStateManager) GetGroupConcernConfig(groupCode int64, id interface{}) concern.IConfig {
+func (tc *tcStateManager) GetGroupConcernConfig(groupCode uint32, id interface{}) concern.IConfig {
 	return NewGroupConcernConfig(tc.StateManager.GetGroupConcernConfig(groupCode, id))
 }
 
@@ -229,7 +231,7 @@ func (tc *TwitCastConcern) tcFresh() concern.FreshFunc {
 }
 
 func (tc *TwitCastConcern) tcNotifyGenerator() concern.NotifyGeneratorFunc {
-	return func(groupCode int64, event concern.Event) []concern.Notify {
+	return func(groupCode uint32, event concern.Event) []concern.Notify {
 
 		if liveEvent, ok := event.(*LiveEvent); ok {
 			return []concern.Notify{
@@ -278,7 +280,7 @@ func (tc *TwitCastConcern) ParseId(s string) (interface{}, error) {
 	return strings.ReplaceAll(s, ":", "%"), nil
 }
 
-func (tc *TwitCastConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (tc *TwitCastConcern) Add(ctx mmsg.IMsgCtx, groupCode uint32, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 
 	userId := id.(string)
 
@@ -317,7 +319,7 @@ func (tc *TwitCastConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}
 }
 
 // Remove 实现删除一个订阅
-func (tc *TwitCastConcern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (tc *TwitCastConcern) Remove(ctx mmsg.IMsgCtx, groupCode uint32, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	_, err := tc.GetStateManager().RemoveGroupConcern(groupCode, id.(string), ctype)
 	if err != nil {
 		return nil, err

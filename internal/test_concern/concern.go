@@ -2,20 +2,22 @@ package test_concern
 
 import (
 	"fmt"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
+
 	"github.com/sirupsen/logrus"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
 )
 
 type TestEvent struct {
 	site      string
 	ctype     concern_type.Type
 	id        string
-	groupCode int64
+	groupCode uint32
 }
 
-func (t *TestEvent) GetGroupCode() int64 {
+func (t *TestEvent) GetGroupCode() uint32 {
 	return t.groupCode
 }
 
@@ -47,7 +49,7 @@ type TestConcern struct {
 	Ctypes []concern_type.Type
 }
 
-func (t *TestConcern) NewTestEvent(p concern_type.Type, groupCode int64, id string) *TestEvent {
+func (t *TestConcern) NewTestEvent(p concern_type.Type, groupCode uint32, id string) *TestEvent {
 	return &TestEvent{
 		site:      t.site,
 		ctype:     p,
@@ -68,12 +70,12 @@ func (t *TestConcern) ParseId(s string) (interface{}, error) {
 	return s, nil
 }
 
-func (t *TestConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (t *TestConcern) Add(ctx mmsg.IMsgCtx, groupCode uint32, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	_, err := t.StateManager.AddGroupConcern(groupCode, id, ctype)
 	return concern.NewIdentity(id, id.(string)), err
 }
 
-func (t *TestConcern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
+func (t *TestConcern) Remove(ctx mmsg.IMsgCtx, groupCode uint32, id interface{}, ctype concern_type.Type) (concern.IdentityInfo, error) {
 	_, err := t.StateManager.RemoveGroupConcern(groupCode, id, ctype)
 	return concern.NewIdentity(id, id.(string)), err
 }
@@ -95,7 +97,7 @@ func (t *TestConcern) UseNotifyGenerator(generator concern.NotifyGeneratorFunc) 
 }
 
 func (t *TestConcern) TestNotifyGenerator() concern.NotifyGeneratorFunc {
-	return func(groupCode int64, event concern.Event) []concern.Notify {
+	return func(groupCode uint32, event concern.Event) []concern.Notify {
 		e := event.(*TestEvent)
 		e.groupCode = groupCode
 		return []concern.Notify{e}

@@ -2,10 +2,12 @@ package concern
 
 import (
 	"errors"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
 )
 
 type testConcern struct {
@@ -25,11 +27,11 @@ func (t *testConcern) ParseId(s string) (interface{}, error) {
 	return s, nil
 }
 
-func (t *testConcern) Add(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error) {
+func (t *testConcern) Add(ctx mmsg.IMsgCtx, groupCode uint32, id interface{}, ctype concern_type.Type) (IdentityInfo, error) {
 	return nil, nil
 }
 
-func (t *testConcern) Remove(ctx mmsg.IMsgCtx, groupCode int64, id interface{}, ctype concern_type.Type) (IdentityInfo, error) {
+func (t *testConcern) Remove(ctx mmsg.IMsgCtx, groupCode uint32, id interface{}, ctype concern_type.Type) (IdentityInfo, error) {
 	return nil, nil
 }
 

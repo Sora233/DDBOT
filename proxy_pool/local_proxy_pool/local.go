@@ -2,9 +2,11 @@ package local_proxy_pool
 
 import (
 	"errors"
-	"github.com/Sora233/DDBOT/proxy_pool"
-	"go.uber.org/atomic"
 	"net/url"
+
+	"go.uber.org/atomic"
+
+	"github.com/Sora233/DDBOT/v2/proxy_pool"
 )
 
 type Proxy struct {

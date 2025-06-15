@@ -2,9 +2,7 @@ package lsp
 
 import (
 	"fmt"
-	"github.com/Sora233/DDBOT/lsp/concern"
-	"github.com/Sora233/DDBOT/lsp/template"
-	"go.uber.org/atomic"
+	"math"
 	"math/rand"
 	"runtime/debug"
 	"strconv"
@@ -12,18 +10,24 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/Sora233/DDBOT/image_pool"
-	"github.com/Sora233/DDBOT/image_pool/lolicon_pool"
-	localdb "github.com/Sora233/DDBOT/lsp/buntdb"
-	"github.com/Sora233/DDBOT/lsp/concern_type"
-	"github.com/Sora233/DDBOT/lsp/mmsg"
-	"github.com/Sora233/DDBOT/lsp/permission"
-	"github.com/Sora233/DDBOT/utils"
-	"github.com/Sora233/MiraiGo-Template/config"
-	"github.com/Sora233/sliceutil"
+	"github.com/samber/lo"
+	"go.uber.org/atomic"
+
+	"github.com/Sora233/DDBOT/v2/lsp/concern"
+	"github.com/Sora233/DDBOT/v2/lsp/template"
+
+	"github.com/LagrangeDev/LagrangeGo/message"
 	"github.com/alecthomas/kong"
 	"github.com/sirupsen/logrus"
+
+	"github.com/Sora233/DDBOT/v2/image_pool"
+	"github.com/Sora233/DDBOT/v2/image_pool/lolicon_pool"
+	localdb "github.com/Sora233/DDBOT/v2/lsp/buntdb"
+	"github.com/Sora233/DDBOT/v2/lsp/concern_type"
+	"github.com/Sora233/DDBOT/v2/lsp/mmsg"
+	"github.com/Sora233/DDBOT/v2/lsp/permission"
+	"github.com/Sora233/DDBOT/v2/utils"
+	"github.com/Sora233/MiraiGo-Template/config"
 )
 
 type LspGroupCommand struct {
@@ -34,7 +38,7 @@ type LspGroupCommand struct {
 
 func NewLspGroupCommand(l *Lsp, msg *message.GroupMessage) *LspGroupCommand {
 	c := &LspGroupCommand{
-		Runtime: NewRuntime(l, l.PermissionStateManager.CheckGroupSilence(msg.GroupCode)),
+		Runtime: NewRuntime(l, l.PermissionStateManager.CheckGroupSilence(msg.GroupUin)),
 		msg:     msg,
 	}
 	c.Parse(msg.Elements)
@@ -44,10 +48,10 @@ func NewLspGroupCommand(l *Lsp, msg *message.GroupMessage) *LspGroupCommand {
 func (lgc *LspGroupCommand) DebugCheck() bool {
 	var ok bool
 	if lgc.debug {
-		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.group"), strconv.FormatInt(lgc.groupCode(), 10)) {
+		if lo.Contains(config.GlobalConfig.GetStringSlice("debug.group"), strconv.FormatInt(int64(lgc.groupCode()), 10)) {
 			ok = true
 		}
-		if sliceutil.Contains(config.GlobalConfig.GetStringSlice("debug.uin"), strconv.FormatInt(lgc.uin(), 10)) {
+		if lo.Contains(config.GlobalConfig.GetStringSlice("debug.uin"), strconv.FormatInt(int64(lgc.uin()), 10)) {
 			ok = true
 		}
 	} else {
@@ -101,7 +105,7 @@ func (lgc *LspGroupCommand) Execute() {
 	case HuangtuCommand:
 		if lgc.requireEnable(HuangtuCommand) {
 			if lgc.l.PermissionStateManager.RequireAny(
-				permission.AdminRoleRequireOption(lgc.uin()),
+				permission.AdminRoleRequireOption[uint32](lgc.uin()),
 				permission.GroupCommandRequireOption(lgc.groupCode(), lgc.uin(), HuangtuCommand),
 			) {
 				lgc.SetuCommand(true)
@@ -143,10 +147,6 @@ func (lgc *LspGroupCommand) Execute() {
 		lgc.EnableCommand(true)
 	case SilenceCommand:
 		lgc.SilenceCommand()
-	case ReverseCommand:
-		if lgc.requireNotDisable(ReverseCommand) {
-			lgc.ReverseCommand()
-		}
 	case HelpCommand:
 		if lgc.requireNotDisable(HelpCommand) {
 			lgc.HelpCommand()
@@ -154,7 +154,7 @@ func (lgc *LspGroupCommand) Execute() {
 	case CleanConcern:
 		if lgc.requireNotDisable(CleanConcern) {
 			if lgc.l.PermissionStateManager.RequireAny(
-				permission.AdminRoleRequireOption(lgc.uin()),
+				permission.AdminRoleRequireOption[uint32](lgc.uin()),
 				permission.GroupAdminRoleRequireOption(lgc.groupCode(), lgc.uin()),
 			) {
 				lgc.CleanConcernCommand()
@@ -231,7 +231,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 		num = 1
 	}
 
-	if !lgc.l.PermissionStateManager.RequireAny(permission.AdminRoleRequireOption(lgc.uin())) {
+	if !lgc.l.PermissionStateManager.RequireAny(permission.AdminRoleRequireOption[uint32](lgc.uin())) {
 		if num != 1 {
 			lgc.textReply("失败 - 数量限制为1")
 			return
@@ -278,7 +278,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 	var (
 		imgsBytes   = make([][]byte, len(imgs))
 		errs        = make([]error, len(imgs))
-		groupImages = make([]*message.GroupImageElement, len(imgs))
+		groupImages = make([]*message.ImageElement, len(imgs))
 		wg          = new(sync.WaitGroup)
 	)
 
@@ -343,7 +343,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 						"Pid":       loliconImage.Pid,
 						"Tags":      loliconImage.Tags,
 						"Title":     loliconImage.Title,
-						"UploadUrl": groupImage.Url,
+						"UploadUrl": groupImage.URL,
 					}).Debug("debug image")
 					msg.Textf("标题：%v\n", loliconImage.Title)
 					msg.Textf("作者：%v\n", loliconImage.Author)
@@ -359,7 +359,7 @@ func (lgc *LspGroupCommand) SetuCommand(r18 bool) {
 			if len(msg.Elements()) == 0 {
 				return
 			}
-			if lgc.reply(msg).Id == -1 {
+			if lgc.reply(msg).ID == math.MaxUint32 {
 				missCount.Add(imgSubCount)
 			}
 		}(i)
@@ -621,7 +621,7 @@ func (lgc *LspGroupCommand) GrantCommand() {
 		Command string `required:"" short:"c" xor:"1" help:"命令名"`
 		Role    string `required:"" short:"r" xor:"1" enum:"Admin,GroupAdmin" help:"Admin / GroupAdmin"`
 		Delete  bool   `short:"d" help:"删除模式，执行删除权限操作"`
-		Target  int64  `arg:"" help:"目标qq号"`
+		Target  uint32 `arg:"" help:"目标qq号"`
 	}
 	_, output := lgc.parseCommandSyntax(&grantCmd, lgc.CommandName())
 	if output != "" {
@@ -675,10 +675,10 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 
 	var configCmd struct {
 		At struct {
-			Site   string  `optional:"" short:"s" default:"bilibili" help:"网站参数"`
-			Id     string  `arg:"" help:"配置的主播id"`
-			Action string  `arg:"" enum:"add,remove,clear,show" help:"add / remove / clear / show"`
-			QQ     []int64 `arg:"" optional:"" help:"需要@的成员QQ号码"`
+			Site   string   `optional:"" short:"s" default:"bilibili" help:"网站参数"`
+			Id     string   `arg:"" help:"配置的主播id"`
+			Action string   `arg:"" enum:"add,remove,clear,show" help:"add / remove / clear / show"`
+			QQ     []uint32 `arg:"" optional:"" help:"需要@的成员QQ号码"`
 		} `cmd:"" help:"配置推送时的@人员列表，默认为空" name:"at"`
 		AtAll struct {
 			Site   string `optional:"" short:"s" default:"bilibili" help:"网站参数"`
@@ -801,48 +801,6 @@ func (lgc *LspGroupCommand) ConfigCommand() {
 	}
 }
 
-func (lgc *LspGroupCommand) ReverseCommand() {
-	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
-	log.Infof("run %v command", lgc.CommandName())
-	defer func() { log.Infof("%v command end", lgc.CommandName()) }()
-
-	_, output := lgc.parseCommandSyntax(&struct{}{}, lgc.CommandName(), kong.Description("电脑使用/倒放 [图片] 或者 回复图片消息+/倒放触发"))
-	if output != "" {
-		lgc.textReply(output)
-	}
-	if lgc.exit {
-		return
-	}
-
-	for _, e := range lgc.msg.Elements {
-		if e.Type() == message.Image {
-			switch ie := e.(type) {
-			case *message.GroupImageElement:
-				lgc.reserveGif(ie.Url)
-				return
-			default:
-				log.Errorf("cast to ImageElement failed")
-				lgc.textReply("失败")
-				return
-			}
-		} else if e.Type() == message.Reply {
-			if re, ok := e.(*message.ReplyElement); ok {
-				urls := lgc.l.LspStateManager.GetMessageImageUrl(lgc.groupCode(), re.ReplySeq)
-				if len(urls) >= 1 {
-					lgc.reserveGif(urls[0])
-					return
-				}
-			} else {
-				log.Errorf("cast to ReplyElement failed")
-				lgc.textReply("失败")
-				return
-			}
-		}
-	}
-	log.Debug("no image found")
-	lgc.textReply("参数错误 - 未找到图片")
-}
-
 func (lgc *LspGroupCommand) HelpCommand() {
 	log := lgc.DefaultLoggerWithCommand(lgc.CommandName())
 	log.Infof("run %v command", lgc.CommandName())
@@ -876,7 +834,7 @@ func (lgc *LspGroupCommand) CleanConcernCommand() {
 	}
 
 	ICleanConcern(lgc.NewMessageContext(log),
-		false, []int64{lgc.groupCode()}, cleanConcernCmd.Site, cleanConcernCmd.Type)
+		false, []uint32{lgc.groupCode()}, cleanConcernCmd.Site, cleanConcernCmd.Type)
 
 }
 
@@ -908,16 +866,17 @@ func (lgc *LspGroupCommand) reserveGif(url string) {
 	lgc.reply(mmsg.NewMSG().Image(img, ""))
 }
 
-func (lgc *LspGroupCommand) uin() int64 {
+func (lgc *LspGroupCommand) uin() uint32 {
 	return lgc.msg.Sender.Uin
 }
 
 func (lgc *LspGroupCommand) displayName() string {
-	return lgc.msg.Sender.DisplayName()
+	s := lgc.msg.Sender
+	return lo.CoalesceOrEmpty(s.CardName, s.Nickname)
 }
 
-func (lgc *LspGroupCommand) groupCode() int64 {
-	return lgc.msg.GroupCode
+func (lgc *LspGroupCommand) groupCode() uint32 {
+	return lgc.msg.GroupUin
 }
 
 func (lgc *LspGroupCommand) groupName() string {
@@ -986,7 +945,7 @@ func (lgc *LspGroupCommand) textSendF(format string, args ...interface{}) *messa
 
 func (lgc *LspGroupCommand) reply(msg *mmsg.MSG) *message.GroupMessage {
 	m := mmsg.NewMSG()
-	m.Append(message.NewReply(lgc.msg))
+	m.Append(message.NewGroupReply(lgc.msg))
 	m.Append(msg.Elements()...)
 	return lgc.send(m)
 }
@@ -1017,7 +976,7 @@ func (lgc *LspGroupCommand) commonTemplateData() map[string]interface{} {
 		"group_code":  lgc.groupCode(),
 		"group_name":  lgc.groupName(),
 		"member_code": lgc.sender().Uin,
-		"member_name": lgc.sender().DisplayName(),
+		"member_name": lo.CoalesceOrEmpty(lgc.sender().CardName, lgc.sender().Nickname),
 		"command":     CommandMaps,
 	}
 }

@@ -1,6 +1,6 @@
 package bilibili
 
-import "github.com/Sora233/DDBOT/lsp/buntdb"
+import "github.com/Sora233/DDBOT/v2/lsp/buntdb"
 
 type keySet struct {
 }
@@ -21,7 +21,7 @@ func (k *keySet) FreshKey(keys ...interface{}) string {
 	return buntdb.BilibliFreshKey(keys...)
 }
 
-func (k *keySet) ParseGroupConcernStateKey(key string) (int64, interface{}, error) {
+func (k *keySet) ParseGroupConcernStateKey(key string) (uint32, interface{}, error) {
 	return buntdb.ParseConcernStateKeyWithInt64(key)
 }
 

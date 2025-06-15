@@ -226,30 +226,32 @@ func DDBotNoUpdateKey(keys ...interface{}) string {
 	return NamedKey("DDBotNoUpdateKey", keys)
 }
 
-func ParseConcernStateKeyWithInt64(key string) (groupCode int64, id int64, err error) {
+func ParseConcernStateKeyWithInt64(key string) (groupCode uint32, id int64, err error) {
 	keys := strings.Split(key, ":")
 	if len(keys) != 3 {
 		return 0, 0, errors.New("invalid key")
 	}
-	groupCode, err = strconv.ParseInt(keys[1], 10, 64)
+	g, err := strconv.ParseUint(keys[1], 10, 32)
 	if err != nil {
 		return 0, 0, err
 	}
+	groupCode = uint32(g)
 	id, err = strconv.ParseInt(keys[2], 10, 64)
 	if err != nil {
 		return 0, 0, err
 	}
 	return groupCode, id, nil
 }
-func ParseConcernStateKeyWithString(key string) (groupCode int64, id string, err error) {
+func ParseConcernStateKeyWithString(key string) (groupCode uint32, id string, err error) {
 	keys := strings.Split(key, ":")
 	if len(keys) != 3 {
 		return 0, "", errors.New("invalid key")
 	}
-	groupCode, err = strconv.ParseInt(keys[1], 10, 64)
+	g, err := strconv.ParseUint(keys[1], 10, 32)
 	if err != nil {
 		return 0, "", err
 	}
+	groupCode = uint32(g)
 	return groupCode, keys[2], nil
 
 }
